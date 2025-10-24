@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nyay_setu_flutter/screens/login_screen.dart';
-import 'package:nyay_setu_flutter/screens/signup_screen.dart';
-import 'package:nyay_setu_flutter/screens/dashboard_screen.dart';
-import 'package:nyay_setu_flutter/screens/cases_screen.dart';
-import 'package:nyay_setu_flutter/screens/case_detail_screen.dart';
-import 'package:nyay_setu_flutter/screens/new_case_screen.dart';
-import 'package:nyay_setu_flutter/screens/complaints_screen.dart';
-import 'package:nyay_setu_flutter/screens/chat_screen.dart';
-import 'package:nyay_setu_flutter/screens/legal_queries_screen.dart';
-import 'package:nyay_setu_flutter/screens/settings_screen.dart';
-import 'package:nyay_setu_flutter/screens/legal_suggestion_screen.dart';
-import 'package:nyay_setu_flutter/screens/document_drafting_screen.dart';
-import 'package:nyay_setu_flutter/screens/chargesheet_generation_screen.dart';
-import 'package:nyay_setu_flutter/screens/chargesheet_vetting_screen.dart';
-import 'package:nyay_setu_flutter/screens/witness_preparation_screen.dart';
-import 'package:nyay_setu_flutter/screens/media_analysis_screen.dart';
-import 'package:nyay_setu_flutter/screens/case_journal_screen.dart';
-import 'package:nyay_setu_flutter/screens/petitions_screen.dart';
-import 'package:nyay_setu_flutter/widgets/app_scaffold.dart';
+import 'package:Dharma/screens/login_screen.dart';
+import 'package:Dharma/screens/signup_screen.dart';
+import 'package:Dharma/screens/dashboard_screen.dart';
+import 'package:Dharma/screens/cases_screen.dart';
+import 'package:Dharma/screens/case_detail_screen.dart';
+import 'package:Dharma/screens/new_case_screen.dart';
+import 'package:Dharma/screens/complaints_screen.dart';
+import 'package:Dharma/screens/chat_screen.dart';
+import 'package:Dharma/screens/legal_queries_screen.dart';
+import 'package:Dharma/screens/settings_screen.dart';
+import 'package:Dharma/screens/legal_suggestion_screen.dart';
+import 'package:Dharma/screens/document_drafting_screen.dart';
+import 'package:Dharma/screens/chargesheet_generation_screen.dart';
+import 'package:Dharma/screens/chargesheet_vetting_screen.dart';
+import 'package:Dharma/screens/witness_preparation_screen.dart';
+import 'package:Dharma/screens/media_analysis_screen.dart';
+import 'package:Dharma/screens/case_journal_screen.dart';
+import 'package:Dharma/screens/petitions_screen.dart';
+import 'package:Dharma/widgets/app_scaffold.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(

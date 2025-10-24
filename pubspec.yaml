@@ -1,4 +1,4 @@
-name: nyay_setu_flutter
+name: Dharma
 description: Flutter version of Dharma - Legal and Law Enforcement AI Assistant Platform
 publish_to: 'none'
 version: 1.0.0+1
@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
   
   # State Management
   provider: ^6.1.1
@@ -64,6 +65,7 @@ dependencies:
   
   # Loading indicators
   flutter_spinkit: ^5.2.0
+  change_app_package_name: ^1.5.0
 
 dev_dependencies:
   flutter_test:

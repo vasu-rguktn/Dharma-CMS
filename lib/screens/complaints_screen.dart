@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nyay_setu_flutter/providers/complaint_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ComplaintsScreen extends StatelessWidget {

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:nyay_setu_flutter/config/theme.dart';
-import 'package:nyay_setu_flutter/providers/auth_provider.dart';
-import 'package:nyay_setu_flutter/providers/case_provider.dart';
-import 'package:nyay_setu_flutter/providers/complaint_provider.dart';
-import 'package:nyay_setu_flutter/providers/petition_provider.dart';
-import 'package:nyay_setu_flutter/router/app_router.dart';
+import 'package:Dharma/config/theme.dart';
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/case_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
+import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/router/app_router.dart';
 import 'firebase_options.dart';
 
 void main() async {

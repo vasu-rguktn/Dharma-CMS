@@ -27,7 +27,7 @@ flutterfire configure
 2. **Select your project** (or create one)
 3. **Add an Android app**:
    - Click "Add app" → Android icon
-   - Package name: `com.example.nyay_setu_flutter`
+   - Package name: `com.example.Dharma`
    - App nickname: Dharma
    - Click "Register app"
 4. **Download google-services.json**
@@ -87,7 +87,7 @@ Make sure Android SDK is properly installed.
 
 ## ⚠️ Important Notes
 
-- **Package name**: `com.example.nyay_setu_flutter` (must match in Firebase)
+- **Package name**: `com.example.Dharma` (must match in Firebase)
 - **minSdkVersion**: 21 (already set)
 - **MultiDex**: Enabled (already configured)
 

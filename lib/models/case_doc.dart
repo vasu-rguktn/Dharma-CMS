@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nyay_setu_flutter/models/case_status.dart';
+import 'package:Dharma/models/case_status.dart';
 
 class CaseDoc {
   final String? id;

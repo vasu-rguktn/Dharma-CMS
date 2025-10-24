@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nyay_setu_flutter/providers/case_provider.dart';
-import 'package:nyay_setu_flutter/models/case_status.dart';
+import 'package:Dharma/providers/case_provider.dart';
+import 'package:Dharma/models/case_status.dart';
 import 'package:go_router/go_router.dart';
 
 class CasesScreen extends StatelessWidget {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nyay_setu_flutter/providers/case_provider.dart';
-import 'package:nyay_setu_flutter/models/case_status.dart';
-import 'package:nyay_setu_flutter/models/case_journal_entry.dart';
-import 'package:nyay_setu_flutter/models/crime_details.dart';
-import 'package:nyay_setu_flutter/models/media_analysis.dart';
+import 'package:Dharma/providers/case_provider.dart';
+import 'package:Dharma/models/case_status.dart';
+import 'package:Dharma/models/case_journal_entry.dart';
+import 'package:Dharma/models/crime_details.dart';
+import 'package:Dharma/models/media_analysis.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 

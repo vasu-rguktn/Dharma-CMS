@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nyay_setu_flutter/models/case_doc.dart';
+import 'package:Dharma/models/case_doc.dart';
 
 class CaseProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

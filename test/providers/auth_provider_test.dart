@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nyay_setu_flutter/providers/auth_provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 void main() {
   group('AuthProvider Tests', () {
