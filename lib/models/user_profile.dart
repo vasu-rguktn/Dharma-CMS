@@ -5,14 +5,20 @@ class UserProfile {
   final String email;
   final String? displayName;
   final String? phoneNumber;
-  final String? profilePhotoUrl;
   final String? stationName;
   final String? district;
   final String? rank;
   final String? badgeNumber;
   final String? employeeId;
-  final String role; // 'officer', 'supervisor', 'admin'
-  final UserProfileAddress? address;
+  final String? houseNo;
+  final String? address;
+  final String? state;
+  final String? country;
+  final String? pincode;
+  final String? username;
+  final String? dob;
+  final String? gender;
+  final String role;
   final Timestamp createdAt;
   final Timestamp updatedAt;
 
@@ -21,14 +27,20 @@ class UserProfile {
     required this.email,
     this.displayName,
     this.phoneNumber,
-    this.profilePhotoUrl,
     this.stationName,
     this.district,
     this.rank,
     this.badgeNumber,
     this.employeeId,
-    required this.role,
+    this.houseNo,
     this.address,
+    this.state,
+    this.country,
+    this.pincode,
+    this.username,
+    this.dob,
+    this.gender,
+    required this.role,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,77 +48,26 @@ class UserProfile {
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return UserProfile(
-      uid: doc.id,
+      uid: data['uid'] ?? '',
       email: data['email'] ?? '',
       displayName: data['displayName'],
       phoneNumber: data['phoneNumber'],
-      profilePhotoUrl: data['profilePhotoUrl'],
       stationName: data['stationName'],
       district: data['district'],
       rank: data['rank'],
       badgeNumber: data['badgeNumber'],
       employeeId: data['employeeId'],
-      role: data['role'] ?? 'officer',
-      address: data['address'] != null
-          ? UserProfileAddress.fromMap(data['address'])
-          : null,
-      createdAt: data['createdAt'] as Timestamp,
-      updatedAt: data['updatedAt'] as Timestamp,
+      houseNo: data['houseNo'],
+      address: data['address'],
+      state: data['state'],
+      country: data['country'],
+      pincode: data['pincode'],
+      username: data['username'],
+      dob: data['dob'],
+      gender: data['gender'],
+      role: data['role'] ?? 'citizen',
+      createdAt: data['createdAt'] ?? Timestamp.now(),
+      updatedAt: data['updatedAt'] ?? Timestamp.now(),
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'email': email,
-      'displayName': displayName,
-      'phoneNumber': phoneNumber,
-      'profilePhotoUrl': profilePhotoUrl,
-      'stationName': stationName,
-      'district': district,
-      'rank': rank,
-      'badgeNumber': badgeNumber,
-      'employeeId': employeeId,
-      'role': role,
-      'address': address?.toMap(),
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
-}
-
-class UserProfileAddress {
-  final String? street;
-  final String? city;
-  final String? state;
-  final String? postalCode;
-  final String? country;
-
-  UserProfileAddress({
-    this.street,
-    this.city,
-    this.state,
-    this.postalCode,
-    this.country,
-  });
-
-  factory UserProfileAddress.fromMap(Map<String, dynamic> map) {
-    return UserProfileAddress(
-      street: map['street'],
-      city: map['city'],
-      state: map['state'],
-      postalCode: map['postalCode'],
-      country: map['country'],
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'street': street,
-      'city': city,
-      'state': state,
-      'postalCode': postalCode,
-      'country': country,
-    };
   }
 }
