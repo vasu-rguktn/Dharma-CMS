@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/screens/login_screen.dart';
-import 'package:Dharma/screens/signup_screen.dart';
+
+import 'package:Dharma/screens/login_details_screen.dart';
+import 'package:Dharma/screens/otp_verification_screen.dart';
 import 'package:Dharma/screens/dashboard_screen.dart';
 import 'package:Dharma/screens/cases_screen.dart';
 import 'package:Dharma/screens/case_detail_screen.dart';
@@ -19,28 +23,51 @@ import 'package:Dharma/screens/media_analysis_screen.dart';
 import 'package:Dharma/screens/case_journal_screen.dart';
 import 'package:Dharma/screens/petitions_screen.dart';
 import 'package:Dharma/widgets/app_scaffold.dart';
-
+import "../screens/welcome_screen.dart";
+import "../screens/registration_screen.dart";
+import "../screens/adress_form_screen.dart";
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
+    redirect: (context, state) async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final isAuthenticated = authProvider.isAuthenticated;
+      final isLoading = authProvider.isLoading;
+
+      if (isLoading) return null;
+
+      if (isAuthenticated && state.uri.toString() == '/') {
+        return '/dashboard';
+      } else if (!isAuthenticated && state.uri.toString().startsWith('/dashboard')) {
+        return '/login';
+      }
+      return null;
+    },
     routes: [
-      // Root route - Login Screen
       GoRoute(
         path: '/',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => const WelcomeScreen(),
       ),
-      
-      // Auth routes
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/signup',
-        builder: (context, state) => const SignupScreen(),
+        builder: (context, state) => const RegisterScreen(),
       ),
-      
-      // App routes with sidebar navigation
+      GoRoute(
+        path: '/address',
+        builder: (context, state) => const AddressFormScreen(),
+      ),
+      GoRoute(
+        path: '/login_details',
+        builder: (context, state) => const LoginDetailsScreen(),
+      ),
+      GoRoute(
+        path: '/otp_verification',
+        builder: (context, state) => const OtpVerificationScreen(),
+      ),
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [

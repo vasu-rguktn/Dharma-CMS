@@ -11,12 +11,9 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
   runApp(const MyApp());
 }
 
@@ -43,6 +40,13 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
+          if (authProvider.isLoading) {
+            return const MaterialApp(
+              home: Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
           return MaterialApp.router(
             title: 'Dharma',
             debugShowCheckedModeBanner: false,

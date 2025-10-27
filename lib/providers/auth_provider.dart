@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:Dharma/models/user_profile.dart';
 
@@ -8,7 +8,7 @@ class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  
+
   User? _user;
   UserProfile? _userProfile;
   bool _isLoading = true;
@@ -64,7 +64,7 @@ class AuthProvider with ChangeNotifier {
   Future<UserCredential?> signInWithEmail(String email, String password) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       return credential;
@@ -76,7 +76,7 @@ class AuthProvider with ChangeNotifier {
   Future<UserCredential?> signUpWithEmail(String email, String password) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       return credential;
@@ -123,7 +123,15 @@ class AuthProvider with ChangeNotifier {
     String? rank,
     String? badgeNumber,
     String? employeeId,
-    String role = 'officer',
+    String? houseNo,
+    String? address,
+    String? state,
+    String? country,
+    String? pincode,
+    String? username,
+    String? dob,
+    String? gender,
+    String role = 'citizen', // Default to 'citizen' for non-police users
   }) async {
     try {
       final now = Timestamp.now();
@@ -137,14 +145,23 @@ class AuthProvider with ChangeNotifier {
         'rank': rank,
         'badgeNumber': badgeNumber,
         'employeeId': employeeId,
+        'houseNo': houseNo,
+        'address': address,
+        'state': state,
+        'country': country,
+        'pincode': pincode,
+        'username': username,
+        'dob': dob,
+        'gender': gender,
         'role': role,
         'createdAt': now,
         'updatedAt': now,
-      };
+      }..removeWhere((key, value) => value == null); // Remove null fields
 
       await _firestore.collection('users').doc(uid).set(profileData);
       await _loadUserProfile(uid);
     } catch (e) {
+      debugPrint('Error creating user profile: $e');
       rethrow;
     }
   }
