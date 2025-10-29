@@ -24,7 +24,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+        final authProvider =
+            Provider.of<custom_auth.AuthProvider>(context, listen: false);
         await authProvider.signInWithEmail(
           _emailController.text.trim(),
           _passwordController.text,
@@ -46,7 +47,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _googleLogin() async {
     setState(() => _isGoogleLoading = true);
     try {
-      final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final authProvider =
+          Provider.of<custom_auth.AuthProvider>(context, listen: false);
       final userCredential = await authProvider.signInWithGoogle();
       if (userCredential != null) {
         if (authProvider.userProfile == null) {
@@ -79,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // 🖼️ SVG Image with Logo at the Top
+          // Top SVG + Logo
           Container(
             height: screenHeight * 0.3,
             width: double.infinity,
@@ -97,30 +99,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   right: 0,
                   bottom: 0,
                   child: Transform.translate(
-                    offset: const Offset(0,0),
+                    offset: const Offset(0, 0),
                     child: Image.asset(
                       'assets/police_logo.png',
                       fit: BoxFit.contain,
                       width: 120,
                       height: 120,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Text(
-                          'Error loading logo: $error',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFFD32F2F),
-                          ),
-                        );
-                      },
+                      errorBuilder: (context, error, stackTrace) => Text(
+                        'Error loading logo: $error',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFFD32F2F),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          // 📏 Gap between image and text
           const SizedBox(height: 32),
-          // 📱 Login Form Content with Scrolling
+
+          // Form (scrollable)
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
@@ -144,136 +144,68 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+
                     // Email Field
                     TextFormField(
                       controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.email, color: Colors.black),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
-                      ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
                       keyboardType: TextInputType.emailAddress,
+                      decoration: _inputDecoration('Email', Icons.email),
+                      style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
                           return 'Please enter a valid email';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 20),
+
                     // Password Field
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscureText,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.lock, color: Colors.black),
+                      decoration: _inputDecoration('Password', Icons.lock).copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscureText ? Icons.visibility : Icons.visibility_off,
+                            _obscureText
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.black,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureText = !_obscureText;
-                            });
-                          },
+                          onPressed: () =>
+                              setState(() => _obscureText = !_obscureText),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? 'Please enter your password' : null,
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Please enter your password'
+                          : null,
                     ),
                     const SizedBox(height: 20),
+
                     // Forget Password
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Forget Password tapped')),
-                            );
-                          },
-                          child: const Text(
-                            'Forget Password?',
-                            style: TextStyle(
-                              color: const Color(0xFFFC633C),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Forget Password tapped')),
+                        ),
+                        child: const Text(
+                          'Forget Password?',
+                          style: TextStyle(
+                            color: Color(0xFFFC633C),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 24),
+
                     // Login Button
                     SizedBox(
                       width: double.infinity,
@@ -281,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 20),
-                          backgroundColor: const Color(0xFFFC633C), // Matches RegisterScreen
+                          backgroundColor: const Color(0xFFFC633C),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -300,29 +232,97 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Divider with OR CONTINUE WITH
-                    
-              
-                    // Register Link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Don't have an account? ",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
+
+                    // Google Sign-In Button (Uncomment if needed)
+                    /*
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isGoogleLoading ? null : _googleLogin,
+                        icon: _isGoogleLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Image.asset('assets/google_logo.png', width: 24, height: 24),
+                        label: const Text(
+                          'Continue with Google',
+                          style: TextStyle(fontSize: 18, color: Colors.black),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.grey),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => context.go('/signup'),
-                          child: const Text(
-                            'Register',
-                            style: TextStyle(
-                              fontSize:18,
-                              color: const Color(0xFFFC633C),
-                              fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    */
+
+                    // ----- BOTTOM SECTION: Register + Phone Login (MATCHING STYLES) -----
+                    Column(
+                      children: [
+                        // Register Link
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            const Text(
+                              "Don't have an account? ",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => context.go('/signup'),
+                              child: const Text(
+                                'Register',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Color(0xFFFC633C),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Login with Phone Number – "Phone Number" matches "Register"
+                        Center(
+                          child: RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: 'Login with ',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                                WidgetSpan(
+                                  child: GestureDetector(
+                                    onTap: () => context.go('/phone-login'),
+                                    child: const Text(
+                                      'Phone Number',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Color(0xFFFC633C),
+                                        fontWeight: FontWeight.w700,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: Color(0xFFFC633C),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -335,6 +335,44 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // Reusable InputDecoration
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(
+        fontSize: 18,
+        color: Colors.black,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      prefixIcon: Icon(icon, color: Colors.black),
+      contentPadding:
+          const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.black, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+      errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
     );
   }
 
