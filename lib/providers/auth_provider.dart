@@ -1,3 +1,4 @@
+// lib/providers/auth_provider.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,8 @@ class AuthProvider with ChangeNotifier {
   UserProfile? _userProfile;
   bool _isLoading = true;
   bool _isProfileLoading = true;
+  String? _verificationId;
+  int? _resendToken;
 
   User? get user => _user;
   UserProfile? get userProfile => _userProfile;
@@ -31,6 +34,7 @@ class AuthProvider with ChangeNotifier {
 
     if (firebaseUser != null) {
       await _loadUserProfile(firebaseUser.uid);
+      await _ensureUserProfile(firebaseUser);
     } else {
       _userProfile = null;
       _isProfileLoading = false;
@@ -50,7 +54,6 @@ class AuthProvider with ChangeNotifier {
         _userProfile = UserProfile.fromFirestore(doc);
       } else {
         _userProfile = null;
-        debugPrint('User profile not found for UID: $uid');
       }
     } catch (e) {
       debugPrint('Error loading user profile: $e');
@@ -61,18 +64,34 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _ensureUserProfile(User user) async {
+    if (_userProfile != null) return;
+
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (!doc.exists) {
+      await createUserProfile(
+        uid: user.uid,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        displayName: user.displayName ?? 'Anonymous User',
+        role: 'citizen',
+      );
+    }
+  }
+
+  // ── Email/Password Sign In ──
   Future<UserCredential?> signInWithEmail(String email, String password) async {
     try {
-      final credential = await _auth.signInWithEmailAndPassword(
+      return await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      return credential;
     } catch (e) {
       rethrow;
     }
   }
 
+  // ── Email/Password Sign Up ──
   Future<UserCredential?> signUpWithEmail(String email, String password) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -85,12 +104,13 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // ── Google Sign In ──
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -102,20 +122,50 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> signOut() async {
+  // ── Phone: Send OTP (FIXED for Resend) ──
+  Future<void> sendOtp({
+    required String phoneNumber,
+    required Function(String, int?) onCodeSent,
+    required Function(String) onError,
+    bool isResend = false,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await _auth.signInWithCredential(credential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        onError(e.message ?? 'Verification failed');
+      },
+      codeSent: (verificationId, resendToken) {
+        _verificationId = verificationId;
+        _resendToken = resendToken;
+        onCodeSent(verificationId, resendToken);
+      },
+      codeAutoRetrievalTimeout: (verificationId) {
+        _verificationId = verificationId;
+      },
+      forceResendingToken: isResend ? _resendToken : null, // Only when resending
+    );
+  }
+
+  // ── Phone: Verify OTP ──
+  Future<UserCredential?> verifyOtp(String smsCode) async {
     try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: smsCode,
+      );
+      return await _auth.signInWithCredential(credential);
     } catch (e) {
       rethrow;
     }
   }
 
+  // ── Create or Update Profile ──
   Future<void> createUserProfile({
     required String uid,
-    required String email,
+    String? email,
     String? displayName,
     String? phoneNumber,
     String? stationName,
@@ -131,7 +181,7 @@ class AuthProvider with ChangeNotifier {
     String? username,
     String? dob,
     String? gender,
-    String role = 'citizen', // Default to 'citizen' for non-police users
+    String role = 'citizen',
   }) async {
     try {
       final now = Timestamp.now();
@@ -156,13 +206,21 @@ class AuthProvider with ChangeNotifier {
         'role': role,
         'createdAt': now,
         'updatedAt': now,
-      }..removeWhere((key, value) => value == null); // Remove null fields
+      }..removeWhere((key, value) => value == null);
 
-      await _firestore.collection('users').doc(uid).set(profileData);
+      await _firestore.collection('users').doc(uid).set(profileData, SetOptions(merge: true));
       await _loadUserProfile(uid);
     } catch (e) {
       debugPrint('Error creating user profile: $e');
       rethrow;
     }
+  }
+
+  // ── Sign Out ──
+  Future<void> signOut() async {
+    await Future.wait([
+      _auth.signOut(),
+      _googleSignIn.signOut(),
+    ]);
   }
 }

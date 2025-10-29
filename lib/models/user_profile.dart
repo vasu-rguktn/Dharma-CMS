@@ -1,8 +1,9 @@
+// models/user_profile.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserProfile {
   final String uid;
-  final String email;
+  final String? email;           // Now optional
   final String? displayName;
   final String? phoneNumber;
   final String? stationName;
@@ -24,7 +25,7 @@ class UserProfile {
 
   UserProfile({
     required this.uid,
-    required this.email,
+    this.email,
     this.displayName,
     this.phoneNumber,
     this.stationName,
@@ -48,26 +49,51 @@ class UserProfile {
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return UserProfile(
-      uid: data['uid'] ?? '',
-      email: data['email'] ?? '',
-      displayName: data['displayName'],
-      phoneNumber: data['phoneNumber'],
-      stationName: data['stationName'],
-      district: data['district'],
-      rank: data['rank'],
-      badgeNumber: data['badgeNumber'],
-      employeeId: data['employeeId'],
-      houseNo: data['houseNo'],
-      address: data['address'],
-      state: data['state'],
-      country: data['country'],
-      pincode: data['pincode'],
-      username: data['username'],
-      dob: data['dob'],
-      gender: data['gender'],
+      uid: doc.id,
+      email: data['email'] as String?,
+      displayName: data['displayName'] as String?,
+      phoneNumber: data['phoneNumber'] as String?,
+      stationName: data['stationName'] as String?,
+      district: data['district'] as String?,
+      rank: data['rank'] as String?,
+      badgeNumber: data['badgeNumber'] as String?,
+      employeeId: data['employeeId'] as String?,
+      houseNo: data['houseNo'] as String?,
+      address: data['address'] as String?,
+      state: data['state'] as String?,
+      country: data['country'] as String?,
+      pincode: data['pincode'] as String?,
+      username: data['username'] as String?,
+      dob: data['dob'] as String?,
+      gender: data['gender'] as String?,
       role: data['role'] ?? 'citizen',
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'email': email,
+      'displayName': displayName,
+      'phoneNumber': phoneNumber,
+      'stationName': stationName,
+      'district': district,
+      'rank': rank,
+      'badgeNumber': badgeNumber,
+      'employeeId': employeeId,
+      'houseNo': houseNo,
+      'address': address,
+      'state': state,
+      'country': country,
+      'pincode': pincode,
+      'username': username,
+      'dob': dob,
+      'gender': gender,
+      'role': role,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    }..removeWhere((key, value) => value == null);
   }
 }
