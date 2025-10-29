@@ -7,13 +7,20 @@ import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/router/app_router.dart';
+import 'package:Dharma/services/firestore_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Configure Firestore for better connection handling
+  FirestoreService.configureFirestore();
+  
   runApp(const MyApp());
 }
 
@@ -40,13 +47,6 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
-          if (authProvider.isLoading) {
-            return const MaterialApp(
-              home: Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              ),
-            );
-          }
           return MaterialApp.router(
             title: 'Dharma',
             debugShowCheckedModeBanner: false,

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:go_router/go_router.dart';
+// import 'package:go_router/go_router.dart';
+import 'package:Dharma/services/local_storage_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 class PetitionsScreen extends StatefulWidget {
   const PetitionsScreen({super.key});
@@ -71,6 +75,7 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
       appBar: AppBar(
         title: const Text('Petition Management'),
         bottom: TabBar(
+          isScrollable: true,
           controller: _tabController,
           tabs: const [
             Tab(icon: Icon(Icons.list), text: 'My Petitions'),
@@ -350,6 +355,48 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                   const SizedBox(height: 8),
                   Text(petition.orderDetails!),
                 ],
+                if (petition.extractedText != null && petition.extractedText!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Extracted Text from Documents',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Text(
+                      petition.extractedText!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Extracted Text from Documents',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No Documents Uploaded...',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
             ),
           );
@@ -381,12 +428,18 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
   }
 
   Widget _buildCreatePetitionTab(ThemeData theme) {
-    return const CreatePetitionForm();
+    return CreatePetitionForm(
+      onCreatedSuccess: () {
+        _tabController.index = 0;
+      },
+    );
   }
 }
 
 class CreatePetitionForm extends StatefulWidget {
-  const CreatePetitionForm({super.key});
+  const CreatePetitionForm({super.key, this.onCreatedSuccess});
+
+  final VoidCallback? onCreatedSuccess;
 
   @override
   State<CreatePetitionForm> createState() => _CreatePetitionFormState();
@@ -407,6 +460,46 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   String? _selectedCaseId;
   String? _firNumber;
   bool _isSubmitting = false;
+  List<PlatformFile> _pickedFiles = [];
+
+  bool _isExtracting = false;
+  Map<String, dynamic>? _ocrResult;
+  final Dio _dio = Dio();
+  String _ocrEndpoint = 'http://localhost:8000/api/ocr/extract';
+
+  @override
+  void initState() {
+    super.initState();
+    // Resolve backend base URL per platform (Android emulator uses 10.0.2.2 for host loopback)
+    final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    String baseUrl;
+    if (kIsWeb) {
+      final Uri u = Uri.base; // current page URL
+      final String scheme = u.scheme.isNotEmpty ? u.scheme : 'http';
+      final String host = (u.host.isNotEmpty ? u.host : 'localhost');
+      baseUrl = '$scheme://$host:8000';
+    } else if (isAndroid) {
+      baseUrl = 'http://10.0.2.2:8000';
+    } else {
+      baseUrl = 'http://localhost:8000';
+    }
+    _ocrEndpoint = '$baseUrl/api/ocr/extract';
+  }
+
+  Future<void> _checkBackendHealth(String baseUrl) async {
+    try {
+      await _dio.get(
+        '$baseUrl/api/health',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 5),
+          sendTimeout: const Duration(seconds: 5),
+          validateStatus: (code) => true,
+        ),
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   @override
   void dispose() {
@@ -420,6 +513,32 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     super.dispose();
   }
 
+  Widget _buildOcrSummaryCard(ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Extracted Text', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                (_ocrResult?['text'] as String?) ?? '',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _submitPetition() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -429,6 +548,22 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+
+    // Ensure OCR has been attempted if files are present but no result captured yet
+    try {
+      if (_ocrResult == null && _pickedFiles.isNotEmpty) {
+        await _runOcrOnFile(_pickedFiles.first);
+      }
+    } catch (_) {
+      // Safe to ignore here; we still proceed with petition creation
+    }
+
+    // Normalize extracted text (empty string -> null)
+    final String? extractedText = (() {
+      final String? t = (_ocrResult?['text'] as String?)?.trim();
+      if (t == null || t.isEmpty) return null;
+      return t;
+    })();
 
     final petition = Petition(
       title: _titleController.text,
@@ -448,11 +583,30 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       prayerRelief: _prayerReliefController.text.isEmpty 
           ? null 
           : _prayerReliefController.text,
+      extractedText: extractedText,
       userId: authProvider.user!.uid,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     );
 
+    // Save locally selected documents before creating petition
+    try {
+      if (_pickedFiles.isNotEmpty) {
+        final String folderName = _titleController.text.isNotEmpty
+            ? _titleController.text
+            : 'petition_${DateTime.now().millisecondsSinceEpoch}';
+        await LocalStorageService.savePickedFiles(
+          files: _pickedFiles,
+          subfolderName: folderName,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save documents locally: $e')),
+      );
+    }
+
+    // Create petition (does not store upload details in Firestore)
     final success = await petitionProvider.createPetition(petition);
 
     setState(() => _isSubmitting = false);
@@ -473,7 +627,15 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         _caseNumberController.clear();
         _groundsController.clear();
         _prayerReliefController.clear();
+        setState(() {
+          _pickedFiles = [];
+          _ocrResult = null;
+        });
         await petitionProvider.fetchPetitions(authProvider.user!.uid);
+        // Notify parent screen to navigate to "My Petitions" tab
+        if (mounted) {
+          widget.onCreatedSuccess?.call();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -482,6 +644,69 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _runOcrOnFile(PlatformFile file) async {
+    if (_isExtracting) return;
+    setState(() { _isExtracting = true; });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Extracting text from document...')),
+    );
+
+    try {
+      MultipartFile mFile;
+      if (file.bytes != null) {
+        mFile = MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        );
+      } else if (file.path != null) {
+        mFile = await MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        );
+      } else {
+        throw Exception('File content unavailable');
+      }
+
+      // Quick health check to avoid long timeouts with misconfigured URL
+      final String baseUrl = _ocrEndpoint.replaceFirst('/api/ocr/extract', '');
+      await _checkBackendHealth(baseUrl);
+
+      final formData = FormData.fromMap({ 'file': mFile });
+      final response = await _dio.post(
+        _ocrEndpoint,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 60),
+          followRedirects: false,
+          validateStatus: (code) => code != null && code >= 200 && code < 400,
+        ),
+      );
+
+      final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
+      final String extracted = (data['text'] as String?)?.trim() ?? '';
+      if (extracted.isNotEmpty) {
+        setState(() { _ocrResult = {'text': extracted}; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Text extraction successful')),
+        );
+      } else {
+        setState(() { _ocrResult = null; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No text detected in the selected file.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('OCR failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() { _isExtracting = false; });
     }
   }
 
@@ -531,6 +756,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         labelText: 'Petition Type *',
                         border: OutlineInputBorder(),
                       ),
+                      isExpanded: true,
                       items: PetitionType.values.map((type) {
                         return DropdownMenuItem(
                           value: type,
@@ -548,6 +774,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         labelText: 'Status *',
                         border: OutlineInputBorder(),
                       ),
+                      isExpanded: true,
                       items: PetitionStatus.values.map((status) {
                         return DropdownMenuItem(
                           value: status,
@@ -566,6 +793,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                           labelText: 'Link to Case (Optional)',
                           border: OutlineInputBorder(),
                         ),
+                        isExpanded: true,
                         items: [
                           const DropdownMenuItem(
                             value: null,
@@ -697,6 +925,103 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         border: OutlineInputBorder(),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Supporting Documents (Optional, stored locally only)',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload Documents'),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () async {
+                                  final FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                    allowMultiple: true,
+                                    withData: true,
+                                    type: FileType.image,
+                                  );
+                                  if (result != null && result.files.isNotEmpty) {
+                                    setState(() {
+                                      _pickedFiles = result.files;
+                                    });
+                                    // Trigger OCR immediately on the first selected file
+                                    await _runOcrOnFile(result.files.first);
+                                  }
+                                },
+                        ),
+                        if (_pickedFiles.isNotEmpty)
+                          Text(
+                            '${_pickedFiles.length} file(s) selected',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        if (_isExtracting)
+                          const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                      ],
+                    ),
+                    if (_pickedFiles.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: _pickedFiles.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final PlatformFile f = _pickedFiles[index];
+                            return ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                              leading: const Icon(Icons.insert_drive_file),
+                              title: Text(
+                                f.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text('${(f.size / 1024).toStringAsFixed(1)} KB'),
+                              trailing: IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                icon: const Icon(Icons.close),
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _pickedFiles.removeAt(index);
+                                        });
+                                      },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    if (_ocrResult != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Extracted Details',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildOcrSummaryCard(theme),
+                    ],
                   ],
                 ),
               ),

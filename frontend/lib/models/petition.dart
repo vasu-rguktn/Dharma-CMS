@@ -124,6 +124,7 @@ class Petition {
   final String? filingDate;
   final String? orderDate;
   final String? orderDetails;
+  final String? extractedText; // Text extracted from uploaded documents
   final String userId;
   final Timestamp createdAt;
   final Timestamp updatedAt;
@@ -146,6 +147,7 @@ class Petition {
     this.filingDate,
     this.orderDate,
     this.orderDetails,
+    this.extractedText,
     required this.userId,
     required this.createdAt,
     required this.updatedAt,
@@ -171,6 +173,7 @@ class Petition {
       filingDate: data['filingDate'],
       orderDate: data['orderDate'],
       orderDetails: data['orderDetails'],
+      extractedText: data['extractedText'],
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
@@ -195,6 +198,7 @@ class Petition {
       if (filingDate != null) 'filingDate': filingDate,
       if (orderDate != null) 'orderDate': orderDate,
       if (orderDetails != null) 'orderDetails': orderDetails,
+      if (extractedText != null) 'extractedText': extractedText,
       'userId': userId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,

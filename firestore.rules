@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /petitions/{petitionId} {
+      // TEMPORARY for testing: any signed-in user can create; read is public
+      allow create: if request.auth != null
+              && request.resource.data.ownerId == request.auth.uid
+              && request.resource.data.keys().hasAll(['title','description','ownerId','createdAt'])
+              && request.resource.data.title is string
+              && request.resource.data.description is string;
+      allow read: if true;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}
