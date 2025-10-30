@@ -6,17 +6,20 @@ class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-State<WelcomeScreen> createState() => _WelcomeScreenState();
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
   // For animation
   double _logoScale = 1.0;
 
+  // Define orange color here
+  static const Color orange = Color(0xFFFC633C);
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final double topImageHeight = size.height * 0.4; // covers half of the screen
+    final double topImageHeight = size.height * 0.4; // covers ~40% of screen
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -30,7 +33,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: IntrinsicHeight(
                   child: Column(
                     children: [
-                      // 🟧 Top half with SVG background + overlapping logo
+                      // Top half with SVG background + overlapping logo
                       Stack(
                         alignment: Alignment.bottomCenter,
                         clipBehavior: Clip.none,
@@ -101,7 +104,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                       const SizedBox(height: 100), // space for logo overlap
 
-                      // 🟩 Main content
+                      // Main content
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -188,7 +191,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // ✅ Login Popup
+  // Login Popup
   void _showLoginPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -229,7 +232,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // ✅ Register Popup
+  // Register Popup
   void _showRegisterPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -269,7 +272,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // ✅ Reusable button widget
+  // Reusable button widget
   Widget _buildDialogButton({
     required String label,
     required VoidCallback? onPressed,
