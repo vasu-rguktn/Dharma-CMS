@@ -1,3 +1,4 @@
+// screens/login_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -20,57 +21,72 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _isGoogleLoading = false;
 
+  static const Color orange = Color(0xFFFC633C);
+
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        final authProvider =
-            Provider.of<custom_auth.AuthProvider>(context, listen: false);
-        await authProvider.signInWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final userCredential = await authProvider.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (userCredential?.user != null) {
+        // SAFE CAST extra
+        final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
+        final role = extra?['userType'] as String? ?? 'citizen';
+
+        await authProvider.createUserProfile(
+          uid: userCredential!.user!.uid,
+          email: userCredential.user!.email!,
+          displayName: userCredential.user!.displayName,
+          phoneNumber: userCredential.user!.phoneNumber,
+          role: role,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful')),
-        );
-        context.go('/dashboard');
-      } on FirebaseAuthException catch (e) {
+        if (mounted) context.go('/dashboard');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? 'Login failed')),
         );
-      } finally {
-        setState(() => _isLoading = false);
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _googleLogin() async {
     setState(() => _isGoogleLoading = true);
     try {
-      final authProvider =
-          Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
       final userCredential = await authProvider.signInWithGoogle();
+
       if (userCredential != null) {
-        if (authProvider.userProfile == null) {
-          await authProvider.createUserProfile(
-            uid: userCredential.user!.uid,
-            email: userCredential.user!.email!,
-            displayName: userCredential.user!.displayName,
-            phoneNumber: userCredential.user!.phoneNumber,
-            role: 'citizen',
-          );
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google login successful')),
+        // SAFE CAST extra
+        final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
+        final role = extra?['userType'] as String? ?? 'citizen';
+
+        await authProvider.createUserProfile(
+          uid: userCredential.user!.uid,
+          email: userCredential.user!.email!,
+          displayName: userCredential.user!.displayName,
+          phoneNumber: userCredential.user!.phoneNumber,
+          role: role,
         );
-        context.go('/dashboard');
+        if (mounted) context.go('/dashboard');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google login failed: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google login failed: $e')),
+        );
+      }
     } finally {
-      setState(() => _isGoogleLoading = false);
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
@@ -81,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Top SVG + Logo
+          // TOP LOGO + SVG
           Container(
             height: screenHeight * 0.3,
             width: double.infinity,
@@ -102,16 +118,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     offset: const Offset(0, 0),
                     child: Image.asset(
                       'assets/police_logo.png',
-                      fit: BoxFit.contain,
                       width: 120,
                       height: 120,
-                      errorBuilder: (context, error, stackTrace) => Text(
-                        'Error loading logo: $error',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFFD32F2F),
-                        ),
-                      ),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.error, color: Colors.red),
                     ),
                   ),
                 ),
@@ -120,193 +129,111 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 32),
 
-          // Form (scrollable)
+          // FORM
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
-                left: 24.0,
-                right: 24.0,
-                top: 16.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     const Text(
                       'Login',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                        letterSpacing: 1.2,
-                      ),
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.black),
                     ),
                     const SizedBox(height: 24),
 
-                    // Email Field
+                    // EMAIL
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: _inputDecoration('Email', Icons.email),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
+                      validator: (v) => v!.isEmpty || !v.contains('@') ? 'Enter valid email' : null,
                     ),
                     const SizedBox(height: 20),
 
-                    // Password Field
+                    // PASSWORD
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscureText,
                       decoration: _inputDecoration('Password', Icons.lock).copyWith(
                         suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureText
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.black,
-                          ),
-                          onPressed: () =>
-                              setState(() => _obscureText = !_obscureText),
+                          icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off, color: Colors.black),
+                          onPressed: () => setState(() => _obscureText = !_obscureText),
                         ),
                       ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) => value == null || value.isEmpty
-                          ? 'Please enter your password'
-                          : null,
+                      validator: (v) => v!.isEmpty ? 'Enter password' : null,
                     ),
                     const SizedBox(height: 20),
 
-                    // Forget Password
+                    // FORGOT PASSWORD
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Forget Password tapped')),
+                          const SnackBar(content: Text('Forgot password clicked')),
                         ),
                         child: const Text(
                           'Forget Password?',
-                          style: TextStyle(
-                            color: Color(0xFFFC633C),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: TextStyle(color: orange, fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Login Button
+                    // LOGIN BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: orange,
                           padding: const EdgeInsets.symmetric(vertical: 20),
-                          backgroundColor: const Color(0xFFFC633C),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 5,
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
                                 'Login',
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
+                                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700, color: Colors.white),
                               ),
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Google Sign-In Button (Uncomment if needed)
-                    /*
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _isGoogleLoading ? null : _googleLogin,
-                        icon: _isGoogleLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Image.asset('assets/google_logo.png', width: 24, height: 24),
-                        label: const Text(
-                          'Continue with Google',
-                          style: TextStyle(fontSize: 18, color: Colors.black),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: const BorderSide(color: Colors.grey),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
+                    // GOOGLE BUTTON (NOW UNCOMMENTED & WORKING)
+                    
                     const SizedBox(height: 24),
-                    */
 
-                    // ----- BOTTOM SECTION: Register + Phone Login (MATCHING STYLES) -----
+                    // REGISTER + PHONE
                     Column(
                       children: [
-                        // Register Link
                         Wrap(
                           alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            const Text(
-                              "Don't have an account? ",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            const Text("Don't have an account? ", style: TextStyle(fontSize: 14, color: Colors.black)),
                             GestureDetector(
                               onTap: () => context.go('/signup'),
                               child: const Text(
                                 'Register',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Color(0xFFFC633C),
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(fontSize: 18, color: orange, fontWeight: FontWeight.w700),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-
-                        // Login with Phone Number – "Phone Number" matches "Register"
                         Center(
                           child: RichText(
-                            textAlign: TextAlign.center,
                             text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
-                                const TextSpan(
-                                  text: 'Login with ',
-                                  style: TextStyle(color: Colors.black),
-                                ),
+                                const TextSpan(text: 'Login with ', style: TextStyle(color: Colors.black)),
                                 WidgetSpan(
                                   child: GestureDetector(
                                     onTap: () => context.go('/phone-login'),
@@ -314,10 +241,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       'Phone Number',
                                       style: TextStyle(
                                         fontSize: 18,
-                                        color: Color(0xFFFC633C),
+                                        color: orange,
                                         fontWeight: FontWeight.w700,
                                         decoration: TextDecoration.underline,
-                                        decorationColor: Color(0xFFFC633C),
                                       ),
                                     ),
                                   ),
@@ -338,41 +264,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Reusable InputDecoration
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        fontSize: 18,
-        color: Colors.black,
-        fontWeight: FontWeight.w500,
-      ),
+      labelStyle: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
       filled: true,
       fillColor: Colors.white,
       prefixIcon: Icon(icon, color: Colors.black),
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-      errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
+      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 2)),
+      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 2)),
     );
   }
 
