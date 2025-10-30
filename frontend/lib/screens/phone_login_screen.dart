@@ -53,11 +53,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       await auth.sendOtp(
         phoneNumber: phone,
-        isResend: isResend,
         onCodeSent: (vid, token) {
           setState(() {
             _otpSent = true;
-            if (isResend) _startCountdown(); // Restart timer on resend
+            if (isResend) _startCountdown(); // Restart timer only on resend
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(isResend ? 'OTP Resent!' : 'OTP sent! Check SMS')),
@@ -106,7 +105,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     }
   }
 
-  // Reusable InputDecoration
   InputDecoration _inputDecoration(String label, {String? prefixText, IconData? prefixIcon}) {
     return InputDecoration(
       labelText: label,
@@ -139,15 +137,23 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                SvgPicture.asset('assets/Frame.svg', fit: BoxFit.fill, width: double.infinity, height: screenHeight * 0.3),
+                SvgPicture.asset(
+                  'assets/Frame.svg',
+                  fit: BoxFit.fill,
+                  width: double.infinity,
+                  height: screenHeight * 0.3,
+                ),
                 Positioned(
-                  left: 0, right: 0, bottom: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
                   child: Transform.translate(
                     offset: const Offset(0, 0),
                     child: Image.asset(
                       'assets/police_logo.png',
                       fit: BoxFit.contain,
-                      width: 120, height: 120,
+                      width: 120,
+                      height: 120,
                       errorBuilder: (context, error, stackTrace) => Text(
                         'Error loading logo: $error',
                         style: const TextStyle(fontSize: 14, color: Color(0xFFD32F2F)),
@@ -164,7 +170,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
-                left: 24.0, right: 24.0, top: 16.0,
+                left: 24.0,
+                right: 24.0,
+                top: 16.0,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
               ),
               child: Column(
