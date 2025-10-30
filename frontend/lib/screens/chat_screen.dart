@@ -193,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              "Start a conversation...",
+                              "Start a conversation..",
                               style: TextStyle(color: Colors.grey[600], fontSize: 16),
                             ),
                           ],
