@@ -30,10 +30,10 @@ import 'package:Dharma/widgets/app_scaffold.dart';
 import 'package:Dharma/screens/citizen_dashboard_screen.dart';
 import 'package:Dharma/screens/police_dashboard_screen.dart';
 
-// OTHER
+// REGISTRATION FLOW
 import '../screens/welcome_screen.dart';
 import '../screens/registration_screen.dart';
-import '../screens/adress_form_screen.dart';
+import '../screens/adress_form_screen.dart'; // ← Make sure this is correct
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -54,18 +54,50 @@ class AppRouter {
       return null;
     },
     routes: [
+      // ── PUBLIC ROUTES ───────────────────────────────
       GoRoute(path: '/', builder: (_, __) => const WelcomeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/phone-login', builder: (_, __) => const PhoneLoginScreen()),
-      GoRoute(path: '/signup', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/address', builder: (_, __) => const AddressFormScreen()),
-      GoRoute(path: '/login_details', builder: (_, __) => const LoginDetailsScreen()),
       GoRoute(path: '/otp_verification', builder: (_, __) => const OtpVerificationScreen()),
 
+      // ── REGISTRATION FLOW (STACK PRESERVED) ─────────
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          // This keeps the 3-step form in memory
+          return navigationShell;
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/signup',
+                builder: (context, state) => const RegisterScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/address',
+                builder: (context, state) => const AddressFormScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/login_details',
+                builder: (context, state) => const LoginDetailsScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // ── PROTECTED DASHBOARD + FEATURES ─────────────
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [
-          // ROLE-BASED DASHBOARD
           GoRoute(
             path: '/dashboard',
             pageBuilder: (context, state) {
@@ -76,7 +108,6 @@ class AppRouter {
               return NoTransitionPage(child: screen);
             },
           ),
-
           GoRoute(path: '/cases', builder: (_, __) => const CasesScreen()),
           GoRoute(path: '/cases/new', builder: (_, __) => const NewCaseScreen()),
           GoRoute(
