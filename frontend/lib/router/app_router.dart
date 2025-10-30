@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/screens/login_screen.dart';
 
+// Screens
+import 'package:Dharma/screens/login_screen.dart';
+import 'package:Dharma/screens/phone_login_screen.dart';
 import 'package:Dharma/screens/login_details_screen.dart';
 import 'package:Dharma/screens/otp_verification_screen.dart';
 import 'package:Dharma/screens/dashboard_screen.dart';
@@ -23,9 +25,12 @@ import 'package:Dharma/screens/media_analysis_screen.dart';
 import 'package:Dharma/screens/case_journal_screen.dart';
 import 'package:Dharma/screens/petitions_screen.dart';
 import 'package:Dharma/widgets/app_scaffold.dart';
-import "../screens/welcome_screen.dart";
-import "../screens/registration_screen.dart";
-import "../screens/adress_form_screen.dart";
+
+// Relative imports
+import '../screens/welcome_screen.dart';
+import '../screens/registration_screen.dart';
+import '../screens/adress_form_screen.dart';
+
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
@@ -36,14 +41,20 @@ class AppRouter {
 
       if (isLoading) return null;
 
+      // Redirect logged-in user from welcome → dashboard
       if (isAuthenticated && state.uri.toString() == '/') {
         return '/dashboard';
-      } else if (!isAuthenticated && state.uri.toString().startsWith('/dashboard')) {
+      }
+
+      // Redirect unauthenticated user from protected routes → login
+      if (!isAuthenticated && state.uri.toString().startsWith('/dashboard')) {
         return '/login';
       }
+
       return null;
     },
     routes: [
+      // ── Public Routes ──
       GoRoute(
         path: '/',
         builder: (context, state) => const WelcomeScreen(),
@@ -51,6 +62,10 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/phone-login',
+        builder: (context, state) => const PhoneLoginScreen(),
       ),
       GoRoute(
         path: '/signup',
@@ -68,6 +83,8 @@ class AppRouter {
         path: '/otp_verification',
         builder: (context, state) => const OtpVerificationScreen(),
       ),
+
+      // ── Protected Routes (inside AppScaffold) ──
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [
