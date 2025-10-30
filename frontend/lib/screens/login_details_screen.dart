@@ -1,9 +1,10 @@
+// screens/login_details_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
+import '../providers/auth_provider.dart' as custom_auth;
 
 class LoginDetailsScreen extends StatefulWidget {
   const LoginDetailsScreen({super.key});
@@ -20,159 +21,98 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
+  bool _restored = false;
 
-  Future<void> _submitForm(Map<String, dynamic>? personalData, Map<String, dynamic>? addressData) async {
-    debugPrint('🔥 SUBMIT FORM CALLED');
-    debugPrint('📧 personalData: $personalData');
-    debugPrint('🏠 addressData: $addressData');
+  Map<String, dynamic>? _personalData;
+  Map<String, dynamic>? _addressData;
 
-    if (personalData == null || addressData == null) {
-      debugPrint('❌ Missing personal or address data');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Required data not provided'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_restored) {
+      final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+      _personalData = args?['personal'] as Map<String, dynamic>?;
+      _addressData = args?['address'] as Map<String, dynamic>?;
+      final login = args?['login'] as Map<String, dynamic>?;
 
-    // Log input values for debugging
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text;
-    final confirm = _confirmController.text;
-    debugPrint('👤 Username: "$username" (length: ${username.length})');
-    debugPrint('🔒 Password: "$password" (length: ${password.length})');
-    debugPrint('✅ Confirm: "$confirm"');
-
-    if (_formKey.currentState!.validate()) {
-      debugPrint('✅ FORM VALIDATION PASSED');
-      setState(() => _isLoading = true);
-      try {
-        final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
-        final email = personalData['email'] as String?;
-        if (email == null || email.isEmpty) {
-          debugPrint('❌ Email is null or empty');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: Invalid email provided'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-
-        debugPrint('📧 Signing up with email: $email');
-        final userCredential = await authProvider.signUpWithEmail(email, password);
-        if (userCredential == null || userCredential.user == null) {
-          debugPrint('❌ UserCredential or user is null');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: Failed to create user'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-
-        debugPrint('✅ User created: ${userCredential.user!.uid}');
-        await authProvider.createUserProfile(
-          uid: userCredential.user!.uid,
-          email: email,
-          displayName: personalData['name'] as String?,
-          phoneNumber: personalData['phone'] as String?,
-          houseNo: addressData['houseNo'] as String?,
-          address: addressData['address'] as String?,
-          district: addressData['district'] as String?,
-          state: addressData['state'] as String?,
-          country: addressData['country'] as String?,
-          pincode: addressData['pincode'] as String?,
-          username: _usernameController.text,
-          dob: personalData['dob'] as String?,
-          gender: personalData['gender'] as String?,
-          stationName: addressData['policestation'] as String?,
-          role: 'citizen',
-        );
-
-        debugPrint('✅ Profile created successfully');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        debugPrint('🚀 NAVIGATING TO DASHBOARD');
-        context.go('/dashboard');
-      } on FirebaseAuthException catch (e) {
-        String errorMessage;
-        switch (e.code) {
-          case 'email-already-in-use':
-            errorMessage = 'The email is already registered.';
-            break;
-          case 'invalid-email':
-            errorMessage = 'The email address is invalid.';
-            break;
-          case 'weak-password':
-            errorMessage = 'The password is too weak.';
-            break;
-          default:
-            errorMessage = e.message ?? 'An error occurred during registration.';
-        }
-        debugPrint('🔥 FirebaseAuth error: ${e.code} - $errorMessage');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } catch (e, stackTrace) {
-        debugPrint('❌ Unexpected error: $e\nStackTrace: $stackTrace');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('An unexpected error occurred.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      if (login != null) {
+        _usernameController.text = login['username'] ?? '';
+        _passwordController.text = login['password'] ?? '';
+        _confirmController.text = login['confirm'] ?? '';
       }
-    } else {
-      debugPrint('❌ FORM VALIDATION FAILED');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fix the errors in the form'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _restored = true;
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    debugPrint('📋 LoginDetailsScreen initialized');
+  void _goPrevious() {
+    final loginData = {
+      'username': _usernameController.text.trim(),
+      'password': _passwordController.text,
+      'confirm': _confirmController.text,
+    };
+    context.go('/address', extra: {
+      'personal': _personalData,
+      'address': _addressData,
+      'login': loginData,
+    });
   }
 
-  @override
-  void didUpdateWidget(LoginDetailsScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    debugPrint('🔄 LoginDetailsScreen updated, args: ${GoRouterState.of(context).extra}');
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final email = _personalData!['email'] as String?;
+
+      if (email == null || email.isEmpty) throw Exception('Invalid email');
+
+      final userCredential = await authProvider.signUpWithEmail(email, _passwordController.text);
+      if (userCredential == null) throw Exception('Failed to create user');
+
+      await authProvider.createUserProfile(
+        uid: userCredential.user!.uid,
+        email: email,
+        displayName: _personalData!['name'],
+        phoneNumber: _personalData!['phone'],
+        houseNo: _addressData!['houseNo'],
+        address: _addressData!['address'],
+        district: _addressData!['district'],
+        state: _addressData!['state'],
+        country: _addressData!['country'],
+        pincode: _addressData!['pincode'],
+        username: _usernameController.text.trim(),
+        dob: _personalData!['dob'],
+        gender: _personalData!['gender'],
+        stationName: _addressData!['policestation'],
+        role: 'citizen',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration successful!'), backgroundColor: Colors.green),
+      );
+      context.go('/dashboard');
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Error'), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An error occurred'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    final personalData = args?['personal'] as Map<String, dynamic>?;
-    final addressData = args?['address'] as Map<String, dynamic>?;
-    debugPrint('📋 Received args in LoginDetailsScreen: $args');
 
     return Scaffold(
       body: Column(
         children: [
+          // Header SVG + Logo
           Container(
             height: screenHeight * 0.3,
             width: double.infinity,
@@ -199,10 +139,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       errorBuilder: (context, error, stackTrace) {
                         return Text(
                           'Error loading logo: $error',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFFD32F2F),
-                          ),
+                          style: const TextStyle(fontSize: 14, color: Color(0xFFD32F2F)),
                         );
                       },
                     ),
@@ -223,78 +160,34 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     const Text(
                       'Login Details',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                        letterSpacing: 1.2,
-                      ),
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.black, letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 24),
+
+                    // Username
                     TextFormField(
                       controller: _usernameController,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       decoration: InputDecoration(
                         labelText: 'Username *',
                         hintText: 'Enter username (min 4 characters)',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        labelStyle: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
                         filled: true,
                         fillColor: Colors.white,
                         prefixIcon: const Icon(Icons.person, color: Colors.black),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 2)),
                       ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        debugPrint('🔍 Validating username: "$value"');
-                        if (value == null || value.trim().isEmpty) {
-                          debugPrint('❌ Username is empty');
-                          return 'Enter username';
-                        }
-                        if (value.trim().length < 4) {
-                          debugPrint('❌ Username too short: ${value.trim().length}');
-                          return 'Username must be at least 4 characters';
-                        }
-                        debugPrint('✅ Username valid');
-                        return null;
-                      },
+                      validator: (v) => v == null || v.trim().length < 4 ? 'Username must be at least 4 characters' : null,
                     ),
                     const SizedBox(height: 20),
+
+                    // Password
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -302,67 +195,25 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       decoration: InputDecoration(
                         labelText: 'Password *',
                         hintText: 'Enter password (min 6 characters)',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        labelStyle: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
                         filled: true,
                         fillColor: Colors.white,
                         prefixIcon: const Icon(Icons.lock, color: Colors.black),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 2)),
+                      ).copyWith(
                         suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.black,
-                          ),
+                          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.black),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        debugPrint('🔍 Validating password: "$value"');
-                        if (value == null || value.trim().isEmpty) {
-                          debugPrint('❌ Password is empty');
-                          return 'Enter password';
-                        }
-                        if (value.length < 6) {
-                          debugPrint('❌ Password too short: ${value.length}');
-                          return 'Password must be at least 6 characters';
-                        }
-                        debugPrint('✅ Password valid');
-                        return null;
-                      },
+                      validator: (v) => v == null || v.length < 6 ? 'Password must be at least 6 characters' : null,
                     ),
                     const SizedBox(height: 20),
+
+                    // Confirm Password
                     TextFormField(
                       controller: _confirmController,
                       obscureText: _obscureConfirm,
@@ -370,90 +221,62 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       decoration: InputDecoration(
                         labelText: 'Confirm Password *',
                         hintText: 'Re-enter password',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        labelStyle: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
                         filled: true,
                         fillColor: Colors.white,
                         prefixIcon: const Icon(Icons.lock, color: Colors.black),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 2)),
+                      ).copyWith(
                         suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirm ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.black,
-                          ),
+                          icon: Icon(_obscureConfirm ? Icons.visibility : Icons.visibility_off, color: Colors.black),
                           onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        debugPrint('🔍 Validating confirm password: "$value"');
-                        if (value == null || value.trim().isEmpty) {
-                          debugPrint('❌ Confirm password is empty');
-                          return 'Confirm your password';
-                        }
-                        if (value != _passwordController.text) {
-                          debugPrint('❌ Confirm password does not match');
-                          return 'Passwords do not match';
-                        }
-                        debugPrint('✅ Confirm password valid');
-                        return null;
-                      },
+                      validator: (v) => v != _passwordController.text ? 'Passwords do not match' : null,
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => _submitForm(personalData, addressData),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          backgroundColor: const Color(0xFFFC633C),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+
+                    // Buttons Row - Both Orange
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _goPrevious,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              backgroundColor: const Color(0xFFFC633C),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 5,
+                            ),
+                            child: const Text(
+                              'Previous',
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
+                            ),
                           ),
-                          elevation: 5,
                         ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text(
-                                'Next',
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _submitForm,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              backgroundColor: const Color(0xFFFC633C),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 5,
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text(
+                                    'Next',
+                                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700, color: Colors.white),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -468,7 +291,6 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing LoginDetailsScreen');
     _usernameController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();

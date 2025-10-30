@@ -1,3 +1,4 @@
+// lib/screens/chat_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -8,15 +9,31 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, String>> _messages = [];
   final ScrollController _scrollController = ScrollController();
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.35).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -37,7 +54,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _messageController.clear();
 
-    // Auto-scroll to newest message
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -49,7 +65,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Placeholder for voice input
   void _startVoiceInput() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Voice input coming soon!')),
@@ -64,7 +79,7 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // ── 1. SVG BACKGROUND (fixed) ──
+          // ── 1. SVG BACKGROUND ──
           Positioned(
             top: 0,
             left: 0,
@@ -78,114 +93,157 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // ── 2. HEADER TEXT (on SVG) ──
+          // ── 2. CENTERED ANIMATED ROBOT ICON (FIXED: ROBOT IN MIDDLE OF PULSE) ──
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 20),
+                padding: const EdgeInsets.only(top: 20),
                 child: Column(
                   children: [
-                    const SizedBox(height: 20),
-                    const Text(
-                      'AI Legal Assistant',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10.0,
-                            color: Colors.black26,
-                            offset: Offset(0, 2),
+                    // Pulsing Glow + Robot (centered together)
+                    SizedBox(
+                      width: 110,
+                      height: 110,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Pulsing Glow Ring (behind)
+                          AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _pulseAnimation.value,
+                                child: Container(
+                                  width: 90,
+                                  height: 90,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        const Color(0xFFFC633C).withOpacity(0.5),
+                                        const Color(0xFFFC633C).withOpacity(0.1),
+                                        Colors.transparent,
+                                      ],
+                                      stops: const [0.0, 0.6, 1.0],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // White Circle + Robot Icon (on top, centered)
+                          Container(
+                            width: 70,
+                            height: 70,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 16,
+                                  offset: Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.smart_toy_rounded,
+                                size: 56,
+                                color: Color(0xFFFC633C),
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ask me anything about legal matters',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: Colors.white,
-                        height: 1.5,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 8.0,
-                            color: Colors.black26,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
+
+
+                    // Subtle subtitle
+                    
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── 3. MESSAGES LIST (scroll under SVG) ──
+          // ── 3. MESSAGES LIST ──
           Positioned(
-            top: 180, // Adjust based on your SVG + header height
+            top: 240,
             left: 0,
             right: 0,
-            bottom: 90, // Space for input bar
-            child: ClipRect(
-              child: _messages.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "Start a conversation...",
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final reversedIndex = _messages.length - 1 - index;
-                        final message = _messages[reversedIndex];
-                        final isUser = message['sender'] == 'user';
-
-                        return Align(
-                          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                            constraints: BoxConstraints(maxWidth: screenWidth * 0.75),
-                            decoration: BoxDecoration(
-                              color: isUser ? const Color(0xFFFC633C) : Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
+            bottom: 90,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              child: Container(
+                color: Colors.white,
+                child: _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 48,
+                              color: Colors.grey[400],
                             ),
-                            child: Text(
-                              message['text']!,
-                              style: TextStyle(
-                                color: isUser ? Colors.white : Colors.black87,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(height: 12),
+                            Text(
+                              "Start a conversation...",
+                              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        reverse: true,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final revIndex = _messages.length - 1 - index;
+                          final message = _messages[revIndex];
+                          final isUser = message['sender'] == 'user';
+
+                          return Align(
+                            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                              constraints: BoxConstraints(maxWidth: screenWidth * 0.75),
+                              decoration: BoxDecoration(
+                                color: isUser ? const Color(0xFFFC633C) : Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                                border: isUser ? null : Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Text(
+                                message['text']!,
+                                style: TextStyle(
+                                  color: isUser ? Colors.white : Colors.black87,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
+              ),
             ),
           ),
 
-          // ── 4. INPUT BAR WITH MIC ICON ──
+          // ── 4. INPUT BAR ──
           Positioned(
             bottom: 0,
             left: 0,
@@ -204,7 +262,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               child: Row(
                 children: [
-                  // Text Field
                   Expanded(
                     child: TextField(
                       controller: _messageController,
@@ -231,47 +288,32 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
-                  // MIC ICON (Speech Input)
-                  SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _startVoiceInput,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFC633C),
-                        shape: const CircleBorder(),
-                        elevation: 6,
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: const Icon(Icons.mic, color: Colors.white, size: 24),
-                    ),
-                  ),
-
+                  _iconButton(Icons.mic, _startVoiceInput),
                   const SizedBox(width: 8),
-
-                  // SEND BUTTON
-                  SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _sendMessage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFC633C),
-                        shape: const CircleBorder(),
-                        elevation: 6,
-                        padding: EdgeInsets.zero,
-                      ),
-                      child: const Icon(Icons.send, color: Colors.white, size: 24),
-                    ),
-                  ),
+                  _iconButton(Icons.send, _sendMessage),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _iconButton(IconData icon, VoidCallback onPressed) {
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFC633C),
+          shape: const CircleBorder(),
+          elevation: 6,
+          padding: EdgeInsets.zero,
+        ),
+        child: Icon(icon, color: Colors.white, size: 24),
       ),
     );
   }
