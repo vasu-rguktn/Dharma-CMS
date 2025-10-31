@@ -35,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (userCredential?.user != null) {
-        // SAFE CAST extra
         final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
         final role = extra?['userType'] as String? ?? 'citizen';
 
@@ -46,7 +45,13 @@ class _LoginScreenState extends State<LoginScreen> {
           phoneNumber: userCredential.user!.phoneNumber,
           role: role,
         );
-        if (mounted) context.go('/dashboard');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login successful')),
+          );
+          context.go('/ai-legal-guider'); // ✅ Redirect directly to AI Legal Guider
+        }
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -66,7 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final userCredential = await authProvider.signInWithGoogle();
 
       if (userCredential != null) {
-        // SAFE CAST extra
         final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
         final role = extra?['userType'] as String? ?? 'citizen';
 
@@ -77,7 +81,13 @@ class _LoginScreenState extends State<LoginScreen> {
           phoneNumber: userCredential.user!.phoneNumber,
           role: role,
         );
-        if (mounted) context.go('/dashboard');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Google login successful')),
+          );
+          context.go('/ai-legal-guider'); // ✅ Redirect directly to AI Legal Guider
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -114,14 +124,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: Transform.translate(
-                    offset: const Offset(0, 0),
-                    child: Image.asset(
-                      'assets/police_logo.png',
-                      width: 120,
-                      height: 120,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.error, color: Colors.red),
-                    ),
+                  child: Image.asset(
+                    'assets/police_logo.png',
+                    width: 120,
+                    height: 120,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.error, color: Colors.red),
                   ),
                 ),
               ],
@@ -144,7 +152,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text(
                       'Login',
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.black),
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -153,7 +165,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: _inputDecoration('Email', Icons.email),
-                      validator: (v) => v!.isEmpty || !v.contains('@') ? 'Enter valid email' : null,
+                      validator: (v) =>
+                          v!.isEmpty || !v.contains('@') ? 'Enter valid email' : null,
                     ),
                     const SizedBox(height: 20),
 
@@ -163,8 +176,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       obscureText: _obscureText,
                       decoration: _inputDecoration('Password', Icons.lock).copyWith(
                         suffixIcon: IconButton(
-                          icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off, color: Colors.black),
-                          onPressed: () => setState(() => _obscureText = !_obscureText),
+                          icon: Icon(
+                            _obscureText
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.black,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscureText = !_obscureText),
                         ),
                       ),
                       validator: (v) => v!.isEmpty ? 'Enter password' : null,
@@ -180,7 +199,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: const Text(
                           'Forget Password?',
-                          style: TextStyle(color: orange, fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: orange,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),
@@ -194,21 +217,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: orange,
                           padding: const EdgeInsets.symmetric(vertical: 20),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 5,
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
                                 'Login',
-                                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700, color: Colors.white),
+                                style: TextStyle(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
                               ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-
-                    // GOOGLE BUTTON (NOW UNCOMMENTED & WORKING)
-                    
                     const SizedBox(height: 24),
 
                     // REGISTER + PHONE
@@ -217,12 +242,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         Wrap(
                           alignment: WrapAlignment.center,
                           children: [
-                            const Text("Don't have an account? ", style: TextStyle(fontSize: 14, color: Colors.black)),
+                            const Text(
+                              "Don't have an account? ",
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.black),
+                            ),
                             GestureDetector(
                               onTap: () => context.go('/signup'),
                               child: const Text(
                                 'Register',
-                                style: TextStyle(fontSize: 18, color: orange, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: orange,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -231,9 +264,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         Center(
                           child: RichText(
                             text: TextSpan(
-                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                  fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
-                                const TextSpan(text: 'Login with ', style: TextStyle(color: Colors.black)),
+                                const TextSpan(
+                                  text: 'Login with ',
+                                  style: TextStyle(color: Colors.black),
+                                ),
                                 WidgetSpan(
                                   child: GestureDetector(
                                     onTap: () => context.go('/phone-login'),
@@ -267,15 +304,25 @@ class _LoginScreenState extends State<LoginScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
+      labelStyle: const TextStyle(
+          fontSize: 18, color: Colors.black, fontWeight: FontWeight.w500),
       filled: true,
       fillColor: Colors.white,
       prefixIcon: Icon(icon, color: Colors.black),
-      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 2)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 2)),
+      contentPadding:
+          const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[300]!)),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.black, width: 2)),
+      errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2)),
     );
   }
 

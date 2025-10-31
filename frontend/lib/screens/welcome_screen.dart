@@ -6,12 +6,12 @@ class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
+  // For animation
   double _logoScale = 1.0;
-  static const Color orange = Color(0xFFFC633C);
 
   @override
   Widget build(BuildContext context) {
