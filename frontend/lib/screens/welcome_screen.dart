@@ -1,4 +1,3 @@
-// screens/welcome_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -7,12 +6,12 @@ class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
+  // For animation
   double _logoScale = 1.0;
-  static const Color orange = Color(0xFFFC633C);
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +21,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // TOP SVG BACKGROUND
+          // ── TOP SVG BACKGROUND ──
           SizedBox(
             height: screenHeight * 0.4,
             width: double.infinity,
@@ -32,7 +31,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ),
 
-          // LOGO WITH GLOW + ANIMATION
+          // ── ENHANCED LOGO WITH GLOW + SHADOW + ANIMATION ──
           Transform.translate(
             offset: const Offset(0, -75),
             child: GestureDetector(
@@ -49,10 +48,23 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
-                    border: Border.all(color: orange.withOpacity(0.6), width: 4),
+                    border: Border.all(
+                      color: const Color(0xFFFC633C).withOpacity(0.6),
+                      width: 4,
+                    ),
                     boxShadow: [
-                      BoxShadow(color: orange.withOpacity(0.25), blurRadius: 20, spreadRadius: 8, offset: const Offset(0, 6)),
-                      BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 25, spreadRadius: 3, offset: const Offset(0, 10)),
+                      BoxShadow(
+                        color: const Color(0xFFFC633C).withOpacity(0.25),
+                        blurRadius: 20,
+                        spreadRadius: 8,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 25,
+                        spreadRadius: 3,
+                        offset: const Offset(0, 10),
+                      ),
                     ],
                   ),
                   child: Center(
@@ -61,7 +73,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       width: 100,
                       height: 100,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.error, color: Colors.red, size: 50),
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.error, color: Colors.red, size: 50);
+                      },
                     ),
                   ),
                 ),
@@ -69,7 +83,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             ),
           ),
 
-          // CONTENT
+          // ── CONTENT BELOW (unchanged) ──
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -78,14 +92,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     "Dharma Portal",
-                    style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.black, letterSpacing: 1.5, height: 1.2),
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      letterSpacing: 1.5,
+                      height: 1.2,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     "Digital hub for Andhra Pradesh police records, management and analytics",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 17, color: Colors.black87, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: Colors.black87,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 40),
                   SizedBox(
@@ -93,22 +117,41 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     child: ElevatedButton(
                       onPressed: () => _showLoginPopup(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: orange,
+                        backgroundColor: const Color(0xFFFC633C),
                         padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 8,
                       ),
-                      child: const Text("Login", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: const Text(
+                        "Login",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account? ", style: TextStyle(fontSize: 18, color: Colors.black)),
+                      const Text(
+                        "Don't have an account? ",
+                        style: TextStyle(fontSize: 18, color: Colors.black),
+                      ),
                       GestureDetector(
                         onTap: () => _showRegisterPopup(context),
-                        child: const Text("Register", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: orange)),
+                        child: const Text(
+                          "Register",
+                          style: TextStyle(
+                            fontSize: 23,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFC633C),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -122,7 +165,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // LOGIN POPUP
+  // ── POPUP METHODS (unchanged) ──
   void _showLoginPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -134,7 +177,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Login as", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text(
+                "Login as",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
@@ -142,7 +188,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   context.go('/login', extra: {'userType': 'citizen'});
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: orange,
+                  backgroundColor: const Color(0xFFFC633C),
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -155,7 +201,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   context.go('/login', extra: {'userType': 'police'});
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: orange,
+                  backgroundColor: const Color(0xFFFC633C),
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -168,7 +214,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // REGISTER POPUP
   void _showRegisterPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -180,7 +225,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Register as", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text(
+                "Register as",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
@@ -188,7 +236,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   context.go('/signup', extra: {'userType': 'citizen'});
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: orange,
+                  backgroundColor: const Color(0xFFFC633C),
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),

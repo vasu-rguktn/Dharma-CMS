@@ -465,40 +465,89 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   bool _isExtracting = false;
   Map<String, dynamic>? _ocrResult;
   final Dio _dio = Dio();
-  String _ocrEndpoint = 'http://localhost:8000/api/ocr/extract';
+  String _ocrEndpoint = '';
+  List<String> _ocrEndpointFallbacks = <String>[];
 
   @override
   void initState() {
     super.initState();
-    // Resolve backend base URL per platform (Android emulator uses 10.0.2.2 for host loopback)
-    final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-    String baseUrl;
+    _initBackend();
+  }
+
+  Future<void> _initBackend() async {
+    // Build candidate base URLs
+    final List<String> candidates = <String>[];
+
+    // 1) From .env (if present)
+    // (Optional) You can add flutter_dotenv support here if needed.
+
+    // 2) Web origin (prefer backend dev port first to avoid probing http://localhost/)
     if (kIsWeb) {
       final Uri u = Uri.base; // current page URL
       final String scheme = u.scheme.isNotEmpty ? u.scheme : 'http';
       final String host = (u.host.isNotEmpty ? u.host : 'localhost');
-      baseUrl = '$scheme://$host:8000';
-    } else if (isAndroid) {
-      baseUrl = 'http://10.0.2.2:8000';
-    } else {
-      baseUrl = 'http://localhost:8000';
+      // Prefer explicit backend port first
+      candidates.add('$scheme://$host:8000');
+      // Then try same-origin without port
+      candidates.add('$scheme://$host');
     }
-    _ocrEndpoint = '$baseUrl/api/ocr/extract';
+
+    // 3) Android emulator loopback (default HTTP port)
+    final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (isAndroid) {
+      candidates.add('http://10.0.2.2:8000');
+      candidates.add('http://10.0.2.2');
+    }
+
+    // 4) Localhost (desktop/iOS) — prefer :8000 first
+    candidates.add('http://localhost:8000');
+    candidates.add('http://localhost');
+
+    // Probe each candidate for health
+    String? resolved;
+    for (final String base in candidates) {
+      if (await _isBackendHealthy(base)) {
+        resolved = base;
+        break;
+      }
+    }
+
+    // Fallback to first candidate if none healthy (lets the request still try)
+    resolved ??= candidates.first;
+    setState(() {
+      _ocrEndpoint = '$resolved/api/ocr/extract';
+      _ocrEndpointFallbacks = <String>[
+        '$resolved/api/ocr/extract-case/',
+        '$resolved/extract-case/',
+      ];
+    });
   }
 
-  Future<void> _checkBackendHealth(String baseUrl) async {
+  Future<bool> _isBackendHealthy(String baseUrl) async {
     try {
-      await _dio.get(
-        '$baseUrl/api/health',
-        options: Options(
-          receiveTimeout: const Duration(seconds: 5),
-          sendTimeout: const Duration(seconds: 5),
-          validateStatus: (code) => true,
-        ),
-      );
-    } catch (e) {
-      rethrow;
-    }
+      // Probe likely-existing paths, most specific first
+      final List<String> healthPaths = <String>[
+        '/api/ocr/health', // OCR router health if mounted
+        '/api/health',     // global health if available
+        '/ocr/health',     // legacy alias
+        '/',               // root
+        '/Root',           // alias in backend
+      ];
+      for (final String p in healthPaths) {
+        final resp = await _dio.get(
+          '$baseUrl$p',
+          options: Options(
+            receiveTimeout: const Duration(seconds: 3),
+            sendTimeout: const Duration(seconds: 3),
+            validateStatus: (_) => true,
+          ),
+        );
+        if (resp.statusCode != null && resp.statusCode! >= 200 && resp.statusCode! < 400) {
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   @override
@@ -601,9 +650,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save documents locally: $e')),
-      );
+      // Suppressed: Failed to save documents locally
+      // Do nothing, error is intentionally hidden from the user
     }
 
     // Create petition (does not store upload details in Firestore)
@@ -656,6 +704,22 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     );
 
     try {
+      // Ensure backend endpoint is resolved before attempting upload
+      if (_ocrEndpoint.isEmpty) {
+        await _initBackend();
+      }
+      if (_ocrEndpoint.isEmpty) {
+        throw Exception('OCR service not available');
+      }
+      // Client-side basic validation
+      final int sizeBytes = file.size;
+      if (sizeBytes <= 0) {
+        throw Exception('Selected file is empty');
+      }
+      if (sizeBytes > 5 * 1024 * 1024) {
+        throw Exception('File too large (max 5MB)');
+      }
+
       MultipartFile mFile;
       if (file.bytes != null) {
         mFile = MultipartFile.fromBytes(
@@ -671,22 +735,40 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         throw Exception('File content unavailable');
       }
 
-      // Quick health check to avoid long timeouts with misconfigured URL
-      final String baseUrl = _ocrEndpoint.replaceFirst('/api/ocr/extract', '');
-      await _checkBackendHealth(baseUrl);
+      // Removed unused baseUrl variable; endpoint is already resolved
 
       final formData = FormData.fromMap({ 'file': mFile });
-      final response = await _dio.post(
-        _ocrEndpoint,
-        data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-          receiveTimeout: const Duration(seconds: 60),
-          sendTimeout: const Duration(seconds: 60),
-          followRedirects: false,
-          validateStatus: (code) => code != null && code >= 200 && code < 400,
-        ),
-      );
+
+      // Try primary endpoint then fallbacks if needed
+      Response? response;
+      final List<String> allEndpoints = <String>[_ocrEndpoint, ..._ocrEndpointFallbacks];
+      DioException? lastDioError;
+      for (final String endpoint in allEndpoints) {
+        try {
+          response = await _dio.post(
+            endpoint,
+            data: formData,
+            options: Options(
+              receiveTimeout: const Duration(seconds: 60),
+              sendTimeout: const Duration(seconds: 60),
+              followRedirects: false,
+              validateStatus: (code) => code != null && code >= 200 && code < 400,
+            ),
+          );
+          break; // success
+        } on DioException catch (e) {
+          lastDioError = e;
+          // If 404, try next endpoint; if network, re-init and retry once per endpoint
+          final int? sc = e.response?.statusCode;
+          if (sc == null) {
+            await _initBackend();
+          }
+          continue;
+        }
+      }
+      if (response == null) {
+        throw lastDioError ?? Exception('OCR request failed');
+      }
 
       final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
       final String extracted = (data['text'] as String?)?.trim() ?? '';
@@ -702,8 +784,16 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         );
       }
     } catch (e) {
+      String msg = 'OCR failed';
+      if (e is DioException) {
+        final int? sc = e.response?.statusCode;
+        final dynamic body = e.response?.data;
+        msg = 'OCR failed (${sc ?? 'network'}): ${body is String ? body : body?['detail'] ?? e.message}';
+      } else if (e is Exception) {
+        msg = 'OCR failed: ${e.toString()}';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('OCR failed: $e')),
+        SnackBar(content: Text(msg)),
       );
     } finally {
       if (mounted) setState(() { _isExtracting = false; });
@@ -787,7 +877,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     ),
                     const SizedBox(height: 16),
                     if (caseProvider.cases.isNotEmpty)
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<String?>(
                         value: _selectedCaseId,
                         decoration: const InputDecoration(
                           labelText: 'Link to Case (Optional)',
@@ -795,12 +885,12 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         ),
                         isExpanded: true,
                         items: [
-                          const DropdownMenuItem(
+                          const DropdownMenuItem<String?>(
                             value: null,
                             child: Text('No case linked'),
                           ),
                           ...caseProvider.cases.map((caseDoc) {
-                            return DropdownMenuItem(
+                            return DropdownMenuItem<String?>(
                               value: caseDoc.id,
                               child: Text('${caseDoc.firNumber} - ${caseDoc.title}'),
                             );

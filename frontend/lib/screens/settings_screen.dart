@@ -6,9 +6,6 @@ import 'package:go_router/go_router.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  // Primary Orange Color (#FC633C)
-  static const Color primaryOrange = Color(0xFFFC633C);
-
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -23,7 +20,6 @@ class SettingsScreen extends StatelessWidget {
             'Settings',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: primaryOrange, // Orange title
             ),
           ),
           const SizedBox(height: 24),
@@ -39,24 +35,22 @@ class SettingsScreen extends StatelessWidget {
                     'Profile Information',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: primaryOrange, // Orange heading
                     ),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
                     leading: CircleAvatar(
                       radius: 30,
-                      backgroundColor: primaryOrange, // Orange avatar
                       child: Text(
                         (user?.displayName ?? 'U')[0].toUpperCase(),
-                        style: const TextStyle(fontSize: 24, color: Colors.white),
+                        style: const TextStyle(fontSize: 24),
                       ),
                     ),
                     title: Text(
                       user?.displayName ?? 'User',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text(user?.email ?? '', style: TextStyle(color: Colors.grey[600])),
+                    subtitle: Text(user?.email ?? ''),
                   ),
                 ],
               ),
@@ -69,11 +63,10 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: Icon(Icons.notifications, color: primaryOrange),
+                  leading: const Icon(Icons.notifications),
                   title: const Text('Notifications'),
                   trailing: Switch(
                     value: true,
-                    activeColor: primaryOrange,
                     onChanged: (value) {
                       // Handle notification toggle
                     },
@@ -81,11 +74,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.dark_mode, color: primaryOrange),
+                  leading: const Icon(Icons.dark_mode),
                   title: const Text('Dark Mode'),
                   trailing: Switch(
                     value: false,
-                    activeColor: primaryOrange,
                     onChanged: (value) {
                       // Handle theme toggle
                     },
@@ -93,10 +85,10 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.language, color: primaryOrange),
+                  leading: const Icon(Icons.language),
                   title: const Text('Language'),
                   subtitle: const Text('English'),
-                  trailing: Icon(Icons.chevron_right, color: primaryOrange),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     // Handle language selection
                   },
@@ -111,19 +103,18 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: Icon(Icons.info, color: primaryOrange),
+                  leading: const Icon(Icons.info),
                   title: const Text('About'),
-                  trailing: Icon(Icons.chevron_right, color: primaryOrange),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     showAboutDialog(
                       context: context,
                       applicationName: 'Dharma',
                       applicationVersion: '1.0.0',
-                      applicationIcon: Icon(Icons.balance, size: 48, color: primaryOrange),
+                      applicationIcon: const Icon(Icons.balance, size: 48),
                       children: [
-                        Text(
+                        const Text(
                           'Legal assistance platform powered by AI technology.',
-                          style: TextStyle(color: Colors.grey[700]),
                         ),
                       ],
                     );
@@ -131,18 +122,18 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.privacy_tip, color: primaryOrange),
+                  leading: const Icon(Icons.privacy_tip),
                   title: const Text('Privacy Policy'),
-                  trailing: Icon(Icons.chevron_right, color: primaryOrange),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     // Handle privacy policy
                   },
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.description, color: primaryOrange),
+                  leading: const Icon(Icons.description),
                   title: const Text('Terms of Service'),
-                  trailing: Icon(Icons.chevron_right, color: primaryOrange),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     // Handle terms of service
                   },
@@ -154,31 +145,33 @@ class SettingsScreen extends StatelessWidget {
 
           // Logout Button
           Card(
-            color: primaryOrange.withOpacity(0.1), // Light orange background
+            color: Colors.red[50],
             child: ListTile(
-              leading: Icon(Icons.logout, color: primaryOrange),
-              title: Text(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
                 'Sign Out',
-                style: TextStyle(color: primaryOrange, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: Text('Sign Out', style: TextStyle(color: primaryOrange)),
+                    title: const Text('Sign Out'),
                     content: const Text('Are you sure you want to sign out?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text('Cancel', style: TextStyle(color: primaryOrange)),
+                        child: const Text('Cancel'),
                       ),
                       TextButton(
                         onPressed: () {
                           authProvider.signOut();
                           context.go('/login');
                         },
-                        style: TextButton.styleFrom(foregroundColor: primaryOrange),
-                        child: const Text('Sign Out'),
+                        child: const Text(
+                          'Sign Out',
+                          style: TextStyle(color: Colors.red),
+                        ),
                       ),
                     ],
                   ),
