@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/providers/settings_provider.dart';
+import 'package:Dharma/widgets/language_selection_dialog.dart';
+
+
+
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -13,14 +20,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // For animation
   double _logoScale = 1.0;
 
+
+
+  @override
+  void initState() {
+    super.initState();
+    // Show language selection on first load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      if (settings.locale == null) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const LanguageSelectionDialog(),
+        );
+      }
+    });
+  }
+
   // Define orange color here
   static const Color orange = Color(0xFFFC633C);
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final size = MediaQuery.of(context).size;
     final double topImageHeight = size.height * 0.4; // covers ~40% of screen
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -110,9 +135,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 32.0),
                           child: Column(
                             children: [
-                              const Text(
-                                "Dharma Portal",
-                                style: TextStyle(
+                            Text(
+                              localizations?.dharmaPortal ?? "Dharma Portal",
+                                style: const TextStyle(
                                   fontSize: 44,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,
@@ -122,10 +147,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 16),
-                              const Text(
-                                "Digital hub for Andhra Pradesh police records, management and analytics",
+                              Text(
+                                localizations?.welcomeDescription ?? "Digital hub for Andhra Pradesh police records, management and analytics",
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 17,
                                   color: Colors.black87,
                                   height: 1.5,
@@ -144,8 +169,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                     ),
                                     elevation: 8,
                                   ),
-                                  child: const Text(
-                                    "Login",
+                                  child: Text(
+                                    // localizations?.dharmaPortal ?? "Dharma Portal"
+                                    localizations?.login ?? "Login",
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
@@ -158,15 +184,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text(
-                                    "Don't have an account? ",
-                                    style: TextStyle(fontSize: 18, color: Colors.black),
+                                  Text(
+                                    localizations?.dontHaveAccount ?? "Don't have an account? ",
+                                    style: const TextStyle(fontSize: 18, color: Colors.black),
                                   ),
                                   GestureDetector(
                                     onTap: () => _showRegisterPopup(context),
-                                    child: const Text(
-                                      "Register",
-                                      style: TextStyle(
+                                    child: Text(
+                                      localizations?.register ?? "Register",
+                                      style: const TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
                                         color: orange,
@@ -175,7 +201,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 40),
+                              
+
+                               const SizedBox(height: 20),
+                              // Language Selection Button
+                              TextButton.icon(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => const LanguageSelectionDialog(),
+                                  );
+                                },
+                                icon: const Icon(Icons.language, color: orange),
+                                label: Text(
+                                  localizations?.language ?? "Language / భాష", // Localized
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: orange,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            
                             ],
                           ),
                         ),
@@ -193,6 +240,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   // Login Popup
   void _showLoginPopup(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -205,13 +253,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Login as",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                localizations.loginAs ?? "Login as",
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               _buildDialogButton(
-                label: "Citizen",
+                label: localizations?.citizen??"Citizen",
                 onPressed: () {
                   Navigator.pop(context);
                   context.go('/login', extra: {'userType': 'citizen'});
@@ -219,7 +267,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
               const SizedBox(height: 12),
               _buildDialogButton(
-                label: "Police",
+                label: localizations?.police??"Police",
                 onPressed: () {
                   Navigator.pop(context);
                   context.go('/login', extra: {'userType': 'police'});
