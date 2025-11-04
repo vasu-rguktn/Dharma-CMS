@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
+import 'package:Dharma/l10n/app_localizations.dart'; 
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -102,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -119,6 +121,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   fit: BoxFit.fill,
                   width: double.infinity,
                   height: screenHeight * 0.3,
+                ),
+                // Back button positioned on top-left of the header SVG
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () async {
+                        // Try to pop the Navigator stack first. If there's nothing to pop
+                        // (for example this page was reached with a replacement navigation),
+                        // fall back to navigating to a safe default route ('/').
+                        final popped = await Navigator.of(context).maybePop();
+                        if (!popped) {
+                          // Use GoRouter to navigate to a fallback route.
+                          // Adjust '/' to another route if you prefer a different fallback.
+                          if (mounted) context.go('/');
+                        }
+                      },
+                      tooltip: 'Back',
+                    ),
+                  ),
                 ),
                 Positioned(
                   left: 0,
@@ -150,9 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    const Text(
-                      'Login',
-                      style: TextStyle(
+                    Text(
+                      localizations ?.login ??'Login',
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
@@ -164,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: _inputDecoration('Email', Icons.email),
+                      decoration: _inputDecoration(localizations?.email??'Email', Icons.email),
                       validator: (v) =>
                           v!.isEmpty || !v.contains('@') ? 'Enter valid email' : null,
                     ),
@@ -174,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscureText,
-                      decoration: _inputDecoration('Password', Icons.lock).copyWith(
+                      decoration: _inputDecoration(localizations?.password ??'Password', Icons.lock).copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureText
@@ -197,9 +221,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Forgot password clicked')),
                         ),
-                        child: const Text(
-                          'Forget Password?',
-                          style: TextStyle(
+                        child:  Text(
+                          localizations?.forgotPassword ??'Forget Password?',
+                          style: const TextStyle(
                             color: orange,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -224,9 +248,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text(
-                                'Login',
-                                style: TextStyle(
+                            : Text(
+                                localizations?.login??'Login',
+                                style: const TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -242,16 +266,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         Wrap(
                           alignment: WrapAlignment.center,
                           children: [
-                            const Text(
-                              "Don't have an account? ",
-                              style: TextStyle(
+                            Text(
+                              localizations?.dontHaveAccount??"Don't have an account? ",
+                              style: const TextStyle(
                                   fontSize: 14, color: Colors.black),
                             ),
                             GestureDetector(
                               onTap: () => context.go('/signup'),
-                              child: const Text(
-                                'Register',
-                                style: TextStyle(
+                              child: Text(
+                                localizations?.register ?? 'Register',
+                                style: const TextStyle(
                                   fontSize: 18,
                                   color: orange,
                                   fontWeight: FontWeight.w700,
@@ -267,16 +291,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: const TextStyle(
                                   fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
-                                const TextSpan(
-                                  text: 'Login with ',
+                               const TextSpan(
+                                  text: "Login with",
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 WidgetSpan(
                                   child: GestureDetector(
                                     onTap: () => context.go('/phone-login'),
-                                    child: const Text(
-                                      'Phone Number',
-                                      style: TextStyle(
+                                    child: Text(
+                                      localizations?.phoneNumber??'Phone Number',
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         color: orange,
                                         fontWeight: FontWeight.w700,

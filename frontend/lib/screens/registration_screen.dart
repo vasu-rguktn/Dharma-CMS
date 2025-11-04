@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart'; // Add this for date formatting
 
+import 'package:Dharma/l10n/app_localizations.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -17,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
   String _gender = 'Male';
+  bool _prefilledFromArgs = false;
 
   // Function to show the date picker
   Future<void> _selectDate(BuildContext context) async {
@@ -52,6 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _submitForm() {
+    final localizations = AppLocalizations.of(context);
     if (_formKey.currentState!.validate()) {
       final personalData = {
         'name': _nameController.text.trim(),
@@ -73,15 +76,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else {
       debugPrint('Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields correctly')),
+        SnackBar(content: Text(localizations?.fillFieldsCorrectly ?? 'Please fill all fields correctly')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // If this screen is opened with `extra: {'personal': ...}` we prefill the
+    // controllers once so when user navigates back from the address step their
+    // previously entered values are restored.
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+    final personal = args?['personal'] as Map<String, dynamic>?;
+    if (!_prefilledFromArgs && personal != null) {
+      _nameController.text = personal['name'] ?? _nameController.text;
+      _emailController.text = personal['email'] ?? _emailController.text;
+      _phoneController.text = personal['phone'] ?? _phoneController.text;
+      _dobController.text = personal['dob'] ?? _dobController.text;
+      _gender = personal['gender'] ?? _gender;
+      _prefilledFromArgs = true;
+    }
     final screenHeight = MediaQuery.of(context).size.height;
-
+    final localizations=AppLocalizations.of(context);
     return Scaffold(
       body: Column(
         children: [
@@ -97,6 +113,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fit: BoxFit.fill,
                   width: double.infinity,
                   height: screenHeight * 0.3,
+                ),
+                // Back button positioned on top-left of the header SVG
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () async {
+                        final popped = await Navigator.of(context).maybePop();
+                        if (!popped) {
+                          if (mounted) context.go('/');
+                        }
+                      },
+                      tooltip: 'Back',
+                    ),
+                  ),
                 ),
                 Positioned(
                   left: 0,
@@ -138,9 +171,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Register',
-                      style: TextStyle(
+                    Text(
+                      localizations?.register??'Register',
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
@@ -152,7 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'Full Name',
+                        labelText: localizations?.fullName ?? 'Full Name',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -190,10 +223,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your name';
+                          return localizations?.pleaseEnterName ?? 'Please enter your name';
                         }
                         if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
-                          return 'Name can only contain letters and spaces';
+                          return localizations?.nameOnlyLetters ?? 'Name can only contain letters and spaces';
                         }
                         return null;
                       },
@@ -203,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _emailController,
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: localizations?.email ?? 'Email',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -242,10 +275,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
+                          return localizations?.pleaseEnterEmail ?? 'Please enter your email';
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Please enter a valid email';
+                          return localizations?.pleaseEnterValidEmail ?? 'Please enter a valid email';
                         }
                         return null;
                       },
@@ -255,7 +288,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _phoneController,
                       decoration: InputDecoration(
-                        labelText: 'Phone',
+                        labelText: localizations?.phone ?? 'Phone',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -294,10 +327,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your phone number';
+                          return localizations?.pleaseEnterPhone ?? 'Please enter your phone number';
                         }
                         if (!RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(value)) {
-                          return 'Please enter a valid phone number';
+                          return localizations?.pleaseEnterValidPhone ?? 'Please enter a valid phone number';
                         }
                         return null;
                       },
@@ -308,7 +341,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _dobController,
                       readOnly: true, // Prevent manual text input
                       decoration: InputDecoration(
-                        labelText: 'Date of Birth (YYYY-MM-DD)',
+                        labelText: localizations?.dateOfBirth ?? 'Date of Birth (YYYY-MM-DD)',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -347,10 +380,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onTap: () => _selectDate(context), // Show date picker on tap
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please select your date of birth';
+                          return localizations?.pleaseSelectDOB ?? 'Please select your date of birth';
                         }
                         if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
-                          return 'Enter date in YYYY-MM-DD format';
+                          return localizations?.enterValidDateFormat ?? 'Enter date in YYYY-MM-DD format';
                         }
                         return null;
                       },
@@ -359,16 +392,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Gender Dropdown
                     DropdownButtonFormField<String>(
                       value: _gender,
-                      items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(value: 'Female', child: Text('Female')),
-                        DropdownMenuItem(value: 'Other', child: Text('Other')),
+                      items: [
+                        DropdownMenuItem(value: 'Male', child: Text(localizations?.male ?? 'Male')),
+                        DropdownMenuItem(value: 'Female', child: Text(localizations?.female ?? 'Female')),
+                        DropdownMenuItem(value: 'Other', child: Text(localizations?.other ?? 'Other')),
                       ],
                       onChanged: (value) {
                         setState(() => _gender = value!);
                       },
                       decoration: InputDecoration(
-                        labelText: 'Gender',
+                        labelText: localizations?.gender ?? 'Gender',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -406,7 +439,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null) {
-                          return 'Please select your gender';
+                          return localizations?.pleaseSelectGender ?? 'Please select your gender';
                         }
                         return null;
                       },
@@ -425,8 +458,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           elevation: 5,
                         ),
-                        child: const Text(
-                          'Next',
+                        child: Text(
+                          localizations?.next ?? 'Next',
                           style: TextStyle(
                             fontSize: 25,
                             fontWeight: FontWeight.w700,

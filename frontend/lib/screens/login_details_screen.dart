@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class LoginDetailsScreen extends StatefulWidget {
   const LoginDetailsScreen({super.key});
@@ -25,12 +26,13 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
     debugPrint('🔥 SUBMIT FORM CALLED');
     debugPrint('📧 personalData: $personalData');
     debugPrint('🏠 addressData: $addressData');
+    final localizations = AppLocalizations.of(context);
 
     if (personalData == null || addressData == null) {
       debugPrint('❌ Missing personal or address data');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: Required data not provided'),
+        SnackBar(
+          content: Text(localizations?.dataNotProvided ?? 'Error: Required data not provided'),
           backgroundColor: Colors.red,
         ),
       );
@@ -67,9 +69,9 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
         if (userCredential == null || userCredential.user == null) {
           debugPrint('❌ UserCredential or user is null');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: Failed to create user'),
-              backgroundColor: Colors.red,
+            SnackBar(
+            content: Text(localizations?.failedToCreateUser ?? 'Error: Failed to create user'),
+            backgroundColor: Colors.red,
             ),
           );
           return;
@@ -96,8 +98,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
 
         debugPrint('✅ Profile created successfully');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful!'),
+          SnackBar(
+            content: Text(localizations?.registrationSuccessful ?? 'Registration successful!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -129,8 +131,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
       } catch (e, stackTrace) {
         debugPrint('❌ Unexpected error: $e\nStackTrace: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('An unexpected error occurred.'),
+          SnackBar(
+            content: Text(localizations?.unexpectedError ?? 'An unexpected error occurred.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -142,8 +144,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
     } else {
       debugPrint('❌ FORM VALIDATION FAILED');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fix the errors in the form'),
+        SnackBar(
+          content: Text(localizations?.fixFormErrors ?? 'Please fix the errors in the form'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -165,6 +167,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final localizations = AppLocalizations.of(context);
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final personalData = args?['personal'] as Map<String, dynamic>?;
     final addressData = args?['address'] as Map<String, dynamic>?;
@@ -225,9 +228,9 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Login Details',
-                      style: TextStyle(
+                    Text(
+                      localizations?.loginDetails ?? 'Login Details',
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
@@ -239,8 +242,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       controller: _usernameController,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       decoration: InputDecoration(
-                        labelText: 'Username *',
-                        hintText: 'Enter username (min 4 characters)',
+                        labelText: localizations?.username ?? 'Username *',
+                        hintText: localizations?.enterUsername ?? 'Enter username (min 4 characters)',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -284,11 +287,11 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                         debugPrint('🔍 Validating username: "$value"');
                         if (value == null || value.trim().isEmpty) {
                           debugPrint('❌ Username is empty');
-                          return 'Enter username';
+                          return localizations?.usernameEmpty ?? 'Enter username';
                         }
                         if (value.trim().length < 4) {
                           debugPrint('❌ Username too short: ${value.trim().length}');
-                          return 'Username must be at least 4 characters';
+                          return localizations?.usernameMinLength ?? 'Username must be at least 4 characters';
                         }
                         debugPrint('✅ Username valid');
                         return null;
@@ -300,8 +303,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       obscureText: _obscurePassword,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       decoration: InputDecoration(
-                        labelText: 'Password *',
-                        hintText: 'Enter password (min 6 characters)',
+                        labelText: localizations?.password ?? 'Password *',
+                        hintText: localizations?.enterPassword ?? 'Enter password (min 6 characters)',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -352,11 +355,11 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                         debugPrint('🔍 Validating password: "$value"');
                         if (value == null || value.trim().isEmpty) {
                           debugPrint('❌ Password is empty');
-                          return 'Enter password';
+                          return localizations?.passwordEmpty ?? 'Enter password';
                         }
                         if (value.length < 6) {
                           debugPrint('❌ Password too short: ${value.length}');
-                          return 'Password must be at least 6 characters';
+                          return localizations?.passwordMinLength ?? 'Password must be at least 6 characters';
                         }
                         debugPrint('✅ Password valid');
                         return null;
@@ -368,8 +371,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       obscureText: _obscureConfirm,
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       decoration: InputDecoration(
-                        labelText: 'Confirm Password *',
-                        hintText: 'Re-enter password',
+                        labelText: localizations?.confirmPassword ?? 'Confirm Password *',
+                        hintText: localizations?.reenterPassword ?? 'Re-enter password',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -420,45 +423,75 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                         debugPrint('🔍 Validating confirm password: "$value"');
                         if (value == null || value.trim().isEmpty) {
                           debugPrint('❌ Confirm password is empty');
-                          return 'Confirm your password';
+                          return localizations?.confirmPasswordEmpty ?? 'Confirm your password';
                         }
                         if (value != _passwordController.text) {
                           debugPrint('❌ Confirm password does not match');
-                          return 'Passwords do not match';
+                          return localizations?.passwordsDoNotMatch ?? 'Passwords do not match';
                         }
                         debugPrint('✅ Confirm password valid');
                         return null;
                       },
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => _submitForm(personalData, addressData),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          backgroundColor: const Color(0xFFFC633C),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 5,
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text(
-                                'Next',
-                                style: TextStyle(
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              try {
+                                context.go('/address', extra: {
+                                  'personal': personalData,
+                                  'address': addressData
+                                });
+                              } catch (e) {
+                                debugPrint('Navigation error: $e');
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                      ),
+                            ),
+                            child: Text(
+                              localizations?.previous ?? 'Previous',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : () => _submitForm(personalData, addressData),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              backgroundColor: const Color(0xFFFC633C),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 5,
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : Text(
+                                    localizations?.next ?? 'Next',
+                                    style: const TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
+    
             ),
           ),
         ],
