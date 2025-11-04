@@ -1,3 +1,4 @@
+// lib/providers/petition_provider.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/models/petition.dart';
@@ -6,10 +7,13 @@ class PetitionProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Petition> _petitions = [];
   bool _isLoading = false;
+  int _petitionCount = 0; // Total petitions in system (for police)
 
   List<Petition> get petitions => _petitions;
   bool get isLoading => _isLoading;
+  int get petitionCount => _petitionCount; // Getter for police dashboard
 
+  // Fetch user's own petitions
   Future<void> fetchPetitions(String userId) async {
     _isLoading = true;
     notifyListeners();
@@ -32,9 +36,22 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 
+  // Fetch total petition count (for police dashboard)
+  Future<void> fetchPetitionCount() async {
+    try {
+      final snapshot = await _firestore.collection('petitions').get();
+      _petitionCount = snapshot.size;
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching petition count: $e');
+    }
+  }
+
+  // Create new petition
   Future<bool> createPetition(Petition petition) async {
     try {
       await _firestore.collection('petitions').add(petition.toMap());
+      await fetchPetitionCount(); // Keep count updated
       notifyListeners();
       return true;
     } catch (e) {
@@ -43,10 +60,12 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 
+  // Update petition
   Future<bool> updatePetition(String petitionId, Map<String, dynamic> updates) async {
     try {
       updates['updatedAt'] = FieldValue.serverTimestamp();
       await _firestore.collection('petitions').doc(petitionId).update(updates);
+      await fetchPetitionCount();
       notifyListeners();
       return true;
     } catch (e) {
@@ -55,10 +74,12 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 
+  // Delete petition
   Future<bool> deletePetition(String petitionId) async {
     try {
       await _firestore.collection('petitions').doc(petitionId).delete();
       _petitions.removeWhere((p) => p.id == petitionId);
+      await fetchPetitionCount();
       notifyListeners();
       return true;
     } catch (e) {
