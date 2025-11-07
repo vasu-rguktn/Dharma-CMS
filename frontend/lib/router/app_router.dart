@@ -23,7 +23,7 @@ import 'package:Dharma/screens/chargesheet_vetting_screen.dart';
 import 'package:Dharma/screens/witness_preparation_screen.dart';
 import 'package:Dharma/screens/media_analysis_screen.dart';
 import 'package:Dharma/screens/case_journal_screen.dart';
-import 'package:Dharma/screens/petitions/petitions_screen.dart';
+import 'package:Dharma/screens/petitions_screen.dart';
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
 import 'package:Dharma/screens/ai_legal_chat_screen.dart';
 import 'package:Dharma/screens/contact_officer_screen.dart';
