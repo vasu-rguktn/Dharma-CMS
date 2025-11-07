@@ -7,13 +7,12 @@ class PetitionProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Petition> _petitions = [];
   bool _isLoading = false;
-  int _petitionCount = 0; // Total petitions in system (for police)
+  int _petitionCount = 0;
 
   List<Petition> get petitions => _petitions;
   bool get isLoading => _isLoading;
-  int get petitionCount => _petitionCount; // Getter for police dashboard
+  int get petitionCount => _petitionCount;
 
-  // Fetch user's own petitions
   Future<void> fetchPetitions(String userId) async {
     _isLoading = true;
     notifyListeners();
@@ -29,38 +28,36 @@ class PetitionProvider with ChangeNotifier {
           .map((doc) => Petition.fromFirestore(doc))
           .toList();
     } catch (e) {
-      print('Error fetching petitions: $e');
+      debugPrint('Error fetching petitions: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Fetch total petition count (for police dashboard)
   Future<void> fetchPetitionCount() async {
     try {
       final snapshot = await _firestore.collection('petitions').get();
       _petitionCount = snapshot.size;
       notifyListeners();
     } catch (e) {
-      print('Error fetching petition count: $e');
+      debugPrint('Error fetching petition count: $e');
     }
   }
 
-  // Create new petition
   Future<bool> createPetition(Petition petition) async {
     try {
       await _firestore.collection('petitions').add(petition.toMap());
-      await fetchPetitionCount(); // Keep count updated
+      await fetchPetitions(petition.userId);
+      await fetchPetitionCount();
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error creating petition: $e');
+      debugPrint('Error creating petition: $e');
       return false;
     }
   }
 
-  // Update petition
   Future<bool> updatePetition(String petitionId, Map<String, dynamic> updates) async {
     try {
       updates['updatedAt'] = FieldValue.serverTimestamp();
@@ -69,12 +66,11 @@ class PetitionProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error updating petition: $e');
+      debugPrint('Error updating petition: $e');
       return false;
     }
   }
 
-  // Delete petition
   Future<bool> deletePetition(String petitionId) async {
     try {
       await _firestore.collection('petitions').doc(petitionId).delete();
@@ -83,7 +79,7 @@ class PetitionProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error deleting petition: $e');
+      debugPrint('Error deleting petition: $e');
       return false;
     }
   }
