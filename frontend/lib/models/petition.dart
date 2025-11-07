@@ -1,4 +1,9 @@
+// lib/models/petition.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+/// ---------------------------------------------------------------------------
+///  ENUMS (kept for backend compatibility, but not shown in UI)
+/// ---------------------------------------------------------------------------
 
 enum PetitionType {
   bail,
@@ -106,25 +111,29 @@ extension PetitionStatusExtension on PetitionStatus {
   }
 }
 
+/// ---------------------------------------------------------------------------
+///  PETITION MODEL (Minimal UI fields + Optional court fields)
+/// ---------------------------------------------------------------------------
+
 class Petition {
   final String? id;
   final String title;
-  final PetitionType type;
-  final PetitionStatus status;
-  final String? caseId; // Link to case if applicable
-  final String? firNumber;
+  final PetitionType type;        // default: other
+  final PetitionStatus status;    // default: draft
   final String petitionerName;
-  final String? respondentName;
-  final String courtName;
-  final String? caseNumber;
-  final String grounds; // Grounds/reasons for petition
-  final String? prayerRelief; // Relief sought
-  final String? supportingDocuments; // URLs or references
+  final String? phoneNumber;
+  final String? address;
+  final String grounds;
+  final String? prayerRelief;
+
+  // Optional court tracking fields (not in form, but shown in details)
+  final String? firNumber;
   final String? nextHearingDate;
   final String? filingDate;
   final String? orderDate;
   final String? orderDetails;
-  final String? extractedText; // Text extracted from uploaded documents
+
+  final String? extractedText;
   final String userId;
   final Timestamp createdAt;
   final Timestamp updatedAt;
@@ -132,17 +141,14 @@ class Petition {
   Petition({
     this.id,
     required this.title,
-    required this.type,
-    required this.status,
-    this.caseId,
-    this.firNumber,
+    this.type = PetitionType.other,
+    this.status = PetitionStatus.draft,
     required this.petitionerName,
-    this.respondentName,
-    required this.courtName,
-    this.caseNumber,
+    this.phoneNumber,
+    this.address,
     required this.grounds,
     this.prayerRelief,
-    this.supportingDocuments,
+    this.firNumber,
     this.nextHearingDate,
     this.filingDate,
     this.orderDate,
@@ -153,6 +159,7 @@ class Petition {
     required this.updatedAt,
   });
 
+  /// Firestore → Model
   factory Petition.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Petition(
@@ -160,15 +167,12 @@ class Petition {
       title: data['title'] ?? '',
       type: PetitionTypeExtension.fromString(data['type'] ?? 'other'),
       status: PetitionStatusExtension.fromString(data['status'] ?? 'draft'),
-      caseId: data['caseId'],
-      firNumber: data['firNumber'],
       petitionerName: data['petitionerName'] ?? '',
-      respondentName: data['respondentName'],
-      courtName: data['courtName'] ?? '',
-      caseNumber: data['caseNumber'],
+      phoneNumber: data['phoneNumber'],
+      address: data['address'],
       grounds: data['grounds'] ?? '',
       prayerRelief: data['prayerRelief'],
-      supportingDocuments: data['supportingDocuments'],
+      firNumber: data['firNumber'],
       nextHearingDate: data['nextHearingDate'],
       filingDate: data['filingDate'],
       orderDate: data['orderDate'],
@@ -180,20 +184,18 @@ class Petition {
     );
   }
 
+  /// Model → Firestore
   Map<String, dynamic> toMap() {
     return {
       'title': title,
       'type': type.displayName,
       'status': status.displayName,
-      if (caseId != null) 'caseId': caseId,
-      if (firNumber != null) 'firNumber': firNumber,
       'petitionerName': petitionerName,
-      if (respondentName != null) 'respondentName': respondentName,
-      'courtName': courtName,
-      if (caseNumber != null) 'caseNumber': caseNumber,
+      if (phoneNumber != null) 'phoneNumber': phoneNumber,
+      if (address != null) 'address': address,
       'grounds': grounds,
       if (prayerRelief != null) 'prayerRelief': prayerRelief,
-      if (supportingDocuments != null) 'supportingDocuments': supportingDocuments,
+      if (firNumber != null) 'firNumber': firNumber,
       if (nextHearingDate != null) 'nextHearingDate': nextHearingDate,
       if (filingDate != null) 'filingDate': filingDate,
       if (orderDate != null) 'orderDate': orderDate,

@@ -4,10 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
-import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:go_router/go_router.dart';
 import 'package:Dharma/services/local_storage_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
@@ -37,7 +35,7 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
   Future<void> _fetchPetitions() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
-    
+
     if (authProvider.user != null) {
       await petitionProvider.fetchPetitions(authProvider.user!.uid);
     }
@@ -184,20 +182,11 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.category, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    petition.type.displayName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.business, size: 16, color: Colors.grey[600]),
+                  Icon(Icons.person, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      petition.courtName,
+                      petition.petitionerName,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -206,30 +195,21 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    petition.petitionerName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  if (petition.firNumber != null) ...[
-                    const SizedBox(width: 16),
-                    Icon(Icons.description, size: 16, color: Colors.grey[600]),
+              if (petition.phoneNumber != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      'FIR: ${petition.firNumber}',
+                      petition.phoneNumber!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
                     ),
                   ],
-                ],
-              ),
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -309,13 +289,11 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                   ),
                 ),
                 const Divider(height: 32),
-                _buildDetailRow('Type', petition.type.displayName),
                 _buildDetailRow('Petitioner', petition.petitionerName),
-                if (petition.respondentName != null)
-                  _buildDetailRow('Respondent', petition.respondentName!),
-                _buildDetailRow('Court', petition.courtName),
-                if (petition.caseNumber != null)
-                  _buildDetailRow('Case Number', petition.caseNumber!),
+                if (petition.phoneNumber != null)
+                  _buildDetailRow('Phone', petition.phoneNumber!),
+                if (petition.address != null)
+                  _buildDetailRow('Address', petition.address!),
                 if (petition.firNumber != null)
                   _buildDetailRow('FIR Number', petition.firNumber!),
                 const SizedBox(height: 16),
@@ -374,10 +352,7 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                     ),
                     child: Text(
                       petition.extractedText!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
+                      style: const TextStyle(fontSize: 14, height: 1.4),
                     ),
                   ),
                 ] else ...[
@@ -449,16 +424,11 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _petitionerNameController = TextEditingController();
-  final _respondentNameController = TextEditingController();
-  final _courtNameController = TextEditingController();
-  final _caseNumberController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+  final _addressController = TextEditingController();
   final _groundsController = TextEditingController();
   final _prayerReliefController = TextEditingController();
-  
-  PetitionType _selectedType = PetitionType.bail;
-  PetitionStatus _selectedStatus = PetitionStatus.draft;
-  String? _selectedCaseId;
-  String? _firNumber;
+
   bool _isSubmitting = false;
   List<PlatformFile> _pickedFiles = [];
 
@@ -475,35 +445,25 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   }
 
   Future<void> _initBackend() async {
-    // Build candidate base URLs
     final List<String> candidates = <String>[];
 
-    // 1) From .env (if present)
-    // (Optional) You can add flutter_dotenv support here if needed.
-
-    // 2) Web origin (prefer backend dev port first to avoid probing http://localhost/)
     if (kIsWeb) {
-      final Uri u = Uri.base; // current page URL
+      final Uri u = Uri.base;
       final String scheme = u.scheme.isNotEmpty ? u.scheme : 'http';
-      final String host = (u.host.isNotEmpty ? u.host : 'localhost');
-      // Prefer explicit backend port first
+      final String host = u.host.isNotEmpty ? u.host : 'localhost';
       candidates.add('$scheme://$host:8000');
-      // Then try same-origin without port
       candidates.add('$scheme://$host');
     }
 
-    // 3) Android emulator loopback (default HTTP port)
     final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
       candidates.add('http://10.0.2.2:8000');
       candidates.add('http://10.0.2.2');
     }
 
-    // 4) Localhost (desktop/iOS) — prefer :8000 first
     candidates.add('http://localhost:8000');
     candidates.add('http://localhost');
 
-    // Probe each candidate for health
     String? resolved;
     for (final String base in candidates) {
       if (await _isBackendHealthy(base)) {
@@ -512,7 +472,6 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       }
     }
 
-    // Fallback to first candidate if none healthy (lets the request still try)
     resolved ??= candidates.first;
     setState(() {
       _ocrEndpoint = '$resolved/api/ocr/extract';
@@ -525,13 +484,12 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
   Future<bool> _isBackendHealthy(String baseUrl) async {
     try {
-      // Probe likely-existing paths, most specific first
       final List<String> healthPaths = <String>[
-        '/api/ocr/health', // OCR router health if mounted
-        '/api/health',     // global health if available
-        '/ocr/health',     // legacy alias
-        '/',               // root
-        '/Root',           // alias in backend
+        '/api/ocr/health',
+        '/api/health',
+        '/ocr/health',
+        '/',
+        '/Root',
       ];
       for (final String p in healthPaths) {
         final resp = await _dio.get(
@@ -554,9 +512,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void dispose() {
     _titleController.dispose();
     _petitionerNameController.dispose();
-    _respondentNameController.dispose();
-    _courtNameController.dispose();
-    _caseNumberController.dispose();
+    _phoneNumberController.dispose();
+    _addressController.dispose();
     _groundsController.dispose();
     _prayerReliefController.dispose();
     super.dispose();
@@ -589,56 +546,38 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   }
 
   Future<void> _submitPetition() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
 
-    // Ensure OCR has been attempted if files are present but no result captured yet
     try {
       if (_ocrResult == null && _pickedFiles.isNotEmpty) {
         await _runOcrOnFile(_pickedFiles.first);
       }
-    } catch (_) {
-      // Safe to ignore here; we still proceed with petition creation
-    }
+    } catch (_) {}
 
-    // Normalize extracted text (empty string -> null)
-    final String? extractedText = (() {
-      final String? t = (_ocrResult?['text'] as String?)?.trim();
-      if (t == null || t.isEmpty) return null;
-      return t;
-    })();
+    final String? extractedText = ((_ocrResult?['text'] as String?)?.trim().isNotEmpty == true)
+        ? _ocrResult!['text']
+        : null;
 
     final petition = Petition(
       title: _titleController.text,
-      type: _selectedType,
-      status: _selectedStatus,
-      caseId: _selectedCaseId,
-      firNumber: _firNumber,
+      type: PetitionType.other, // default
+      status: PetitionStatus.draft, // default
       petitionerName: _petitionerNameController.text,
-      respondentName: _respondentNameController.text.isEmpty 
-          ? null 
-          : _respondentNameController.text,
-      courtName: _courtNameController.text,
-      caseNumber: _caseNumberController.text.isEmpty 
-          ? null 
-          : _caseNumberController.text,
+      phoneNumber: _phoneNumberController.text,
+      address: _addressController.text,
       grounds: _groundsController.text,
-      prayerRelief: _prayerReliefController.text.isEmpty 
-          ? null 
-          : _prayerReliefController.text,
+      prayerRelief: _prayerReliefController.text.isEmpty ? null : _prayerReliefController.text,
       extractedText: extractedText,
       userId: authProvider.user!.uid,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     );
 
-    // Save locally selected documents before creating petition
     try {
       if (_pickedFiles.isNotEmpty) {
         final String folderName = _titleController.text.isNotEmpty
@@ -650,11 +589,9 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         );
       }
     } catch (e) {
-      // Suppressed: Failed to save documents locally
-      // Do nothing, error is intentionally hidden from the user
+      // Silently ignore
     }
 
-    // Create petition (does not store upload details in Firestore)
     final success = await petitionProvider.createPetition(petition);
 
     setState(() => _isSubmitting = false);
@@ -662,17 +599,13 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Petition created successfully!'),
-            backgroundColor: Colors.green,
-          ),
+          const SnackBar(content: Text('Petition created successfully!'), backgroundColor: Colors.green),
         );
         _formKey.currentState!.reset();
         _titleController.clear();
         _petitionerNameController.clear();
-        _respondentNameController.clear();
-        _courtNameController.clear();
-        _caseNumberController.clear();
+        _phoneNumberController.clear();
+        _addressController.clear();
         _groundsController.clear();
         _prayerReliefController.clear();
         setState(() {
@@ -680,16 +613,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
           _ocrResult = null;
         });
         await petitionProvider.fetchPetitions(authProvider.user!.uid);
-        // Notify parent screen to navigate to "My Petitions" tab
-        if (mounted) {
-          widget.onCreatedSuccess?.call();
-        }
+        widget.onCreatedSuccess?.call();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to create petition'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Failed to create petition'), backgroundColor: Colors.red),
         );
       }
     }
@@ -697,53 +624,35 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
   Future<void> _runOcrOnFile(PlatformFile file) async {
     if (_isExtracting) return;
-    setState(() { _isExtracting = true; });
+    setState(() => _isExtracting = true);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Extracting text from document...')),
     );
 
     try {
-      // Ensure backend endpoint is resolved before attempting upload
-      if (_ocrEndpoint.isEmpty) {
-        await _initBackend();
-      }
-      if (_ocrEndpoint.isEmpty) {
-        throw Exception('OCR service not available');
-      }
-      // Client-side basic validation
-      final int sizeBytes = file.size;
-      if (sizeBytes <= 0) {
-        throw Exception('Selected file is empty');
-      }
-      if (sizeBytes > 5 * 1024 * 1024) {
-        throw Exception('File too large (max 5MB)');
-      }
+      if (_ocrEndpoint.isEmpty) await _initBackend();
+      if (_ocrEndpoint.isEmpty) throw Exception('OCR service not available');
+
+      if (file.size <= 0) throw Exception('Selected file is empty');
+      if (file.size > 5 * 1024 * 1024) throw Exception('File too large (max 5MB)');
 
       MultipartFile mFile;
       if (file.bytes != null) {
-        mFile = MultipartFile.fromBytes(
-          file.bytes!,
-          filename: file.name,
-        );
+        mFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
       } else if (file.path != null) {
-        mFile = await MultipartFile.fromFile(
-          file.path!,
-          filename: file.name,
-        );
+        mFile = await MultipartFile.fromFile(file.path!, filename: file.name);
       } else {
         throw Exception('File content unavailable');
       }
 
-      // Removed unused baseUrl variable; endpoint is already resolved
+      final formData = FormData.fromMap({'file': mFile});
 
-      final formData = FormData.fromMap({ 'file': mFile });
-
-      // Try primary endpoint then fallbacks if needed
       Response? response;
-      final List<String> allEndpoints = <String>[_ocrEndpoint, ..._ocrEndpointFallbacks];
-      DioException? lastDioError;
-      for (final String endpoint in allEndpoints) {
+      final List<String> allEndpoints = [_ocrEndpoint, ..._ocrEndpointFallbacks];
+      DioException? lastError;
+
+      for (final endpoint in allEndpoints) {
         try {
           response = await _dio.post(
             endpoint,
@@ -755,30 +664,27 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
               validateStatus: (code) => code != null && code >= 200 && code < 400,
             ),
           );
-          break; // success
+          break;
         } on DioException catch (e) {
-          lastDioError = e;
-          // If 404, try next endpoint; if network, re-init and retry once per endpoint
-          final int? sc = e.response?.statusCode;
-          if (sc == null) {
-            await _initBackend();
-          }
+          lastError = e;
+          final sc = e.response?.statusCode;
+          if (sc == null) await _initBackend();
           continue;
         }
       }
-      if (response == null) {
-        throw lastDioError ?? Exception('OCR request failed');
-      }
 
-      final Map<String, dynamic> data = Map<String, dynamic>.from(response.data);
-      final String extracted = (data['text'] as String?)?.trim() ?? '';
+      if (response == null) throw lastError ?? Exception('OCR request failed');
+
+      final data = Map<String, dynamic>.from(response.data);
+      final extracted = (data['text'] as String?)?.trim() ?? '';
+
       if (extracted.isNotEmpty) {
-        setState(() { _ocrResult = {'text': extracted}; });
+        setState(() => _ocrResult = {'text': extracted});
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Text extraction successful')),
         );
       } else {
-        setState(() { _ocrResult = null; });
+        setState(() => _ocrResult = null);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No text detected in the selected file.')),
         );
@@ -786,23 +692,20 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     } catch (e) {
       String msg = 'OCR failed';
       if (e is DioException) {
-        final int? sc = e.response?.statusCode;
-        final dynamic body = e.response?.data;
+        final sc = e.response?.statusCode;
+        final body = e.response?.data;
         msg = 'OCR failed (${sc ?? 'network'}): ${body is String ? body : body?['detail'] ?? e.message}';
-      } else if (e is Exception) {
-        msg = 'OCR failed: ${e.toString()}';
+      } else {
+        msg = 'OCR failed: $e';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
-      if (mounted) setState(() { _isExtracting = false; });
+      if (mounted) setState(() => _isExtracting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final caseProvider = Provider.of<CaseProvider>(context);
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
@@ -812,6 +715,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // === BASIC INFORMATION: ONLY Name, Phone, Address ===
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -820,163 +724,64 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                   children: [
                     Text(
                       'Basic Information',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
+
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(
                         labelText: 'Petition Title *',
-                        hintText: 'Enter a descriptive title',
+                        hintText: 'Enter a short title',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
+                      validator: (v) => v?.isEmpty ?? true ? 'Please enter a title' : null,
                     ),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<PetitionType>(
-                      value: _selectedType,
-                      decoration: const InputDecoration(
-                        labelText: 'Petition Type *',
-                        border: OutlineInputBorder(),
-                      ),
-                      isExpanded: true,
-                      items: PetitionType.values.map((type) {
-                        return DropdownMenuItem(
-                          value: type,
-                          child: Text(type.displayName),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedType = value!);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<PetitionStatus>(
-                      value: _selectedStatus,
-                      decoration: const InputDecoration(
-                        labelText: 'Status *',
-                        border: OutlineInputBorder(),
-                      ),
-                      isExpanded: true,
-                      items: PetitionStatus.values.map((status) {
-                        return DropdownMenuItem(
-                          value: status,
-                          child: Text(status.displayName),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedStatus = value!);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (caseProvider.cases.isNotEmpty)
-                      DropdownButtonFormField<String?>(
-                        value: _selectedCaseId,
-                        decoration: const InputDecoration(
-                          labelText: 'Link to Case (Optional)',
-                          border: OutlineInputBorder(),
-                        ),
-                        isExpanded: true,
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('No case linked'),
-                          ),
-                          ...caseProvider.cases.map((caseDoc) {
-                            return DropdownMenuItem<String?>(
-                              value: caseDoc.id,
-                              child: Text('${caseDoc.firNumber} - ${caseDoc.title}'),
-                            );
-                          }).toList(),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCaseId = value;
-                            if (value != null) {
-                              final selectedCase = caseProvider.cases
-                                  .firstWhere((c) => c.id == value);
-                              _firNumber = selectedCase.firNumber;
-                            } else {
-                              _firNumber = null;
-                            }
-                          });
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Parties & Court Details',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+
                     TextFormField(
                       controller: _petitionerNameController,
                       decoration: const InputDecoration(
-                        labelText: 'Petitioner Name *',
+                        labelText: 'Your Name *',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter petitioner name';
-                        }
+                      validator: (v) => v?.isEmpty ?? true ? 'Please enter your name' : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: _phoneNumberController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Please enter phone number';
+                        if (!RegExp(r'^\d{10}$').hasMatch(v)) return 'Enter valid 10-digit number';
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
+
                     TextFormField(
-                      controller: _respondentNameController,
+                      controller: _addressController,
+                      maxLines: 3,
                       decoration: const InputDecoration(
-                        labelText: 'Respondent Name (Optional)',
+                        labelText: 'Address *',
+                        hintText: 'Full residential / office address',
                         border: OutlineInputBorder(),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _courtNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Court Name *',
-                        hintText: 'e.g., High Court of Delhi',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter court name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _caseNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'Case Number (Optional)',
-                        hintText: 'e.g., CRL.M.C. 1234/2024',
-                        border: OutlineInputBorder(),
-                      ),
+                      validator: (v) => v?.isEmpty ?? true ? 'Please enter address' : null,
                     ),
                   ],
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
+
+            // === PETITION DETAILS ===
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -985,42 +790,36 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                   children: [
                     Text(
                       'Petition Details',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
+
                     TextFormField(
                       controller: _groundsController,
                       maxLines: 8,
                       decoration: const InputDecoration(
                         labelText: 'Grounds / Reasons *',
-                        hintText: 'Enter detailed grounds for the petition...',
+                        hintText: 'Explain why you are filing this petition...',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter grounds';
-                        }
-                        return null;
-                      },
+                      validator: (v) => v?.isEmpty ?? true ? 'Please enter grounds' : null,
                     ),
                     const SizedBox(height: 16),
+
                     TextFormField(
                       controller: _prayerReliefController,
                       maxLines: 5,
                       decoration: const InputDecoration(
                         labelText: 'Prayer / Relief Sought (Optional)',
-                        hintText: 'Enter the relief or remedy being requested...',
+                        hintText: 'What do you want the court to do?',
                         border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
+
                     Text(
-                      'Supporting Documents (Optional, stored locally only)',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      'Supporting Documents (Optional, stored locally)',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -1034,25 +833,19 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                           onPressed: _isSubmitting
                               ? null
                               : () async {
-                                  final FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                  final result = await FilePicker.platform.pickFiles(
                                     allowMultiple: true,
                                     withData: true,
                                     type: FileType.image,
                                   );
                                   if (result != null && result.files.isNotEmpty) {
-                                    setState(() {
-                                      _pickedFiles = result.files;
-                                    });
-                                    // Trigger OCR immediately on the first selected file
+                                    setState(() => _pickedFiles = result.files);
                                     await _runOcrOnFile(result.files.first);
                                   }
                                 },
                         ),
                         if (_pickedFiles.isNotEmpty)
-                          Text(
-                            '${_pickedFiles.length} file(s) selected',
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          Text('${_pickedFiles.length} file(s) selected'),
                         if (_isExtracting)
                           const SizedBox(
                             height: 16,
@@ -1074,15 +867,12 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                           itemCount: _pickedFiles.length,
                           separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, index) {
-                            final PlatformFile f = _pickedFiles[index];
+                            final f = _pickedFiles[index];
                             return ListTile(
                               dense: true,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                               leading: const Icon(Icons.insert_drive_file),
-                              title: Text(
-                                f.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              title: Text(f.name, overflow: TextOverflow.ellipsis),
                               subtitle: Text('${(f.size / 1024).toStringAsFixed(1)} KB'),
                               trailing: IconButton(
                                 padding: EdgeInsets.zero,
@@ -1090,11 +880,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                                 icon: const Icon(Icons.close),
                                 onPressed: _isSubmitting
                                     ? null
-                                    : () {
-                                        setState(() {
-                                          _pickedFiles.removeAt(index);
-                                        });
-                                      },
+                                    : () => setState(() => _pickedFiles.removeAt(index)),
                               ),
                             );
                           },
@@ -1105,9 +891,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       const SizedBox(height: 16),
                       Text(
                         'Extracted Details',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       _buildOcrSummaryCard(theme),
@@ -1116,22 +900,19 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                 ),
               ),
             ),
+
             const SizedBox(height: 24),
+
             ElevatedButton(
               onPressed: _isSubmitting ? null : _submitPetition,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
               child: _isSubmitting
                   ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
-                      'Create Petition',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                  : const Text('Create Petition', style: TextStyle(fontSize: 16)),
             ),
           ],
         ),
