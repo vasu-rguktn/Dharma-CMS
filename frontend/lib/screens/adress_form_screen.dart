@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class AddressFormScreen extends StatefulWidget {
   const AddressFormScreen({super.key});
@@ -20,10 +21,11 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   final _policeStationController = TextEditingController();
 
   void _submitForm(Map<String, dynamic>? personalData) {
+    final localizations = AppLocalizations.of(context);
     if (personalData == null) {
       debugPrint('Error: Personal data is null');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Personal data not provided')),
+        SnackBar(content: Text(localizations?.personalDataNotProvided ?? 'Error: Personal data not provided')),
       );
       return;
     }
@@ -54,7 +56,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     } else {
       debugPrint('Address form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields correctly')),
+        SnackBar(content: Text(localizations?.fillFieldsCorrectly ?? 'Please fill all fields correctly')),
       );
     }
   }
@@ -62,14 +64,16 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final localizations = AppLocalizations.of(context);
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final personalData = args?['personal'] as Map<String, dynamic>?;
     debugPrint('Received args in AddressFormScreen: $args');
 
     if (personalData == null) {
       debugPrint('Personal data is null, showing error screen');
-      return const Scaffold(
-        body: Center(child: Text('Error: Personal data not provided')),
+      final localizations = AppLocalizations.of(context);
+      return Scaffold(
+        body: Center(child: Text(localizations?.personalDataNotProvided ?? 'Error: Personal data not provided')),
       );
     }
 
@@ -77,7 +81,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       body: Column(
         children: [
           // 🖼️ SVG Image with Logo at the Top
-          Container(
+          SizedBox(
             height: screenHeight * 0.3,
             width: double.infinity,
             child: Stack(
@@ -131,9 +135,9 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Address Details',
-                      style: TextStyle(
+                    Text(
+                      localizations?.addressDetails ?? 'Address Details',
+                      style:const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                         color: Colors.black,
@@ -145,7 +149,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _houseController,
                       decoration: InputDecoration(
-                        labelText: 'House No',
+                        labelText: localizations?.houseNo ?? 'House No',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -183,7 +187,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your house number';
+                          return localizations?.enterHouseNumber ?? 'Please enter your house number';
                         }
                         return null;
                       },
@@ -193,7 +197,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _cityController,
                       decoration: InputDecoration(
-                        labelText: 'City/Town',
+                        labelText: localizations?.cityTown ?? 'City/Town',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -231,7 +235,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your city';
+                          return localizations?.enterCity ?? 'Enter your city';
                         }
                         return null;
                       },
@@ -241,7 +245,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _districtController,
                       decoration: InputDecoration(
-                        labelText: 'District',
+                        labelText: localizations?.district ?? 'District',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -279,7 +283,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your district';
+                          return localizations?.enterDistrict ?? 'Enter your district';
                         }
                         return null;
                       },
@@ -289,7 +293,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _stateController,
                       decoration: InputDecoration(
-                        labelText: 'State',
+                        labelText: localizations?.state ?? 'State',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -327,7 +331,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your state';
+                          return localizations?.enterState ?? 'Enter your state';
                         }
                         return null;
                       },
@@ -337,7 +341,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _countryController,
                       decoration: InputDecoration(
-                        labelText: 'Country',
+                        labelText: localizations?.country ?? 'Country',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -375,7 +379,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your country';
+                          return localizations?.enterCountry ?? 'Enter your country';
                         }
                         return null;
                       },
@@ -385,7 +389,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _pincodeController,
                       decoration: InputDecoration(
-                        labelText: 'Pincode',
+                        labelText: localizations?.pincode ?? 'Pincode',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -424,10 +428,10 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your pincode';
+                          return localizations?.enterPincode ?? 'Please enter your pincode';
                         }
                         if (!RegExp(r'^\d{6}$').hasMatch(value)) {
-                          return 'Enter a valid 6-digit pincode';
+                          return localizations?.enterValidPincode ?? 'Enter a valid 6-digit pincode';
                         }
                         return null;
                       },
@@ -437,7 +441,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     TextFormField(
                       controller: _policeStationController,
                       decoration: InputDecoration(
-                        labelText: 'Police Station',
+                        labelText: localizations?.policeStation ?? 'Police Station',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -475,34 +479,61 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter police station';
+                          return localizations?.enterPoliceStation ?? 'Enter police station';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 24),
-                    // Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => _submitForm(personalData),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          backgroundColor: const Color(0xFFFC633C), // Kept blue; change to 0xFFFC633C for red
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    // Previous + Next Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              // Navigate back to the personal details (signup) step
+                              // and pass the personal data so the form can be prefilled.
+                              try {
+                                context.go('/signup', extra: {'personal': personalData});
+                              } catch (e) {
+                                debugPrint('Navigation error: $e');
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              localizations?.previous ?? 'Previous',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            ),
                           ),
-                          elevation: 5,
                         ),
-                        child: const Text(
-                          'Next',
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => _submitForm(personalData),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              backgroundColor: const Color(0xFFFC633C),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 5,
+                            ),
+                            child: Text(
+                              localizations?.next ?? 'Next',
+                              style: const TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 24),
                   ],

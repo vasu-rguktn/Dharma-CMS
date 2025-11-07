@@ -1,0 +1,671 @@
+{
+    "appTitle": "Dharma CMS",
+    "@appTitle": {
+        "description": "The name of the application"
+    },
+    "dharmaPortal": "Dharma Portal",
+    "@dharmaPortal": {
+        "description": "The main title on the welcome screen"
+    },
+    "welcomeDescription": "Digital hub for Andhra Pradesh police records, management and analytics",
+    "@welcomeDescription": {
+        "description": "Description text on the welcome screen"
+    },
+    "loginAs": "Login as",
+    "@loginAs": {
+        "description": "Title for login type selection popup"
+    },
+    "registerAs": "Register as",
+    "@registerAs": {
+        "description": "Title for register type selection popup"
+    },
+    "citizen": "Citizen",
+    "@citizen": {
+        "description": "Citizen user type option"
+    },
+    "police": "Police",
+    "@police": {
+        "description": "Police user type option"
+    },
+    "dontHaveAccount": "Don't have an account?",
+    "@dontHaveAccount": {
+        "description": "Text shown before register link"
+    },
+    "register": "Register",
+    "@register": {
+        "description": "Register link text"
+    },
+    "fullName": "Full Name",
+    "@fullName": {
+        "description": "Full name field label"
+    },
+    "email": "Email",
+    "@email": {
+        "description": "Email field label"
+    },
+    "phone": "Phone",
+    "@phone": {
+        "description": "Phone field label"
+    },
+    "dateOfBirth": "Date of Birth (YYYY-MM-DD)",
+    "@dateOfBirth": {
+        "description": "Date of birth field label"
+    },
+    "gender": "Gender",
+    "@gender": {
+        "description": "Gender field label"
+    },
+    "male": "Male",
+    "@male": {
+        "description": "Male gender option"
+    },
+    "female": "Female",
+    "@female": {
+        "description": "Female gender option"
+    },
+    "other": "Other",
+    "@other": {
+        "description": "Other gender option"
+    },
+    "next": "Next",
+    "@next": {
+        "description": "Next button text"
+    },
+    "previous": "Previous",
+    "@previous": {
+        "description": "Previous button text"
+    },
+    "pleaseEnterName": "Please enter your name",
+    "@pleaseEnterName": {
+        "description": "Name field validation message"
+    },
+    "nameOnlyLetters": "Name can only contain letters and spaces",
+    "@nameOnlyLetters": {
+        "description": "Name field format validation message"
+    },
+    "pleaseEnterEmail": "Please enter your email",
+    "@pleaseEnterEmail": {
+        "description": "Email field required validation message"
+    },
+    "pleaseEnterValidEmail": "Please enter a valid email",
+    "@pleaseEnterValidEmail": {
+        "description": "Email field format validation message"
+    },
+    "pleaseEnterPhone": "Please enter your phone number",
+    "@pleaseEnterPhone": {
+        "description": "Phone field required validation message"
+    },
+    "pleaseEnterValidPhone": "Please enter a valid phone number",
+    "@pleaseEnterValidPhone": {
+        "description": "Phone field format validation message"
+    },
+    "pleaseSelectDOB": "Please select your date of birth",
+    "@pleaseSelectDOB": {
+        "description": "Date of birth required validation message"
+    },
+    "enterValidDateFormat": "Enter date in YYYY-MM-DD format",
+    "@enterValidDateFormat": {
+        "description": "Date format validation message"
+    },
+    "pleaseSelectGender": "Please select your gender",
+    "@pleaseSelectGender": {
+        "description": "Gender field required validation message"
+    },
+    "fillFieldsCorrectly": "Please fill all fields correctly",
+    "@fillFieldsCorrectly": {
+        "description": "Form validation error message"
+    },
+    "addressDetails": "Address Details",
+    "@addressDetails": {
+        "description": "Address form title"
+    },
+    "houseNo": "House No",
+    "@houseNo": {
+        "description": "House number field label"
+    },
+    "cityTown": "City/Town",
+    "@cityTown": {
+        "description": "City/Town field label"
+    },
+    "district": "District",
+    "@district": {
+        "description": "District field label"
+    },
+    "state": "State",
+    "@state": {
+        "description": "State field label"
+    },
+    "country": "Country",
+    "@country": {
+        "description": "Country field label"
+    },
+    "pincode": "Pincode",
+    "@pincode": {
+        "description": "Pincode field label"
+    },
+    "policeStation": "Police Station",
+    "@policeStation": {
+        "description": "Police station field label"
+    },
+    "enterHouseNumber": "Please enter your house number",
+    "@enterHouseNumber": {
+        "description": "House number validation message"
+    },
+    "enterCity": "Enter your city",
+    "@enterCity": {
+        "description": "City validation message"
+    },
+    "enterDistrict": "Enter your district",
+    "@enterDistrict": {
+        "description": "District validation message"
+    },
+    "enterState": "Enter your state",
+    "@enterState": {
+        "description": "State validation message"
+    },
+    "enterCountry": "Enter your country",
+    "@enterCountry": {
+        "description": "Country validation message"
+    },
+    "enterPincode": "Please enter your pincode",
+    "@enterPincode": {
+        "description": "Pincode required validation message"
+    },
+    "enterValidPincode": "Enter a valid 6-digit pincode",
+    "@enterValidPincode": {
+        "description": "Pincode format validation message"
+    },
+    "enterPoliceStation": "Enter police station",
+    "@enterPoliceStation": {
+        "description": "Police station validation message"
+    },
+    "personalDataNotProvided": "Error: Personal data not provided",
+    "@personalDataNotProvided": {
+        "description": "Error message when personal data is missing"
+    },
+    "loginDetails": "Login Details",
+    "@loginDetails": {
+        "description": "Login details form title"
+    },
+    "username": "Username *",
+    "@username": {
+        "description": "Username field label"
+    },
+    "enterUsername": "Enter username (min 4 characters)",
+    "@enterUsername": {
+        "description": "Username field hint"
+    },
+    "usernameEmpty": "Enter username",
+    "@usernameEmpty": {
+        "description": "Username empty validation message"
+    },
+    "usernameMinLength": "Username must be at least 4 characters",
+    "@usernameMinLength": {
+        "description": "Username minimum length validation message"
+    },
+    "password": "Password *",
+    "@password": {
+        "description": "Password field label"
+    },
+    "enterPassword": "Enter password (min 6 characters)",
+    "@enterPassword": {
+        "description": "Password field hint"
+    },
+    "passwordEmpty": "Enter password",
+    "@passwordEmpty": {
+        "description": "Password empty validation message"
+    },
+    "passwordMinLength": "Password must be at least 6 characters",
+    "@passwordMinLength": {
+        "description": "Password minimum length validation message"
+    },
+    "confirmPassword": "Confirm Password *",
+    "@confirmPassword": {
+        "description": "Confirm password field label"
+    },
+    "reenterPassword": "Re-enter password",
+    "@reenterPassword": {
+        "description": "Confirm password field hint"
+    },
+    "confirmPasswordEmpty": "Confirm your password",
+    "@confirmPasswordEmpty": {
+        "description": "Confirm password empty validation message"
+    },
+    "passwordsDoNotMatch": "Passwords do not match",
+    "@passwordsDoNotMatch": {
+        "description": "Password match validation message"
+    },
+    "dataNotProvided": "Error: Required data not provided",
+    "@dataNotProvided": {
+        "description": "Error when required data is missing"
+    },
+    "invalidEmail": "Error: Invalid email provided",
+    "@invalidEmail": {
+        "description": "Invalid email error message"
+    },
+    "failedToCreateUser": "Error: Failed to create user",
+    "@failedToCreateUser": {
+        "description": "User creation error message"
+    },
+    "registrationSuccessful": "Registration successful!",
+    "@registrationSuccessful": {
+        "description": "Registration success message"
+    },
+    "emailAlreadyRegistered": "The email is already registered.",
+    "@emailAlreadyRegistered": {
+        "description": "Email already in use error message"
+    },
+    "invalidEmailAddress": "The email address is invalid.",
+    "@invalidEmailAddress": {
+        "description": "Invalid email format error message"
+    },
+    "weakPassword": "The password is too weak.",
+    "@weakPassword": {
+        "description": "Weak password error message"
+    },
+    "unexpectedError": "An unexpected error occurred.",
+    "@unexpectedError": {
+        "description": "Generic error message"
+    },
+    "fixFormErrors": "Please fix the errors in the form",
+    "@fixFormErrors": {
+        "description": "Form validation error message"
+    },
+    "welcomeMessage": "Welcome to Dharma CMS",
+    "@welcomeMessage": {
+        "description": "Welcome message on the home screen"
+    },
+    "login": "Login",
+    "@login": {
+        "description": "Login button text"
+    },
+    "logout": "Logout",
+    "@logout": {
+        "description": "Logout button text"
+    },
+    "cases": "Cases",
+    "@cases": {
+        "description": "Cases section title"
+    },
+    "complaints": "Complaints",
+    "@complaints": {
+        "description": "Complaints section title"
+    },
+    "petitions": "Petitions",
+    "@petitions": {
+        "description": "Petitions section title"
+    },
+    "settings": "Settings",
+    "@settings": {
+        "description": "Settings section title"
+    },
+    "language": "Language",
+    "@language": {
+        "description": "Language selection option"
+    },
+    "dashboard": "Dashboard",
+    "@dashboard": {
+        "description": "Dashboard menu item"
+    },
+    "welcomeUser": "Welcome, {name}!",
+    "@welcomeUser": {
+        "description": "Welcome message",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "legalAssistanceHub": "Your Legal Assistance Hub",
+    "@legalAssistanceHub": {
+        "description": "Subtitle for citizen dashboard"
+    },
+    "policeCommandCentre": "Police Command Centre",
+    "@policeCommandCentre": {
+        "description": "Subtitle for police dashboard"
+    },
+    "quickActions": "Quick Actions",
+    "@quickActions": {
+        "description": "Quick actions section"
+    },
+    "recentActivity": "Recent Activity",
+    "@recentActivity": {
+        "description": "Recent activity section"
+    },
+    "noRecentActivity": "No recent activity",
+    "@noRecentActivity": {
+        "description": "No recent activity message"
+    },
+    "totalCases": "Total Cases",
+    "@totalCases": {
+        "description": "Total cases stat"
+    },
+    "activeCases": "Active Cases",
+    "@activeCases": {
+        "description": "Active cases stat"
+    },
+    "closedCases": "Closed Cases",
+    "@closedCases": {
+        "description": "Closed cases stat"
+    },
+    "totalPetitions": "Total Petitions",
+    "@totalPetitions": {
+        "description": "Total petitions stat"
+    },
+    "aiChat": "AI Chat",
+    "@aiChat": {
+        "description": "AI Chat menu"
+    },
+    "legalQueries": "Legal Queries",
+    "@legalQueries": {
+        "description": "Legal queries menu"
+    },
+    "viewCases": "View Cases",
+    "@viewCases": {
+        "description": "View cases action"
+    },
+    "legalSuggestion": "Legal Suggestion",
+    "@legalSuggestion": {
+        "description": "Legal suggestion menu"
+    },
+    "documentDrafting": "Document Drafting",
+    "@documentDrafting": {
+        "description": "Document drafting menu"
+    },
+    "chargesheetGen": "Chargesheet Gen",
+    "@chargesheetGen": {
+        "description": "Chargesheet generation menu"
+    },
+    "chargesheetVetting": "Chargesheet Vetting",
+    "@chargesheetVetting": {
+        "description": "Chargesheet vetting menu"
+    },
+    "witnessPrep": "Witness Prep",
+    "@witnessPrep": {
+        "description": "Witness preparation menu"
+    },
+    "mediaAnalysis": "Media Analysis",
+    "@mediaAnalysis": {
+        "description": "Media analysis menu"
+    },
+    "caseJournal": "Case Journal",
+    "@caseJournal": {
+        "description": "Case journal menu"
+    },
+    "caseManagement": "Case Management",
+    "@caseManagement": {
+        "description": "Case management menu"
+    },
+    "aiTools": "AI Tools",
+    "@aiTools": {
+        "description": "AI tools section"
+    },
+    "email": "Email",
+    "@email": {
+        "description": "Email label"
+    },
+    "password": "Password",
+    "@password": {
+        "description": "Password label"
+    },
+    "forgotPassword": "Forgot Password?",
+    "@forgotPassword": {
+        "description": "Forgot password link"
+    },
+    "signIn": "Sign In",
+    "@signIn": {
+        "description": "Sign in button"
+    },
+    "signOut": "Sign Out",
+    "@signOut": {
+        "description": "Sign out button"
+    },
+    "register": "Register",
+    "@register": {
+        "description": "Register button"
+    },
+    "dharmaPortal": "Dharma Portal",
+    "@dharmaPortal": {
+        "description": "Portal title"
+    },
+    "citizen": "Citizen",
+    "@citizen": {
+        "description": "Citizen role"
+    },
+    "police": "Police",
+    "@police": {
+        "description": "Police role"
+    },
+    "loginAs": "Login as",
+    "@loginAs": {
+        "description": "Login as dialog"
+    },
+    "registerAs": "Register as",
+    "@registerAs": {
+        "description": "Register as dialog"
+    },
+    "fullName": "Full Name",
+    "@fullName": {
+        "description": "Full name field"
+    },
+    "phoneNumber": "Phone Number",
+    "@phoneNumber": {
+        "description": "Phone number field"
+    },
+    "confirmPassword": "Confirm Password",
+    "@confirmPassword": {
+        "description": "Confirm password field"
+    },
+    "newCase": "New Case",
+    "@newCase": {
+        "description": "New case button"
+    },
+    "allCases": "All Cases",
+    "@allCases": {
+        "description": "All cases title"
+    },
+    "noCasesFound": "No cases found",
+    "@noCasesFound": {
+        "description": "No cases message"
+    },
+    "raiseComplaint": "Raise Complaint",
+    "@raiseComplaint": {
+        "description": "Raise complaint button"
+    },
+    "mySavedComplaints": "My Saved Complaints",
+    "@mySavedComplaints": {
+        "description": "Saved complaints title"
+    },
+    "noSavedComplaints": "No saved complaints",
+    "@noSavedComplaints": {
+        "description": "No complaints message"
+    },
+    "aiLegalAssistant": "AI Legal Assistant",
+    "@aiLegalAssistant": {
+        "description": "AI assistant title"
+    },
+    "typeMessage": "Type a message...",
+    "@typeMessage": {
+        "description": "Message input placeholder"
+    },
+    "askLegalQuestions": "Ask legal questions and get AI-powered answers",
+    "@askLegalQuestions": {
+        "description": "Legal queries subtitle"
+    },
+    "submitQuery": "Submit Query",
+    "@submitQuery": {
+        "description": "Submit query button"
+    },
+    "enterLegalQuestion": "Enter your legal question here...",
+    "@enterLegalQuestion": {
+        "description": "Question input placeholder"
+    },
+    "previousQueries": "Previous Queries",
+    "@previousQueries": {
+        "description": "Previous queries section"
+    },
+    "noQueriesYet": "No queries yet",
+    "@noQueriesYet": {
+        "description": "No queries message"
+    },
+    "submitFirstQuery": "Submit your first legal query above",
+    "@submitFirstQuery": {
+        "description": "First query message"
+    },
+    "legalSectionSuggester": "Legal Section Suggester",
+    "@legalSectionSuggester": {
+        "description": "Legal suggester title"
+    },
+    "firDetails": "FIR Details",
+    "@firDetails": {
+        "description": "FIR details label"
+    },
+    "incidentDetails": "Incident Details",
+    "@incidentDetails": {
+        "description": "Incident details label"
+    },
+    "generateSuggestions": "Generate Suggestions",
+    "@generateSuggestions": {
+        "description": "Generate button"
+    },
+    "aiDocumentDrafter": "AI Document Drafter",
+    "@aiDocumentDrafter": {
+        "description": "Document drafter title"
+    },
+    "caseData": "Case Data",
+    "@caseData": {
+        "description": "Case data label"
+    },
+    "recipientType": "Recipient Type",
+    "@recipientType": {
+        "description": "Recipient type label"
+    },
+    "medicalOfficer": "Medical Officer",
+    "@medicalOfficer": {
+        "description": "Medical officer option"
+    },
+    "forensicExpert": "Forensic Expert",
+    "@forensicExpert": {
+        "description": "Forensic expert option"
+    },
+    "generateDraft": "Generate Draft",
+    "@generateDraft": {
+        "description": "Generate draft button"
+    },
+    "chargesheetGenerator": "Chargesheet Generator",
+    "@chargesheetGenerator": {
+        "description": "Chargesheet generator title"
+    },
+    "evidenceSummary": "Evidence Summary",
+    "@evidenceSummary": {
+        "description": "Evidence summary label"
+    },
+    "generateChargesheet": "Generate Chargesheet",
+    "@generateChargesheet": {
+        "description": "Generate chargesheet button"
+    },
+    "chargesheetContent": "Chargesheet Content",
+    "@chargesheetContent": {
+        "description": "Chargesheet content label"
+    },
+    "vetChargesheet": "Vet Chargesheet",
+    "@vetChargesheet": {
+        "description": "Vet chargesheet button"
+    },
+    "witnessPreparation": "Witness Preparation",
+    "@witnessPreparation": {
+        "description": "Witness prep title"
+    },
+    "witnessName": "Witness Name",
+    "@witnessName": {
+        "description": "Witness name label"
+    },
+    "witnessStatement": "Witness Statement",
+    "@witnessStatement": {
+        "description": "Witness statement label"
+    },
+    "prepareQuestions": "Prepare Questions",
+    "@prepareQuestions": {
+        "description": "Prepare questions button"
+    },
+    "uploadMedia": "Upload Media",
+    "@uploadMedia": {
+        "description": "Upload media button"
+    },
+    "analyzeMedia": "Analyze Media",
+    "@analyzeMedia": {
+        "description": "Analyze media button"
+    },
+    "caseDetails": "Case Details",
+    "@caseDetails": {
+        "description": "Case details title"
+    },
+    "status": "Status",
+    "@status": {
+        "description": "Status label"
+    },
+    "description": "Description",
+    "@description": {
+        "description": "Description label"
+    },
+    "save": "Save",
+    "@save": {
+        "description": "Save button"
+    },
+    "cancel": "Cancel",
+    "@cancel": {
+        "description": "Cancel button"
+    },
+    "delete": "Delete",
+    "@delete": {
+        "description": "Delete button"
+    },
+    "edit": "Edit",
+    "@edit": {
+        "description": "Edit button"
+    },
+    "close": "Close",
+    "@close": {
+        "description": "Close button"
+    },
+    "submit": "Submit",
+    "@submit": {
+        "description": "Submit button"
+    },
+    "search": "Search",
+    "@search": {
+        "description": "Search label"
+    },
+    "filter": "Filter",
+    "@filter": {
+        "description": "Filter label"
+    },
+    "notifications": "Notifications",
+    "@notifications": {
+        "description": "Notifications title"
+    },
+    "darkMode": "Dark Mode",
+    "@darkMode": {
+        "description": "Dark mode setting"
+    },
+    "about": "About",
+    "@about": {
+        "description": "About section"
+    },
+    "privacyPolicy": "Privacy Policy",
+    "@privacyPolicy": {
+        "description": "Privacy policy"
+    },
+    "termsOfService": "Terms of Service",
+    "@termsOfService": {
+        "description": "Terms of service"
+    },
+    "profileInformation": "Profile Information",
+    "@profileInformation": {
+        "description": "Profile info title"
+    },
+    "areYouSureSignOut": "Are you sure you want to sign out?",
+    "@areYouSureSignOut": {
+        "description": "Sign out confirmation"
+    }
+}

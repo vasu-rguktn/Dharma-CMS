@@ -1,3 +1,4 @@
+import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,8 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/router/app_router.dart';
 import 'package:Dharma/services/firestore_service.dart';
 import 'firebase_options.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:Dharma/providers/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +35,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProxyProvider<AuthProvider, CaseProvider>(
           create: (_) => CaseProvider(),
           update: (_, auth, previous) => previous ?? CaseProvider(),
@@ -45,8 +49,9 @@ class MyApp extends StatelessWidget {
           update: (_, auth, previous) => previous ?? PetitionProvider(),
         ),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
+      
+      child: Consumer2<AuthProvider,SettingsProvider>(
+        builder: (context, authProvider, settingsProvider,_) {
           return MaterialApp.router(
             title: 'Dharma',
             debugShowCheckedModeBanner: false,
@@ -54,6 +59,18 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.light,
             routerConfig: AppRouter.router,
+
+            locale: settingsProvider.locale,
+            supportedLocales: const [
+              Locale('en'), // English
+              Locale('te'), // Telugu
+            ],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           );
         },
       ),
