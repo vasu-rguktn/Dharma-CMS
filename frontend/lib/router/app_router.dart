@@ -30,6 +30,7 @@ import 'package:Dharma/screens/contact_officer_screen.dart';
 import 'package:Dharma/screens/ai_chatbot_details_screen.dart';
 import 'package:Dharma/screens/cognigible_non_cognigible_separation.dart';
 import 'package:Dharma/widgets/app_scaffold.dart';
+import 'package:Dharma/screens/petition/create_petition_form.dart';
 
 // Relative imports
 import '../screens/welcome_screen.dart';
@@ -175,6 +176,19 @@ class AppRouter {
           GoRoute(
             path: '/petitions',
             builder: (context, state) => const PetitionsScreen(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                builder: (context, state) {
+                  final extra = state.extra;
+                  Map<String, dynamic>? petitionData;
+                  if (extra is Map) {
+                    petitionData = Map<String, dynamic>.from(extra);
+                  }
+                  return CreatePetitionForm(initialData: petitionData);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/fir-autofill',

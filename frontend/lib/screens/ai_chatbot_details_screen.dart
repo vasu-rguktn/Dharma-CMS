@@ -75,7 +75,8 @@ class AiChatbotDetailsScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => context.go('/cognigible-non-cognigible-separation', extra: {
-                  'classification': classification
+                  'classification': classification,
+                  'complaintData': answers, // Pass the answers map
                 }),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),
