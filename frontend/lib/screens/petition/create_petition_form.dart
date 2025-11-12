@@ -157,50 +157,109 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       _ocrService.clearResult();
     });
   }
+Future<void> _pickAndOcr() async {
+  // open file picker
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+    withData: true,
+  );
 
-  Future<void> _pickAndOcr() async {
-    // open file picker
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
-      withData: true,
-    );
+  if (result == null || result.files.isEmpty) return;
 
-    if (result == null || result.files.isEmpty) return;
+  final file = result.files.first;
 
-    final file = result.files.first;
+  // update picked files immediately so UI shows upload
+  setState(() {
+    _pickedFiles = [file];
+  });
 
-    // update picked files immediately so UI shows upload
-    setState(() {
-      _pickedFiles = [file];
-    });
+  try {
+    // run OCR and await completion
+    await _ocrService.runOcr(file);
 
-    try {
-      // run OCR and await completion
-      await _ocrService.runOcr(file);
-
-      // when extraction completes, update UI immediately
-      final r = _ocrService.result;
-      if (r != null && r['text'] != null) {
+    // when extraction completes, update UI immediately
+    final r = _ocrService.result;
+    if (r != null && r['text'] != null) {
+      final extracted = r['text'].toString().trim();
+      if (extracted.isNotEmpty) {
         setState(() {
-          _groundsController.text = r['text'].toString();
+          final current = _groundsController.text.trim();
+
+          // If the field is empty → fill it
+          if (current.isEmpty) {
+            _groundsController.text = extracted;
+          } else {
+            // If not empty → combine existing and extracted text cleanly
+            if (!current.contains(extracted)) {
+              _groundsController.text = '$current $extracted'.trim();
+            }
+          }
         });
-      } else {
-        // extraction returned no text
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No text extracted from document')),
-          );
-        }
       }
-    } catch (e) {
+    } else {
+      // extraction returned no text
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OCR failed: $e')),
+          const SnackBar(content: Text('No text extracted from document')),
         );
       }
     }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('OCR failed: $e')),
+      );
+    }
   }
+}
+
+
+
+
+  // Future<void> _pickAndOcr() async {
+  //   // open file picker
+  //   final result = await FilePicker.platform.pickFiles(
+  //     type: FileType.custom,
+  //     allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+  //     withData: true,
+  //   );
+
+  //   if (result == null || result.files.isEmpty) return;
+
+  //   final file = result.files.first;
+
+  //   // update picked files immediately so UI shows upload
+  //   setState(() {
+  //     _pickedFiles = [file];
+  //   });
+
+  //   try {
+  //     // run OCR and await completion
+  //     await _ocrService.runOcr(file);
+
+  //     // when extraction completes, update UI immediately
+  //     final r = _ocrService.result;
+  //     if (r != null && r['text'] != null) {
+  //       setState(() {
+  //         _groundsController.text = r['text'].toString();
+  //       });
+  //     } else {
+  //       // extraction returned no text
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(content: Text('No text extracted from document')),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('OCR failed: $e')),
+  //       );
+  //     }
+  //   }
+  // }
 
   Widget _buildOcrSummary(ThemeData theme) {
     final text = _ocrService.result?['text'] as String? ?? '';
@@ -306,7 +365,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       decoration: const InputDecoration(labelText: 'Prayer / Relief Sought (Optional)', border: OutlineInputBorder()),
                     ),
                     const SizedBox(height: 16),
-                    Text('HandWritten Documents (Optional)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text('HandWritten Documents', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 12,

@@ -54,7 +54,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
           controller: _tabController,
           tabs: const [
             Tab(icon: Icon(Icons.list), text: 'My Petitions'),
-            Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
+            // Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
           ],
         ),
       ),
