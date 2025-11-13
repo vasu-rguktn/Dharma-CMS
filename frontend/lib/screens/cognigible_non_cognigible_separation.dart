@@ -82,13 +82,20 @@ import 'package:go_router/go_router.dart';
 
 class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
   final String classification;
-  const CognigibleNonCognigibleSeparationScreen({super.key, required this.classification});
+  final Map<String, dynamic>? complaintData; // added
+
+  const CognigibleNonCognigibleSeparationScreen({
+    super.key,
+    required this.classification,
+    this.complaintData,
+  });
 
   static CognigibleNonCognigibleSeparationScreen fromRouteSettings(
       BuildContext context, GoRouterState state) {
     final q = state.extra as Map<String, dynamic>?;
     return CognigibleNonCognigibleSeparationScreen(
       classification: q?['classification'] as String? ?? '',
+      complaintData: q?['complaintData'] as Map<String, dynamic>?, // extract
     );
   }
 
@@ -98,6 +105,17 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
     final bool isNonCognizable = upper.contains('NON-COGNIZABLE');
     final bool isCognizable =
         !isNonCognizable && RegExp(r'\bCOGNIZABLE\b').hasMatch(upper);
+
+    // when user taps "File a Case"
+    // Convert complaintData to the keys CreatePetitionForm expects
+    // (complaintType, fullName, phone, address, details)
+    final petitionData = {
+      'complaintType': complaintData?['complaintType']??complaintData?['complaint_type']??'' ,
+      'fullName': complaintData?['fullName'] ?? complaintData?['full_name'] ?? complaintData?['name'] ?? '',
+      'phone': complaintData?['phone'] ?? complaintData?['phoneNumber'] ?? complaintData?['phone_number'] ?? '',
+      'address': complaintData?['address'] ?? complaintData?['addr'] ?? complaintData?['location'] ?? '',
+      'details': complaintData?['details'] ?? complaintData?['summary'] ?? complaintData?['complaint'] ?? '',
+    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
@@ -131,11 +149,11 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               if (isNonCognizable) ...[
                 const SizedBox(height: 20),
                 Text(
-                  'Please Contact To the Writer',
+                  'Please Contact To the Officer...',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[800],
-                    fontWeight: FontWeight.w500,
+                    fontSize: 20,
+                    color: Colors.grey[1000],
+                    fontWeight: FontWeight.w800,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -147,9 +165,14 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => isCognizable
-                      ? context.go('/petitions')
-                      : context.go('/dashboard'),
+                  onPressed: () {
+                    if (isCognizable) {
+                      // navigate and pass the mapped data
+                      context.go('/petitions/create', extra: petitionData);
+                    } else {
+                      context.go('/dashboard');
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFC633C),
                     padding: const EdgeInsets.symmetric(vertical: 18),

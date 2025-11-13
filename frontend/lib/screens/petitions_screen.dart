@@ -731,7 +731,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(
-                        labelText: 'Petition Title *',
+                        labelText: 'Petition type (Theft/ Robery,etc) *',
                         hintText: 'Enter a short title',
                         border: OutlineInputBorder(),
                       ),
@@ -818,7 +818,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     const SizedBox(height: 16),
 
                     Text(
-                      'Supporting Documents (Optional, stored locally)',
+                      'HandWritten Document',
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),

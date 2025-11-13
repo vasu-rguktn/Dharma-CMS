@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 if not HF_TOKEN:
-    # Allow server to start; endpoint will raise if missing
+    # Allow server start; LLM features will be skipped if missing
     pass
 client = OpenAI(
     base_url="https://router.huggingface.co/v1",
@@ -50,66 +50,156 @@ def build_conversation(req: ComplaintRequest) -> str:
 def get_timestamp() -> str:
     return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
-# === LLM Calls ===
-def generate_summary(conversation: str) -> str:
-    if not HF_TOKEN:
-        raise RuntimeError("HF_TOKEN is not set on the server")
-    completion = client.chat.completions.create(
-        model=LLM_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a helpful and professional police assistant. "
-                    "You collect and summarize citizen complaints clearly and respectfully. "
-                    "Always respond in a formal tone suitable for police reports."
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    f"Here are the citizen details:\n{conversation}\n\n"
-                    "Create a formal police complaint summary."
-                ),
-            },
-        ],
-        temperature=0.2,
-        max_tokens=800,
-    )
-    return (completion.choices[0].message.content or "").strip()
+def today_date_str() -> str:
+    return datetime.utcnow().strftime("%Y-%m-%d")
 
-def _normalize_classification(text: str) -> str:
-    """Normalize model output to: 'COGNIZABLE - <justification>' or 'NON-COGNIZABLE - <justification>'.
-    Falls back to just the label if no justification is found.
+# kept for compatibility (not used in final summary)
+def extract_incident_datetime(text: str) -> str:
+    """Heuristic extraction; returns '' if not found"""
+    if not text:
+        return ""
+    m = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+    if m:
+        return m.group(1)
+    m = re.search(r"\b(\d{2}[/-]\d{2}[/-]\d{4})\b", text)
+    if m:
+        found = m.group(1)
+        sep = "-" if "-" in found else "/"
+        dd, mm, yyyy = found.split(sep)
+        try:
+            dt = datetime(int(yyyy), int(mm), int(dd))
+            return dt.strftime("%Y-%m-%d")
+        except Exception:
+            return found
+    if re.search(r"\btoday\b", text, flags=re.IGNORECASE):
+        return today_date_str()
+    if re.search(r"\byesterday\b", text, flags=re.IGNORECASE):
+        return (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    return ""
+
+# --- IPC helper unchanged (keeps safe checks) ---
+def get_official_complaint_label(complaint_type: str, details: str) -> Optional[str]:
+    if not HF_TOKEN:
+        return None
+    try:
+        prompt = (
+            "You are an expert in Indian criminal law. From the fields below, provide a concise official offence"
+            " name and IPC section(s) if clearly applicable. Output exactly one short line like:\n"
+            "Theft — IPC 378\nAttempted murder — IPC 307\nNot applicable\n\n"
+            f"Complaint Type: {complaint_type}\n"
+            f"Details: {details}\n\n"
+            "If unsure or not applicable, reply with 'Not applicable'. DO NOT invent IPC numbers."
+        )
+        resp = client.chat.completions.create(
+            model=LLM_MODEL,
+            temperature=0.0,
+            max_tokens=40,
+            messages=[
+                {"role": "system", "content": "Be concise and do not hallucinate IPCs unless clearly applicable."},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        raw = (resp.choices[0].message.content or "").strip()
+        if not raw:
+            return None
+        first_line = raw.splitlines()[0].strip()
+        if re.match(r"(?i)not applicable", first_line):
+            return None
+        if re.search(r"\bIPC\b", first_line, flags=re.IGNORECASE) or re.search(r"\bsection\s*\d{2,4}\b", first_line, flags=re.IGNORECASE):
+            cleaned = re.sub(r"[\(\[\{](.*?)[\)\]\}]", r"\1", first_line).strip()
+            return cleaned
+        return None
+    except Exception as e:
+        logger.warning(f"LLM official label lookup failed: {e}")
+        return None
+
+def generate_summary_text(req: ComplaintRequest) -> str:
     """
+    Produce plain-text formatted summary WITHOUT Description_of_incident or Date/Time_of_incident.
+    Complaint Type may include (official label — IPC) only if get_official_complaint_label returns it.
+    """
+    date_of_complaint = today_date_str()
+
+    # Attempt to get official label with IPC
+    official_label = None
+    if HF_TOKEN:
+        official_label = get_official_complaint_label(req.complaint_type, req.details)
+
+    if official_label:
+        complaint_type_line = f"{req.complaint_type.strip()} ({official_label})"
+    else:
+        complaint_type_line = req.complaint_type.strip()
+
+    lines = [
+        "POLICE COMPLAINT SUMMARY",
+        f"Full Name: {req.full_name.strip()}",
+        f"Address: {req.address.strip()}",
+        f"Phone Number: {req.phone.strip()}",
+        f"Complaint Type: {complaint_type_line}",
+        f"Details: {req.details.strip()}",
+        f"Date_of_complaint: {date_of_complaint}",
+        ""  # trailing newline
+    ]
+    return "\n".join(lines)
+
+# --- New: amount extraction helper ---
+def extract_amount_in_inr(text: str) -> Optional[int]:
+    """
+    Extract a rupee amount (approximate) from free text.
+    Returns integer amount in rupees or None.
+    Matches patterns like: ₹50,000  Rs. 5000  rupees 1000  5000
+    """
+    if not text:
+        return None
+    text = text.replace(",", "")
+    # try explicit ₹ or Rs or rupees
+    m = re.search(r"(?:₹|Rs\.?|INR|rupees?)\s*([0-9]+(?:\.[0-9]+)?)", text, flags=re.IGNORECASE)
+    if m:
+        try:
+            return int(float(m.group(1)))
+        except Exception:
+            pass
+    # fallback: find standalone large numbers (>=100)
+    m2 = re.findall(r"\b([0-9]{3,9})\b", text)
+    if m2:
+        # return the largest candidate
+        try:
+            nums = [int(x) for x in m2]
+            return max(nums)
+        except Exception:
+            return None
+    return None
+
+# === Improved classification rules ===
+def _normalize_classification(text: str) -> str:
     raw = (text or "").strip()
     up = raw.upper()
-
-    label: str
     if re.search(r"\bNON[-\s]?COGNIZABLE\b", up):
         label = "NON-COGNIZABLE"
     elif re.search(r"\bCOGNIZABLE\b", up):
         label = "COGNIZABLE"
     else:
-        # Default to NON-COGNIZABLE if the model deviates too much
         return "NON-COGNIZABLE"
-
-    # Extract justification after the label, handling common separators
-    # Accept '-', '–', ':', or whitespace
     m = re.search(r"\b(?:COGNIZABLE|NON[-\s]?COGNIZABLE)\b\s*[\-–:]?\s*(.*)$", raw, re.IGNORECASE)
     justification = (m.group(1).strip() if m and m.group(1) else "")
     if justification:
-        # Ensure single-line concise output
         justification = re.sub(r"\s+", " ", justification)
-        # Use an en dash to match desired display: "LABEL – justification"
-        return f"{label} – {justification}"
+        justification = re.sub(r"[\(\[\{].*?[\)\]\}]", "", justification).strip()
+        justification = justification.rstrip(" .")
+        return f"{label} – {justification}."
     return label
 
 def classify_offence(formal_summary: str, *, complaint_type: str = "", details: str = "") -> str:
-    if not HF_TOKEN:
-        raise RuntimeError("HF_TOKEN is not set on the server")
-    # First: simple rule-based guardrails to avoid hallucinations (e.g., 'theft' when not present)
+    """
+    Enhanced rule-based classifier:
+      - If non-cognizable keywords matched -> NON-COGNIZABLE
+      - If the text mentions exam/classroom and amount < threshold (or no amount) -> NON-COGNIZABLE
+      - If amount >= threshold (default 5000 INR) -> COGNIZABLE
+      - If cognizable keywords matched -> COGNIZABLE
+      - Otherwise -> NON-COGNIZABLE
+    """
     text = f"{complaint_type} \n {details}".lower()
+
     cognizable_keywords = {
         "theft", "robbery", "extortion", "house-breaking", "house breaking", "murder",
         "rape", "kidnapping", "kidnap", "dacoity", "armed robbery", "burglary",
@@ -121,41 +211,78 @@ def classify_offence(formal_summary: str, *, complaint_type: str = "", details: 
         "neighbour dispute", "neighbor dispute"
     }
 
+    # 1) explicit non-cognizable keywords
     if any(k in text for k in non_cognizable_keywords):
         logger.info("Rule-based classification → NON-COGNIZABLE (matched non-cognizable keywords)")
-        return "NON-COGNIZABLE - Falls under defamation/minor dispute category; magistrate order required."
+        return "NON-COGNIZABLE – Falls under defamation/minor dispute category; magistrate order required."
+
+    # 2) extract amount if present
+    amount = extract_amount_in_inr(details)
+    AMOUNT_THRESHOLD = 5000  # INR threshold for considering higher-severity theft
+
+    # 3) exam/classroom special-case handling
+    exam_keywords = {"exam", "exam hall", "exam hall.", "examination", "classroom", "in the exam", "during exam", "test"}
+    if any(k in text for k in exam_keywords):
+        # if amount is present and >= threshold -> treat as cognizable
+        if amount is not None and amount >= AMOUNT_THRESHOLD:
+            logger.info(f"Exam-context theft with amount {amount} -> treating as COGNIZABLE (over threshold)")
+            return f"COGNIZABLE – Reported theft amount ₹{amount} meets threshold for police action."
+        # otherwise prefer non-cognizable for exam-bag incidents
+        logger.info("Exam-context theft with no/low amount -> NON-COGNIZABLE")
+        return "NON-COGNIZABLE – Reported as theft during an examination; details indicate minor/personal loss."
+
+    # 4) amount-based decision outside exam context
+    if amount is not None:
+        if amount >= AMOUNT_THRESHOLD:
+            logger.info(f"Detected amount ₹{amount} -> COGNIZABLE")
+            return f"COGNIZABLE – Reported theft amount ₹{amount} permits police action."
+        else:
+            logger.info(f"Detected amount ₹{amount} below threshold -> prefer NON-COGNIZABLE")
+            # fall through to other checks but prefer non-cognizable
+            # continue to check cognizable keywords next
+
+    # 5) cognizable keywords
     if any(k in text for k in cognizable_keywords):
         logger.info("Rule-based classification → COGNIZABLE (matched cognizable keywords)")
-        return "COGNIZABLE - Offence permits police action without warrant (serious offence keywords present)."
-    criteria = (
-        "You are an expert in Indian criminal procedure. Decide ONLY from the provided fields. "
-        "Do NOT assume missing facts, do NOT infer offences from examples in questions, and do NOT guess. "
-        "If a specific offence (e.g., theft/robbery/extortion/rape/murder/kidnapping) is not explicitly present in the details, "
-        "you MUST NOT classify based on that offence. When uncertain or ambiguous, prefer NON-COGNIZABLE.\n\n"
-        "Output format (exactly one line):\n"
-        "COGNIZABLE – <one sentence reason>  OR  NON-COGNIZABLE – <one sentence reason>."
-    )
-    user_payload = (
-        "Decide for this complaint using ONLY the following fields.\n\n"
-        f"Complaint Type: {complaint_type}\n"
-        f"Details: {details}"
-    )
-    resp = client.chat.completions.create(
-        model=LLM_MODEL,
-        temperature=0.0,
-        max_tokens=100,
-        messages=[
-            {"role": "system", "content": criteria},
-            {"role": "user", "content": user_payload},
-        ],
-    )
-    raw = (resp.choices[0].message.content or "").strip()
-    result = _normalize_classification(raw)
-    # Final safety check: if model mentions 'theft' but details do not, downgrade to NON-COGNIZABLE
-    if "theft" in result.lower() and "theft" not in text:
-        logger.warning("Model suggested theft but details do not contain theft → overriding to NON-COGNIZABLE")
-        return "NON-COGNIZABLE - No explicit cognizable offence mentioned in details."
-    return result
+        return "COGNIZABLE – Offence permits police action without warrant."
+
+    # 6) LLM fallback if available (keeps previous behavior)
+    if HF_TOKEN:
+        try:
+            criteria = (
+                "You are an expert in Indian criminal procedure. Decide ONLY from the provided fields. "
+                "Do NOT assume missing facts, do NOT infer offences from examples in questions, and do NOT guess. "
+                "If a specific offence is not explicitly present in the details, prefer NON-COGNIZABLE.\n\n"
+                "Output format (exactly one line):\n"
+                "COGNIZABLE – <one sentence reason>  OR  NON-COGNIZABLE – <one sentence reason>."
+            )
+            user_payload = (
+                "Decide for this complaint using ONLY the following fields.\n\n"
+                f"Complaint Type: {complaint_type}\n"
+                f"Details: {details}"
+            )
+            resp = client.chat.completions.create(
+                model=LLM_MODEL,
+                temperature=0.0,
+                max_tokens=100,
+                messages=[
+                    {"role": "system", "content": criteria},
+                    {"role": "user", "content": user_payload},
+                ],
+            )
+            raw = (resp.choices[0].message.content or "").strip()
+            result = _normalize_classification(raw)
+            # safety: if model says theft but no theft mention -> downgrade
+            if "theft" in result.lower() and "theft" not in text:
+                logger.warning("Model suggested theft but details do not contain theft → overriding to NON-COGNIZABLE")
+                return "NON-COGNIZABLE – No explicit cognizable offence mentioned in details."
+            return result
+        except Exception as e:
+            logger.warning(f"LLM classification failed: {e} — falling back to NON-COGNIZABLE.")
+            return "NON-COGNIZABLE – Could not determine; fallback classification."
+
+    # default fallback
+    return "NON-COGNIZABLE – Could not determine from provided fields."
 
 @router.post(
     "/summarize",
@@ -165,7 +292,9 @@ def classify_offence(formal_summary: str, *, complaint_type: str = "", details: 
 async def process_complaint(payload: ComplaintRequest):
     try:
         conversation = build_conversation(payload)
-        formal_summary = generate_summary(conversation)
+        # produce the neat text summary requested by user (no description)
+        formal_summary = generate_summary_text(payload)
+
         logger.info(f"Complaint input → type='{payload.complaint_type}', details='{payload.details}'")
         classification = classify_offence(
             formal_summary,
@@ -173,7 +302,8 @@ async def process_complaint(payload: ComplaintRequest):
             details=payload.details,
         )
         logger.info(f"Classification decided → {classification}")
-        # Friendly one-line verdict for terminal visibility
+
+        # Terminal-friendly log
         label_upper = ("" if classification is None else str(classification)).upper()
         if "COGNIZABLE" in label_upper and "NON-COGNIZABLE" not in label_upper:
             logger.success("Case Classification: COGNIZABLE")
@@ -181,6 +311,7 @@ async def process_complaint(payload: ComplaintRequest):
             logger.success("Case Classification: NON-COGNIZABLE")
         else:
             logger.warning("Case Classification: UNKNOWN (model output not recognized)")
+
         response = ComplaintResponse(
             formal_summary=formal_summary,
             classification=classification,

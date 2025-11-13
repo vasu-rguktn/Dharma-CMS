@@ -6,12 +6,20 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/services/local_storage_service.dart';
+import 'package:go_router/go_router.dart';
 
 import 'ocr_service.dart';
 
 class CreatePetitionForm extends StatefulWidget {
   final VoidCallback? onCreatedSuccess;
-  const CreatePetitionForm({super.key, this.onCreatedSuccess});
+  // Add new parameter for initial data
+  final Map<String, dynamic>? initialData;
+  
+  const CreatePetitionForm({
+    super.key, 
+    this.onCreatedSuccess,
+    this.initialData,
+  });
 
   @override
   State<CreatePetitionForm> createState() => _CreatePetitionFormState();
@@ -35,6 +43,20 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void initState() {
     super.initState();
     _ocrService.init();
+
+    // Auto-fill form if initial data exists
+    final data = widget.initialData;
+    // debug: confirm incoming prefill
+    // ignore: avoid_print
+    print('CreatePetitionForm.initialData -> $data');
+
+    if (data != null) {
+      _titleController.text = data['complaintType']?.toString() ?? '';
+      _petitionerNameController.text = data['fullName']?.toString() ?? '';
+      _phoneNumberController.text = data['phone']?.toString() ?? '';
+      _addressController.text = data['address']?.toString() ?? '';
+      _groundsController.text = data['details']?.toString() ?? '';
+    }
   }
 
   @override
@@ -98,9 +120,23 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Petition created successfully!'), backgroundColor: Colors.green),
       );
-      _resetForm();
-      await petitionProvider.fetchPetitions(authProvider.user!.uid);
+
+      // debug print to confirm behavior
+      // ignore: avoid_print
+      print('CreatePetitionForm: petition created, navigating to /petitions');
+
+      // call optional callback (keeps existing behavior for callers)
       widget.onCreatedSuccess?.call();
+
+      // reset local form state
+      _resetForm();
+
+      // refresh list and then navigate back to petitions list
+      await petitionProvider.fetchPetitions(authProvider.user!.uid);
+
+      if (!mounted) return;
+
+      GoRouter.of(context).go('/petitions'); // navigate back to petitions list
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to create petition'), backgroundColor: Colors.red),
@@ -121,20 +157,109 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       _ocrService.clearResult();
     });
   }
+Future<void> _pickAndOcr() async {
+  // open file picker
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+    withData: true,
+  );
 
-  Future<void> _pickAndOcr() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      withData: true,
-      type: FileType.image,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() => _pickedFiles = result.files);
-      if (_pickedFiles.isNotEmpty) {
-        await _ocrService.runOcr(_pickedFiles.first);
+  if (result == null || result.files.isEmpty) return;
+
+  final file = result.files.first;
+
+  // update picked files immediately so UI shows upload
+  setState(() {
+    _pickedFiles = [file];
+  });
+
+  try {
+    // run OCR and await completion
+    await _ocrService.runOcr(file);
+
+    // when extraction completes, update UI immediately
+    final r = _ocrService.result;
+    if (r != null && r['text'] != null) {
+      final extracted = r['text'].toString().trim();
+      if (extracted.isNotEmpty) {
+        setState(() {
+          final current = _groundsController.text.trim();
+
+          // If the field is empty → fill it
+          if (current.isEmpty) {
+            _groundsController.text = extracted;
+          } else {
+            // If not empty → combine existing and extracted text cleanly
+            if (!current.contains(extracted)) {
+              _groundsController.text = '$current $extracted'.trim();
+            }
+          }
+        });
+      }
+    } else {
+      // extraction returned no text
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No text extracted from document')),
+        );
       }
     }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('OCR failed: $e')),
+      );
+    }
   }
+}
+
+
+
+
+  // Future<void> _pickAndOcr() async {
+  //   // open file picker
+  //   final result = await FilePicker.platform.pickFiles(
+  //     type: FileType.custom,
+  //     allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+  //     withData: true,
+  //   );
+
+  //   if (result == null || result.files.isEmpty) return;
+
+  //   final file = result.files.first;
+
+  //   // update picked files immediately so UI shows upload
+  //   setState(() {
+  //     _pickedFiles = [file];
+  //   });
+
+  //   try {
+  //     // run OCR and await completion
+  //     await _ocrService.runOcr(file);
+
+  //     // when extraction completes, update UI immediately
+  //     final r = _ocrService.result;
+  //     if (r != null && r['text'] != null) {
+  //       setState(() {
+  //         _groundsController.text = r['text'].toString();
+  //       });
+  //     } else {
+  //       // extraction returned no text
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(content: Text('No text extracted from document')),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('OCR failed: $e')),
+  //       );
+  //     }
+  //   }
+  // }
 
   Widget _buildOcrSummary(ThemeData theme) {
     final text = _ocrService.result?['text'] as String? ?? '';
@@ -184,7 +309,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Petition Title *', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Petition Type(Theft/Robery, etc) *', border: OutlineInputBorder()),
                       validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                     ),
                     const SizedBox(height: 16),
@@ -240,7 +365,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       decoration: const InputDecoration(labelText: 'Prayer / Relief Sought (Optional)', border: OutlineInputBorder()),
                     ),
                     const SizedBox(height: 16),
-                    Text('Supporting Documents (Optional)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text('HandWritten Documents', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 12,
