@@ -534,4 +534,22 @@ class AppLocalizationsTe extends AppLocalizations {
   
   @override
   String unexpectedErrorMessage(String error) => 'అనుకోని లోపం: $error';
+
+  @override
+  String get viewAndManageComplaints => 'మీ సేవ్ చేసిన ఫిర్యాదు చిత్తుప్రతులను వీక్షించండి మరియు నిర్వహించండి';
+
+  @override
+  String get savedComplaintsAppearHere => 'మీ సేవ్ చేసిన ఫిర్యాదు చిత్తుప్రతులు ఇక్కడ కనిపిస్తాయి';
+
+  @override
+  String get untitledComplaint => 'శీర్షిక లేని ఫిర్యాదు';
+
+  @override
+  String get draft => 'చిత్తుప్రతి';
+
+  @override
+  String get deleteComplaint => 'ఫిర్యాదును తొలగించండి';
+
+  @override
+  String get deleteComplaintConfirmation => 'మీరు ఖచ్చితంగా ఈ ఫిర్యాదును తొలగించాలనుకుంటున్నారా?';
 }

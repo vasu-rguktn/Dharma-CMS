@@ -534,4 +534,22 @@ class AppLocalizationsEn extends AppLocalizations {
   
   @override
   String unexpectedErrorMessage(String error) => 'Unexpected error: $error';
+
+  @override
+  String get viewAndManageComplaints => 'View and manage your saved complaint drafts';
+
+  @override
+  String get savedComplaintsAppearHere => 'Your saved complaint drafts will appear here';
+
+  @override
+  String get untitledComplaint => 'Untitled Complaint';
+
+  @override
+  String get draft => 'Draft';
+
+  @override
+  String get deleteComplaint => 'Delete Complaint';
+
+  @override
+  String get deleteComplaintConfirmation => 'Are you sure you want to delete this complaint?';
 }

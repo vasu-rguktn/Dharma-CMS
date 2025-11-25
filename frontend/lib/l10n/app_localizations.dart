@@ -1140,6 +1140,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unexpected error: {error}'**
   String unexpectedErrorMessage(String error);
+
+  /// Subtitle for complaints screen
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage your saved complaint drafts'**
+  String get viewAndManageComplaints;
+
+  /// Empty state message for complaints
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved complaint drafts will appear here'**
+  String get savedComplaintsAppearHere;
+
+  /// Default title for untitled complaint
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Complaint'**
+  String get untitledComplaint;
+
+  /// Draft status label
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draft;
+
+  /// Delete complaint dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Complaint'**
+  String get deleteComplaint;
+
+  /// Delete complaint confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this complaint?'**
+  String get deleteComplaintConfirmation;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
