@@ -343,6 +343,7 @@ import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/case_status.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -352,6 +353,7 @@ class DashboardScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
     final caseProvider = Provider.of<CaseProvider>(context);
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
@@ -369,9 +371,9 @@ class DashboardScreen extends StatelessWidget {
           size: 26,
           color: Colors.white,
         ),
-        label: const Text(
-          'New Case',
-          style: TextStyle(
+        label: Text(
+          localizations.newCase,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -388,14 +390,14 @@ class DashboardScreen extends StatelessWidget {
           children: [
             // Welcome Section
             Text(
-              'Welcome, ${authProvider.userProfile?.displayName ?? "User"}!',
+              localizations.welcomeUser(authProvider.userProfile?.displayName ?? "User"),
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Here\'s an overview of your legal assistance dashboard',
+              localizations.legalAssistanceHub,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: Colors.grey[600],
               ),
@@ -408,7 +410,7 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    'Total Cases',
+                    localizations.totalCases,
                     '${caseProvider.cases.length}',
                     Icons.folder_open,
                     Colors.blue,
@@ -418,7 +420,7 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    'Active Cases',
+                    localizations.activeCases,
                     '${caseProvider.cases.where((c) => c.status != CaseStatus.closed && c.status != CaseStatus.resolved).length}',
                     Icons.pending_actions,
                     Colors.orange,
@@ -432,7 +434,7 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    'Closed Cases',
+                    localizations.closedCases,
                     '${caseProvider.cases.where((c) => c.status == CaseStatus.closed).length}',
                     Icons.check_circle,
                     Colors.green,
@@ -442,7 +444,7 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    'AI Queries',
+                    localizations.legalQueries,
                     '0',
                     Icons.psychology,
                     Colors.purple,
@@ -454,7 +456,7 @@ class DashboardScreen extends StatelessWidget {
 
             // Quick Actions
             Text(
-              'Quick Actions',
+              localizations.quickActions,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -466,84 +468,84 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 _buildQuickActionCard(
                   context,
-                  'AI Chat',
+                  localizations.aiChat,
                   Icons.chat,
                   Colors.blue,
                   '/chat',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Legal Queries',
+                  localizations.legalQueries,
                   Icons.psychology,
                   Colors.purple,
                   '/legal-queries',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'View Cases',
+                  localizations.viewCases,
                   Icons.folder_open,
                   Colors.orange,
                   '/cases',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Complaints',
+                  localizations.complaints,
                   Icons.archive,
                   Colors.teal,
                   '/complaints',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Legal Suggestion',
+                  localizations.legalSuggestion,
                   Icons.gavel,
                   Colors.indigo,
                   '/legal-suggestion',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Document Drafting',
+                  localizations.documentDrafting,
                   Icons.edit_document,
                   Colors.green,
                   '/document-drafting',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Chargesheet Gen',
+                  localizations.chargesheetGen,
                   Icons.file_present,
                   Colors.deepOrange,
                   '/chargesheet-generation',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Chargesheet Vetting',
+                  localizations.chargesheetVetting,
                   Icons.fact_check,
                   Colors.brown,
                   '/chargesheet-vetting',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Witness Prep',
+                  localizations.witnessPrep,
                   Icons.people,
                   Colors.pink,
                   '/witness-preparation',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Media Analysis',
+                  localizations.mediaAnalysis,
                   Icons.image_search,
                   Colors.cyan,
                   '/media-analysis',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Case Journal',
+                  localizations.caseJournal,
                   Icons.book,
                   Colors.deepPurple,
                   '/case-journal',
                 ),
                 _buildQuickActionCard(
                   context,
-                  'Petitions',
+                  localizations.petitions,
                   Icons.gavel,
                   Colors.amber,
                   '/petitions',
@@ -554,7 +556,7 @@ class DashboardScreen extends StatelessWidget {
 
             // Recent Activity
             Text(
-              'Recent Activity',
+              localizations.recentActivity,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -562,7 +564,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildRecentActivityCard(
               context,
-              'No recent activity',
+              localizations.noRecentActivity,
               'Your recent cases and queries will appear here',
               Icons.history,
             ),

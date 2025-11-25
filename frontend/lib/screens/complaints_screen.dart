@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class ComplaintsScreen extends StatelessWidget {
   const ComplaintsScreen({super.key});
@@ -9,6 +10,7 @@ class ComplaintsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final complaintProvider = Provider.of<ComplaintProvider>(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -16,14 +18,14 @@ class ComplaintsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My Saved Complaints',
+            localizations.mySavedComplaints,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'View and manage your saved complaint drafts',
+            localizations.viewAndManageComplaints,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -42,14 +44,14 @@ class ComplaintsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No saved complaints',
+                          localizations.noSavedComplaints,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Your saved complaint drafts will appear here',
+                          localizations.savedComplaintsAppearHere,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[500],
                           ),
@@ -72,11 +74,11 @@ class ComplaintsScreen extends StatelessWidget {
                             ),
                           ),
                           title: Text(
-                            complaint['title'] ?? 'Untitled Complaint',
+                            complaint['title'] ?? localizations.untitledComplaint,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
-                            complaint['status'] ?? 'Draft',
+                            complaint['status'] ?? localizations.draft,
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete),
@@ -84,14 +86,14 @@ class ComplaintsScreen extends StatelessWidget {
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('Delete Complaint'),
-                                  content: const Text(
-                                    'Are you sure you want to delete this complaint?',
+                                  title: Text(localizations.deleteComplaint),
+                                  content: Text(
+                                    localizations.deleteComplaintConfirmation,
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancel'),
+                                      child: Text(localizations.cancel),
                                     ),
                                     TextButton(
                                       onPressed: () async {
@@ -108,7 +110,7 @@ class ComplaintsScreen extends StatelessWidget {
                                           debugPrint('Error deleting complaint: $e');
                                         }
                                       },
-                                      child: const Text('Delete'),
+                                      child: Text(localizations.delete),
                                     ),
                                   ],
                                 ),

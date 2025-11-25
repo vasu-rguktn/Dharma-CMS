@@ -315,19 +315,6 @@
 //   _ChatMessage({required this.user, required this.content, required this.isUser});
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
 import 'dart:io' show Platform;
@@ -335,6 +322,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
@@ -350,16 +338,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   final List<_ChatMessage> _messages = [];
   final Dio _dio = Dio();
 
-  final List<_ChatQ> _questions = const [
-    _ChatQ(key: 'full_name', question: 'What is your full name?'),
-    _ChatQ(key: 'address', question: 'Where do you live (place / area)?'),
-    _ChatQ(key: 'phone', question: 'What is your phone number?'),
-    _ChatQ(
-        key: 'complaint_type',
-        question:
-            'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)'),
-    _ChatQ(key: 'details', question: 'Please describe your complaint in detail.'),
-  ];
+  List<_ChatQ> _questions = [];
 
   final Map<String, String> _answers = {};
   int _currentQ = -2; // -2 = Welcome, -1 = Let us begin, 0+ = questions
@@ -372,22 +351,55 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   static const Color orange = Color(0xFFFC633C);
   static const Color background = Color(0xFFF5F8FE);
 
+  bool _hasStarted = false;
+
   @override
   void initState() {
     super.initState();
-    _startChatFlow();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final localizations = AppLocalizations.of(context)!;
+    _questions = [
+      _ChatQ(key: 'full_name', question: localizations.fullNameQuestion),
+      _ChatQ(
+          key: 'address',
+          question: localizations.addressQuestion ??
+              'Where do you live (place / area)?'),
+      _ChatQ(
+          key: 'phone',
+          question:
+              localizations.phoneQuestion ?? 'What is your phone number?'),
+      _ChatQ(
+          key: 'complaint_type',
+          question: localizations.complaintTypeQuestion ??
+              'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)'),
+      _ChatQ(
+          key: 'details',
+          question: localizations.detailsQuestion ??
+              'Please describe your complaint in detail.'),
+    ];
+    
+    if (!_hasStarted) {
+      _hasStarted = true;
+      _startChatFlow();
+    }
   }
 
   Future<void> _startChatFlow() async {
+    final localizations = AppLocalizations.of(context)!;
+
     setState(() {
       _messages.clear();
       _currentQ = -2;
       _allowInput = false;
       _errored = false;
     });
-    _addBot('Welcome to NyayaSetu');
+    _addBot(localizations.welcomeToDharma ?? 'Welcome to Dharma');
     await Future.delayed(const Duration(seconds: 1));
-    _addBot('Let us begin...');
+    _addBot(localizations.letUsBegin ?? 'Let us begin...');
     _currentQ = -1;
     setState(() {});
     await Future.delayed(const Duration(seconds: 2));
@@ -425,25 +437,28 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       _addBot(_questions[_currentQ].question);
       _allowInput = true;
       setState(() => _inputError = false);
-      Timer(const Duration(milliseconds: 600), () => _inputFocus.requestFocus());
+      Timer(
+          const Duration(milliseconds: 600), () => _inputFocus.requestFocus());
     } else {
       _submitToBackend();
     }
   }
 
   Future<void> _submitToBackend() async {
+    final localizations = AppLocalizations.of(context)!;
     // prevent double submit
     if (_isLoading) return;
-
     // validate required fields
     final missing = <String>[];
     for (final q in _questions) {
-      if (!(_answers.containsKey(q.key) && _answers[q.key]!.trim().isNotEmpty)) {
+      if (!(_answers.containsKey(q.key) &&
+          _answers[q.key]!.trim().isNotEmpty)) {
         missing.add(q.key);
       }
     }
     if (missing.isNotEmpty) {
-      _addBot('Please answer all questions before submitting. Missing: ${missing.join(', ')}');
+      _addBot( localizations.pleaseAnswerAllQuestions(missing as String) ?? 
+          'Please answer all questions before submitting. Missing: ${missing.join(', ')}');
       setState(() {
         _allowInput = true;
       });
@@ -472,7 +487,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     final payload = {
       'full_name': _answers['full_name'] ?? '',
       'address': _answers['address'] ?? '',
-      'phone': _answers['phone'] ??_answers['phone_number'] ?? '',
+      'phone': _answers['phone'] ?? _answers['phone_number'] ?? '',
       'complaint_type': _answers['complaint_type'] ?? '',
       'details': _answers['details'] ?? '',
     };
@@ -487,7 +502,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       );
 
       final data = resp.data ?? {};
-      _addBot('Complaint Summary:');
+      _addBot(localizations.complaintSummary??'Complaint Summary:');
       final formalSummary = (data is Map && data['formal_summary'] != null)
           ? data['formal_summary'].toString()
           : '(no summary)';
@@ -496,7 +511,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           : '(none)';
 
       _addBot(formalSummary);
-      _addBot('Classification: $classification');
+      _addBot(localizations.classification(classification as String)?? 'Classification: $classification');
 
       setState(() {
         _isLoading = false;
@@ -516,13 +531,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
         );
       });
     } on DioError catch (e) {
-      String msg = 'Sorry, something went wrong. Please try again later.';
+      String msg = localizations.somethingWentWrong ?? 'Sorry, something went wrong. Please try again later.';
       if (e.response != null && e.response?.data != null) {
         // try to show server-provided message if present
         try {
           final d = e.response!.data;
-          if (d is Map && d['detail'] != null) msg = d['detail'].toString();
-          else if (d is Map && d['message'] != null) msg = d['message'].toString();
+          if (d is Map && d['detail'] != null)
+            msg = d['detail'].toString();
+          else if (d is Map && d['message'] != null)
+            msg = d['message'].toString();
           else if (d is String) msg = d;
         } catch (_) {}
       } else if (e.error != null) {
@@ -575,13 +592,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/ai-legal-guider'), // Add this navigation
+          onPressed: () =>
+              context.go('/ai-legal-guider'), // Add this navigation
         ),
-        title: const Text('AI Legal Assistant'),
+        title: Text(localizations.aiLegalAssistant ??'AI Legal Assistant'),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
       ),
@@ -592,28 +611,35 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
             child: _messages.isEmpty
                 ? Center(
                     child: Text(
-                      'Loading...',
+                      localizations.loading ?? 'Loading...',
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                   )
                 : ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
                       return Align(
-                        alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment: msg.isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           constraints: BoxConstraints(
                             maxWidth: MediaQuery.of(context).size.width * 0.75,
                           ),
                           decoration: BoxDecoration(
                             color: msg.isUser ? orange : Colors.white,
                             borderRadius: BorderRadius.circular(18),
-                            border: msg.isUser ? null : Border.all(color: Colors.grey.shade300, width: 1),
+                            border: msg.isUser
+                                ? null
+                                : Border.all(
+                                    color: Colors.grey.shade300, width: 1),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
@@ -644,7 +670,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                 elevation: 6,
                 borderRadius: BorderRadius.circular(30),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(30),
@@ -656,11 +683,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                           controller: _controller,
                           focusNode: _inputFocus,
                           decoration: InputDecoration(
-                            hintText: _currentQ >= 0 && _currentQ < _questions.length
-                                ? _questions[_currentQ].question
-                                : 'Type your message...',
+                            hintText:
+                                _currentQ >= 0 && _currentQ < _questions.length
+                                    ? _questions[_currentQ].question
+                                    : localizations.typeMessage??'Type your message...',
                             border: InputBorder.none,
-                            errorText: _inputError ? "Please enter your answer" : null,
+                            errorText:
+                                _inputError ? localizations.pleaseEnterYourAnswer ?? "Please enter your answer" : null,
                             errorStyle: const TextStyle(fontSize: 12),
                           ),
                           onSubmitted: (_) => _handleSend(),
@@ -669,7 +698,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                       IconButton(
                         icon: const Icon(Icons.mic, color: orange),
                         onPressed: () {},
-                        tooltip: "Voice input (coming soon)",
+                        tooltip: localizations.voiceInputComingSoon??"Voice input (coming soon)",
                       ),
                       IconButton(
                         icon: const Icon(Icons.send, color: orange),
@@ -704,5 +733,6 @@ class _ChatMessage {
   final String user;
   final String content;
   final bool isUser;
-  _ChatMessage({required this.user, required this.content, required this.isUser});
+  _ChatMessage(
+      {required this.user, required this.content, required this.isUser});
 }
