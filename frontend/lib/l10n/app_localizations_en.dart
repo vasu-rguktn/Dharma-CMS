@@ -11,6 +11,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appTitle => 'Dharma CMS';
 
+
+  String get dharma => 'Dharma';
+
   @override
   String get dharmaPortal => 'Dharma Portal';
 
@@ -477,4 +480,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get areYouSureSignOut => 'Are you sure you want to sign out?';
+  
+  @override
+  String get wantToUtiliseFeature => 'Want to utilise this feature?';
+  
+  @override
+  String get utilise => 'Utilise';
+  
+  @override
+  String get skip => 'Skip';
+  
+  @override
+  String get fullNameQuestion => 'What is your full name?';
+  
+  @override
+  String get addressQuestion => 'Where do you live (place / area)?';
+  
+  @override
+  String get phoneQuestion => 'What is your phone number?';
+  
+  @override
+  String get complaintTypeQuestion => 'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)';
+  
+  @override
+  String get detailsQuestion => 'Please describe your complaint in detail.';
+  
+  @override
+  String get loading => 'Loading...';
+  
+  @override
+  String get pleaseEnterYourAnswer => 'Please enter your answer';
+  
+  @override
+  String get voiceInputComingSoon => 'Voice input (coming soon)';
+  
+  @override
+  String get welcomeToDharma => 'Welcome to Dharma';
+  
+  @override
+  String get letUsBegin => 'Let us begin...';
+  
+  @override
+  String pleaseAnswerAllQuestions(String missing) => 'Please answer all questions before submitting. Missing: $missing';
+  
+  @override
+  String get complaintSummary => 'Complaint Summary:';
+  
+  @override
+  String classification(String classification) => 'Classification: $classification';
+  
+  @override
+  String get somethingWentWrong => 'Sorry, something went wrong. Please try again later.';
+  
+  @override
+  String unexpectedErrorMessage(String error) => 'Unexpected error: $error';
 }

@@ -14,6 +14,9 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get dharmaPortal => 'ధర్మ పోర్టల్';
 
+  String get dharma => 'ధర్మ';
+  
+  
   @override
   String get welcomeDescription => 'ఆంధ్ర ప్రదేశ్ పోలీస్ రికార్డులు, నిర్వహణ మరియు విశ్లేషణల కోసం డిజిటల్ కేంద్రం';
 
@@ -477,4 +480,58 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get areYouSureSignOut => 'మీరు సైన్ అవుట్ చేయాలనుకుంటున్నారా?';
+  
+  @override
+  String get wantToUtiliseFeature => 'ఈ ఫీచర్‌ను ఉపయోగించాలనుకుంటున్నారా?';
+  
+  @override
+  String get utilise => 'ఉపయోగించు';
+  
+  @override
+  String get skip => 'దాటవేయండి';
+  
+  @override
+  String get fullNameQuestion => 'మీ పూర్తి పేరు ఏమిటి?';
+  
+  @override
+  String get addressQuestion => 'మీరు ఎక్కడ నివసిస్తున్నారు (ప్రదేశం / ప్రాంతం)?';
+  
+  @override
+  String get phoneQuestion => 'మీ ఫోన్ నంబర్ ఏమిటి?';
+  
+  @override
+  String get complaintTypeQuestion => 'మీరు ఏ రకమైన ఫిర్యాదు ఫైల్ చేయాలనుకుంటున్నారు? (దొంగతనం, వేధింపులు, కనిపించకపోవడం మొదలైనవి)';
+  
+  @override
+  String get detailsQuestion => 'దయచేసి మీ ఫిర్యాదును వివరంగా వివరించండి.';
+  
+  @override
+  String get loading => 'లోడవుతోంది...';
+  
+  @override
+  String get pleaseEnterYourAnswer => 'దయచేసి మీ సమాధానాన్ని నమోదు చేయండి';
+  
+  @override
+  String get voiceInputComingSoon => 'వాయిస్ ఇన్‌పుట్ (త్వరలో వస్తోంది)';
+  
+  @override
+  String get welcomeToDharma => 'ధర్మ పోర్టల్ కి స్వాగతం';
+  
+  @override
+  String get letUsBegin => 'ఇప్పుడు మనం ప్రారంభిద్దాం...';
+  
+  @override
+  String pleaseAnswerAllQuestions(String missing) => 'దయచేసి సమర్పించే ముందు అన్ని ప్రశ్నలకు సమాధానం ఇవ్వండి. తప్పిపోయినవి: $missing';
+  
+  @override
+  String get complaintSummary => 'ఫిర్యాదు సారాంశం:';
+  
+  @override
+  String classification(String classification) => 'వర్గీకరణ: $classification';
+  
+  @override
+  String get somethingWentWrong => 'క్షమించండి, ఏమో తప్పు జరిగింది. దయచేసి తదుపరి ప్రయత్నించండి.';
+  
+  @override
+  String unexpectedErrorMessage(String error) => 'అనుకోని లోపం: $error';
 }

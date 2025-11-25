@@ -7,6 +7,11 @@
     "@dharmaPortal": {
         "description": "The main title on the welcome screen"
     },
+    "dharma": "ధర్మ",
+    "@dharma": {
+        "description": "The main title on the welcome screen"
+    },
+
     "welcomeDescription": "ఆంధ్ర ప్రదేశ్ పోలీస్ రికార్డులు, నిర్వహణ మరియు విశ్లేషణల కోసం డిజిటల్ కేంద్రం",
     "@welcomeDescription": {
         "description": "Description text on the welcome screen"
@@ -667,5 +672,92 @@
     "areYouSureSignOut": "మీరు సైన్ అవుట్ చేయాలనుకుంటున్నారా?",
     "@areYouSureSignOut": {
         "description": "Sign out confirmation"
+    },
+    "wantToUtiliseFeature": "ఈ ఫీచర్‌ను ఉపయోగించాలనుకుంటున్నారా?",
+    "@wantToUtiliseFeature": {
+        "description": "Text shown on AI legal guider screen asking user to utilise feature"
+    },
+    "utilise": "ఉపయోగించు",
+    "@utilise": {
+        "description": "Utilise button text"
+    },
+    "skip": "దాటవేయండి",
+    "@skip": {
+        "description": "Skip button text"
+    },
+    "fullNameQuestion": "మీ పూర్తి పేరు ఏమిటి?",
+    "@fullNameQuestion": {
+        "description": "Question asking for user's full name"
+    },
+    "addressQuestion": "మీరు ఎక్కడ నివసిస్తున్నారు (ప్రదేశం / ప్రాంతం)?",
+    "@addressQuestion": {
+        "description": "Question asking for user's address"
+    },
+    "phoneQuestion": "మీ ఫోన్ నంబర్ ఏమిటి?",
+    "@phoneQuestion": {
+        "description": "Question asking for user's phone number"
+    },
+    "complaintTypeQuestion": "మీరు ఏ రకమైన ఫిర్యాదు ఫైల్ చేయాలనుకుంటున్నారు? (దొంగతనం, వేధింపులు, కనిపించకపోవడం మొదలైనవి)",
+    "@complaintTypeQuestion": {
+        "description": "Question asking for complaint type"
+    },
+    "detailsQuestion": "దయచేసి మీ ఫిర్యాదును వివరంగా వివరించండి.",
+    "@detailsQuestion": {
+        "description": "Question asking for complaint details"
+    },
+    "loading": "లోడవుతోంది...",
+    "@loading": {
+        "description": "Loading message"
+    },
+    "pleaseEnterYourAnswer": "దయచేసి మీ సమాధానాన్ని నమోదు చేయండి",
+    "@pleaseEnterYourAnswer": {
+        "description": "Error message when user doesn't enter an answer"
+    },
+    "voiceInputComingSoon": "వాయిస్ ఇన్‌పుట్ (త్వరలో వస్తోంది)",
+    "@voiceInputComingSoon": {
+        "description": "Tooltip for voice input button"
+    },
+    "welcomeToDharma": "ధర్మ పోర్టల్ స్వాగతం",
+    "@welcomeToDharma": {
+        "description": "Welcome message in AI legal chat"
+    },
+    "letUsBegin": "మనం ప్రారంభిద్దాం...",
+    "@letUsBegin": {
+        "description": "Message shown when starting the chat flow"
+    },
+    "pleaseAnswerAllQuestions": "దయచేసి సమర్పించే ముందు అన్ని ప్రశ్నలకు సమాధానం ఇవ్వండి. తప్పిపోయినవి: {missing}",
+    "@pleaseAnswerAllQuestions": {
+        "description": "Error message when not all questions are answered",
+        "placeholders": {
+            "missing": {
+                "type": "String"
+            }
+        }
+    },
+    "complaintSummary": "ఫిర్యాదు సారాంశం:",
+    "@complaintSummary": {
+        "description": "Title for complaint summary section"
+    },
+    "classification": "వర్గీకరణ: {classification}",
+    "@classification": {
+        "description": "Classification label with value",
+        "placeholders": {
+            "classification": {
+                "type": "String"
+            }
+        }
+    },
+    "somethingWentWrong": "క్షమించండి, ఏమో తప్పు జరిగింది. దయచేసి తదుపరి ప్రయత్నించండి.",
+    "@somethingWentWrong": {
+        "description": "Generic error message"
+    },
+    "unexpectedError": "అనుకోని లోపం: {error}",
+    "@unexpectedError": {
+        "description": "Unexpected error message with error details",
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
     }
 }

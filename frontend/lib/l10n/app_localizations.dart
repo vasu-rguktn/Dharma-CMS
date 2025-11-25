@@ -1030,6 +1030,116 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to sign out?'**
   String get areYouSureSignOut;
+  
+  /// Text shown on AI legal guider screen asking user to utilise feature
+  ///
+  /// In en, this message translates to:
+  /// **'Want to utilise this feature?'**
+  String get wantToUtiliseFeature;
+  
+  /// Utilise button text
+  ///
+  /// In en, this message translates to:
+  /// **'Utilise'**
+  String get utilise;
+  
+  /// Skip button text
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+  
+  /// Question asking for user's full name
+  ///
+  /// In en, this message translates to:
+  /// **'What is your full name?'**
+  String get fullNameQuestion;
+  
+  /// Question asking for user's address
+  ///
+  /// In en, this message translates to:
+  /// **'Where do you live (place / area)?'**
+  String get addressQuestion;
+  
+  /// Question asking for user's phone number
+  ///
+  /// In en, this message translates to:
+  /// **'What is your phone number?'**
+  String get phoneQuestion;
+  
+  /// Question asking for complaint type
+  ///
+  /// In en, this message translates to:
+  /// **'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)'**
+  String get complaintTypeQuestion;
+  
+  /// Question asking for complaint details
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe your complaint in detail.'**
+  String get detailsQuestion;
+  
+  /// Loading message
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+  
+  /// Error message when user doesn't enter an answer
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your answer'**
+  String get pleaseEnterYourAnswer;
+  
+  /// Tooltip for voice input button
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input (coming soon)'**
+  String get voiceInputComingSoon;
+  
+  /// Welcome message in AI legal chat
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to NyayaSetu'**
+  String get welcomeToDharma;
+  
+  /// Message shown when starting the chat flow
+  ///
+  /// In en, this message translates to:
+  /// **'Let us begin...'**
+  String get letUsBegin;
+  
+  /// Error message when not all questions are answered
+  ///
+  /// In en, this message translates to:
+  /// **'Please answer all questions before submitting. Missing: {missing}'**
+  String pleaseAnswerAllQuestions(String missing);
+  
+  /// Title for complaint summary section
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint Summary:'**
+  String get complaintSummary;
+  
+  /// Classification label with value
+  ///
+  /// In en, this message translates to:
+  /// **'Classification: {classification}'**
+  String classification(String classification);
+  
+  /// Generic error message
+  ///
+  /// In en, this message translates to:
+  /// **'Sorry, something went wrong. Please try again later.'**
+  String get somethingWentWrong;
+
+  get dharma => null;
+  
+  /// Unexpected error message with error details
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected error: {error}'**
+  String unexpectedErrorMessage(String error);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
