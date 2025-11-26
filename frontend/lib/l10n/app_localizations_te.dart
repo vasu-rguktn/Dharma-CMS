@@ -697,6 +697,16 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get noDocumentsUploaded => 'పత్రాలు అప్‌లోడ్ చేయబడలేదు...';
 
+  @override
+  String get createFirstCase => 'ప్రారంభించడానికి మీ మొదటి కేసును సృష్టించండి';
+
+  @override
+  String get createNewCase => 'కొత్త కేసును సృష్టించండి';
+
+  @override
+  String get fir => 'FIR';
+
+
 
 
 

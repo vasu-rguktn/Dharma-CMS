@@ -697,6 +697,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noDocumentsUploaded => 'No Documents Uploaded...';
 
+  @override
+  String get createFirstCase => 'Create your first case to get started';
+
+  @override
+  String get createNewCase => 'Create New Case';
+
+  @override
+  String get fir => 'FIR';
+
+
 
 
 

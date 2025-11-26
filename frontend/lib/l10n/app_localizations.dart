@@ -1465,6 +1465,25 @@ abstract class AppLocalizations {
   /// **'No Documents Uploaded...'**
   String get noDocumentsUploaded;
 
+  /// Create first case message
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first case to get started'**
+  String get createFirstCase;
+
+  /// Create new case button label
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Case'**
+  String get createNewCase;
+
+  /// FIR label
+  ///
+  /// In en, this message translates to:
+  /// **'FIR'**
+  String get fir;
+
+
 
 
 
