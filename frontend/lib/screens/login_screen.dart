@@ -107,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      
       body: Column(
         children: [
           // TOP LOGO + SVG
@@ -162,15 +163,17 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 32),
 
           // FORM
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Form(
+          
+            Expanded(
+  child: SingleChildScrollView(
+    physics: const ClampingScrollPhysics(), // ✅ Stops extra scroll
+    padding: const EdgeInsets.symmetric(
+      horizontal: 24,
+      vertical: 16,
+    ), // ✅ REMOVED keyboard bottom padding
+    child: Form(
+
+              
                 key: _formKey,
                 child: Column(
                   children: [
