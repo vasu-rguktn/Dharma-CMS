@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
-import 'package:Dharma/models/petition.dart';
+// import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'petition_card.dart';
 import 'petition_detail_bottom_sheet.dart';
@@ -20,6 +21,7 @@ class PetitionsListTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return Consumer<PetitionProvider>(
       builder: (context, provider, _) {
@@ -34,12 +36,12 @@ class PetitionsListTab extends StatelessWidget {
               children: [
                 Icon(Icons.gavel, size: 80, color: Colors.grey[400]),
                 const SizedBox(height: 16),
-                Text('No Petitions Yet',
+                Text(localizations.noPetitionsYet,
                     style: theme.textTheme.titleLarge
                         ?.copyWith(color: Colors.grey[600])),
                 const SizedBox(height: 8),
                 Text(
-                  'Create your first petition using the "Create New" tab',
+                  localizations.createFirstPetition,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: Colors.grey[500]),
                 ),

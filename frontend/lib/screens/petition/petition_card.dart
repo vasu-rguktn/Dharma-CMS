@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class PetitionCard extends StatelessWidget {
   final Petition petition;
@@ -29,6 +30,7 @@ class PetitionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -101,7 +103,7 @@ class PetitionCard extends StatelessWidget {
                   Icon(Icons.calendar_today, size: 14, color: Colors.grey[500]),
                   const SizedBox(width: 4),
                   Text(
-                    'Created: ${formatTimestamp(petition.createdAt)}',
+                    localizations.createdDate(formatTimestamp(petition.createdAt)),
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: Colors.grey[500], fontSize: 11),
                   ),
@@ -110,7 +112,7 @@ class PetitionCard extends StatelessWidget {
                     Icon(Icons.event, size: 14, color: theme.primaryColor),
                     const SizedBox(width: 4),
                     Text(
-                      'Next Hearing: ${petition.nextHearingDate}',
+                      localizations.nextHearingDate(petition.nextHearingDate!),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.primaryColor,
                         fontSize: 11,

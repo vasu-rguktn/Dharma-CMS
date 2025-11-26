@@ -93,18 +93,26 @@ class _AppScaffoldState extends State<AppScaffold> {
               ),
             ),
             _buildDrawerItem(context, Icons.dashboard, localizations.dashboard, '/dashboard', isDark),
+            
             _buildDrawerSection(localizations.aiTools, isDark),
             _buildDrawerItem(context, Icons.chat, localizations.aiChat, '/chat', isDark),
-            _buildDrawerItem(context, Icons.psychology, localizations.legalQueries, '/legal-queries', isDark),
-            _buildDrawerItem(context, Icons.gavel, localizations.legalSuggestion, '/legal-suggestion', isDark),
-            _buildDrawerItem(context, Icons.edit_document, localizations.documentDrafting, '/document-drafting', isDark),
-            _buildDrawerItem(context, Icons.file_present, localizations.chargesheetGen, '/chargesheet-generation', isDark),
-            _buildDrawerItem(context, Icons.fact_check, localizations.chargesheetVetting, '/chargesheet-vetting', isDark),
-            _buildDrawerItem(context, Icons.people, localizations.witnessPrep, '/witness-preparation', isDark),
-            _buildDrawerItem(context, Icons.image_search, localizations.mediaAnalysis, '/media-analysis', isDark),
+            
+            if (authProvider.role == 'admin' || authProvider.role == 'police') ...[
+              _buildDrawerItem(context, Icons.psychology, localizations.legalQueries, '/legal-queries', isDark),
+              _buildDrawerItem(context, Icons.gavel, localizations.legalSuggestion, '/legal-suggestion', isDark),
+              _buildDrawerItem(context, Icons.edit_document, localizations.documentDrafting, '/document-drafting', isDark),
+              _buildDrawerItem(context, Icons.file_present, localizations.chargesheetGen, '/chargesheet-generation', isDark),
+              _buildDrawerItem(context, Icons.fact_check, localizations.chargesheetVetting, '/chargesheet-vetting', isDark),
+              _buildDrawerItem(context, Icons.people, localizations.witnessPrep, '/witness-preparation', isDark),
+              _buildDrawerItem(context, Icons.image_search, localizations.mediaAnalysis, '/media-analysis', isDark),
+            ],
+
             _buildDrawerSection(localizations.caseManagement, isDark),
             _buildDrawerItem(context, Icons.folder_open, localizations.allCases, '/cases', isDark),
-            _buildDrawerItem(context, Icons.book, localizations.caseJournal, '/case-journal', isDark),
+            
+            if (authProvider.role == 'admin' || authProvider.role == 'police')
+              _buildDrawerItem(context, Icons.book, localizations.caseJournal, '/case-journal', isDark),
+            
             _buildDrawerItem(context, Icons.gavel, localizations.petitions, '/petitions', isDark),
             _buildDrawerItem(context, Icons.archive, localizations.mySavedComplaints, '/complaints', isDark),
             const Divider(),
