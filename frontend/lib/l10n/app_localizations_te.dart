@@ -14,6 +14,9 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get dharmaPortal => 'ధర్మ పోర్టల్';
 
+  String get dharma => 'ధర్మ';
+  
+  
   @override
   String get welcomeDescription => 'ఆంధ్ర ప్రదేశ్ పోలీస్ రికార్డులు, నిర్వహణ మరియు విశ్లేషణల కోసం డిజిటల్ కేంద్రం';
 
@@ -238,6 +241,45 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get dashboard => 'డాష్‌బోర్డ్';
+
+  @override
+  String get aiChatbotDetails => 'AI చాట్‌బాట్ వివరాలు';
+
+  @override
+  String get citizenDetails => 'పౌరుల వివరాలు';
+
+  @override
+  String get address => 'చిరునామా';
+
+  @override
+  String get complaintType => 'ఫిర్యాదు రకం';
+
+  @override
+  String get details => 'వివరాలు';
+
+  @override
+  String get formalComplaintSummary => 'అధికారిక ఫిర్యాదు సారాంశం';
+
+  @override
+  String get offenceClassification => 'నేర వర్గీకరణ';
+
+  @override
+  String get thisCaseIsClassifiedAs => 'ఈ కేసు ఇలా వర్గీకరించబడింది';
+
+  @override
+  String get cognizable => 'కాగ్నిజబుల్';
+
+  @override
+  String get nonCognizable => 'నాన్-కాగ్నిజబుల్';
+
+  @override
+  String get pleaseContactOfficer => 'దయచేసి అధికారిని సంప్రదించండి...';
+
+  @override
+  String get fileACase => 'కేసు నమోదు చేయండి';
+
+  @override
+  String get goToDashboard => 'డాష్‌బోర్డ్‌కి వెళ్లండి';
 
   @override
   String welcomeUser(String name) {
@@ -477,4 +519,196 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get areYouSureSignOut => 'మీరు సైన్ అవుట్ చేయాలనుకుంటున్నారా?';
+  
+  @override
+  String get wantToUtiliseFeature => 'ఈ ఫీచర్‌ను ఉపయోగించాలనుకుంటున్నారా?';
+  
+  @override
+  String get utilise => 'ఉపయోగించు';
+  
+  @override
+  String get skip => 'దాటవేయండి';
+  
+  @override
+  String get fullNameQuestion => 'మీ పూర్తి పేరు ఏమిటి?';
+  
+  @override
+  String get addressQuestion => 'మీరు ఎక్కడ నివసిస్తున్నారు (ప్రదేశం / ప్రాంతం)?';
+  
+  @override
+  String get phoneQuestion => 'మీ ఫోన్ నంబర్ ఏమిటి?';
+  
+  @override
+  String get complaintTypeQuestion => 'మీరు ఏ రకమైన ఫిర్యాదు ఫైల్ చేయాలనుకుంటున్నారు? (దొంగతనం, వేధింపులు, కనిపించకపోవడం మొదలైనవి)';
+  
+  @override
+  String get detailsQuestion => 'దయచేసి మీ ఫిర్యాదును వివరంగా వివరించండి.';
+  
+  @override
+  String get loading => 'లోడవుతోంది...';
+  
+  @override
+  String get pleaseEnterYourAnswer => 'దయచేసి మీ సమాధానాన్ని నమోదు చేయండి';
+  
+  @override
+  String get voiceInputComingSoon => 'వాయిస్ ఇన్‌పుట్ (త్వరలో వస్తోంది)';
+  
+  @override
+  String get welcomeToDharma => 'ధర్మ పోర్టల్ కి స్వాగతం';
+  
+  @override
+  String get letUsBegin => 'ఇప్పుడు మనం ప్రారంభిద్దాం...';
+  
+  @override
+  String pleaseAnswerAllQuestions(String missing) => 'దయచేసి సమర్పించే ముందు అన్ని ప్రశ్నలకు సమాధానం ఇవ్వండి. తప్పిపోయినవి: $missing';
+  
+  @override
+  String get complaintSummary => 'ఫిర్యాదు సారాంశం:';
+  
+  @override
+  String classification(String classification) => 'వర్గీకరణ: $classification';
+  
+  @override
+  String get somethingWentWrong => 'క్షమించండి, ఏమో తప్పు జరిగింది. దయచేసి తదుపరి ప్రయత్నించండి.';
+  
+  @override
+  String unexpectedErrorMessage(String error) => 'అనుకోని లోపం: $error';
+
+  @override
+  String get viewAndManageComplaints => 'మీ సేవ్ చేసిన ఫిర్యాదు చిత్తుప్రతులను వీక్షించండి మరియు నిర్వహించండి';
+
+  @override
+  String get savedComplaintsAppearHere => 'మీ సేవ్ చేసిన ఫిర్యాదు చిత్తుప్రతులు ఇక్కడ కనిపిస్తాయి';
+
+  @override
+  String get untitledComplaint => 'శీర్షిక లేని ఫిర్యాదు';
+
+  @override
+  String get draft => 'చిత్తుప్రతి';
+
+  @override
+  String get deleteComplaint => 'ఫిర్యాదును తొలగించండి';
+
+  @override
+  String get deleteComplaintConfirmation => 'మీరు ఖచ్చితంగా ఈ ఫిర్యాదును తొలగించాలనుకుంటున్నారా?';
+
+  @override
+  String get basicInformation => 'ప్రాథమిక సమాచారం';
+
+  @override
+  String get petitionTypeLabel => 'పిటిషన్ రకం (దొంగతనం/దోపిడీ, మొదలైనవి) *';
+
+  @override
+  String get required => 'అవసరం';
+
+  @override
+  String get yourNameLabel => 'మీ పేరు *';
+
+  @override
+  String get phoneNumberLabel => 'ఫోన్ నంబర్ *';
+
+  @override
+  String get enterTenDigitNumber => '10-అంకెల నంబర్‌ను నమోదు చేయండి';
+
+  @override
+  String get addressLabel => 'చిరునామా *';
+
+  @override
+  String get petitionDetails => 'పిటిషన్ వివరాలు';
+
+  @override
+  String get groundsReasonsLabel => 'కారణాలు / కారణాలు *';
+
+  @override
+  String get handwrittenDocuments => 'చేతితో రాసిన పత్రాలు';
+
+  @override
+  String get uploadDocuments => 'పత్రాలను అప్‌లోడ్ చేయండి';
+
+  @override
+  String filesCount(int count) => '$count ఫైల్(లు)';
+
+  @override
+  String get extractedText => 'సంగ్రహించిన వచనం';
+
+  @override
+  String get createPetition => 'పిటిషన్ సృష్టించండి';
+
+  @override
+  String get petitionCreatedSuccessfully => 'పిటిషన్ విజయవంతంగా సృష్టించబడింది!';
+
+  @override
+  String get failedToCreatePetition => 'పిటిషన్ సృష్టించడం విఫలమైంది';
+
+  @override
+  String get noTextExtracted => 'పత్రం నుండి వచనం సంగ్రహించబడలేదు';
+
+  @override
+  String ocrFailed(String error) => 'OCR విఫలమైంది: $error';
+
+  @override
+  String get petitionManagement => 'పిటిషన్ నిర్వహణ';
+
+  @override
+  String get myPetitions => 'నా పిటిషన్లు';
+
+  @override
+  String get createNew => 'కొత్తది సృష్టించండి';
+
+  @override
+  String get noPetitionsYet => 'ఇంకా పిటిషన్లు లేవు';
+
+  @override
+  String get createFirstPetition => '"కొత్తది సృష్టించండి" ట్యాబ్ ఉపయోగించి మీ మొదటి పిటిషన్‌ను సృష్టించండి';
+
+  @override
+  String createdDate(String date) => 'సృష్టించబడింది: $date';
+
+  @override
+  String nextHearingDate(String date) => 'తదుపరి విచారణ: $date';
+
+  @override
+  String get petitioner => 'పిటిషనర్';
+
+  @override
+  String get firNumber => 'FIR సంఖ్య';
+
+  @override
+  String get grounds => 'కారణాలు';
+
+  @override
+  String get prayerReliefSought => 'ప్రార్థన / ఉపశమనం కోరింది';
+
+  @override
+  String get filingDate => 'దాఖలు తేదీ';
+
+  @override
+  String get nextHearing => 'తదుపరి విచారణ';
+
+  @override
+  String get orderDate => 'ఆర్డర్ తేదీ';
+
+  @override
+  String get orderDetails => 'ఆర్డర్ వివరాలు';
+
+  @override
+  String get extractedTextFromDocuments => 'పత్రాల నుండి సంగ్రహించిన వచనం';
+
+  @override
+  String get noDocumentsUploaded => 'పత్రాలు అప్‌లోడ్ చేయబడలేదు...';
+
+  @override
+  String get createFirstCase => 'ప్రారంభించడానికి మీ మొదటి కేసును సృష్టించండి';
+
+  @override
+  String get createNewCase => 'కొత్త కేసును సృష్టించండి';
+
+  @override
+  String get fir => 'FIR';
+
+
+
+
+
+
 }

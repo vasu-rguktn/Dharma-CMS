@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class AiLegalGuiderScreen extends StatelessWidget {
   const AiLegalGuiderScreen({super.key});
@@ -13,6 +14,7 @@ class AiLegalGuiderScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final double topImageHeight = size.height * 0.4;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
@@ -117,7 +119,7 @@ class AiLegalGuiderScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Want to utilise this feature?',
+                      localizations.wantToUtiliseFeature,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: const Color(0xFF333652),
                       ),
@@ -137,9 +139,9 @@ class AiLegalGuiderScreen extends StatelessWidget {
                               ),
                               elevation: 6,
                             ),
-                            child: const Text(
-                              'Utilise',
-                              style: TextStyle(
+                            child: Text(
+                              localizations.utilise,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -158,12 +160,12 @@ class AiLegalGuiderScreen extends StatelessWidget {
                               ),
                               side: const BorderSide(color: orange, width: 2),
                             ),
-                            child: const Text(
-                              'Skip',
-                              style: TextStyle(
+                            child: Text(
+                              localizations.skip,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: orange,
+                                color: Color(0xFFFC633C),
                               ),
                             ),
                           ),

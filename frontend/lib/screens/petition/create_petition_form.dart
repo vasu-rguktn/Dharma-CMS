@@ -6,12 +6,21 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/services/local_storage_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'ocr_service.dart';
 
 class CreatePetitionForm extends StatefulWidget {
   final VoidCallback? onCreatedSuccess;
-  const CreatePetitionForm({super.key, this.onCreatedSuccess});
+  // Add new parameter for initial data
+  final Map<String, dynamic>? initialData;
+  
+  const CreatePetitionForm({
+    super.key, 
+    this.onCreatedSuccess,
+    this.initialData,
+  });
 
   @override
   State<CreatePetitionForm> createState() => _CreatePetitionFormState();
@@ -35,6 +44,20 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void initState() {
     super.initState();
     _ocrService.init();
+
+    // Auto-fill form if initial data exists
+    final data = widget.initialData;
+    // debug: confirm incoming prefill
+    // ignore: avoid_print
+    print('CreatePetitionForm.initialData -> $data');
+
+    if (data != null) {
+      _titleController.text = data['complaintType']?.toString() ?? '';
+      _petitionerNameController.text = data['fullName']?.toString() ?? '';
+      _phoneNumberController.text = data['phone']?.toString() ?? '';
+      _addressController.text = data['address']?.toString() ?? '';
+      _groundsController.text = data['details']?.toString() ?? '';
+    }
   }
 
   @override
@@ -55,6 +78,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+    final localizations = AppLocalizations.of(context)!;
 
     String? extractedText;
     if (_pickedFiles.isNotEmpty && _ocrService.result == null) {
@@ -96,14 +120,28 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Petition created successfully!'), backgroundColor: Colors.green),
+        SnackBar(content: Text(localizations.petitionCreatedSuccessfully), backgroundColor: Colors.green),
       );
-      _resetForm();
-      await petitionProvider.fetchPetitions(authProvider.user!.uid);
+
+      // debug print to confirm behavior
+      // ignore: avoid_print
+      print('CreatePetitionForm: petition created, navigating to /petitions');
+
+      // call optional callback (keeps existing behavior for callers)
       widget.onCreatedSuccess?.call();
+
+      // reset local form state
+      _resetForm();
+
+      // refresh list and then navigate back to petitions list
+      await petitionProvider.fetchPetitions(authProvider.user!.uid);
+
+      if (!mounted) return;
+
+      GoRouter.of(context).go('/petitions'); // navigate back to petitions list
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create petition'), backgroundColor: Colors.red),
+        SnackBar(content: Text(localizations.failedToCreatePetition), backgroundColor: Colors.red),
       );
     }
   }
@@ -121,22 +159,113 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       _ocrService.clearResult();
     });
   }
+Future<void> _pickAndOcr() async {
+  final localizations = AppLocalizations.of(context)!;
+  // open file picker
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+    withData: true,
+  );
 
-  Future<void> _pickAndOcr() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      withData: true,
-      type: FileType.image,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() => _pickedFiles = result.files);
-      if (_pickedFiles.isNotEmpty) {
-        await _ocrService.runOcr(_pickedFiles.first);
+  if (result == null || result.files.isEmpty) return;
+
+  final file = result.files.first;
+
+  // update picked files immediately so UI shows upload
+  setState(() {
+    _pickedFiles = [file];
+  });
+
+  try {
+    // run OCR and await completion
+    await _ocrService.runOcr(file);
+
+    // when extraction completes, update UI immediately
+    final r = _ocrService.result;
+    if (r != null && r['text'] != null) {
+      final extracted = r['text'].toString().trim();
+      if (extracted.isNotEmpty) {
+        setState(() {
+          final current = _groundsController.text.trim();
+
+          // If the field is empty → fill it
+          if (current.isEmpty) {
+            _groundsController.text = extracted;
+          } else {
+            // If not empty → combine existing and extracted text cleanly
+            if (!current.contains(extracted)) {
+              _groundsController.text = '$current $extracted'.trim();
+            }
+          }
+        });
+      }
+    } else {
+      // extraction returned no text
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(localizations.noTextExtracted)),
+        );
       }
     }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.ocrFailed(e.toString()))),
+      );
+    }
   }
+}
+
+
+
+
+  // Future<void> _pickAndOcr() async {
+  //   // open file picker
+  //   final result = await FilePicker.platform.pickFiles(
+  //     type: FileType.custom,
+  //     allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+  //     withData: true,
+  //   );
+
+  //   if (result == null || result.files.isEmpty) return;
+
+  //   final file = result.files.first;
+
+  //   // update picked files immediately so UI shows upload
+  //   setState(() {
+  //     _pickedFiles = [file];
+  //   });
+
+  //   try {
+  //     // run OCR and await completion
+  //     await _ocrService.runOcr(file);
+
+  //     // when extraction completes, update UI immediately
+  //     final r = _ocrService.result;
+  //     if (r != null && r['text'] != null) {
+  //       setState(() {
+  //         _groundsController.text = r['text'].toString();
+  //       });
+  //     } else {
+  //       // extraction returned no text
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(content: Text('No text extracted from document')),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('OCR failed: $e')),
+  //       );
+  //     }
+  //   }
+  // }
 
   Widget _buildOcrSummary(ThemeData theme) {
+    final localizations = AppLocalizations.of(context)!;
     final text = _ocrService.result?['text'] as String? ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
 
@@ -146,7 +275,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Extracted Text', style: theme.textTheme.labelLarge),
+            Text(localizations.extractedText, style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.all(8),
@@ -165,6 +294,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -180,27 +310,27 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Basic Information', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(localizations.basicInformation, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Petition Title *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.petitionTypeLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _petitionerNameController,
-                      decoration: const InputDecoration(labelText: 'Your Name *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.yourNameLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneNumberController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'Phone Number *', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: localizations.phoneNumberLabel, border: const OutlineInputBorder()),
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        if (!RegExp(r'^\d{10}$').hasMatch(v)) return 'Enter 10-digit number';
+                        if (v == null || v.isEmpty) return localizations.required;
+                        if (!RegExp(r'^\d{10}$').hasMatch(v)) return localizations.enterTenDigitNumber;
                         return null;
                       },
                     ),
@@ -208,8 +338,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     TextFormField(
                       controller: _addressController,
                       maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Address *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.addressLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
                   ],
                 ),
@@ -225,22 +355,22 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Petition Details', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(localizations.petitionDetails, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _groundsController,
                       maxLines: 8,
-                      decoration: const InputDecoration(labelText: 'Grounds / Reasons *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.groundsReasonsLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
+                    // const SizedBox(height: 16),
+                    // TextFormField(
+                    //   controller: _prayerReliefController,
+                    //   maxLines: 5,
+                    //   decoration: const InputDecoration(labelText: 'Prayer / Relief Sought (Optional)', border: new OutlineInputBorder()),
+                    // ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _prayerReliefController,
-                      maxLines: 5,
-                      decoration: const InputDecoration(labelText: 'Prayer / Relief Sought (Optional)', border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Supporting Documents (Optional)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(localizations.handwrittenDocuments, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 12,
@@ -248,10 +378,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       children: [
                         ElevatedButton.icon(
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Documents'),
+                          label: Text(localizations.uploadDocuments),
                           onPressed: _isSubmitting ? null : _pickAndOcr,
                         ),
-                        if (_pickedFiles.isNotEmpty) Text('${_pickedFiles.length} file(s)'),
+                        if (_pickedFiles.isNotEmpty) Text(localizations.filesCount(_pickedFiles.length)),
                         if (_ocrService.isExtracting) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                       ],
                     ),
@@ -296,7 +426,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
               child: _isSubmitting
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Create Petition', style: TextStyle(fontSize: 16)),
+                  : Text(localizations.createPetition, style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),

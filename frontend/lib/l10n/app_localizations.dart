@@ -557,6 +557,84 @@ abstract class AppLocalizations {
   /// **'Dashboard'**
   String get dashboard;
 
+  /// AI Chatbot Details screen title
+  ///
+  /// In en, this message translates to:
+  /// **'AI Chatbot Details'**
+  String get aiChatbotDetails;
+
+  /// Citizen Details section title
+  ///
+  /// In en, this message translates to:
+  /// **'Citizen Details'**
+  String get citizenDetails;
+
+  /// Address label
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// Complaint Type label
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint Type'**
+  String get complaintType;
+
+  /// Details label
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// Formal Complaint Summary section title
+  ///
+  /// In en, this message translates to:
+  /// **'Formal Complaint Summary'**
+  String get formalComplaintSummary;
+
+  /// Offence Classification section title
+  ///
+  /// In en, this message translates to:
+  /// **'Offence Classification'**
+  String get offenceClassification;
+
+  /// Case classification message prefix
+  ///
+  /// In en, this message translates to:
+  /// **'This case is classified as'**
+  String get thisCaseIsClassifiedAs;
+
+  /// Cognizable classification
+  ///
+  /// In en, this message translates to:
+  /// **'COGNIZABLE'**
+  String get cognizable;
+
+  /// Non-Cognizable classification
+  ///
+  /// In en, this message translates to:
+  /// **'NON-COGNIZABLE'**
+  String get nonCognizable;
+
+  /// Message to contact officer
+  ///
+  /// In en, this message translates to:
+  /// **'Please Contact To the Officer...'**
+  String get pleaseContactOfficer;
+
+  /// File a case button text
+  ///
+  /// In en, this message translates to:
+  /// **'File a Case'**
+  String get fileACase;
+
+  /// Go to dashboard button text
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Dashboard'**
+  String get goToDashboard;
+
   /// Welcome message
   ///
   /// In en, this message translates to:
@@ -1030,6 +1108,386 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to sign out?'**
   String get areYouSureSignOut;
+  
+  /// Text shown on AI legal guider screen asking user to utilise feature
+  ///
+  /// In en, this message translates to:
+  /// **'Want to utilise this feature?'**
+  String get wantToUtiliseFeature;
+  
+  /// Utilise button text
+  ///
+  /// In en, this message translates to:
+  /// **'Utilise'**
+  String get utilise;
+  
+  /// Skip button text
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+  
+  /// Question asking for user's full name
+  ///
+  /// In en, this message translates to:
+  /// **'What is your full name?'**
+  String get fullNameQuestion;
+  
+  /// Question asking for user's address
+  ///
+  /// In en, this message translates to:
+  /// **'Where do you live (place / area)?'**
+  String get addressQuestion;
+  
+  /// Question asking for user's phone number
+  ///
+  /// In en, this message translates to:
+  /// **'What is your phone number?'**
+  String get phoneQuestion;
+  
+  /// Question asking for complaint type
+  ///
+  /// In en, this message translates to:
+  /// **'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)'**
+  String get complaintTypeQuestion;
+  
+  /// Question asking for complaint details
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe your complaint in detail.'**
+  String get detailsQuestion;
+  
+  /// Loading message
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+  
+  /// Error message when user doesn't enter an answer
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your answer'**
+  String get pleaseEnterYourAnswer;
+  
+  /// Tooltip for voice input button
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input (coming soon)'**
+  String get voiceInputComingSoon;
+  
+  /// Welcome message in AI legal chat
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to NyayaSetu'**
+  String get welcomeToDharma;
+  
+  /// Message shown when starting the chat flow
+  ///
+  /// In en, this message translates to:
+  /// **'Let us begin...'**
+  String get letUsBegin;
+  
+  /// Error message when not all questions are answered
+  ///
+  /// In en, this message translates to:
+  /// **'Please answer all questions before submitting. Missing: {missing}'**
+  String pleaseAnswerAllQuestions(String missing);
+  
+  /// Title for complaint summary section
+  ///
+  /// In en, this message translates to:
+  /// **'Complaint Summary:'**
+  String get complaintSummary;
+  
+  /// Classification label with value
+  ///
+  /// In en, this message translates to:
+  /// **'Classification: {classification}'**
+  String classification(String classification);
+  
+  /// Generic error message
+  ///
+  /// In en, this message translates to:
+  /// **'Sorry, something went wrong. Please try again later.'**
+  String get somethingWentWrong;
+
+  get dharma => null;
+  
+  /// Unexpected error message with error details
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected error: {error}'**
+  String unexpectedErrorMessage(String error);
+
+  /// Subtitle for complaints screen
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage your saved complaint drafts'**
+  String get viewAndManageComplaints;
+
+  /// Empty state message for complaints
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved complaint drafts will appear here'**
+  String get savedComplaintsAppearHere;
+
+  /// Default title for untitled complaint
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Complaint'**
+  String get untitledComplaint;
+
+  /// Draft status label
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draft;
+
+  /// Delete complaint dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Complaint'**
+  String get deleteComplaint;
+
+  /// Delete complaint confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this complaint?'**
+  String get deleteComplaintConfirmation;
+
+  /// Basic Information title
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Information'**
+  String get basicInformation;
+
+  /// Petition Type label
+  ///
+  /// In en, this message translates to:
+  /// **'Petition Type(Theft/Robery, etc) *'**
+  String get petitionTypeLabel;
+
+  /// Required validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get required;
+
+  /// Your Name label
+  ///
+  /// In en, this message translates to:
+  /// **'Your Name *'**
+  String get yourNameLabel;
+
+  /// Phone Number label
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number *'**
+  String get phoneNumberLabel;
+
+  /// Enter 10-digit number validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 10-digit number'**
+  String get enterTenDigitNumber;
+
+  /// Address label
+  ///
+  /// In en, this message translates to:
+  /// **'Address *'**
+  String get addressLabel;
+
+  /// Petition Details title
+  ///
+  /// In en, this message translates to:
+  /// **'Petition Details'**
+  String get petitionDetails;
+
+  /// Grounds / Reasons label
+  ///
+  /// In en, this message translates to:
+  /// **'Grounds / Reasons *'**
+  String get groundsReasonsLabel;
+
+  /// Handwritten Documents title
+  ///
+  /// In en, this message translates to:
+  /// **'HandWritten Documents'**
+  String get handwrittenDocuments;
+
+  /// Upload Documents button
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Documents'**
+  String get uploadDocuments;
+
+  /// Files count message
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s)'**
+  String filesCount(int count);
+
+  /// Extracted Text title
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted Text'**
+  String get extractedText;
+
+  /// Create Petition button
+  ///
+  /// In en, this message translates to:
+  /// **'Create Petition'**
+  String get createPetition;
+
+  /// Petition created successfully message
+  ///
+  /// In en, this message translates to:
+  /// **'Petition created successfully!'**
+  String get petitionCreatedSuccessfully;
+
+  /// Failed to create petition message
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create petition'**
+  String get failedToCreatePetition;
+
+  /// No text extracted message
+  ///
+  /// In en, this message translates to:
+  /// **'No text extracted from document'**
+  String get noTextExtracted;
+
+  /// OCR failed message
+  ///
+  /// In en, this message translates to:
+  /// **'OCR failed: {error}'**
+  String ocrFailed(String error);
+
+  /// Petition Management title
+  ///
+  /// In en, this message translates to:
+  /// **'Petition Management'**
+  String get petitionManagement;
+
+  /// My Petitions tab title
+  ///
+  /// In en, this message translates to:
+  /// **'My Petitions'**
+  String get myPetitions;
+
+  /// Create New tab title
+  ///
+  /// In en, this message translates to:
+  /// **'Create New'**
+  String get createNew;
+
+  /// No petitions yet message
+  ///
+  /// In en, this message translates to:
+  /// **'No Petitions Yet'**
+  String get noPetitionsYet;
+
+  /// Create first petition message
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first petition using the "Create New" tab'**
+  String get createFirstPetition;
+
+  /// Created date label
+  ///
+  /// In en, this message translates to:
+  /// **'Created: {date}'**
+  String createdDate(String date);
+
+  /// Next Hearing date label
+  ///
+  /// In en, this message translates to:
+  /// **'Next Hearing: {date}'**
+  String nextHearingDate(String date);
+
+  /// Petitioner label
+  ///
+  /// In en, this message translates to:
+  /// **'Petitioner'**
+  String get petitioner;
+
+  /// FIR Number label
+  ///
+  /// In en, this message translates to:
+  /// **'FIR Number'**
+  String get firNumber;
+
+  /// Grounds label
+  ///
+  /// In en, this message translates to:
+  /// **'Grounds'**
+  String get grounds;
+
+  /// Prayer / Relief Sought label
+  ///
+  /// In en, this message translates to:
+  /// **'Prayer / Relief Sought'**
+  String get prayerReliefSought;
+
+  /// Filing Date label
+  ///
+  /// In en, this message translates to:
+  /// **'Filing Date'**
+  String get filingDate;
+
+  /// Next Hearing label
+  ///
+  /// In en, this message translates to:
+  /// **'Next Hearing'**
+  String get nextHearing;
+
+  /// Order Date label
+  ///
+  /// In en, this message translates to:
+  /// **'Order Date'**
+  String get orderDate;
+
+  /// Order Details label
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetails;
+
+  /// Extracted Text from Documents label
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted Text from Documents'**
+  String get extractedTextFromDocuments;
+
+  /// No Documents Uploaded message
+  ///
+  /// In en, this message translates to:
+  /// **'No Documents Uploaded...'**
+  String get noDocumentsUploaded;
+
+  /// Create first case message
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first case to get started'**
+  String get createFirstCase;
+
+  /// Create new case button label
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Case'**
+  String get createNewCase;
+
+  /// FIR label
+  ///
+  /// In en, this message translates to:
+  /// **'FIR'**
+  String get fir;
+
+
+
+
+
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

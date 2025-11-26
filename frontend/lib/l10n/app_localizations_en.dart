@@ -11,6 +11,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appTitle => 'Dharma CMS';
 
+
+  String get dharma => 'Dharma';
+
   @override
   String get dharmaPortal => 'Dharma Portal';
 
@@ -238,6 +241,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboard => 'Dashboard';
+
+  @override
+  String get aiChatbotDetails => 'AI Chatbot Details';
+
+  @override
+  String get citizenDetails => 'Citizen Details';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get complaintType => 'Complaint Type';
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get formalComplaintSummary => 'Formal Complaint Summary';
+
+  @override
+  String get offenceClassification => 'Offence Classification';
+
+  @override
+  String get thisCaseIsClassifiedAs => 'This case is classified as';
+
+  @override
+  String get cognizable => 'COGNIZABLE';
+
+  @override
+  String get nonCognizable => 'NON-COGNIZABLE';
+
+  @override
+  String get pleaseContactOfficer => 'Please Contact To the Officer...';
+
+  @override
+  String get fileACase => 'File a Case';
+
+  @override
+  String get goToDashboard => 'Go to Dashboard';
 
   @override
   String welcomeUser(String name) {
@@ -477,4 +519,196 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get areYouSureSignOut => 'Are you sure you want to sign out?';
+  
+  @override
+  String get wantToUtiliseFeature => 'Want to utilise this feature?';
+  
+  @override
+  String get utilise => 'Utilise';
+  
+  @override
+  String get skip => 'Skip';
+  
+  @override
+  String get fullNameQuestion => 'What is your full name?';
+  
+  @override
+  String get addressQuestion => 'Where do you live (place / area)?';
+  
+  @override
+  String get phoneQuestion => 'What is your phone number?';
+  
+  @override
+  String get complaintTypeQuestion => 'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)';
+  
+  @override
+  String get detailsQuestion => 'Please describe your complaint in detail.';
+  
+  @override
+  String get loading => 'Loading...';
+  
+  @override
+  String get pleaseEnterYourAnswer => 'Please enter your answer';
+  
+  @override
+  String get voiceInputComingSoon => 'Voice input (coming soon)';
+  
+  @override
+  String get welcomeToDharma => 'Welcome to Dharma';
+  
+  @override
+  String get letUsBegin => 'Let us begin...';
+  
+  @override
+  String pleaseAnswerAllQuestions(String missing) => 'Please answer all questions before submitting. Missing: $missing';
+  
+  @override
+  String get complaintSummary => 'Complaint Summary:';
+  
+  @override
+  String classification(String classification) => 'Classification: $classification';
+  
+  @override
+  String get somethingWentWrong => 'Sorry, something went wrong. Please try again later.';
+  
+  @override
+  String unexpectedErrorMessage(String error) => 'Unexpected error: $error';
+
+  @override
+  String get viewAndManageComplaints => 'View and manage your saved complaint drafts';
+
+  @override
+  String get savedComplaintsAppearHere => 'Your saved complaint drafts will appear here';
+
+  @override
+  String get untitledComplaint => 'Untitled Complaint';
+
+  @override
+  String get draft => 'Draft';
+
+  @override
+  String get deleteComplaint => 'Delete Complaint';
+
+  @override
+  String get deleteComplaintConfirmation => 'Are you sure you want to delete this complaint?';
+
+  @override
+  String get basicInformation => 'Basic Information';
+
+  @override
+  String get petitionTypeLabel => 'Petition Type(Theft/Robery, etc) *';
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String get yourNameLabel => 'Your Name *';
+
+  @override
+  String get phoneNumberLabel => 'Phone Number *';
+
+  @override
+  String get enterTenDigitNumber => 'Enter 10-digit number';
+
+  @override
+  String get addressLabel => 'Address *';
+
+  @override
+  String get petitionDetails => 'Petition Details';
+
+  @override
+  String get groundsReasonsLabel => 'Grounds / Reasons *';
+
+  @override
+  String get handwrittenDocuments => 'HandWritten Documents';
+
+  @override
+  String get uploadDocuments => 'Upload Documents';
+
+  @override
+  String filesCount(int count) => '$count file(s)';
+
+  @override
+  String get extractedText => 'Extracted Text';
+
+  @override
+  String get createPetition => 'Create Petition';
+
+  @override
+  String get petitionCreatedSuccessfully => 'Petition created successfully!';
+
+  @override
+  String get failedToCreatePetition => 'Failed to create petition';
+
+  @override
+  String get noTextExtracted => 'No text extracted from document';
+
+  @override
+  String ocrFailed(String error) => 'OCR failed: $error';
+
+  @override
+  String get petitionManagement => 'Petition Management';
+
+  @override
+  String get myPetitions => 'My Petitions';
+
+  @override
+  String get createNew => 'Create New';
+
+  @override
+  String get noPetitionsYet => 'No Petitions Yet';
+
+  @override
+  String get createFirstPetition => 'Create your first petition using the "Create New" tab';
+
+  @override
+  String createdDate(String date) => 'Created: $date';
+
+  @override
+  String nextHearingDate(String date) => 'Next Hearing: $date';
+
+  @override
+  String get petitioner => 'Petitioner';
+
+  @override
+  String get firNumber => 'FIR Number';
+
+  @override
+  String get grounds => 'Grounds';
+
+  @override
+  String get prayerReliefSought => 'Prayer / Relief Sought';
+
+  @override
+  String get filingDate => 'Filing Date';
+
+  @override
+  String get nextHearing => 'Next Hearing';
+
+  @override
+  String get orderDate => 'Order Date';
+
+  @override
+  String get orderDetails => 'Order Details';
+
+  @override
+  String get extractedTextFromDocuments => 'Extracted Text from Documents';
+
+  @override
+  String get noDocumentsUploaded => 'No Documents Uploaded...';
+
+  @override
+  String get createFirstCase => 'Create your first case to get started';
+
+  @override
+  String get createNewCase => 'Create New Case';
+
+  @override
+  String get fir => 'FIR';
+
+
+
+
+
+
 }

@@ -79,30 +79,50 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
   final String classification;
-  const CognigibleNonCognigibleSeparationScreen({super.key, required this.classification});
+  final Map<String, dynamic>? complaintData; // added
+
+  const CognigibleNonCognigibleSeparationScreen({
+    super.key,
+    required this.classification,
+    this.complaintData,
+  });
 
   static CognigibleNonCognigibleSeparationScreen fromRouteSettings(
       BuildContext context, GoRouterState state) {
     final q = state.extra as Map<String, dynamic>?;
     return CognigibleNonCognigibleSeparationScreen(
       classification: q?['classification'] as String? ?? '',
+      complaintData: q?['complaintData'] as Map<String, dynamic>?, // extract
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final String upper = (classification).toUpperCase();
     final bool isNonCognizable = upper.contains('NON-COGNIZABLE');
     final bool isCognizable =
         !isNonCognizable && RegExp(r'\bCOGNIZABLE\b').hasMatch(upper);
 
+    // when user taps "File a Case"
+    // Convert complaintData to the keys CreatePetitionForm expects
+    // (complaintType, fullName, phone, address, details)
+    final petitionData = {
+      'complaintType': complaintData?['complaintType']??complaintData?['complaint_type']??'' ,
+      'fullName': complaintData?['fullName'] ?? complaintData?['full_name'] ?? complaintData?['name'] ?? '',
+      'phone': complaintData?['phone'] ?? complaintData?['phoneNumber'] ?? complaintData?['phone_number'] ?? '',
+      'address': complaintData?['address'] ?? complaintData?['addr'] ?? complaintData?['location'] ?? '',
+      'details': complaintData?['details'] ?? complaintData?['summary'] ?? complaintData?['complaint'] ?? '',
+    };
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
       appBar: AppBar(
-        title: const Text('Offence Classification'),
+        title: Text(localizations.offenceClassification),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -117,8 +137,8 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               // --- Main Classification Text ---
               Text(
                 isCognizable
-                    ? 'This case is classified as\n\nCOGNIZABLE'
-                    : 'This case is classified as\n\nNON-COGNIZABLE',
+                    ? '${localizations.thisCaseIsClassifiedAs}\n\n${localizations.cognizable}'
+                    : '${localizations.thisCaseIsClassifiedAs}\n\n${localizations.nonCognizable}',
                 style: TextStyle(
                   fontSize: 22,
                   color: isCognizable ? Colors.green[700] : Colors.red[700],
@@ -131,11 +151,11 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               if (isNonCognizable) ...[
                 const SizedBox(height: 20),
                 Text(
-                  'Please Contact To the Writer',
+                  localizations.pleaseContactOfficer,
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[800],
-                    fontWeight: FontWeight.w500,
+                    fontSize: 20,
+                    color: Colors.grey[1000],
+                    fontWeight: FontWeight.w800,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -147,9 +167,14 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => isCognizable
-                      ? context.go('/petitions')
-                      : context.go('/dashboard'),
+                  onPressed: () {
+                    if (isCognizable) {
+                      // navigate and pass the mapped data
+                      context.go('/petitions/create', extra: petitionData);
+                    } else {
+                      context.go('/dashboard');
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFC633C),
                     padding: const EdgeInsets.symmetric(vertical: 18),
@@ -158,7 +183,7 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    isCognizable ? 'File a Case' : 'Go to Dashboard',
+                    isCognizable ? localizations.fileACase : localizations.goToDashboard,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,

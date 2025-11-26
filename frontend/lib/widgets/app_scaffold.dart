@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/config/theme.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
+
 
 class AppScaffold extends StatefulWidget {
   final Widget child;
@@ -19,6 +21,7 @@ class _AppScaffoldState extends State<AppScaffold> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -29,7 +32,7 @@ class _AppScaffoldState extends State<AppScaffold> {
             _scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: const Text('Dharma'),
+        title: Text(localizations.dharma??'Dharma'),
         actions: [
           PopupMenuButton<String>(
             child: Padding(
@@ -54,13 +57,13 @@ class _AppScaffoldState extends State<AppScaffold> {
               }
             },
             itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
                 value: 'signout',
                 child: Row(
-                  children: const [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Sign Out'),
+                  children: [
+                    const Icon(Icons.logout),
+                    const SizedBox(width: 8),
+                    Text(localizations.signOut),
                   ],
                 ),
               ),
@@ -83,29 +86,37 @@ class _AppScaffoldState extends State<AppScaffold> {
                   Icon(Icons.balance, size: 48, color: AppTheme.sidebarForeground(isDark)),
                   const SizedBox(height: 8),
                   Text(
-                    'Dharma',
+                    localizations.dharma ?? 'Dharma',
                     style: TextStyle(color: AppTheme.sidebarForeground(isDark), fontSize: 20),
                   ),
                 ],
               ),
             ),
-            _buildDrawerItem(context, Icons.dashboard, 'Dashboard', '/dashboard', isDark),
-            _buildDrawerSection('AI Tools', isDark),
-            _buildDrawerItem(context, Icons.chat, 'AI Chat', '/chat', isDark),
-            _buildDrawerItem(context, Icons.psychology, 'Legal Queries', '/legal-queries', isDark),
-            _buildDrawerItem(context, Icons.gavel, 'Legal Suggestion', '/legal-suggestion', isDark),
-            _buildDrawerItem(context, Icons.edit_document, 'Document Drafting', '/document-drafting', isDark),
-            _buildDrawerItem(context, Icons.file_present, 'Chargesheet Gen', '/chargesheet-generation', isDark),
-            _buildDrawerItem(context, Icons.fact_check, 'Chargesheet Vetting', '/chargesheet-vetting', isDark),
-            _buildDrawerItem(context, Icons.people, 'Witness Prep', '/witness-preparation', isDark),
-            _buildDrawerItem(context, Icons.image_search, 'Media Analysis', '/media-analysis', isDark),
-            _buildDrawerSection('Case Management', isDark),
-            _buildDrawerItem(context, Icons.folder_open, 'All Cases', '/cases', isDark),
-            _buildDrawerItem(context, Icons.book, 'Case Journal', '/case-journal', isDark),
-            _buildDrawerItem(context, Icons.gavel, 'Petitions', '/petitions', isDark),
-            _buildDrawerItem(context, Icons.archive, 'My Saved Complaints', '/complaints', isDark),
+            _buildDrawerItem(context, Icons.dashboard, localizations.dashboard, '/dashboard', isDark),
+            
+            _buildDrawerSection(localizations.aiTools, isDark),
+            _buildDrawerItem(context, Icons.chat, localizations.aiChat, '/chat', isDark),
+            
+            if (authProvider.role == 'admin' || authProvider.role == 'police') ...[
+              _buildDrawerItem(context, Icons.psychology, localizations.legalQueries, '/legal-queries', isDark),
+              _buildDrawerItem(context, Icons.gavel, localizations.legalSuggestion, '/legal-suggestion', isDark),
+              _buildDrawerItem(context, Icons.edit_document, localizations.documentDrafting, '/document-drafting', isDark),
+              _buildDrawerItem(context, Icons.file_present, localizations.chargesheetGen, '/chargesheet-generation', isDark),
+              _buildDrawerItem(context, Icons.fact_check, localizations.chargesheetVetting, '/chargesheet-vetting', isDark),
+              _buildDrawerItem(context, Icons.people, localizations.witnessPrep, '/witness-preparation', isDark),
+              _buildDrawerItem(context, Icons.image_search, localizations.mediaAnalysis, '/media-analysis', isDark),
+            ],
+
+            _buildDrawerSection(localizations.caseManagement, isDark),
+            _buildDrawerItem(context, Icons.folder_open, localizations.allCases, '/cases', isDark),
+            
+            if (authProvider.role == 'admin' || authProvider.role == 'police')
+              _buildDrawerItem(context, Icons.book, localizations.caseJournal, '/case-journal', isDark),
+            
+            _buildDrawerItem(context, Icons.gavel, localizations.petitions, '/petitions', isDark),
+            _buildDrawerItem(context, Icons.archive, localizations.mySavedComplaints, '/complaints', isDark),
             const Divider(),
-            _buildDrawerItem(context, Icons.settings, 'Settings', '/settings', isDark),
+            _buildDrawerItem(context, Icons.settings, localizations.settings, '/settings', isDark),
           ],
         ),
       ),

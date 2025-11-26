@@ -7,6 +7,10 @@
     "@dharmaPortal": {
         "description": "The main title on the welcome screen"
     },
+    "dharma": "Dharma",
+    "@dharma": {
+        "description": "The main header on the app bar"
+    },
     "welcomeDescription": "Digital hub for Andhra Pradesh police records, management and analytics",
     "@welcomeDescription": {
         "description": "Description text on the welcome screen"
@@ -667,5 +671,92 @@
     "areYouSureSignOut": "Are you sure you want to sign out?",
     "@areYouSureSignOut": {
         "description": "Sign out confirmation"
+    },
+    "wantToUtiliseFeature": "Want to utilise this feature?",
+    "@wantToUtiliseFeature": {
+        "description": "Text shown on AI legal guider screen asking user to utilise feature"
+    },
+    "utilise": "Utilise",
+    "@utilise": {
+        "description": "Utilise button text"
+    },
+    "skip": "Skip",
+    "@skip": {
+        "description": "Skip button text"
+    },
+    "fullNameQuestion": "What is your full name?",
+    "@fullNameQuestion": {
+        "description": "Question asking for user's full name"
+    },
+    "addressQuestion": "Where do you live (place / area)?",
+    "@addressQuestion": {
+        "description": "Question asking for user's address"
+    },
+    "phoneQuestion": "What is your phone number?",
+    "@phoneQuestion": {
+        "description": "Question asking for user's phone number"
+    },
+    "complaintTypeQuestion": "What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)",
+    "@complaintTypeQuestion": {
+        "description": "Question asking for complaint type"
+    },
+    "detailsQuestion": "Please describe your complaint in detail.",
+    "@detailsQuestion": {
+        "description": "Question asking for complaint details"
+    },
+    "loading": "Loading...",
+    "@loading": {
+        "description": "Loading message"
+    },
+    "pleaseEnterYourAnswer": "Please enter your answer",
+    "@pleaseEnterYourAnswer": {
+        "description": "Error message when user doesn't enter an answer"
+    },
+    "voiceInputComingSoon": "Voice input (coming soon)",
+    "@voiceInputComingSoon": {
+        "description": "Tooltip for voice input button"
+    },
+    "welcomeToDharma": "Welcome to Dharma",
+    "@welcomeToDharma": {
+        "description": "Welcome message in AI legal chat"
+    },
+    "letUsBegin": "Let us begin...",
+    "@letUsBegin": {
+        "description": "Message shown when starting the chat flow"
+    },
+    "pleaseAnswerAllQuestions": "Please answer all questions before submitting. Missing: {missing}",
+    "@pleaseAnswerAllQuestions": {
+        "description": "Error message when not all questions are answered",
+        "placeholders": {
+            "missing": {
+                "type": "String"
+            }
+        }
+    },
+    "complaintSummary": "Complaint Summary:",
+    "@complaintSummary": {
+        "description": "Title for complaint summary section"
+    },
+    "classification": "Classification: {classification}",
+    "@classification": {
+        "description": "Classification label with value",
+        "placeholders": {
+            "classification": {
+                "type": "String"
+            }
+        }
+    },
+    "somethingWentWrong": "Sorry, something went wrong. Please try again later.",
+    "@somethingWentWrong": {
+        "description": "Generic error message"
+    },
+    "unexpectedError": "Unexpected error: {error}",
+    "@unexpectedError": {
+        "description": "Unexpected error message with error details",
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
     }
 }
