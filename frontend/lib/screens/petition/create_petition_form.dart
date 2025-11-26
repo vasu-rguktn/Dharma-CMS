@@ -7,6 +7,7 @@ import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/services/local_storage_service.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'ocr_service.dart';
 
@@ -77,6 +78,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+    final localizations = AppLocalizations.of(context)!;
 
     String? extractedText;
     if (_pickedFiles.isNotEmpty && _ocrService.result == null) {
@@ -118,7 +120,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Petition created successfully!'), backgroundColor: Colors.green),
+        SnackBar(content: Text(localizations.petitionCreatedSuccessfully), backgroundColor: Colors.green),
       );
 
       // debug print to confirm behavior
@@ -139,7 +141,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       GoRouter.of(context).go('/petitions'); // navigate back to petitions list
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create petition'), backgroundColor: Colors.red),
+        SnackBar(content: Text(localizations.failedToCreatePetition), backgroundColor: Colors.red),
       );
     }
   }
@@ -158,6 +160,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     });
   }
 Future<void> _pickAndOcr() async {
+  final localizations = AppLocalizations.of(context)!;
   // open file picker
   final result = await FilePicker.platform.pickFiles(
     type: FileType.custom,
@@ -201,14 +204,14 @@ Future<void> _pickAndOcr() async {
       // extraction returned no text
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No text extracted from document')),
+          SnackBar(content: Text(localizations.noTextExtracted)),
         );
       }
     }
   } catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('OCR failed: $e')),
+        SnackBar(content: Text(localizations.ocrFailed(e.toString()))),
       );
     }
   }
@@ -262,6 +265,7 @@ Future<void> _pickAndOcr() async {
   // }
 
   Widget _buildOcrSummary(ThemeData theme) {
+    final localizations = AppLocalizations.of(context)!;
     final text = _ocrService.result?['text'] as String? ?? '';
     if (text.isEmpty) return const SizedBox.shrink();
 
@@ -271,7 +275,7 @@ Future<void> _pickAndOcr() async {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Extracted Text', style: theme.textTheme.labelLarge),
+            Text(localizations.extractedText, style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.all(8),
@@ -290,6 +294,7 @@ Future<void> _pickAndOcr() async {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -305,27 +310,27 @@ Future<void> _pickAndOcr() async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Basic Information', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(localizations.basicInformation, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Petition Type(Theft/Robery, etc) *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.petitionTypeLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _petitionerNameController,
-                      decoration: const InputDecoration(labelText: 'Your Name *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.yourNameLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneNumberController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'Phone Number *', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: localizations.phoneNumberLabel, border: const OutlineInputBorder()),
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        if (!RegExp(r'^\d{10}$').hasMatch(v)) return 'Enter 10-digit number';
+                        if (v == null || v.isEmpty) return localizations.required;
+                        if (!RegExp(r'^\d{10}$').hasMatch(v)) return localizations.enterTenDigitNumber;
                         return null;
                       },
                     ),
@@ -333,8 +338,8 @@ Future<void> _pickAndOcr() async {
                     TextFormField(
                       controller: _addressController,
                       maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Address *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.addressLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
                   ],
                 ),
@@ -350,22 +355,22 @@ Future<void> _pickAndOcr() async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Petition Details', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(localizations.petitionDetails, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _groundsController,
                       maxLines: 8,
-                      decoration: const InputDecoration(labelText: 'Grounds / Reasons *', border: OutlineInputBorder()),
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                      decoration: InputDecoration(labelText: localizations.groundsReasonsLabel, border: const OutlineInputBorder()),
+                      validator: (v) => v?.isEmpty ?? true ? localizations.required : null,
                     ),
+                    // const SizedBox(height: 16),
+                    // TextFormField(
+                    //   controller: _prayerReliefController,
+                    //   maxLines: 5,
+                    //   decoration: const InputDecoration(labelText: 'Prayer / Relief Sought (Optional)', border: new OutlineInputBorder()),
+                    // ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _prayerReliefController,
-                      maxLines: 5,
-                      decoration: const InputDecoration(labelText: 'Prayer / Relief Sought (Optional)', border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('HandWritten Documents', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(localizations.handwrittenDocuments, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 12,
@@ -373,10 +378,10 @@ Future<void> _pickAndOcr() async {
                       children: [
                         ElevatedButton.icon(
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Documents'),
+                          label: Text(localizations.uploadDocuments),
                           onPressed: _isSubmitting ? null : _pickAndOcr,
                         ),
-                        if (_pickedFiles.isNotEmpty) Text('${_pickedFiles.length} file(s)'),
+                        if (_pickedFiles.isNotEmpty) Text(localizations.filesCount(_pickedFiles.length)),
                         if (_ocrService.isExtracting) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                       ],
                     ),
@@ -421,7 +426,7 @@ Future<void> _pickAndOcr() async {
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
               child: _isSubmitting
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Create Petition', style: TextStyle(fontSize: 16)),
+                  : Text(localizations.createPetition, style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),

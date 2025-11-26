@@ -4,6 +4,7 @@ import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'petitions_list_tab.dart';
 import 'create_petition_form.dart';
@@ -47,14 +48,15 @@ class _PetitionsScreenState extends State<PetitionsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Petition Management'),
+        title: Text(localizations.petitionManagement),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.list), text: 'My Petitions'),
-            // Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
+          tabs: [
+            Tab(icon: const Icon(Icons.list), text: localizations.myPetitions),
+            Tab(icon: const Icon(Icons.add_circle), text: localizations.createNew),
           ],
         ),
       ),

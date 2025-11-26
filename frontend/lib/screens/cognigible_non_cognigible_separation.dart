@@ -79,6 +79,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
   final String classification;
@@ -101,6 +102,7 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final String upper = (classification).toUpperCase();
     final bool isNonCognizable = upper.contains('NON-COGNIZABLE');
     final bool isCognizable =
@@ -120,7 +122,7 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
       appBar: AppBar(
-        title: const Text('Offence Classification'),
+        title: Text(localizations.offenceClassification),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -135,8 +137,8 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               // --- Main Classification Text ---
               Text(
                 isCognizable
-                    ? 'This case is classified as\n\nCOGNIZABLE'
-                    : 'This case is classified as\n\nNON-COGNIZABLE',
+                    ? '${localizations.thisCaseIsClassifiedAs}\n\n${localizations.cognizable}'
+                    : '${localizations.thisCaseIsClassifiedAs}\n\n${localizations.nonCognizable}',
                 style: TextStyle(
                   fontSize: 22,
                   color: isCognizable ? Colors.green[700] : Colors.red[700],
@@ -149,7 +151,7 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
               if (isNonCognizable) ...[
                 const SizedBox(height: 20),
                 Text(
-                  'Please Contact To the Officer...',
+                  localizations.pleaseContactOfficer,
                   style: TextStyle(
                     fontSize: 20,
                     color: Colors.grey[1000],
@@ -181,7 +183,7 @@ class CognigibleNonCognigibleSeparationScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    isCognizable ? 'File a Case' : 'Go to Dashboard',
+                    isCognizable ? localizations.fileACase : localizations.goToDashboard,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,

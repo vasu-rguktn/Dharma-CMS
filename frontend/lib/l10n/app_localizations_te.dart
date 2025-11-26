@@ -243,6 +243,45 @@ class AppLocalizationsTe extends AppLocalizations {
   String get dashboard => 'డాష్‌బోర్డ్';
 
   @override
+  String get aiChatbotDetails => 'AI చాట్‌బాట్ వివరాలు';
+
+  @override
+  String get citizenDetails => 'పౌరుల వివరాలు';
+
+  @override
+  String get address => 'చిరునామా';
+
+  @override
+  String get complaintType => 'ఫిర్యాదు రకం';
+
+  @override
+  String get details => 'వివరాలు';
+
+  @override
+  String get formalComplaintSummary => 'అధికారిక ఫిర్యాదు సారాంశం';
+
+  @override
+  String get offenceClassification => 'నేర వర్గీకరణ';
+
+  @override
+  String get thisCaseIsClassifiedAs => 'ఈ కేసు ఇలా వర్గీకరించబడింది';
+
+  @override
+  String get cognizable => 'కాగ్నిజబుల్';
+
+  @override
+  String get nonCognizable => 'నాన్-కాగ్నిజబుల్';
+
+  @override
+  String get pleaseContactOfficer => 'దయచేసి అధికారిని సంప్రదించండి...';
+
+  @override
+  String get fileACase => 'కేసు నమోదు చేయండి';
+
+  @override
+  String get goToDashboard => 'డాష్‌బోర్డ్‌కి వెళ్లండి';
+
+  @override
   String welcomeUser(String name) {
     return '$name కు స్వాగతం!';
   }
@@ -552,4 +591,114 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get deleteComplaintConfirmation => 'మీరు ఖచ్చితంగా ఈ ఫిర్యాదును తొలగించాలనుకుంటున్నారా?';
+
+  @override
+  String get basicInformation => 'ప్రాథమిక సమాచారం';
+
+  @override
+  String get petitionTypeLabel => 'పిటిషన్ రకం (దొంగతనం/దోపిడీ, మొదలైనవి) *';
+
+  @override
+  String get required => 'అవసరం';
+
+  @override
+  String get yourNameLabel => 'మీ పేరు *';
+
+  @override
+  String get phoneNumberLabel => 'ఫోన్ నంబర్ *';
+
+  @override
+  String get enterTenDigitNumber => '10-అంకెల నంబర్‌ను నమోదు చేయండి';
+
+  @override
+  String get addressLabel => 'చిరునామా *';
+
+  @override
+  String get petitionDetails => 'పిటిషన్ వివరాలు';
+
+  @override
+  String get groundsReasonsLabel => 'కారణాలు / కారణాలు *';
+
+  @override
+  String get handwrittenDocuments => 'చేతితో రాసిన పత్రాలు';
+
+  @override
+  String get uploadDocuments => 'పత్రాలను అప్‌లోడ్ చేయండి';
+
+  @override
+  String filesCount(int count) => '$count ఫైల్(లు)';
+
+  @override
+  String get extractedText => 'సంగ్రహించిన వచనం';
+
+  @override
+  String get createPetition => 'పిటిషన్ సృష్టించండి';
+
+  @override
+  String get petitionCreatedSuccessfully => 'పిటిషన్ విజయవంతంగా సృష్టించబడింది!';
+
+  @override
+  String get failedToCreatePetition => 'పిటిషన్ సృష్టించడం విఫలమైంది';
+
+  @override
+  String get noTextExtracted => 'పత్రం నుండి వచనం సంగ్రహించబడలేదు';
+
+  @override
+  String ocrFailed(String error) => 'OCR విఫలమైంది: $error';
+
+  @override
+  String get petitionManagement => 'పిటిషన్ నిర్వహణ';
+
+  @override
+  String get myPetitions => 'నా పిటిషన్లు';
+
+  @override
+  String get createNew => 'కొత్తది సృష్టించండి';
+
+  @override
+  String get noPetitionsYet => 'ఇంకా పిటిషన్లు లేవు';
+
+  @override
+  String get createFirstPetition => '"కొత్తది సృష్టించండి" ట్యాబ్ ఉపయోగించి మీ మొదటి పిటిషన్‌ను సృష్టించండి';
+
+  @override
+  String createdDate(String date) => 'సృష్టించబడింది: $date';
+
+  @override
+  String nextHearingDate(String date) => 'తదుపరి విచారణ: $date';
+
+  @override
+  String get petitioner => 'పిటిషనర్';
+
+  @override
+  String get firNumber => 'FIR సంఖ్య';
+
+  @override
+  String get grounds => 'కారణాలు';
+
+  @override
+  String get prayerReliefSought => 'ప్రార్థన / ఉపశమనం కోరింది';
+
+  @override
+  String get filingDate => 'దాఖలు తేదీ';
+
+  @override
+  String get nextHearing => 'తదుపరి విచారణ';
+
+  @override
+  String get orderDate => 'ఆర్డర్ తేదీ';
+
+  @override
+  String get orderDetails => 'ఆర్డర్ వివరాలు';
+
+  @override
+  String get extractedTextFromDocuments => 'పత్రాల నుండి సంగ్రహించిన వచనం';
+
+  @override
+  String get noDocumentsUploaded => 'పత్రాలు అప్‌లోడ్ చేయబడలేదు...';
+
+
+
+
+
 }

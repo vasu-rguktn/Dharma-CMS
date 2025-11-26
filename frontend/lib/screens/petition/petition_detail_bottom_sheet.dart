@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:Dharma/models/petition.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class PetitionDetailBottomSheet {
   static void show(BuildContext context, Petition petition) {
@@ -67,6 +68,7 @@ class _DetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,43 +103,43 @@ class _DetailContent extends StatelessWidget {
         ),
         const Divider(height: 32),
 
-        _buildDetailRow('Petitioner', petition.petitionerName),
+        _buildDetailRow(localizations.petitioner, petition.petitionerName),
         if (petition.phoneNumber != null)
-          _buildDetailRow('Phone', petition.phoneNumber!),
+          _buildDetailRow(localizations.phone, petition.phoneNumber!),
         if (petition.address != null)
-          _buildDetailRow('Address', petition.address!),
+          _buildDetailRow(localizations.address, petition.address!),
         if (petition.firNumber != null)
-          _buildDetailRow('FIR Number', petition.firNumber!),
+          _buildDetailRow(localizations.firNumber, petition.firNumber!),
 
         const SizedBox(height: 16),
-        Text('Grounds', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Text(localizations.grounds, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text(petition.grounds),
 
         if (petition.prayerRelief != null) ...[
           const SizedBox(height: 16),
-          Text('Prayer / Relief Sought', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(localizations.prayerReliefSought, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(petition.prayerRelief!),
         ],
 
         if (petition.filingDate != null)
-          _buildDetailRow('Filing Date', petition.filingDate!),
+          _buildDetailRow(localizations.filingDate, petition.filingDate!),
         if (petition.nextHearingDate != null)
-          _buildDetailRow('Next Hearing', petition.nextHearingDate!),
+          _buildDetailRow(localizations.nextHearing, petition.nextHearingDate!),
         if (petition.orderDate != null)
-          _buildDetailRow('Order Date', petition.orderDate!),
+          _buildDetailRow(localizations.orderDate, petition.orderDate!),
 
         if (petition.orderDetails != null) ...[
           const SizedBox(height: 16),
-          Text('Order Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(localizations.orderDetails, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(petition.orderDetails!),
         ],
 
         if (petition.extractedText != null && petition.extractedText!.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text('Extracted Text from Documents', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text(localizations.extractedTextFromDocuments, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
@@ -151,9 +153,9 @@ class _DetailContent extends StatelessWidget {
           ),
         ] else ...[
           const SizedBox(height: 16),
-          Text('Extracted Text from Documents', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(localizations.extractedTextFromDocuments, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('No Documents Uploaded...', style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic)),
+          Text(localizations.noDocumentsUploaded, style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic)),
         ],
       ],
     );
