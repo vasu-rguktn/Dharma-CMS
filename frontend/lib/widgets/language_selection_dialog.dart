@@ -10,35 +10,85 @@ class LanguageSelectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
     final localizations = AppLocalizations.of(context)!;
-    
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              localizations.language, // Localized
-              style: Theme.of(context).textTheme.titleLarge,
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.4, // 👈 50% height
+      maxChildSize: 0.4,
+      minChildSize: 0.4,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
             ),
-            const SizedBox(height: 24),
-            _LanguageOption(
-              name: 'English',
-              languageCode: 'en',
-              isSelected: settingsProvider.locale?.languageCode == 'en',
-              onSelect: () => _selectLanguage(context, 'en'),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 20,
+                offset: Offset(0, -5),
+              ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              children: [
+                const SizedBox(height: 14),
+
+                // Drag handle
+                Container(
+                  width: 60,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[350],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // Title
+                Text(
+                  localizations.language ?? "Language",
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Language buttons
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 36),
+                  child: Column(
+                    children: [
+                      _LanguageButton(
+                        name: 'English',
+                        languageCode: 'en',
+                        isSelected: settingsProvider.locale?.languageCode == 'en',
+                        onTap: () => _selectLanguage(context, 'en'),
+                      ),
+                      const SizedBox(height:25),
+                      _LanguageButton(
+                        name: 'తెలుగు',
+                        languageCode: 'te',
+                        isSelected: settingsProvider.locale?.languageCode == 'te',
+                        onTap: () => _selectLanguage(context, 'te'),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 12),
-            _LanguageOption(
-              name: 'తెలుగు',
-              languageCode: 'te',
-              isSelected: settingsProvider.locale?.languageCode == 'te',
-              onSelect: () => _selectLanguage(context, 'te'),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -49,46 +99,57 @@ class LanguageSelectionDialog extends StatelessWidget {
   }
 }
 
-class _LanguageOption extends StatelessWidget {
+// --------------------------------------------------------
+// Language button widget
+// --------------------------------------------------------
+
+class _LanguageButton extends StatelessWidget {
   final String name;
   final String languageCode;
   final bool isSelected;
-  final VoidCallback onSelect;
+  final VoidCallback onTap;
 
-  const _LanguageOption({
+  const _LanguageButton({
     required this.name,
     required this.languageCode,
     required this.isSelected,
-    required this.onSelect,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onSelect,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
+    return SizedBox(
+      height: 64,
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected
+              ? const Color(0xFFFC633C).withOpacity(0.15)
+              : Colors.transparent,
+          foregroundColor:
+              isSelected ? const Color(0xFFFC633C) : Colors.black87,
+          elevation: 0,
+          side: BorderSide(
+            color: isSelected ? const Color(0xFFFC633C) : Colors.grey[300]!,
             width: 2,
           ),
-          color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
         ),
         child: Row(
           children: [
             Text(
               name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: isSelected ? Theme.of(context).primaryColor : null,
-                    fontWeight: isSelected ? FontWeight.bold : null,
-                  ),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              ),
             ),
             if (isSelected) ...[
               const Spacer(),
-              Icon(Icons.check, color: Theme.of(context).primaryColor),
+              const Icon(Icons.check, size: 26, color: Color(0xFFFC633C)),
             ],
           ],
         ),
