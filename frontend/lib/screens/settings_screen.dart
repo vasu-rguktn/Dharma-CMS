@@ -84,6 +84,7 @@ class SettingsScreen extends StatelessWidget {
                         ? localizations.telugu 
                         : localizations.english;
                     
+                    
                     return ListTile(
                       leading: const Icon(Icons.language),
                       title: Text(localizations.language),
