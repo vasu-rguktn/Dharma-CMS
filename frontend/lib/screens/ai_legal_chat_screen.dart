@@ -484,12 +484,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       baseUrl = 'http://localhost:8000';
     }
 
+    final localeCode = Localizations.localeOf(context).languageCode;
+
     final payload = {
       'full_name': _answers['full_name'] ?? '',
       'address': _answers['address'] ?? '',
       'phone': _answers['phone'] ?? _answers['phone_number'] ?? '',
       'complaint_type': _answers['complaint_type'] ?? '',
       'details': _answers['details'] ?? '',
+      'language': localeCode,
     };
 
     try {

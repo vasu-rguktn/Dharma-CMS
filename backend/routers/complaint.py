@@ -29,6 +29,7 @@ class ComplaintRequest(BaseModel):
     phone: str = Field(..., min_length=10)
     complaint_type: str = Field(..., min_length=1)
     details: str = Field(..., min_length=10)
+    language: Optional[str] = Field(default="en", description="ISO code such as en or te")
 
 class ComplaintResponse(BaseModel):
     formal_summary: str
@@ -37,6 +38,79 @@ class ComplaintResponse(BaseModel):
     timestamp: str
 
 # === Helpers ===
+def resolve_language(lang: Optional[str]) -> str:
+    if not lang:
+        return "en"
+    code = lang.lower()
+    if code.startswith("te"):
+        return "te"
+    return "en"
+
+
+TELUGU_SCRIPT_RE = re.compile(r"[\u0C00-\u0C7F]")
+
+
+def _needs_translation(text: str) -> bool:
+    if not text:
+        return False
+    if TELUGU_SCRIPT_RE.search(text):
+        return False
+    ascii_letters = re.sub(r"[^A-Za-z]", "", text)
+    return bool(ascii_letters)
+
+
+def translate_to_telugu(text: str) -> str:
+    """
+    Translate English responses into Telugu so summaries follow the citizen's locale.
+    Falls back to the original text if translation is not possible.
+    """
+    if not HF_TOKEN or not _needs_translation(text):
+        return text
+    try:
+        resp = client.chat.completions.create(
+            model=LLM_MODEL,
+            temperature=0.2,
+            max_tokens=180,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Translate the following citizen input into natural Telugu suitable for police documentation. "
+                        "Preserve personal names and numbers. Return only the translated text."
+                    ),
+                },
+                {"role": "user", "content": text},
+            ],
+        )
+        translated = (resp.choices[0].message.content or "").strip()
+        return translated if translated else text
+    except Exception as exc:
+        logger.warning(f"Translation failed; using original text. Reason: {exc}")
+        return text
+
+
+SUMMARY_LABELS = {
+    "en": {
+        "header": "POLICE COMPLAINT SUMMARY",
+        "full_name": "Full Name",
+        "address": "Address",
+        "phone": "Phone Number",
+        "complaint_type": "Complaint Type",
+        "details": "Details",
+        "date_of_complaint": "Date of Complaint",
+    },
+    "te": {
+        "header": "పోలీస్ ఫిర్యాదు సారాంశం",
+        "full_name": "పూర్తి పేరు",
+        "address": "చిరునామా",
+        "phone": "ఫోన్ నంబర్",
+        "complaint_type": "ఫిర్యాదు రకం",
+        "details": "వివరాలు",
+        "date_of_complaint": "ఫిర్యాదు తేదీ",
+    },
+}
+
+
 def build_conversation(req: ComplaintRequest) -> str:
     lines = [
         f"What is your full name?: {req.full_name}",
@@ -119,25 +193,39 @@ def generate_summary_text(req: ComplaintRequest) -> str:
     Complaint Type may include (official label — IPC) only if get_official_complaint_label returns it.
     """
     date_of_complaint = today_date_str()
+    language = resolve_language(getattr(req, "language", None))
+    labels = SUMMARY_LABELS.get(language, SUMMARY_LABELS["en"])
 
     # Attempt to get official label with IPC
     official_label = None
     if HF_TOKEN:
         official_label = get_official_complaint_label(req.complaint_type, req.details)
 
+    full_name = req.full_name.strip()
+    address = req.address.strip()
+    phone = req.phone.strip()
+    complaint_type_value = req.complaint_type.strip()
+    details_value = req.details.strip()
+
+    if language == "te":
+        full_name = translate_to_telugu(full_name)
+        address = translate_to_telugu(address)
+        complaint_type_value = translate_to_telugu(complaint_type_value)
+        details_value = translate_to_telugu(details_value)
+
     if official_label:
-        complaint_type_line = f"{req.complaint_type.strip()} ({official_label})"
+        complaint_type_line = f"{complaint_type_value} ({official_label})"
     else:
-        complaint_type_line = req.complaint_type.strip()
+        complaint_type_line = complaint_type_value
 
     lines = [
-        "POLICE COMPLAINT SUMMARY",
-        f"Full Name: {req.full_name.strip()}",
-        f"Address: {req.address.strip()}",
-        f"Phone Number: {req.phone.strip()}",
-        f"Complaint Type: {complaint_type_line}",
-        f"Details: {req.details.strip()}",
-        f"Date_of_complaint: {date_of_complaint}",
+        labels["header"],
+        f"{labels['full_name']}: {full_name}",
+        f"{labels['address']}: {address}",
+        f"{labels['phone']}: {phone}",
+        f"{labels['complaint_type']}: {complaint_type_line}",
+        f"{labels['details']}: {details_value}",
+        f"{labels['date_of_complaint']}: {date_of_complaint}",
         ""  # trailing newline
     ]
     return "\n".join(lines)
@@ -291,6 +379,7 @@ def classify_offence(formal_summary: str, *, complaint_type: str = "", details: 
 )
 async def process_complaint(payload: ComplaintRequest):
     try:
+        language = resolve_language(payload.language)
         conversation = build_conversation(payload)
         # produce the neat text summary requested by user (no description)
         formal_summary = generate_summary_text(payload)
@@ -301,6 +390,11 @@ async def process_complaint(payload: ComplaintRequest):
             complaint_type=payload.complaint_type,
             details=payload.details,
         )
+        if language == "te" and classification:
+            upper = classification.upper()
+            if "COGNIZABLE" in upper:
+                classification = translate_to_telugu(classification)
+
         logger.info(f"Classification decided → {classification}")
 
         # Terminal-friendly log
