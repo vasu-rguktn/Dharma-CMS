@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -41,7 +42,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${result.files.single.name} content loaded.'),
+              content: Text(AppLocalizations.of(context)!.fileContentLoaded(result.files.single.name)),
               backgroundColor: Colors.green,
             ),
           );
@@ -51,7 +52,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error reading file: $e'),
+            content: Text(AppLocalizations.of(context)!.errorReadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -62,8 +63,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
   Future<void> _handleSubmit() async {
     if (_chargesheetContentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload or paste the charge sheet content.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseUploadOrPasteChargesheet),
           backgroundColor: Colors.red,
         ),
       );
@@ -90,8 +91,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Charge sheet vetted and suggestions provided.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.chargesheetVettedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -100,7 +101,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to vet charge sheet: $error'),
+            content: Text(AppLocalizations.of(context)!.failedToVetChargesheet(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -115,6 +116,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -134,7 +136,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Charge Sheet Vetting AI',
+                          localizations.chargesheetVettingAI,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -144,7 +146,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Upload or paste an existing charge sheet. The AI will review it and suggest improvements to strengthen the case.',
+                    localizations.chargesheetVettingDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -152,7 +154,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Upload Charge Sheet (.txt file)',
+                    localizations.uploadChargesheet,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -163,7 +165,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                       OutlinedButton.icon(
                         onPressed: _pickFile,
                         icon: const Icon(Icons.upload_file),
-                        label: const Text('Choose File'),
+                        label: Text(localizations.chooseFile),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -174,7 +176,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                       if (_chargesheetContentController.text.isNotEmpty) ...[
                         const SizedBox(width: 12),
                         Text(
-                          'File loaded. You can also edit below.',
+                          localizations.fileLoadedEditBelow,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -185,7 +187,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Or Paste Charge Sheet Content',
+                    localizations.orPasteChargesheet,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -194,9 +196,9 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                   TextField(
                     controller: _chargesheetContentController,
                     maxLines: 15,
-                    decoration: const InputDecoration(
-                      hintText: 'Paste the full content of the charge sheet here...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.pasteChargesheetHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -212,7 +214,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.verified),
-                      label: Text(_isLoading ? 'Vetting...' : 'Vet Charge Sheet'),
+                      label: Text(_isLoading ? localizations.vetting : localizations.vetChargeSheet),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -228,12 +230,12 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
           
           if (_isLoading) ...[
             const SizedBox(height: 24),
-            const Center(
+            Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Vetting charge sheet, please wait...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(localizations.vettingChargesheetWait),
                 ],
               ),
             ),
@@ -249,14 +251,14 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'AI Vetting Suggestions',
+                      localizations.aiVettingSuggestions,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Review the suggestions to improve the charge sheet.',
+                      localizations.reviewSuggestionsToImprove,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -272,7 +274,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: SelectableText(
-                        _suggestions!['suggestions'] ?? 'No suggestions provided',
+                        _suggestions!['suggestions'] ?? localizations.noSuggestionsProvided,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -284,7 +286,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'AI-generated suggestions. Legal expertise is required for final decisions.',
+                            localizations.aiVettingDisclaimer,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.grey[600],
                             ),

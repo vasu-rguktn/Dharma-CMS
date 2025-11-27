@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 
 class DocumentDraftingScreen extends StatefulWidget {
@@ -27,8 +28,8 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   Future<void> _handleSubmit() async {
     if (_caseDataController.text.trim().isEmpty || _recipientType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please provide case data and select a recipient type.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.provideCaseDataAndRecipient),
           backgroundColor: Colors.red,
         ),
       );
@@ -59,8 +60,8 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Document draft generated.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.documentDraftGenerated),
             backgroundColor: Colors.green,
           ),
         );
@@ -69,7 +70,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate document draft: $error'),
+            content: Text(AppLocalizations.of(context)!.failedToGenerateDraft(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -84,6 +85,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -103,7 +105,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'AI Document Drafter',
+                          localizations.aiDocumentDrafter,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -113,7 +115,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Generate document drafts based on case data for specific recipients like medical officers or forensic experts.',
+                    localizations.documentDraftingDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -121,7 +123,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Case Data',
+                    localizations.caseData,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -130,15 +132,15 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   TextField(
                     controller: _caseDataController,
                     maxLines: 10,
-                    decoration: const InputDecoration(
-                      hintText: 'Paste all relevant case data: complaint transcripts, witness statements, FIR details, investigation notes, etc...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.pasteCaseDataHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Recipient Type',
+                    localizations.recipientType,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -146,18 +148,18 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _recipientType,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Select recipient type',
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      hintText: localizations.selectRecipientType,
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: 'medical officer',
-                        child: Text('Medical Officer'),
+                        child: Text(localizations.medicalOfficer),
                       ),
                       DropdownMenuItem(
                         value: 'forensic expert',
-                        child: Text('Forensic Expert'),
+                        child: Text(localizations.forensicExpert),
                       ),
                     ],
                     onChanged: (value) {
@@ -169,7 +171,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Additional Instructions (Optional)',
+                    localizations.additionalInstructionsOptional,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -178,9 +180,9 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   TextField(
                     controller: _additionalInstructionsController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: 'E.g., \'Focus on injuries sustained\', \'Request specific tests for DNA analysis\', \'Keep the tone formal and urgent\'...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.additionalInstructionsHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -196,7 +198,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.create),
-                      label: Text(_isLoading ? 'Drafting...' : 'Draft Document'),
+                      label: Text(_isLoading ? localizations.drafting : localizations.draftDocument),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -212,12 +214,12 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
           
           if (_isLoading) ...[
             const SizedBox(height: 24),
-            const Center(
+            Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Drafting document, please wait...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(localizations.draftingWait),
                 ],
               ),
             ),
@@ -233,14 +235,14 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Generated Document Draft',
+                      localizations.generatedDocumentDraft,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Review the generated draft. You can copy and edit it as needed.',
+                      localizations.reviewDraftDesc,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -256,7 +258,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: SelectableText(
-                        _draft!['draft'] ?? 'No draft generated',
+                        _draft!['draft'] ?? localizations.noDraftGenerated,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -270,7 +272,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                             Icon(Icons.warning_amber, color: Colors.orange[700], size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'AI-generated content. Verify and adapt for official use.',
+                              localizations.aiDraftDisclaimer,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: Colors.grey[600],
                               ),
@@ -281,13 +283,13 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                           onPressed: () {
                             // Copy to clipboard functionality would go here
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Draft copied to clipboard'),
+                              SnackBar(
+                                content: Text(localizations.draftCopied),
                               ),
                             );
                           },
                           icon: const Icon(Icons.copy),
-                          label: const Text('Copy Draft'),
+                          label: Text(localizations.copyDraft),
                         ),
                       ],
                     ),

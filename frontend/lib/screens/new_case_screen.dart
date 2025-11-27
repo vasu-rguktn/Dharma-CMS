@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -69,14 +70,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Case created successfully!')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
         );
         context.go('/cases');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating case: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorCreatingCase(e.toString()))),
         );
       }
     } finally {
@@ -88,6 +89,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Form(
@@ -103,7 +106,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 Expanded(
                   child: Text(
-                    'Create New Case',
+                    localizations.createNewCase,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -121,7 +124,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Basic Information',
+                      localizations.basicInformation,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -129,14 +132,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Case Title *',
-                        hintText: 'Enter a brief title for the case',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: localizations.caseTitleRequired,
+                        hintText: localizations.caseTitleHint,
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a case title';
+                          return localizations.pleaseEnterCaseTitle;
                         }
                         return null;
                       },
@@ -144,14 +147,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _firNumberController,
-                      decoration: const InputDecoration(
-                        labelText: 'FIR Number *',
-                        hintText: 'Enter FIR number',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: localizations.firNumberRequired,
+                        hintText: localizations.firNumberHint,
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter FIR number';
+                          return localizations.pleaseEnterFirNumber;
                         }
                         return null;
                       },
@@ -170,7 +173,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Location Details',
+                      localizations.locationDetails,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -178,19 +181,19 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _districtController,
-                      decoration: const InputDecoration(
-                        labelText: 'District',
-                        hintText: 'Enter district',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: localizations.district,
+                        hintText: localizations.enterDistrict,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _policeStationController,
-                      decoration: const InputDecoration(
-                        labelText: 'Police Station',
-                        hintText: 'Enter police station',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: localizations.policeStation,
+                        hintText: localizations.enterPoliceStation,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ],
@@ -207,7 +210,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Additional Information',
+                      localizations.additionalInformation,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -215,19 +218,19 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _complainantNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Complainant Name',
-                        hintText: 'Enter complainant name',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: localizations.complainantName,
+                        hintText: localizations.enterComplainantName,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _incidentDetailsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Incident Details',
-                        hintText: 'Describe the incident',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: localizations.incidentDetails,
+                        hintText: localizations.describeIncident,
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 4,
                     ),
@@ -247,9 +250,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text(
-                        'Create Case',
-                        style: TextStyle(fontSize: 16),
+                    : Text(
+                        localizations.createCase,
+                        style: const TextStyle(fontSize: 16),
                       ),
               ),
             ),
