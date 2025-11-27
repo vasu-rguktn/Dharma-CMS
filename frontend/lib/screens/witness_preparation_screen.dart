@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 
 class WitnessPreparationScreen extends StatefulWidget {
@@ -30,8 +31,8 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
         _witnessStatementController.text.trim().isEmpty ||
         _witnessNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields: case details, witness statement, and witness name.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseFillAllWitnessFields),
           backgroundColor: Colors.red,
         ),
       );
@@ -60,8 +61,8 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Witness preparation session complete.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.witnessPreparationComplete),
             backgroundColor: Colors.green,
           ),
         );
@@ -70,7 +71,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to conduct witness preparation session: $error'),
+            content: Text(AppLocalizations.of(context)!.failedToPrepareWitness(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -85,6 +86,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -104,7 +106,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'AI Witness Preparation',
+                          localizations.aiWitnessPreparation,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -114,7 +116,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Simulate a mock trial experience for a witness. The AI assistant will ask potential cross-examination questions.',
+                    localizations.witnessPreparationDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -122,7 +124,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Witness Name',
+                    localizations.witnessName,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -130,15 +132,15 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _witnessNameController,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter the witness\'s full name',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.enterWitnessNameHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Case Details',
+                    localizations.caseDetails,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -147,15 +149,15 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                   TextField(
                     controller: _caseDetailsController,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: 'Provide comprehensive case details: charges, evidence, known facts, etc.',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.caseDetailsHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Witness Statement',
+                    localizations.witnessStatement,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -164,9 +166,9 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                   TextField(
                     controller: _witnessStatementController,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter the witness\'s statement that will be used for the mock trial.',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.witnessStatementHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -182,7 +184,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.play_arrow),
-                      label: Text(_isLoading ? 'Preparing...' : 'Start Mock Trial'),
+                      label: Text(_isLoading ? localizations.preparing : localizations.startMockTrial),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -198,12 +200,12 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
           
           if (_isLoading) ...[
             const SizedBox(height: 24),
-            const Center(
+            Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Preparing mock trial session...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(localizations.preparingMockTrialWait),
                 ],
               ),
             ),
@@ -223,7 +225,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                         Icon(Icons.message, color: theme.primaryColor, size: 24),
                         const SizedBox(width: 8),
                         Text(
-                          'Mock Trial & Feedback',
+                          localizations.mockTrialAndFeedback,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -232,7 +234,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Review the mock trial transcript and AI feedback for witness ${_witnessNameController.text}.',
+                      localizations.reviewMockTrialFor(_witnessNameController.text),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -240,7 +242,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                     const SizedBox(height: 16),
                     
                     Text(
-                      'Mock Trial Transcript',
+                      localizations.mockTrialTranscript,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -257,7 +259,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                       ),
                       child: SingleChildScrollView(
                         child: SelectableText(
-                          _preparationResult!['mockTrialTranscript'] ?? 'No transcript available',
+                          _preparationResult!['mockTrialTranscript'] ?? localizations.noTranscriptAvailable,
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontFamily: 'monospace',
                           ),
@@ -267,7 +269,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                     const SizedBox(height: 16),
                     
                     Text(
-                      'Potential Weaknesses',
+                      localizations.potentialWeaknesses,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -282,14 +284,14 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                         border: Border.all(color: Colors.red[200]!),
                       ),
                       child: Text(
-                        _preparationResult!['potentialWeaknesses'] ?? 'No weaknesses identified',
+                        _preparationResult!['potentialWeaknesses'] ?? localizations.noWeaknessesIdentified,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
                     const SizedBox(height: 16),
                     
                     Text(
-                      'Suggested Improvements',
+                      localizations.suggestedImprovements,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -304,7 +306,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                         border: Border.all(color: Colors.green[200]!),
                       ),
                       child: Text(
-                        _preparationResult!['suggestedImprovements'] ?? 'No improvements suggested',
+                        _preparationResult!['suggestedImprovements'] ?? localizations.noImprovementsSuggested,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -316,7 +318,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'This is an AI simulation. Real trial conditions may vary.',
+                            localizations.aiSimulationDisclaimer,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.grey[600],
                             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -44,8 +45,8 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
         if (fileSize > 10 * 1024 * 1024) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Please select an image smaller than 10MB.'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.imageSizeLimit),
                 backgroundColor: Colors.red,
               ),
             );
@@ -64,7 +65,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text(AppLocalizations.of(context)!.errorPickingImage(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -73,16 +74,17 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
   }
 
   void _showImageSourceDialog() {
+    final localizations = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Image Source'),
+        title: Text(localizations.selectImageSource),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
+              title: Text(localizations.gallery),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -90,7 +92,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
+              title: Text(localizations.camera),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -105,8 +107,8 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
   Future<void> _handleAnalyze() async {
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an image to analyze.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseSelectImageToAnalyze),
           backgroundColor: Colors.red,
         ),
       );
@@ -143,8 +145,8 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Analysis complete. Review the AI-generated findings below.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.analysisComplete),
             backgroundColor: Colors.green,
           ),
         );
@@ -153,7 +155,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to analyze media: $error'),
+            content: Text(AppLocalizations.of(context)!.failedToAnalyzeMedia(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -184,6 +186,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -203,7 +206,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'AI Crime Scene Investigator',
+                          localizations.aiCrimeSceneInvestigator,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -213,7 +216,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Upload an image (max 10MB) for crime scene analysis. The AI will identify elements, describe the scene, and provide a summary.',
+                    localizations.mediaAnalysisDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -221,7 +224,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Upload Image',
+                    localizations.uploadImage,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -232,7 +235,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                       OutlinedButton.icon(
                         onPressed: _showImageSourceDialog,
                         icon: const Icon(Icons.upload_file),
-                        label: const Text('Choose Image'),
+                        label: Text(localizations.chooseImage),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -277,7 +280,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Context / Specific Instructions (Optional)',
+                    localizations.contextInstructions,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -286,9 +289,9 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                   TextField(
                     controller: _userContextController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: 'E.g., \'Focus on potential weapons.\', \'Is there any sign of forced entry?\', \'What is written on the note on the table?\'',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.contextInstructionsHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -304,7 +307,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.search),
-                      label: Text(_isLoading ? 'Analyzing...' : 'Analyze Image'),
+                      label: Text(_isLoading ? localizations.analyzing : localizations.analyzeImage),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -329,14 +332,14 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      'AI is analyzing the image, please wait...',
+                      localizations.analyzingImageWait,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '(This may take a moment depending on image complexity)',
+                      localizations.analyzingComplexityNote,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[500],
                       ),
@@ -357,14 +360,14 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Crime Scene Analysis Report',
+                      localizations.crimeSceneAnalysisReport,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Date: ${DateTime.now().toString().split(' ')[0]} | File: ${_selectedImage?.path.split('/').last ?? 'N/A'}',
+                      '${localizations.date}: ${DateTime.now().toString().split(' ')[0]} | ${localizations.file}: ${_selectedImage?.path.split('/').last ?? 'N/A'}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -377,7 +380,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                         Icon(Icons.checklist, color: theme.primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Identified Elements',
+                          localizations.identifiedElements,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -420,7 +423,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${element['name']}${element['count'] != null ? ' (Count: ${element['count']})' : ''}',
+                                    '${element['name']}${element['count'] != null ? ' (${localizations.count}: ${element['count']})' : ''}',
                                     style: theme.textTheme.titleSmall?.copyWith(
                                       color: theme.primaryColor,
                                       fontWeight: FontWeight.bold,
@@ -428,14 +431,14 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Category: ${element['category']}',
+                                    '${localizations.category}: ${element['category']}',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: Colors.grey[600],
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Description: ${element['description']}',
+                                    '${localizations.description}: ${element['description']}',
                                     style: theme.textTheme.bodySmall,
                                   ),
                                 ],
@@ -454,7 +457,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                         ),
                         child: Text(
                           _analysisResult!['identifiedElements']?[0]?['description'] ??
-                              'No specific elements prominently identified or analysis incomplete.',
+                              localizations.noElementsIdentified,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -470,7 +473,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                         Icon(Icons.description, color: theme.primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Scene Narrative (Editable)',
+                          localizations.sceneNarrativeEditable,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -482,9 +485,9 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                       controller: TextEditingController(text: _editableSceneNarrative),
                       onChanged: (value) => _editableSceneNarrative = value,
                       maxLines: 10,
-                      decoration: const InputDecoration(
-                        hintText: 'AI-generated scene narrative will appear here. You can edit it.',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: localizations.sceneNarrativeHint,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     
@@ -496,7 +499,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                         Icon(Icons.lightbulb, color: theme.primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Case File Summary & Hypotheses (Editable)',
+                          localizations.caseFileSummaryEditable,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -508,9 +511,9 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                       controller: TextEditingController(text: _editableCaseFileSummary),
                       onChanged: (value) => _editableCaseFileSummary = value,
                       maxLines: 8,
-                      decoration: const InputDecoration(
-                        hintText: 'AI-generated summary and hypotheses will appear here. You can edit it.',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: localizations.caseFileSummaryHint,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     
@@ -526,7 +529,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'AI-generated analysis. Verify with physical investigation.',
+                                localizations.aiAnalysisDisclaimer,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.grey[600],
                                 ),
@@ -537,13 +540,13 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                         OutlinedButton.icon(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Download feature coming soon'),
+                              SnackBar(
+                                content: Text(localizations.downloadFeatureComingSoon),
                               ),
                             );
                           },
                           icon: const Icon(Icons.download),
-                          label: const Text('Download'),
+                          label: Text(localizations.download),
                         ),
                       ],
                     ),

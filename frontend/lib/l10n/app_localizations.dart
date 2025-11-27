@@ -1704,6 +1704,534 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy Draft'**
   String get copyDraft;
+
+  /// Message when files are added
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s) added'**
+  String filesAdded(int count);
+
+  /// Error message when picking files
+  ///
+  /// In en, this message translates to:
+  /// **'Error picking files: {error}'**
+  String errorPickingFiles(String error);
+
+  /// Message to upload at least one document
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload at least one document.'**
+  String get pleaseUploadDocument;
+
+  /// Success message for charge sheet generation
+  ///
+  /// In en, this message translates to:
+  /// **'Draft charge sheet generated.'**
+  String get draftChargeSheetGenerated;
+
+  /// Error message for failed charge sheet generation
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate charge sheet: {error}'**
+  String failedToGenerateChargeSheet(String error);
+
+  /// Description for charge sheet generator
+  ///
+  /// In en, this message translates to:
+  /// **'Upload relevant documents (FIR, witness statements, evidence reports in .doc, .docx, .pdf, .txt) and provide additional instructions. The AI will formulate a draft charge sheet based on the provided template.'**
+  String get chargesheetGeneratorDesc;
+
+  /// Case documents label
+  ///
+  /// In en, this message translates to:
+  /// **'Case Documents'**
+  String get caseDocuments;
+
+  /// Button text to choose files
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Files'**
+  String get chooseFiles;
+
+  /// Uploaded files label
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded Files:'**
+  String get uploadedFiles;
+
+  /// Hint text for chargesheet instructions
+  ///
+  /// In en, this message translates to:
+  /// **'E.g., \'Focus on connecting Accused A to the weapon found.\', \'Emphasize the premeditation aspect based on Witness B\'s statement.\'...'**
+  String get chargesheetInstructionsHint;
+
+  /// Generating status message
+  ///
+  /// In en, this message translates to:
+  /// **'Generating...'**
+  String get generating;
+
+  /// Button text to generate draft charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Draft Charge Sheet'**
+  String get generateDraftChargeSheet;
+
+  /// Generating wait message
+  ///
+  /// In en, this message translates to:
+  /// **'Generating charge sheet, this may take a moment...'**
+  String get generatingChargeSheetWait;
+
+  /// Title for generated draft charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Generated Draft Charge Sheet'**
+  String get generatedDraftChargeSheet;
+
+  /// Description for reviewing charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Review the generated draft. This is a starting point and requires legal review and verification against original documents.'**
+  String get reviewChargeSheetDesc;
+
+  /// Message when no charge sheet is generated
+  ///
+  /// In en, this message translates to:
+  /// **'No charge sheet generated'**
+  String get noChargeSheetGenerated;
+
+  /// Disclaimer for AI generated charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated content. Must be reviewed and verified by a legal professional.'**
+  String get aiChargeSheetDisclaimer;
+
+  /// Message when file content is loaded
+  ///
+  /// In en, this message translates to:
+  /// **'{fileName} content loaded.'**
+  String fileContentLoaded(String fileName);
+
+  /// Error message when reading file
+  ///
+  /// In en, this message translates to:
+  /// **'Error reading file: {error}'**
+  String errorReadingFile(String error);
+
+  /// Message to upload or paste charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload or paste the charge sheet content.'**
+  String get pleaseUploadOrPasteChargesheet;
+
+  /// Success message for charge sheet vetting
+  ///
+  /// In en, this message translates to:
+  /// **'Charge sheet vetted and suggestions provided.'**
+  String get chargesheetVettedSuccess;
+
+  /// Error message for failed vetting
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to vet charge sheet: {error}'**
+  String failedToVetChargesheet(String error);
+
+  /// Title for charge sheet vetting AI
+  ///
+  /// In en, this message translates to:
+  /// **'Charge Sheet Vetting AI'**
+  String get chargesheetVettingAI;
+
+  /// Description for vetting screen
+  ///
+  /// In en, this message translates to:
+  /// **'Upload or paste an existing charge sheet. The AI will review it and suggest improvements to strengthen the case.'**
+  String get chargesheetVettingDesc;
+
+  /// Label for upload charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Charge Sheet (.txt file)'**
+  String get uploadChargesheet;
+
+  /// Button text to choose file
+  ///
+  /// In en, this message translates to:
+  /// **'Choose File'**
+  String get chooseFile;
+
+  /// Message when file is loaded
+  ///
+  /// In en, this message translates to:
+  /// **'File loaded. You can also edit below.'**
+  String get fileLoadedEditBelow;
+
+  /// Label for paste charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Or Paste Charge Sheet Content'**
+  String get orPasteChargesheet;
+
+  /// Hint text for charge sheet content
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the full content of the charge sheet here...'**
+  String get pasteChargesheetHint;
+
+  /// Vetting status message
+  ///
+  /// In en, this message translates to:
+  /// **'Vetting...'**
+  String get vetting;
+
+  /// Button text to vet charge sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Vet Charge Sheet'**
+  String get vetChargeSheet;
+
+  /// Vetting wait message
+  ///
+  /// In en, this message translates to:
+  /// **'Vetting charge sheet, please wait...'**
+  String get vettingChargesheetWait;
+
+  /// Title for AI vetting suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'AI Vetting Suggestions'**
+  String get aiVettingSuggestions;
+
+  /// Description for reviewing suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Review the suggestions to improve the charge sheet.'**
+  String get reviewSuggestionsToImprove;
+
+  /// Message when no suggestions provided
+  ///
+  /// In en, this message translates to:
+  /// **'No suggestions provided'**
+  String get noSuggestionsProvided;
+
+  /// Disclaimer for AI vetting suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated suggestions. Legal expertise is required for final decisions.'**
+  String get aiVettingDisclaimer;
+
+  /// Message to fill all witness preparation fields
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all fields: case details, witness statement, and witness name.'**
+  String get pleaseFillAllWitnessFields;
+
+  /// Success message for witness preparation
+  ///
+  /// In en, this message translates to:
+  /// **'Witness preparation session complete.'**
+  String get witnessPreparationComplete;
+
+  /// Error message for failed witness preparation
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to conduct witness preparation session: {error}'**
+  String failedToPrepareWitness(String error);
+
+  /// Title for AI witness preparation
+  ///
+  /// In en, this message translates to:
+  /// **'AI Witness Preparation'**
+  String get aiWitnessPreparation;
+
+  /// Description for witness preparation screen
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate a mock trial experience for a witness. The AI assistant will ask potential cross-examination questions.'**
+  String get witnessPreparationDesc;
+
+  /// Hint text for witness name
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the witness\\'s full name'**
+  String get enterWitnessNameHint;
+
+  /// Hint text for case details
+  ///
+  /// In en, this message translates to:
+  /// **'Provide comprehensive case details: charges, evidence, known facts, etc.'**
+  String get caseDetailsHint;
+
+  /// Hint text for witness statement
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the witness\\'s statement that will be used for the mock trial.'**
+  String get witnessStatementHint;
+
+  /// Preparing status message
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing...'**
+  String get preparing;
+
+  /// Button text to start mock trial
+  ///
+  /// In en, this message translates to:
+  /// **'Start Mock Trial'**
+  String get startMockTrial;
+
+  /// Preparing wait message
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing mock trial session...'**
+  String get preparingMockTrialWait;
+
+  /// Title for mock trial and feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Mock Trial & Feedback'**
+  String get mockTrialAndFeedback;
+
+  /// Description for reviewing mock trial
+  ///
+  /// In en, this message translates to:
+  /// **'Review the mock trial transcript and AI feedback for witness {witnessName}.'**
+  String reviewMockTrialFor(String witnessName);
+
+  /// Label for mock trial transcript
+  ///
+  /// In en, this message translates to:
+  /// **'Mock Trial Transcript'**
+  String get mockTrialTranscript;
+
+  /// Message when no transcript available
+  ///
+  /// In en, this message translates to:
+  /// **'No transcript available'**
+  String get noTranscriptAvailable;
+
+  /// Label for potential weaknesses
+  ///
+  /// In en, this message translates to:
+  /// **'Potential Weaknesses'**
+  String get potentialWeaknesses;
+
+  /// Message when no weaknesses identified
+  ///
+  /// In en, this message translates to:
+  /// **'No weaknesses identified'**
+  String get noWeaknessesIdentified;
+
+  /// Label for suggested improvements
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested Improvements'**
+  String get suggestedImprovements;
+
+  /// Message when no improvements suggested
+  ///
+  /// In en, this message translates to:
+  /// **'No improvements suggested'**
+  String get noImprovementsSuggested;
+
+  /// Disclaimer for AI simulation
+  ///
+  /// In en, this message translates to:
+  /// **'This is an AI simulation. Real trial conditions may vary.'**
+  String get aiSimulationDisclaimer;
+
+  /// Message for image size limit
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an image smaller than 10MB.'**
+  String get imageSizeLimit;
+
+  /// Error message when picking image
+  ///
+  /// In en, this message translates to:
+  /// **'Error picking image: {error}'**
+  String errorPickingImage(String error);
+
+  /// Dialog title for selecting image source
+  ///
+  /// In en, this message translates to:
+  /// **'Select Image Source'**
+  String get selectImageSource;
+
+  /// Gallery option
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// Camera option
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// Message to select image for analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an image to analyze.'**
+  String get pleaseSelectImageToAnalyze;
+
+  /// Success message for analysis completion
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis complete. Review the AI-generated findings below.'**
+  String get analysisComplete;
+
+  /// Error message for failed media analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to analyze media: {error}'**
+  String failedToAnalyzeMedia(String error);
+
+  /// Title for AI Crime Scene Investigator
+  ///
+  /// In en, this message translates to:
+  /// **'AI Crime Scene Investigator'**
+  String get aiCrimeSceneInvestigator;
+
+  /// Description for media analysis screen
+  ///
+  /// In en, this message translates to:
+  /// **'Upload an image (max 10MB) for crime scene analysis. The AI will identify elements, describe the scene, and provide a summary.'**
+  String get mediaAnalysisDesc;
+
+  /// Label for upload image
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Image'**
+  String get uploadImage;
+
+  /// Button text to choose image
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Image'**
+  String get chooseImage;
+
+  /// Label for context/instructions
+  ///
+  /// In en, this message translates to:
+  /// **'Context / Specific Instructions (Optional)'**
+  String get contextInstructions;
+
+  /// Hint text for context instructions
+  ///
+  /// In en, this message translates to:
+  /// **'E.g., \\'Focus on potential weapons.\\', \\'Is there any sign of forced entry?\\', \\'What is written on the note on the table?\\''**
+  String get contextInstructionsHint;
+
+  /// Analyzing status message
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing...'**
+  String get analyzing;
+
+  /// Button text to analyze image
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze Image'**
+  String get analyzeImage;
+
+  /// Analyzing wait message
+  ///
+  /// In en, this message translates to:
+  /// **'AI is analyzing the image, please wait...'**
+  String get analyzingImageWait;
+
+  /// Analyzing complexity note
+  ///
+  /// In en, this message translates to:
+  /// **'(This may take a moment depending on image complexity)'**
+  String get analyzingComplexityNote;
+
+  /// Title for crime scene analysis report
+  ///
+  /// In en, this message translates to:
+  /// **'Crime Scene Analysis Report'**
+  String get crimeSceneAnalysisReport;
+
+  /// Date label
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// File label
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get file;
+
+  /// Label for identified elements
+  ///
+  /// In en, this message translates to:
+  /// **'Identified Elements'**
+  String get identifiedElements;
+
+  /// Count label
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get count;
+
+  /// Category label
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// Message when no elements identified
+  ///
+  /// In en, this message translates to:
+  /// **'No specific elements prominently identified or analysis incomplete.'**
+  String get noElementsIdentified;
+
+  /// Label for scene narrative
+  ///
+  /// In en, this message translates to:
+  /// **'Scene Narrative (Editable)'**
+  String get sceneNarrativeEditable;
+
+  /// Hint for scene narrative
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated scene narrative will appear here. You can edit it.'**
+  String get sceneNarrativeHint;
+
+  /// Label for case file summary
+  ///
+  /// In en, this message translates to:
+  /// **'Case File Summary & Hypotheses (Editable)'**
+  String get caseFileSummaryEditable;
+
+  /// Hint for case file summary
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated summary and hypotheses will appear here. You can edit it.'**
+  String get caseFileSummaryHint;
+
+  /// Disclaimer for AI analysis
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated analysis. Verify with physical investigation.'**
+  String get aiAnalysisDisclaimer;
+
+  /// Download button text
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get download;
+
+  /// Download feature coming soon message
+  ///
+  /// In en, this message translates to:
+  /// **'Download feature coming soon'**
+  String get downloadFeatureComingSoon;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

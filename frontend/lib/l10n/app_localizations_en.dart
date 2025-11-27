@@ -821,6 +821,290 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get copyDraft => 'Copy Draft';
 
+  @override
+  String filesAdded(int count) {
+    return '$count file(s) added';
+  }
+
+  @override
+  String errorPickingFiles(String error) {
+    return 'Error picking files: $error';
+  }
+
+  @override
+  String get pleaseUploadDocument => 'Please upload at least one document.';
+
+  @override
+  String get draftChargeSheetGenerated => 'Draft charge sheet generated.';
+
+  @override
+  String failedToGenerateChargeSheet(String error) {
+    return 'Failed to generate charge sheet: $error';
+  }
+
+  @override
+  String get chargesheetGeneratorDesc => 'Upload relevant documents (FIR, witness statements, evidence reports in .doc, .docx, .pdf, .txt) and provide additional instructions. The AI will formulate a draft charge sheet based on the provided template.';
+
+  @override
+  String get caseDocuments => 'Case Documents';
+
+  @override
+  String get chooseFiles => 'Choose Files';
+
+  @override
+  String get uploadedFiles => 'Uploaded Files:';
+
+  @override
+  String get chargesheetInstructionsHint => 'E.g., \'Focus on connecting Accused A to the weapon found.\', \'Emphasize the premeditation aspect based on Witness B\'s statement.\'...';
+
+  @override
+  String get generating => 'Generating...';
+
+  @override
+  String get generateDraftChargeSheet => 'Generate Draft Charge Sheet';
+
+  @override
+  String get generatingChargeSheetWait => 'Generating charge sheet, this may take a moment...';
+
+  @override
+  String get generatedDraftChargeSheet => 'Generated Draft Charge Sheet';
+
+  @override
+  String get reviewChargeSheetDesc => 'Review the generated draft. This is a starting point and requires legal review and verification against original documents.';
+
+  @override
+  String get noChargeSheetGenerated => 'No charge sheet generated';
+
+  @override
+  String get aiChargeSheetDisclaimer => 'AI-generated content. Must be reviewed and verified by a legal professional.';
+
+  @override
+  String fileContentLoaded(String fileName) {
+    return '$fileName content loaded.';
+  }
+
+  @override
+  String errorReadingFile(String error) {
+    return 'Error reading file: $error';
+  }
+
+  @override
+  String get pleaseUploadOrPasteChargesheet => 'Please upload or paste the charge sheet content.';
+
+  @override
+  String get chargesheetVettedSuccess => 'Charge sheet vetted and suggestions provided.';
+
+  @override
+  String failedToVetChargesheet(String error) {
+    return 'Failed to vet charge sheet: $error';
+  }
+
+  @override
+  String get chargesheetVettingAI => 'Charge Sheet Vetting AI';
+
+  @override
+  String get chargesheetVettingDesc => 'Upload or paste an existing charge sheet. The AI will review it and suggest improvements to strengthen the case.';
+
+  @override
+  String get uploadChargesheet => 'Upload Charge Sheet (.txt file)';
+
+  @override
+  String get chooseFile => 'Choose File';
+
+  @override
+  String get fileLoadedEditBelow => 'File loaded. You can also edit below.';
+
+  @override
+  String get orPasteChargesheet => 'Or Paste Charge Sheet Content';
+
+  @override
+  String get pasteChargesheetHint => 'Paste the full content of the charge sheet here...';
+
+  @override
+  String get vetting => 'Vetting...';
+
+  @override
+  String get vetChargeSheet => 'Vet Charge Sheet';
+
+  @override
+  String get vettingChargesheetWait => 'Vetting charge sheet, please wait...';
+
+  @override
+  String get aiVettingSuggestions => 'AI Vetting Suggestions';
+
+  @override
+  String get reviewSuggestionsToImprove => 'Review the suggestions to improve the charge sheet.';
+
+  @override
+  String get noSuggestionsProvided => 'No suggestions provided';
+
+  @override
+  String get aiVettingDisclaimer => 'AI-generated suggestions. Legal expertise is required for final decisions.';
+
+  @override
+  String get pleaseFillAllWitnessFields => 'Please fill in all fields: case details, witness statement, and witness name.';
+
+  @override
+  String get witnessPreparationComplete => 'Witness preparation session complete.';
+
+  @override
+  String failedToPrepareWitness(String error) {
+    return 'Failed to conduct witness preparation session: $error';
+  }
+
+  @override
+  String get aiWitnessPreparation => 'AI Witness Preparation';
+
+  @override
+  String get witnessPreparationDesc => 'Simulate a mock trial experience for a witness. The AI assistant will ask potential cross-examination questions.';
+
+  @override
+  String get enterWitnessNameHint => 'Enter the witness\'s full name';
+
+  @override
+  String get caseDetailsHint => 'Provide comprehensive case details: charges, evidence, known facts, etc.';
+
+  @override
+  String get witnessStatementHint => 'Enter the witness\'s statement that will be used for the mock trial.';
+
+  @override
+  String get preparing => 'Preparing...';
+
+  @override
+  String get startMockTrial => 'Start Mock Trial';
+
+  @override
+  String get preparingMockTrialWait => 'Preparing mock trial session...';
+
+  @override
+  String get mockTrialAndFeedback => 'Mock Trial & Feedback';
+
+  @override
+  String reviewMockTrialFor(String witnessName) {
+    return 'Review the mock trial transcript and AI feedback for witness $witnessName.';
+  }
+
+  @override
+  String get mockTrialTranscript => 'Mock Trial Transcript';
+
+  @override
+  String get noTranscriptAvailable => 'No transcript available';
+
+  @override
+  String get potentialWeaknesses => 'Potential Weaknesses';
+
+  @override
+  String get noWeaknessesIdentified => 'No weaknesses identified';
+
+  @override
+  String get suggestedImprovements => 'Suggested Improvements';
+
+  @override
+  String get noImprovementsSuggested => 'No improvements suggested';
+
+  @override
+  String get aiSimulationDisclaimer => 'This is an AI simulation. Real trial conditions may vary.';
+
+  @override
+  String get imageSizeLimit => 'Please select an image smaller than 10MB.';
+
+  @override
+  String errorPickingImage(String error) {
+    return 'Error picking image: $error';
+  }
+
+  @override
+  String get selectImageSource => 'Select Image Source';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get pleaseSelectImageToAnalyze => 'Please select an image to analyze.';
+
+  @override
+  String get analysisComplete => 'Analysis complete. Review the AI-generated findings below.';
+
+  @override
+  String failedToAnalyzeMedia(String error) {
+    return 'Failed to analyze media: $error';
+  }
+
+  @override
+  String get aiCrimeSceneInvestigator => 'AI Crime Scene Investigator';
+
+  @override
+  String get mediaAnalysisDesc => 'Upload an image (max 10MB) for crime scene analysis. The AI will identify elements, describe the scene, and provide a summary.';
+
+  @override
+  String get uploadImage => 'Upload Image';
+
+  @override
+  String get chooseImage => 'Choose Image';
+
+  @override
+  String get contextInstructions => 'Context / Specific Instructions (Optional)';
+
+  @override
+  String get contextInstructionsHint => 'E.g., \'Focus on potential weapons.\', \'Is there any sign of forced entry?\', \'What is written on the note on the table?\'';
+
+  @override
+  String get analyzing => 'Analyzing...';
+
+  @override
+  String get analyzeImage => 'Analyze Image';
+
+  @override
+  String get analyzingImageWait => 'AI is analyzing the image, please wait...';
+
+  @override
+  String get analyzingComplexityNote => '(This may take a moment depending on image complexity)';
+
+  @override
+  String get crimeSceneAnalysisReport => 'Crime Scene Analysis Report';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get file => 'File';
+
+  @override
+  String get identifiedElements => 'Identified Elements';
+
+  @override
+  String get count => 'Count';
+
+  @override
+  String get category => 'Category';
+
+  @override
+  String get noElementsIdentified => 'No specific elements prominently identified or analysis incomplete.';
+
+  @override
+  String get sceneNarrativeEditable => 'Scene Narrative (Editable)';
+
+  @override
+  String get sceneNarrativeHint => 'AI-generated scene narrative will appear here. You can edit it.';
+
+  @override
+  String get caseFileSummaryEditable => 'Case File Summary & Hypotheses (Editable)';
+
+  @override
+  String get caseFileSummaryHint => 'AI-generated summary and hypotheses will appear here. You can edit it.';
+
+  @override
+  String get aiAnalysisDisclaimer => 'AI-generated analysis. Verify with physical investigation.';
+
+  @override
+  String get download => 'Download';
+
+  @override
+  String get downloadFeatureComingSoon => 'Download feature coming soon';
+
 
 
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -42,7 +43,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${result.files.length} file(s) added'),
+              content: Text(AppLocalizations.of(context)!.filesAdded(result.files.length)),
               backgroundColor: Colors.green,
             ),
           );
@@ -52,7 +53,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking files: $e'),
+            content: Text(AppLocalizations.of(context)!.errorPickingFiles(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -69,8 +70,8 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
   Future<void> _handleSubmit() async {
     if (_uploadedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload at least one document.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseUploadDocument),
           backgroundColor: Colors.red,
         ),
       );
@@ -113,8 +114,8 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Draft charge sheet generated.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.draftChargeSheetGenerated),
             backgroundColor: Colors.green,
           ),
         );
@@ -123,7 +124,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate charge sheet: $error'),
+            content: Text(AppLocalizations.of(context)!.failedToGenerateChargeSheet(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -138,6 +139,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -157,7 +159,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Charge Sheet Generator',
+                          localizations.chargesheetGenerator,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -167,7 +169,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Upload relevant documents (FIR, witness statements, evidence reports in .doc, .docx, .pdf, .txt) and provide additional instructions. The AI will formulate a draft charge sheet based on the provided template.',
+                    localizations.chargesheetGeneratorDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -175,7 +177,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Case Documents',
+                    localizations.caseDocuments,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -184,7 +186,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                   OutlinedButton.icon(
                     onPressed: _pickFiles,
                     icon: const Icon(Icons.upload_file),
-                    label: const Text('Choose Files'),
+                    label: Text(localizations.chooseFiles),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
@@ -210,7 +212,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                               Icon(Icons.list, color: theme.primaryColor, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                'Uploaded Files:',
+                                localizations.uploadedFiles,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -249,7 +251,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Additional Instructions (Optional)',
+                    localizations.additionalInstructionsOptional,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -258,9 +260,9 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                   TextField(
                     controller: _additionalInstructionsController,
                     maxLines: 5,
-                    decoration: const InputDecoration(
-                      hintText: 'E.g., \'Focus on connecting Accused A to the weapon found.\', \'Emphasize the premeditation aspect based on Witness B\'s statement.\'...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.chargesheetInstructionsHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -276,7 +278,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.create),
-                      label: Text(_isLoading ? 'Generating...' : 'Generate Draft Charge Sheet'),
+                      label: Text(_isLoading ? localizations.generating : localizations.generateDraftChargeSheet),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -292,12 +294,12 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
           
           if (_isLoading) ...[
             const SizedBox(height: 24),
-            const Center(
+            Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Generating charge sheet, this may take a moment...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(localizations.generatingChargeSheetWait),
                 ],
               ),
             ),
@@ -313,14 +315,14 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Generated Draft Charge Sheet',
+                      localizations.generatedDraftChargeSheet,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Review the generated draft. This is a starting point and requires legal review and verification against original documents.',
+                      localizations.reviewChargeSheetDesc,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -336,7 +338,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: SelectableText(
-                        _chargeSheet!['chargeSheet'] ?? 'No charge sheet generated',
+                        _chargeSheet!['chargeSheet'] ?? localizations.noChargeSheetGenerated,
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -351,7 +353,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'AI-generated content. Must be reviewed and verified by a legal professional.',
+                                localizations.aiChargeSheetDisclaimer,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.grey[600],
                                 ),
@@ -362,13 +364,13 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                         OutlinedButton.icon(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Draft copied to clipboard'),
+                              SnackBar(
+                                content: Text(localizations.draftCopied),
                               ),
                             );
                           },
                           icon: const Icon(Icons.copy),
-                          label: const Text('Copy Draft'),
+                          label: Text(localizations.copyDraft),
                         ),
                       ],
                     ),
