@@ -8,6 +8,7 @@ class PetitionCard extends StatelessWidget {
   final String Function(Timestamp) formatTimestamp;
   final VoidCallback onTap;
 
+
   const PetitionCard({
     super.key,
     required this.petition,
