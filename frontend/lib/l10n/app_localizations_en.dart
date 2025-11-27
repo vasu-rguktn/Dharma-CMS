@@ -1105,6 +1105,156 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get downloadFeatureComingSoon => 'Download feature coming soon';
 
+  @override
+  String errorLoadingJournal(String error) {
+    return 'Error loading journal: $error';
+  }
+
+  @override
+  String get addJournalEntry => 'Add Journal Entry';
+
+  @override
+  String get activityType => 'Activity Type';
+
+  @override
+  String get firRegistered => 'FIR Registered';
+
+  @override
+  String get evidenceCollected => 'Evidence Collected';
+
+  @override
+  String get witnessExamined => 'Witness Examined';
+
+  @override
+  String get arrestMade => 'Arrest Made';
+
+  @override
+  String get medicalReportObtained => 'Medical Report Obtained';
+
+  @override
+  String get sceneVisited => 'Scene Visited';
+
+  @override
+  String get documentSubmitted => 'Document Submitted';
+
+  @override
+  String get hearingAttended => 'Hearing Attended';
+
+  @override
+  String get entryDetails => 'Entry Details';
+
+  @override
+  String get entryDetailsHint => 'Describe the activity in detail...';
+
+  @override
+  String get pleaseEnterEntryDetails => 'Please enter entry details';
+
+  @override
+  String get addEntry => 'Add Entry';
+
+  @override
+  String get journalEntryAddedSuccess => 'Journal entry added successfully';
+
+  @override
+  String errorAddingEntry(String error) {
+    return 'Error adding entry: $error';
+  }
+
+  @override
+  String get caseJournalDesc => 'View investigation diaries and case activity logs';
+
+  @override
+  String get selectCase => 'Select Case';
+
+  @override
+  String get noCasesAvailable => 'No cases available. Please register a case first.';
+
+  @override
+  String get chooseCaseToViewJournal => 'Choose a case to view journal';
+
+  @override
+  String get investigationDiary => 'Investigation Diary';
+
+  @override
+  String get addJournalEntryTooltip => 'Add journal entry';
+
+  @override
+  String get openCaseDetails => 'Open case details';
+
+  @override
+  String get noJournalEntries => 'No journal entries yet';
+
+  @override
+  String get noJournalEntriesDesc => 'Journal entries will appear here as the investigation progresses.';
+
+  @override
+  String get ref => 'Ref';
+
+  @override
+  String get caseCreatedSuccess => 'Case created successfully!';
+
+  @override
+  String errorCreatingCase(String error) {
+    return 'Error creating case: $error';
+  }
+
+  @override
+  String get caseTitleRequired => 'Case Title *';
+
+  @override
+  String get caseTitleHint => 'Enter a brief title for the case';
+
+  @override
+  String get pleaseEnterCaseTitle => 'Please enter a case title';
+
+  @override
+  String get firNumberRequired => 'FIR Number *';
+
+  @override
+  String get firNumberHint => 'Enter FIR number';
+
+  @override
+  String get pleaseEnterFirNumber => 'Please enter FIR number';
+
+  @override
+  String get locationDetails => 'Location Details';
+
+  @override
+  String get additionalInformation => 'Additional Information';
+
+  @override
+  String get complainantName => 'Complainant Name';
+
+  @override
+  String get enterComplainantName => 'Enter complainant name';
+
+  @override
+  String get describeIncident => 'Describe the incident';
+
+  @override
+  String get createCase => 'Create Case';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get telugu => 'Telugu';
+
+  @override
+  String get appName => 'Dharma';
+
+  @override
+  String get appVersion => '1.0.0';
+
+  @override
+  String get appDescription => 'Legal assistance platform powered by AI technology.';
+
+  @override
+  String get signOutConfirmation => 'Are you sure you want to sign out?';
+
 
 
 

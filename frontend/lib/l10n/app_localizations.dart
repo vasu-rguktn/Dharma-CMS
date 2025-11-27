@@ -2232,6 +2232,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download feature coming soon'**
   String get downloadFeatureComingSoon;
+
+  /// Error message when loading journal
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading journal: {error}'**
+  String errorLoadingJournal(String error);
+
+  /// Dialog title for adding journal entry
+  ///
+  /// In en, this message translates to:
+  /// **'Add Journal Entry'**
+  String get addJournalEntry;
+
+  /// Label for activity type
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Type'**
+  String get activityType;
+
+  /// Activity: FIR Registered
+  ///
+  /// In en, this message translates to:
+  /// **'FIR Registered'**
+  String get firRegistered;
+
+  /// Activity: Evidence Collected
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence Collected'**
+  String get evidenceCollected;
+
+  /// Activity: Witness Examined
+  ///
+  /// In en, this message translates to:
+  /// **'Witness Examined'**
+  String get witnessExamined;
+
+  /// Activity: Arrest Made
+  ///
+  /// In en, this message translates to:
+  /// **'Arrest Made'**
+  String get arrestMade;
+
+  /// Activity: Medical Report Obtained
+  ///
+  /// In en, this message translates to:
+  /// **'Medical Report Obtained'**
+  String get medicalReportObtained;
+
+  /// Activity: Scene Visited
+  ///
+  /// In en, this message translates to:
+  /// **'Scene Visited'**
+  String get sceneVisited;
+
+  /// Activity: Document Submitted
+  ///
+  /// In en, this message translates to:
+  /// **'Document Submitted'**
+  String get documentSubmitted;
+
+  /// Activity: Hearing Attended
+  ///
+  /// In en, this message translates to:
+  /// **'Hearing Attended'**
+  String get hearingAttended;
+
+  /// Label for entry details
+  ///
+  /// In en, this message translates to:
+  /// **'Entry Details'**
+  String get entryDetails;
+
+  /// Hint for entry details
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the activity in detail...'**
+  String get entryDetailsHint;
+
+  /// Message to enter entry details
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter entry details'**
+  String get pleaseEnterEntryDetails;
+
+  /// Button text to add entry
+  ///
+  /// In en, this message translates to:
+  /// **'Add Entry'**
+  String get addEntry;
+
+  /// Success message for adding journal entry
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entry added successfully'**
+  String get journalEntryAddedSuccess;
+
+  /// Error message for adding entry
+  ///
+  /// In en, this message translates to:
+  /// **'Error adding entry: {error}'**
+  String errorAddingEntry(String error);
+
+  /// Description for case journal
+  ///
+  /// In en, this message translates to:
+  /// **'View investigation diaries and case activity logs'**
+  String get caseJournalDesc;
+
+  /// Label for select case
+  ///
+  /// In en, this message translates to:
+  /// **'Select Case'**
+  String get selectCase;
+
+  /// Message when no cases available
+  ///
+  /// In en, this message translates to:
+  /// **'No cases available. Please register a case first.'**
+  String get noCasesAvailable;
+
+  /// Hint for choosing case
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a case to view journal'**
+  String get chooseCaseToViewJournal;
+
+  /// Title for investigation diary
+  ///
+  /// In en, this message translates to:
+  /// **'Investigation Diary'**
+  String get investigationDiary;
+
+  /// Tooltip for add journal entry
+  ///
+  /// In en, this message translates to:
+  /// **'Add journal entry'**
+  String get addJournalEntryTooltip;
+
+  /// Tooltip for open case details
+  ///
+  /// In en, this message translates to:
+  /// **'Open case details'**
+  String get openCaseDetails;
+
+  /// Message when no journal entries
+  ///
+  /// In en, this message translates to:
+  /// **'No journal entries yet'**
+  String get noJournalEntries;
+
+  /// Description for no journal entries
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entries will appear here as the investigation progresses.'**
+  String get noJournalEntriesDesc;
+
+  /// Reference label
+  ///
+  /// In en, this message translates to:
+  /// **'Ref'**
+  String get ref;
+
+  /// Success message for case creation
+  ///
+  /// In en, this message translates to:
+  /// **'Case created successfully!'**
+  String get caseCreatedSuccess;
+
+  /// Error message for case creation
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating case: {error}'**
+  String errorCreatingCase(String error);
+
+  /// Label for case title
+  ///
+  /// In en, this message translates to:
+  /// **'Case Title *'**
+  String get caseTitleRequired;
+
+  /// Hint for case title
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a brief title for the case'**
+  String get caseTitleHint;
+
+  /// Validation message for case title
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a case title'**
+  String get pleaseEnterCaseTitle;
+
+  /// Label for FIR number
+  ///
+  /// In en, this message translates to:
+  /// **'FIR Number *'**
+  String get firNumberRequired;
+
+  /// Hint for FIR number
+  ///
+  /// In en, this message translates to:
+  /// **'Enter FIR number'**
+  String get firNumberHint;
+
+  /// Validation message for FIR number
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter FIR number'**
+  String get pleaseEnterFirNumber;
+
+  /// Section title for location details
+  ///
+  /// In en, this message translates to:
+  /// **'Location Details'**
+  String get locationDetails;
+
+  /// Section title for additional information
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Information'**
+  String get additionalInformation;
+
+  /// Label for complainant name
+  ///
+  /// In en, this message translates to:
+  /// **'Complainant Name'**
+  String get complainantName;
+
+  /// Hint for complainant name
+  ///
+  /// In en, this message translates to:
+  /// **'Enter complainant name'**
+  String get enterComplainantName;
+
+  /// Hint for incident details
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the incident'**
+  String get describeIncident;
+
+  /// Button text to create case
+  ///
+  /// In en, this message translates to:
+  /// **'Create Case'**
+  String get createCase;
+
+  /// Default user text
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get user;
+
+  /// English language option
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// Telugu language option
+  ///
+  /// In en, this message translates to:
+  /// **'Telugu'**
+  String get telugu;
+
+  /// Application name
+  ///
+  /// In en, this message translates to:
+  /// **'Dharma'**
+  String get appName;
+
+  /// Application version
+  ///
+  /// In en, this message translates to:
+  /// **'1.0.0'**
+  String get appVersion;
+
+  /// Application description
+  ///
+  /// In en, this message translates to:
+  /// **'Legal assistance platform powered by AI technology.'**
+  String get appDescription;
+
+  /// Confirmation message for sign out
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get signOutConfirmation;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

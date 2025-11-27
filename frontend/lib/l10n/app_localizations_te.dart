@@ -1105,6 +1105,156 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get downloadFeatureComingSoon => 'డౌన్‌లోడ్ ఫీచర్ త్వరలో వస్తోంది';
 
+  @override
+  String errorLoadingJournal(String error) {
+    return 'జర్నల్ లోడ్ చేయడంలో లోపం: $error';
+  }
+
+  @override
+  String get addJournalEntry => 'జర్నల్ ఎంట్రీని జోడించండి';
+
+  @override
+  String get activityType => 'కార్యాచరణ రకం';
+
+  @override
+  String get firRegistered => 'FIR నమోదు చేయబడింది';
+
+  @override
+  String get evidenceCollected => 'సాక్ష్యం సేకరించబడింది';
+
+  @override
+  String get witnessExamined => 'సాక్షి పరీక్షించబడింది';
+
+  @override
+  String get arrestMade => 'అరెస్ట్ చేయబడింది';
+
+  @override
+  String get medicalReportObtained => 'వైద్య నివేదిక పొందబడింది';
+
+  @override
+  String get sceneVisited => 'దృశ్యం సందర్శించబడింది';
+
+  @override
+  String get documentSubmitted => 'పత్రం సమర్పించబడింది';
+
+  @override
+  String get hearingAttended => 'విచారణకు హాజరయ్యారు';
+
+  @override
+  String get entryDetails => 'ఎంట్రీ వివరాలు';
+
+  @override
+  String get entryDetailsHint => 'కార్యాచరణను వివరంగా వివరించండి...';
+
+  @override
+  String get pleaseEnterEntryDetails => 'దయచేసి ఎంట్రీ వివరాలను నమోదు చేయండి';
+
+  @override
+  String get addEntry => 'ఎంట్రీని జోడించండి';
+
+  @override
+  String get journalEntryAddedSuccess => 'జర్నల్ ఎంట్రీ విజయవంతంగా జోడించబడింది';
+
+  @override
+  String errorAddingEntry(String error) {
+    return 'ఎంట్రీని జోడించడంలో లోపం: $error';
+  }
+
+  @override
+  String get caseJournalDesc => 'పరిశోధన డైరీలు మరియు కేసు కార్యాచరణ లాగ్‌లను వీక్షించండి';
+
+  @override
+  String get selectCase => 'కేసును ఎంచుకోండి';
+
+  @override
+  String get noCasesAvailable => 'కేసులు అందుబాటులో లేవు. దయచేసి ముందుగా కేసును నమోదు చేయండి.';
+
+  @override
+  String get chooseCaseToViewJournal => 'జర్నల్ వీక్షించడానికి కేసును ఎంచుకోండి';
+
+  @override
+  String get investigationDiary => 'పరిశోధన డైరీ';
+
+  @override
+  String get addJournalEntryTooltip => 'జర్నల్ ఎంట్రీని జోడించండి';
+
+  @override
+  String get openCaseDetails => 'కేసు వివరాలను తెరవండి';
+
+  @override
+  String get noJournalEntries => 'ఇంకా జర్నల్ ఎంట్రీలు లేవు';
+
+  @override
+  String get noJournalEntriesDesc => 'పరిశోధన పురోగమిస్తున్నప్పుడు జర్నల్ ఎంట్రీలు ఇక్కడ కనిపిస్తాయి.';
+
+  @override
+  String get ref => 'సూచన';
+
+  @override
+  String get caseCreatedSuccess => 'కేసు విజయవంతంగా సృష్టించబడింది!';
+
+  @override
+  String errorCreatingCase(String error) {
+    return 'కేసును సృష్టించడంలో లోపం: $error';
+  }
+
+  @override
+  String get caseTitleRequired => 'కేసు శీర్షిక *';
+
+  @override
+  String get caseTitleHint => 'కేసు కోసం సంక్షిప్త శీర్షికను నమోదు చేయండి';
+
+  @override
+  String get pleaseEnterCaseTitle => 'దయచేసి కేసు శీర్షికను నమోదు చేయండి';
+
+  @override
+  String get firNumberRequired => 'FIR నంబర్ *';
+
+  @override
+  String get firNumberHint => 'FIR నంబర్‌ను నమోదు చేయండి';
+
+  @override
+  String get pleaseEnterFirNumber => 'దయచేసి FIR నంబర్‌ను నమోదు చేయండి';
+
+  @override
+  String get locationDetails => 'స్థాన వివరాలు';
+
+  @override
+  String get additionalInformation => 'అదనపు సమాచారం';
+
+  @override
+  String get complainantName => 'ఫిర్యాదుదారు పేరు';
+
+  @override
+  String get enterComplainantName => 'ఫిర్యాదుదారు పేరును నమోదు చేయండి';
+
+  @override
+  String get describeIncident => 'సంఘటనను వివరించండి';
+
+  @override
+  String get createCase => 'కేసును సృష్టించండి';
+
+  @override
+  String get user => 'వినియోగదారు';
+
+  @override
+  String get english => 'ఇంగ్లీష్';
+
+  @override
+  String get telugu => 'తెలుగు';
+
+  @override
+  String get appName => 'ధర్మ';
+
+  @override
+  String get appVersion => '1.0.0';
+
+  @override
+  String get appDescription => 'AI సాంకేతికతతో శక్తివంతం చేయబడిన చట్టపరమైన సహాయ వేదిక.';
+
+  @override
+  String get signOutConfirmation => 'మీరు ఖచ్చితంగా సైన్ అవుట్ చేయాలనుకుంటున్నారా?';
+
 
 
 

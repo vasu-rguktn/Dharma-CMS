@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -40,7 +41,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading journal: $e'),
+            content: Text(AppLocalizations.of(context)!.errorLoadingJournal(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -56,35 +57,36 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   }
 
   void _showAddEntryDialog() {
+    final localizations = AppLocalizations.of(context)!;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final activityController = TextEditingController();
     final entryController = TextEditingController();
-    String selectedActivity = 'FIR Registered';
+    String selectedActivity = localizations.firRegistered;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Add Journal Entry'),
+        title: Text(localizations.addJournalEntry),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: selectedActivity,
-                decoration: const InputDecoration(
-                  labelText: 'Activity Type',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: localizations.activityType,
+                  border: const OutlineInputBorder(),
                 ),
                 items: [
-                  'FIR Registered',
-                  'Evidence Collected',
-                  'Witness Examined',
-                  'Arrest Made',
-                  'Medical Report Obtained',
-                  'Scene Visited',
-                  'Document Submitted',
-                  'Hearing Attended',
-                  'Other',
+                  localizations.firRegistered,
+                  localizations.evidenceCollected,
+                  localizations.witnessExamined,
+                  localizations.arrestMade,
+                  localizations.medicalReportObtained,
+                  localizations.sceneVisited,
+                  localizations.documentSubmitted,
+                  localizations.hearingAttended,
+                  localizations.other,
                 ].map((type) {
                   return DropdownMenuItem(value: type, child: Text(type));
                 }).toList(),
@@ -96,10 +98,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
               TextField(
                 controller: entryController,
                 maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Entry Details',
-                  hintText: 'Describe the activity in detail...',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: localizations.entryDetails,
+                  hintText: localizations.entryDetailsHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -108,14 +110,14 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(localizations.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
               if (entryController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter entry details'),
+                  SnackBar(
+                    content: Text(localizations.pleaseEnterEntryDetails),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -142,8 +144,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Journal entry added successfully'),
+                    SnackBar(
+                      content: Text(localizations.journalEntryAddedSuccess),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -152,14 +154,14 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error adding entry: $e'),
+                      content: Text(localizations.errorAddingEntry(e.toString())),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Add Entry'),
+            child: Text(localizations.addEntry),
           ),
         ],
       ),
@@ -170,6 +172,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   Widget build(BuildContext context) {
     final caseProvider = Provider.of<CaseProvider>(context);
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -183,7 +186,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Case Journal',
+                  localizations.caseJournal,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -193,7 +196,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'View investigation diaries and case activity logs',
+            localizations.caseJournalDesc,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -209,7 +212,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select Case',
+                    localizations.selectCase,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -217,7 +220,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                   const SizedBox(height: 12),
                   if (caseProvider.cases.isEmpty)
                     Text(
-                      'No cases available. Please register a case first.',
+                      localizations.noCasesAvailable,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -225,9 +228,9 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                   else
                     DropdownButtonFormField<String>(
                       value: _selectedCaseId,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: 'Choose a case to view journal',
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: localizations.chooseCaseToViewJournal,
                       ),
                       items: caseProvider.cases.map((caseDoc) {
                         return DropdownMenuItem(
@@ -263,7 +266,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Investigation Diary',
+                          localizations.investigationDiary,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -272,12 +275,12 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.add_circle),
-                              tooltip: 'Add journal entry',
+                              tooltip: localizations.addJournalEntryTooltip,
                               onPressed: () => _showAddEntryDialog(),
                             ),
                             IconButton(
                               icon: const Icon(Icons.open_in_new),
-                              tooltip: 'Open case details',
+                              tooltip: localizations.openCaseDetails,
                               onPressed: () {
                                 context.go('/cases/$_selectedCaseId');
                               },
@@ -308,14 +311,14 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No journal entries yet',
+                                localizations.noJournalEntries,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   color: Colors.grey[600],
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Journal entries will appear here as the investigation progresses.',
+                                localizations.noJournalEntriesDesc,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.grey[500],
                                 ),
@@ -326,7 +329,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         ),
                       )
                     else
-                      _buildJournalTimeline(theme),
+                      _buildJournalTimeline(theme, localizations),
                   ],
                 ),
               ),
@@ -337,7 +340,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
     );
   }
 
-  Widget _buildJournalTimeline(ThemeData theme) {
+  Widget _buildJournalTimeline(ThemeData theme, AppLocalizations localizations) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -345,12 +348,12 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       itemBuilder: (context, index) {
         final entry = _journalEntries[index];
         final isLast = index == _journalEntries.length - 1;
-        return _buildTimelineItem(entry, theme, isLast);
+        return _buildTimelineItem(entry, theme, isLast, localizations);
       },
     );
   }
 
-  Widget _buildTimelineItem(CaseJournalEntry entry, ThemeData theme, bool isLast) {
+  Widget _buildTimelineItem(CaseJournalEntry entry, ThemeData theme, bool isLast, AppLocalizations localizations) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,7 +476,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Ref: ${entry.relatedDocumentId}',
+                              '${localizations.ref}: ${entry.relatedDocumentId}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: Colors.blue[700],
                               ),
