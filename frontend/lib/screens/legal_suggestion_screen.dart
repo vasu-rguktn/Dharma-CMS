@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 
 class LegalSuggestionScreen extends StatefulWidget {
@@ -27,8 +28,8 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
     if (_firDetailsController.text.trim().isEmpty || 
         _incidentDetailsController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter both FIR and incident details.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.enterFirAndIncidentDetails),
           backgroundColor: Colors.red,
         ),
       );
@@ -56,8 +57,8 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Legal suggestions generated.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.legalSuggestionsGenerated),
             backgroundColor: Colors.green,
           ),
         );
@@ -66,7 +67,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate legal suggestions: $error'),
+            content: Text(AppLocalizations.of(context)!.failedToGenerateSuggestions(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -81,6 +82,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -100,7 +102,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Legal Section Suggester',
+                          localizations.legalSectionSuggester,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -110,7 +112,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.',
+                    localizations.provideFirDetailsDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -118,7 +120,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   const SizedBox(height: 24),
                   
                   Text(
-                    'FIR Details',
+                    localizations.firDetails,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -127,15 +129,15 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   TextField(
                     controller: _firDetailsController,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter comprehensive details from the First Information Report...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.enterFirDetailsHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   
                   Text(
-                    'Incident Details',
+                    localizations.incidentDetails,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -144,9 +146,9 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   TextField(
                     controller: _incidentDetailsController,
                     maxLines: 8,
-                    decoration: const InputDecoration(
-                      hintText: 'Describe the incident in detail, including sequence of events, actions taken, etc...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.describeIncidentHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -162,7 +164,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.send),
-                      label: Text(_isLoading ? 'Processing...' : 'Get Legal Suggestions'),
+                      label: Text(_isLoading ? localizations.processing : localizations.getLegalSuggestions),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -178,12 +180,12 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
           
           if (_isLoading) ...[
             const SizedBox(height: 24),
-            const Center(
+            Center(
               child: Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Analyzing information and generating suggestions...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(localizations.analyzingInformation),
                 ],
               ),
             ),
@@ -199,14 +201,14 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'AI Legal Suggestions',
+                      localizations.aiLegalSuggestions,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Review the suggested legal sections and reasoning. This is for informational purposes only.',
+                      localizations.reviewSuggestionsDesc,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -214,7 +216,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                     const SizedBox(height: 16),
                     
                     Text(
-                      'Suggested Sections',
+                      localizations.suggestedSections,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -229,14 +231,14 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: Text(
-                        _suggestion!['suggestedSections'] ?? 'No sections suggested',
+                        _suggestion!['suggestedSections'] ?? localizations.noSectionsSuggested,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
                     const SizedBox(height: 16),
                     
                     Text(
-                      'Reasoning',
+                      localizations.reasoning,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -251,7 +253,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                         border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: Text(
-                        _suggestion!['reasoning'] ?? 'No reasoning provided',
+                        _suggestion!['reasoning'] ?? localizations.noReasoningProvided,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -263,7 +265,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'AI-generated content. Always consult with a legal expert for official advice.',
+                            localizations.aiDisclaimer,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.grey[600],
                             ),

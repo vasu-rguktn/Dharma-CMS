@@ -706,6 +706,121 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get fir => 'FIR';
 
+  @override
+  String get answered => 'సమాధానం ఇవ్వబడింది';
+
+  @override
+  String get querySubmittedSuccessfully => 'ప్రశ్న విజయవంతంగా సమర్పించబడింది!';
+
+  @override
+  String get submitAQuery => 'ప్రశ్నను సమర్పించండి';
+
+  @override
+  String get queryDetails => 'ప్రశ్న వివరాలు';
+
+  @override
+  String get enterFirAndIncidentDetails => 'దయచేసి FIR మరియు సంఘటన వివరాలు రెండూ నమోదు చేయండి.';
+
+  @override
+  String get legalSuggestionsGenerated => 'చట్టపరమైన సూచనలు రూపొందించబడ్డాయి.';
+
+  @override
+  String failedToGenerateSuggestions(String error) {
+    return 'చట్టపరమైన సూచనలను రూపొందించడంలో విఫలమైంది: $error';
+  }
+
+  @override
+  String get provideFirDetailsDesc => 'BNS, BNSS, BSA మరియు ఇతర ప్రత్యేక చట్టాల కింద వర్తించే చట్టపరమైన విభాగాల కోసం AI-ఆధారిత సూచనలను పొందడానికి FIR మరియు సంఘటన వివరాలను అందించండి.';
+
+  @override
+  String get enterFirDetailsHint => 'ప్రథమ సమాచార నివేదిక (FIR) నుండి సమగ్ర వివరాలను నమోదు చేయండి...';
+
+  @override
+  String get describeIncidentHint => 'సంఘటనను వివరంగా వివరించండి, సంఘటనల క్రమం, తీసుకున్న చర్యలు మొదలైనవి...';
+
+  @override
+  String get processing => 'ప్రాసెస్ చేస్తోంది...';
+
+  @override
+  String get getLegalSuggestions => 'చట్టపరమైన సూచనలను పొందండి';
+
+  @override
+  String get analyzingInformation => 'సమాచారాన్ని విశ్లేషించడం మరియు సూచనలను రూపొందించడం...';
+
+  @override
+  String get aiLegalSuggestions => 'AI చట్టపరమైన సూచనలు';
+
+  @override
+  String get reviewSuggestionsDesc => 'సూచించిన చట్టపరమైన విభాగాలు మరియు కారణాలను సమీక్షించండి. ఇది సమాచార ప్రయోజనాల కోసం మాత్రమే.';
+
+  @override
+  String get suggestedSections => 'సూచించిన విభాగాలు';
+
+  @override
+  String get noSectionsSuggested => 'ఎటువంటి విభాగాలు సూచించబడలేదు';
+
+  @override
+  String get reasoning => 'కారణం';
+
+  @override
+  String get noReasoningProvided => 'ఎటువంటి కారణం అందించబడలేదు';
+
+  @override
+  String get aiDisclaimer => 'AI- రూపొందించిన కంటెంట్. అధికారిక సలహా కోసం ఎల్లప్పుడూ న్యాయ నిపుణుడిని సంప్రదించండి.';
+
+  @override
+  String get provideCaseDataAndRecipient => 'దయచేసి కేసు డేటాను అందించండి మరియు గ్రహీత రకాన్ని ఎంచుకోండి.';
+
+  @override
+  String get documentDraftGenerated => 'పత్రం చిత్తుప్రతి రూపొందించబడింది.';
+
+  @override
+  String failedToGenerateDraft(String error) {
+    return 'పత్రం చిత్తుప్రతిని రూపొందించడంలో విఫలమైంది: $error';
+  }
+
+  @override
+  String get documentDraftingDesc => 'వైద్య అధికారులు లేదా ఫోరెన్సిక్ నిపుణుల వంటి నిర్దిష్ట గ్రహీతల కోసం కేసు డేటా ఆధారంగా పత్ర చిత్తుప్రతులను రూపొందించండి.';
+
+  @override
+  String get pasteCaseDataHint => 'అన్ని సంబంధిత కేసు డేటాను అతికించండి: ఫిర్యాదు ట్రాన్‌స్క్రిప్ట్‌లు, సాక్షి వాంగ్మూలాలు, FIR వివరాలు, దర్యాప్తు గమనికలు మొదలైనవి...';
+
+  @override
+  String get selectRecipientType => 'గ్రహీత రకాన్ని ఎంచుకోండి';
+
+  @override
+  String get additionalInstructionsOptional => 'అదనపు సూచనలు (ఐచ్ఛికం)';
+
+  @override
+  String get additionalInstructionsHint => 'ఉదా., \'గాయాలపై దృష్టి పెట్టండి\', \'DNA విశ్లేషణ కోసం నిర్దిష్ట పరీక్షలను అభ్యర్థించండి\', \'స్వరాన్ని అధికారికంగా మరియు అత్యవసరంగా ఉంచండి\'...';
+
+  @override
+  String get drafting => 'చిత్తుప్రతి చేస్తోంది...';
+
+  @override
+  String get draftDocument => 'పత్రం చిత్తుప్రతి చేయండి';
+
+  @override
+  String get draftingWait => 'పత్రం చిత్తుప్రతి చేస్తోంది, దయచేసి వేచి ఉండండి...';
+
+  @override
+  String get generatedDocumentDraft => 'రూపొందించిన పత్రం చిత్తుప్రతి';
+
+  @override
+  String get reviewDraftDesc => 'రూపొందించిన చిత్తుప్రతిని సమీక్షించండి. మీరు అవసరమైన విధంగా కాపీ చేసి సవరించవచ్చు.';
+
+  @override
+  String get noDraftGenerated => 'చిత్తుప్రతి రూపొందించబడలేదు';
+
+  @override
+  String get aiDraftDisclaimer => 'AI- రూపొందించిన కంటెంట్. అధికారిక ఉపయోగం కోసం ధృవీకరించండి మరియు స్వీకరించండి.';
+
+  @override
+  String get draftCopied => 'చిత్తుప్రతి క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది';
+
+  @override
+  String get copyDraft => 'చిత్తుప్రతి కాపీ చేయండి';
+
 
 
 

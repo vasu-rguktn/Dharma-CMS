@@ -1483,11 +1483,227 @@ abstract class AppLocalizations {
   /// **'FIR'**
   String get fir;
 
+  /// Answered status
+  ///
+  /// In en, this message translates to:
+  /// **'Answered'**
+  String get answered;
 
+  /// Query submitted successfully message
+  ///
+  /// In en, this message translates to:
+  /// **'Query submitted successfully!'**
+  String get querySubmittedSuccessfully;
 
+  /// Submit a query title
+  ///
+  /// In en, this message translates to:
+  /// **'Submit a Query'**
+  String get submitAQuery;
 
+  /// Query details title
+  ///
+  /// In en, this message translates to:
+  /// **'Query Details'**
+  String get queryDetails;
 
+  /// Error message when FIR and incident details are missing
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter both FIR and incident details.'**
+  String get enterFirAndIncidentDetails;
 
+  /// Success message for legal suggestions generation
+  ///
+  /// In en, this message translates to:
+  /// **'Legal suggestions generated.'**
+  String get legalSuggestionsGenerated;
+
+  /// Error message for failed suggestions generation
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate legal suggestions: {error}'**
+  String failedToGenerateSuggestions(String error);
+
+  /// Description for legal suggestion screen
+  ///
+  /// In en, this message translates to:
+  /// **'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.'**
+  String get provideFirDetailsDesc;
+
+  /// Hint text for FIR details input
+  ///
+  /// In en, this message translates to:
+  /// **'Enter comprehensive details from the First Information Report...'**
+  String get enterFirDetailsHint;
+
+  /// Hint text for incident details input
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the incident in detail, including sequence of events, actions taken, etc...'**
+  String get describeIncidentHint;
+
+  /// Processing status message
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get processing;
+
+  /// Button text to get legal suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Get Legal Suggestions'**
+  String get getLegalSuggestions;
+
+  /// Analyzing information message
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing information and generating suggestions...'**
+  String get analyzingInformation;
+
+  /// Title for AI legal suggestions result
+  ///
+  /// In en, this message translates to:
+  /// **'AI Legal Suggestions'**
+  String get aiLegalSuggestions;
+
+  /// Description for reviewing suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Review the suggested legal sections and reasoning. This is for informational purposes only.'**
+  String get reviewSuggestionsDesc;
+
+  /// Suggested sections label
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested Sections'**
+  String get suggestedSections;
+
+  /// Message when no sections are suggested
+  ///
+  /// In en, this message translates to:
+  /// **'No sections suggested'**
+  String get noSectionsSuggested;
+
+  /// Reasoning label
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning'**
+  String get reasoning;
+
+  /// Message when no reasoning is provided
+  ///
+  /// In en, this message translates to:
+  /// **'No reasoning provided'**
+  String get noReasoningProvided;
+
+  /// Disclaimer for AI generated content
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated content. Always consult with a legal expert for official advice.'**
+  String get aiDisclaimer;
+
+  /// Error message when case data and recipient type are missing
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide case data and select a recipient type.'**
+  String get provideCaseDataAndRecipient;
+
+  /// Success message for document draft generation
+  ///
+  /// In en, this message translates to:
+  /// **'Document draft generated.'**
+  String get documentDraftGenerated;
+
+  /// Error message for failed draft generation
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate document draft: {error}'**
+  String failedToGenerateDraft(String error);
+
+  /// Description for document drafting screen
+  ///
+  /// In en, this message translates to:
+  /// **'Generate document drafts based on case data for specific recipients like medical officers or forensic experts.'**
+  String get documentDraftingDesc;
+
+  /// Hint text for case data input
+  ///
+  /// In en, this message translates to:
+  /// **'Paste all relevant case data: complaint transcripts, witness statements, FIR details, investigation notes, etc...'**
+  String get pasteCaseDataHint;
+
+  /// Hint text for recipient type selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select recipient type'**
+  String get selectRecipientType;
+
+  /// Additional instructions label
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Instructions (Optional)'**
+  String get additionalInstructionsOptional;
+
+  /// Hint text for additional instructions
+  ///
+  /// In en, this message translates to:
+  /// **'E.g., \'Focus on injuries sustained\', \'Request specific tests for DNA analysis\', \'Keep the tone formal and urgent\'...'**
+  String get additionalInstructionsHint;
+
+  /// Drafting status message
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting...'**
+  String get drafting;
+
+  /// Button text to draft document
+  ///
+  /// In en, this message translates to:
+  /// **'Draft Document'**
+  String get draftDocument;
+
+  /// Drafting wait message
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting document, please wait...'**
+  String get draftingWait;
+
+  /// Title for generated document draft
+  ///
+  /// In en, this message translates to:
+  /// **'Generated Document Draft'**
+  String get generatedDocumentDraft;
+
+  /// Description for reviewing draft
+  ///
+  /// In en, this message translates to:
+  /// **'Review the generated draft. You can copy and edit it as needed.'**
+  String get reviewDraftDesc;
+
+  /// Message when no draft is generated
+  ///
+  /// In en, this message translates to:
+  /// **'No draft generated'**
+  String get noDraftGenerated;
+
+  /// Disclaimer for AI generated draft
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated content. Verify and adapt for official use.'**
+  String get aiDraftDisclaimer;
+
+  /// Message when draft is copied
+  ///
+  /// In en, this message translates to:
+  /// **'Draft copied to clipboard'**
+  String get draftCopied;
+
+  /// Button text to copy draft
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Draft'**
+  String get copyDraft;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

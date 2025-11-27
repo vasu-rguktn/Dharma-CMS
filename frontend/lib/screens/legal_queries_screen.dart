@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class LegalQueriesScreen extends StatefulWidget {
   const LegalQueriesScreen({super.key});
@@ -23,33 +24,34 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     setState(() {
       _queries.insert(0, {
         'query': _queryController.text,
-        'status': 'Answered',
+        'status': AppLocalizations.of(context)!.answered,
         'date': DateTime.now().toString().split(' ')[0],
       });
     });
 
     _queryController.clear();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Query submitted successfully!')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.querySubmittedSuccessfully)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Legal Queries',
+            localizations.legalQueries,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Ask legal questions and get AI-powered answers',
+            localizations.askLegalQuestions,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -62,7 +64,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Submit a Query',
+                    localizations.submitAQuery,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -71,9 +73,9 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                   TextField(
                     controller: _queryController,
                     maxLines: 4,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your legal question here...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: localizations.enterLegalQuestion,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -82,7 +84,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                     child: ElevatedButton.icon(
                       onPressed: _submitQuery,
                       icon: const Icon(Icons.send),
-                      label: const Text('Submit Query'),
+                      label: Text(localizations.submitQuery),
                     ),
                   ),
                 ],
@@ -91,7 +93,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Previous Queries',
+            localizations.previousQueries,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -110,14 +112,14 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No queries yet',
+                          localizations.noQueriesYet,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Submit your first legal query above',
+                          localizations.submitFirstQuery,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[500],
                           ),
@@ -152,14 +154,14 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Query Details'),
+                                title: Text(localizations.queryDetails),
                                 content: SingleChildScrollView(
                                   child: Text(query['query']!),
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('Close'),
+                                    child: Text(localizations.close),
                                   ),
                                 ],
                               ),

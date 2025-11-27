@@ -706,6 +706,121 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get fir => 'FIR';
 
+  @override
+  String get answered => 'Answered';
+
+  @override
+  String get querySubmittedSuccessfully => 'Query submitted successfully!';
+
+  @override
+  String get submitAQuery => 'Submit a Query';
+
+  @override
+  String get queryDetails => 'Query Details';
+
+  @override
+  String get enterFirAndIncidentDetails => 'Please enter both FIR and incident details.';
+
+  @override
+  String get legalSuggestionsGenerated => 'Legal suggestions generated.';
+
+  @override
+  String failedToGenerateSuggestions(String error) {
+    return 'Failed to generate legal suggestions: $error';
+  }
+
+  @override
+  String get provideFirDetailsDesc => 'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.';
+
+  @override
+  String get enterFirDetailsHint => 'Enter comprehensive details from the First Information Report...';
+
+  @override
+  String get describeIncidentHint => 'Describe the incident in detail, including sequence of events, actions taken, etc...';
+
+  @override
+  String get processing => 'Processing...';
+
+  @override
+  String get getLegalSuggestions => 'Get Legal Suggestions';
+
+  @override
+  String get analyzingInformation => 'Analyzing information and generating suggestions...';
+
+  @override
+  String get aiLegalSuggestions => 'AI Legal Suggestions';
+
+  @override
+  String get reviewSuggestionsDesc => 'Review the suggested legal sections and reasoning. This is for informational purposes only.';
+
+  @override
+  String get suggestedSections => 'Suggested Sections';
+
+  @override
+  String get noSectionsSuggested => 'No sections suggested';
+
+  @override
+  String get reasoning => 'Reasoning';
+
+  @override
+  String get noReasoningProvided => 'No reasoning provided';
+
+  @override
+  String get aiDisclaimer => 'AI-generated content. Always consult with a legal expert for official advice.';
+
+  @override
+  String get provideCaseDataAndRecipient => 'Please provide case data and select a recipient type.';
+
+  @override
+  String get documentDraftGenerated => 'Document draft generated.';
+
+  @override
+  String failedToGenerateDraft(String error) {
+    return 'Failed to generate document draft: $error';
+  }
+
+  @override
+  String get documentDraftingDesc => 'Generate document drafts based on case data for specific recipients like medical officers or forensic experts.';
+
+  @override
+  String get pasteCaseDataHint => 'Paste all relevant case data: complaint transcripts, witness statements, FIR details, investigation notes, etc...';
+
+  @override
+  String get selectRecipientType => 'Select recipient type';
+
+  @override
+  String get additionalInstructionsOptional => 'Additional Instructions (Optional)';
+
+  @override
+  String get additionalInstructionsHint => 'E.g., \'Focus on injuries sustained\', \'Request specific tests for DNA analysis\', \'Keep the tone formal and urgent\'...';
+
+  @override
+  String get drafting => 'Drafting...';
+
+  @override
+  String get draftDocument => 'Draft Document';
+
+  @override
+  String get draftingWait => 'Drafting document, please wait...';
+
+  @override
+  String get generatedDocumentDraft => 'Generated Document Draft';
+
+  @override
+  String get reviewDraftDesc => 'Review the generated draft. You can copy and edit it as needed.';
+
+  @override
+  String get noDraftGenerated => 'No draft generated';
+
+  @override
+  String get aiDraftDisclaimer => 'AI-generated content. Verify and adapt for official use.';
+
+  @override
+  String get draftCopied => 'Draft copied to clipboard';
+
+  @override
+  String get copyDraft => 'Copy Draft';
+
 
 
 
