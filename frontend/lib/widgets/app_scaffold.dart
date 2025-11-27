@@ -41,11 +41,11 @@ class _AppScaffoldState extends State<AppScaffold> {
                 children: [
                   CircleAvatar(
                     child: Text(
-                      (authProvider.userProfile?.displayName ?? 'U')[0].toUpperCase(),
+                      (authProvider.userProfile?.username ?? authProvider.userProfile?.displayName ?? 'U')[0].toUpperCase(),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(authProvider.userProfile?.displayName ?? 'User'),
+                  Text(authProvider.userProfile?.username ?? authProvider.userProfile?.displayName ?? 'User'),
                   const Icon(Icons.arrow_drop_down),
                 ],
               ),
@@ -95,7 +95,7 @@ class _AppScaffoldState extends State<AppScaffold> {
             _buildDrawerItem(context, Icons.dashboard, localizations.dashboard, '/dashboard', isDark),
             
             _buildDrawerSection(localizations.aiTools, isDark),
-            _buildDrawerItem(context, Icons.chat, localizations.aiChat, '/chat', isDark),
+            _buildDrawerItem(context, Icons.chat, localizations.aiChat, '/ai-legal-chat', isDark),
             
             if (authProvider.role == 'admin' || authProvider.role == 'police') ...[
               _buildDrawerItem(context, Icons.psychology, localizations.legalQueries, '/legal-queries', isDark),
