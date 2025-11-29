@@ -513,6 +513,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           ? data['classification'].toString()
           : '(none)';
 
+      final Map<String, String> localizedAnswers = Map<String, String>.from(_answers);
+      final localizedFields = (data is Map) ? data['localized_fields'] : null;
+      if (localizedFields is Map) {
+        localizedFields.forEach((key, value) {
+          if (key is String && value != null) {
+            localizedAnswers[key] = value.toString();
+          }
+        });
+      }
+
+      // update stored answers to the localized variant so downstream screens see the selected language
+      _answers
+        ..clear()
+        ..addAll(localizedAnswers);
+
       _addBot(formalSummary);
       _addBot(localizations.classification(classification as String)?? 'Classification: $classification');
 
@@ -527,7 +542,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
         context.go(
           '/ai-chatbot-details',
           extra: {
-            'answers': _answers,
+            'answers': Map<String, String>.from(_answers),
             'summary': formalSummary,
             'classification': classification,
           },

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict, Tuple
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
@@ -36,6 +36,7 @@ class ComplaintResponse(BaseModel):
     classification: str
     raw_conversation: str
     timestamp: str
+    localized_fields: Dict[str, str] = Field(default_factory=dict)
 
 # === Helpers ===
 def resolve_language(lang: Optional[str]) -> str:
@@ -49,6 +50,34 @@ def resolve_language(lang: Optional[str]) -> str:
 
 TELUGU_SCRIPT_RE = re.compile(r"[\u0C00-\u0C7F]")
 
+ROMANIZED_TELUGU_PATTERNS = [
+    re.compile(r"\bdoo?nga", re.IGNORECASE),
+    re.compile(r"\bdongatan", re.IGNORECASE),
+    re.compile(r"\bdongalin", re.IGNORECASE),
+    re.compile(r"\bhatya", re.IGNORECASE),
+    re.compile(r"\bapaharan", re.IGNORECASE),
+    re.compile(r"\bhimsa", re.IGNORECASE),
+]
+
+CLASSIFICATION_HINTS = {
+    "దొంగతనం": "theft",
+    "దోపిడి": "robbery",
+    "దాడి": "assault",
+    "హత్య": "murder",
+    "అపహరణ": "kidnapping",
+    "ఆమ్ల దాడి": "acid attack",
+    "అగ్నికి ఆహుతి": "arson",
+    "dongatanam": "theft",
+    "donga": "theft",
+    "dongalincharu": "theft",
+    "dongal": "theft",
+    "hatya": "murder",
+    "apaharan": "kidnapping",
+    "aporadhi": "criminal",
+    "acid attack": "acid attack",
+    "kidnap": "kidnapping",
+}
+
 
 def _needs_translation(text: str) -> bool:
     if not text:
@@ -59,9 +88,21 @@ def _needs_translation(text: str) -> bool:
     return bool(ascii_letters)
 
 
+def _looks_romanized_telugu(text: str) -> bool:
+    if not text or TELUGU_SCRIPT_RE.search(text):
+        return False
+    lowered = text.lower()
+    for pattern in ROMANIZED_TELUGU_PATTERNS:
+        if pattern.search(lowered):
+            return True
+    return False
+
+
 def translate_to_telugu(text: str) -> str:
     """
-    Translate English responses into Telugu so summaries follow the citizen's locale.
+    Convert user text into Telugu script:
+      - If the text is English, translate it into natural Telugu.
+      - If the text is Telugu written with English letters (romanized), transliterate it to Telugu script.
     Falls back to the original text if translation is not possible.
     """
     if not HF_TOKEN or not _needs_translation(text):
@@ -75,8 +116,14 @@ def translate_to_telugu(text: str) -> str:
                 {
                     "role": "system",
                     "content": (
-                        "Translate the following citizen input into natural Telugu suitable for police documentation. "
-                        "Preserve personal names and numbers. Return only the translated text."
+                        "You will receive text entered by a Telugu speaker. "
+                        "Sometimes it is English sentences needing translation, other times it is Telugu words typed using English letters "
+                        "(romanized Telugu such as 'ela unnaru' or 'meeru ekkada unnaru'). "
+                        "Convert the input into natural Telugu script suitable for official police documentation. "
+                        "If the input is romanized Telugu, transliterate it faithfully. "
+                        "If the input is English, translate it into Telugu. "
+                        "Preserve personal names, places, and numbers exactly as provided. "
+                        "Return only the final Telugu text without quotes or commentary."
                     ),
                 },
                 {"role": "user", "content": text},
@@ -126,6 +173,44 @@ def get_timestamp() -> str:
 
 def today_date_str() -> str:
     return datetime.utcnow().strftime("%Y-%m-%d")
+
+
+TELUGU_DIGITS = {
+    "0": "0",
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "6",
+    "7": "7",
+    "8": "8",
+    "9": "9",
+}
+
+TELUGU_MONTHS = [
+    "జనవరి",
+    "ఫిబ్రవరి",
+    "మార్చి",
+    "ఏప్రిల్",
+    "మే",
+    "జూన్",
+    "జూలై",
+    "ఆగస్టు",
+    "సెప్టెంబర్",
+    "అక్టోబర్",
+    "నవంబర్",
+    "డిసెంబర్",
+]
+
+
+def _to_telugu_digits(value: str) -> str:
+    return "".join(TELUGU_DIGITS.get(ch, ch) for ch in value)
+
+
+def format_date_for_language(language: str, dt: datetime) -> str:
+    # Keep the date format consistent (YYYY-MM-DD) regardless of locale.
+    return dt.strftime("%Y-%m-%d")
 
 # kept for compatibility (not used in final summary)
 def extract_incident_datetime(text: str) -> str:
@@ -187,13 +272,14 @@ def get_official_complaint_label(complaint_type: str, details: str) -> Optional[
         logger.warning(f"LLM official label lookup failed: {e}")
         return None
 
-def generate_summary_text(req: ComplaintRequest) -> str:
+def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
     """
     Produce plain-text formatted summary WITHOUT Description_of_incident or Date/Time_of_incident.
     Complaint Type may include (official label — IPC) only if get_official_complaint_label returns it.
     """
-    date_of_complaint = today_date_str()
+    now = datetime.utcnow()
     language = resolve_language(getattr(req, "language", None))
+    date_display = format_date_for_language(language, now)
     labels = SUMMARY_LABELS.get(language, SUMMARY_LABELS["en"])
 
     # Attempt to get official label with IPC
@@ -218,6 +304,15 @@ def generate_summary_text(req: ComplaintRequest) -> str:
     else:
         complaint_type_line = complaint_type_value
 
+    localized_fields = {
+        "full_name": full_name,
+        "address": address,
+        "phone": phone,
+        "complaint_type": complaint_type_line,
+        "details": details_value,
+        "date_of_complaint": date_display,
+    }
+
     lines = [
         labels["header"],
         f"{labels['full_name']}: {full_name}",
@@ -225,10 +320,10 @@ def generate_summary_text(req: ComplaintRequest) -> str:
         f"{labels['phone']}: {phone}",
         f"{labels['complaint_type']}: {complaint_type_line}",
         f"{labels['details']}: {details_value}",
-        f"{labels['date_of_complaint']}: {date_of_complaint}",
+        f"{labels['date_of_complaint']}: {date_display}",
         ""  # trailing newline
     ]
-    return "\n".join(lines)
+    return "\n".join(lines), localized_fields
 
 # --- New: amount extraction helper ---
 def extract_amount_in_inr(text: str) -> Optional[int]:
@@ -277,7 +372,33 @@ def _normalize_classification(text: str) -> str:
         return f"{label} – {justification}."
     return label
 
-def classify_offence(formal_summary: str, *, complaint_type: str = "", details: str = "") -> str:
+def _build_classification_context(
+    complaint_type: str,
+    details: str,
+    language: str,
+    localized_fields: Dict[str, str],
+) -> str:
+    segments = [complaint_type or "", details or ""]
+    if language == "te" and localized_fields:
+        segments.append(localized_fields.get("complaint_type", ""))
+        segments.append(localized_fields.get("details", ""))
+    combined = " ".join(seg for seg in segments if seg).lower()
+    hints = []
+    for key, hint in CLASSIFICATION_HINTS.items():
+        if key.lower() in combined:
+            hints.append(hint)
+    if hints:
+        combined = f"{combined} {' '.join(hints)}"
+    return combined
+
+
+def classify_offence(
+    formal_summary: str,
+    *,
+    complaint_type: str = "",
+    details: str = "",
+    classification_text: Optional[str] = None,
+) -> str:
     """
     Enhanced rule-based classifier:
       - If non-cognizable keywords matched -> NON-COGNIZABLE
@@ -286,7 +407,10 @@ def classify_offence(formal_summary: str, *, complaint_type: str = "", details: 
       - If cognizable keywords matched -> COGNIZABLE
       - Otherwise -> NON-COGNIZABLE
     """
-    text = f"{complaint_type} \n {details}".lower()
+    if classification_text:
+        text = classification_text.lower()
+    else:
+        text = f"{complaint_type} \n {details}".lower()
 
     cognizable_keywords = {
         "theft", "robbery", "extortion", "house-breaking", "house breaking", "murder",
@@ -382,23 +506,30 @@ async def process_complaint(payload: ComplaintRequest):
         language = resolve_language(payload.language)
         conversation = build_conversation(payload)
         # produce the neat text summary requested by user (no description)
-        formal_summary = generate_summary_text(payload)
+        formal_summary, localized_fields = generate_summary_text(payload)
 
         logger.info(f"Complaint input → type='{payload.complaint_type}', details='{payload.details}'")
+        classification_context = _build_classification_context(
+            payload.complaint_type,
+            payload.details,
+            language,
+            localized_fields,
+        )
         classification = classify_offence(
             formal_summary,
             complaint_type=payload.complaint_type,
             details=payload.details,
+            classification_text=classification_context,
         )
+        classification_for_logs = classification
+        classification_display = classification
         if language == "te" and classification:
-            upper = classification.upper()
-            if "COGNIZABLE" in upper:
-                classification = translate_to_telugu(classification)
+            classification_display = translate_to_telugu(classification)
 
-        logger.info(f"Classification decided → {classification}")
+        logger.info(f"Classification decided → {classification_display}")
 
         # Terminal-friendly log
-        label_upper = ("" if classification is None else str(classification)).upper()
+        label_upper = ("" if classification_for_logs is None else str(classification_for_logs)).upper()
         if "COGNIZABLE" in label_upper and "NON-COGNIZABLE" not in label_upper:
             logger.success("Case Classification: COGNIZABLE")
         elif "NON-COGNIZABLE" in label_upper:
@@ -408,9 +539,10 @@ async def process_complaint(payload: ComplaintRequest):
 
         response = ComplaintResponse(
             formal_summary=formal_summary,
-            classification=classification,
+            classification=classification_display,
             raw_conversation=conversation,
             timestamp=get_timestamp(),
+            localized_fields=localized_fields,
         )
         return response
     except Exception as e:
