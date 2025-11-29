@@ -1,3 +1,4 @@
+// lib/screens/petition/petitions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -5,6 +6,7 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:go_router/go_router.dart';
 
 import 'petitions_list_tab.dart';
 import 'create_petition_form.dart';
@@ -20,11 +22,15 @@ class _PetitionsScreenState extends State<PetitionsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  // Your signature orange
+  static const Color orange = Color(0xFFFC633C);
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _fetchPetitions();
+    // Safe fetch after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPetitions());
   }
 
   @override
@@ -49,11 +55,37 @@ class _PetitionsScreenState extends State<PetitionsScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.petitionManagement),
+        // Back arrow added here — right beside the title
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: IconButton(
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              color: orange,
+              size: 32,
+              shadows: const [
+                Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))
+              ],
+            ),
+            onPressed: () => context.go('/dashboard'),
+          ),
+        ),
+        title: Text(
+          localizations.petitionManagement,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: orange,
+          unselectedLabelColor: Colors.grey[600],
+          indicatorColor: orange,
           tabs: [
             Tab(icon: const Icon(Icons.list), text: localizations.myPetitions),
             Tab(icon: const Icon(Icons.add_circle), text: localizations.createNew),

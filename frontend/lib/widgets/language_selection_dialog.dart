@@ -51,7 +51,7 @@ class LanguageSelectionDialog extends StatelessWidget {
 
                 // Title
                 Text(
-                  localizations.language ?? "Language",
+                  localizations.language,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
