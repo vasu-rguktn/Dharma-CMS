@@ -381,7 +381,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           question: localizations.detailsQuestion ??
               'Please describe your complaint in detail.'),
     ];
-    
+
     if (!_hasStarted) {
       _hasStarted = true;
       _startChatFlow();
@@ -457,7 +457,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       }
     }
     if (missing.isNotEmpty) {
-      _addBot( localizations.pleaseAnswerAllQuestions(missing as String) ?? 
+      _addBot(localizations.pleaseAnswerAllQuestions(missing as String) ??
           'Please answer all questions before submitting. Missing: ${missing.join(', ')}');
       setState(() {
         _allowInput = true;
@@ -505,15 +505,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       );
 
       final data = resp.data ?? {};
-      _addBot(localizations.complaintSummary??'Complaint Summary:');
+      _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
       final formalSummary = (data is Map && data['formal_summary'] != null)
           ? data['formal_summary'].toString()
           : '(no summary)';
       final classification = (data is Map && data['classification'] != null)
           ? data['classification'].toString()
           : '(none)';
+      final originalClassification =
+          (data is Map && data['original_classification'] != null)
+              ? data['original_classification'].toString()
+              : classification; // Fallback to displayed one if missing
 
-      final Map<String, String> localizedAnswers = Map<String, String>.from(_answers);
+      final Map<String, String> localizedAnswers =
+          Map<String, String>.from(_answers);
       final localizedFields = (data is Map) ? data['localized_fields'] : null;
       if (localizedFields is Map) {
         localizedFields.forEach((key, value) {
@@ -529,7 +534,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
         ..addAll(localizedAnswers);
 
       _addBot(formalSummary);
-      _addBot(localizations.classification(classification as String)?? 'Classification: $classification');
+      _addBot(localizations.classification(classification as String) ??
+          'Classification: $classification');
 
       setState(() {
         _isLoading = false;
@@ -545,11 +551,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
             'answers': Map<String, String>.from(_answers),
             'summary': formalSummary,
             'classification': classification,
+            'originalClassification': originalClassification, // Pass this!
           },
         );
       });
     } on DioError catch (e) {
-      String msg = localizations.somethingWentWrong ?? 'Sorry, something went wrong. Please try again later.';
+      String msg = localizations.somethingWentWrong ??
+          'Sorry, something went wrong. Please try again later.';
       if (e.response != null && e.response?.data != null) {
         // try to show server-provided message if present
         try {
@@ -618,7 +626,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           onPressed: () =>
               context.go('/ai-legal-guider'), // Add this navigation
         ),
-        title: Text(localizations.aiLegalAssistant ??'AI Legal Assistant'),
+        title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
       ),
@@ -704,10 +712,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                             hintText:
                                 _currentQ >= 0 && _currentQ < _questions.length
                                     ? _questions[_currentQ].question
-                                    : localizations.typeMessage??'Type your message...',
+                                    : localizations.typeMessage ??
+                                        'Type your message...',
                             border: InputBorder.none,
-                            errorText:
-                                _inputError ? localizations.pleaseEnterYourAnswer ?? "Please enter your answer" : null,
+                            errorText: _inputError
+                                ? localizations.pleaseEnterYourAnswer ??
+                                    "Please enter your answer"
+                                : null,
                             errorStyle: const TextStyle(fontSize: 12),
                           ),
                           onSubmitted: (_) => _handleSend(),
@@ -716,7 +727,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                       IconButton(
                         icon: const Icon(Icons.mic, color: orange),
                         onPressed: () {},
-                        tooltip: localizations.voiceInputComingSoon??"Voice input (coming soon)",
+                        tooltip: localizations.voiceInputComingSoon ??
+                            "Voice input (coming soon)",
                       ),
                       IconButton(
                         icon: const Icon(Icons.send, color: orange),

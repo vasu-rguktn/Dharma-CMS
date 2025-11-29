@@ -34,6 +34,7 @@ class ComplaintRequest(BaseModel):
 class ComplaintResponse(BaseModel):
     formal_summary: str
     classification: str
+    original_classification: str  # New field
     raw_conversation: str
     timestamp: str
     localized_fields: Dict[str, str] = Field(default_factory=dict)
@@ -111,7 +112,7 @@ def translate_to_telugu(text: str) -> str:
         resp = client.chat.completions.create(
             model=LLM_MODEL,
             temperature=0.2,
-            max_tokens=180,
+            max_tokens=1024,
             messages=[
                 {
                     "role": "system",
@@ -540,6 +541,7 @@ async def process_complaint(payload: ComplaintRequest):
         response = ComplaintResponse(
             formal_summary=formal_summary,
             classification=classification_display,
+            original_classification=classification,  # Send the English version here
             raw_conversation=conversation,
             timestamp=get_timestamp(),
             localized_fields=localized_fields,
