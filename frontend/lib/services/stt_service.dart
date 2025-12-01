@@ -34,7 +34,7 @@ class SttService {
   }
   
   /// Start recording and streaming audio to backend
-  Future<void> startRecording() async {
+  Future<void> startRecording(String languageCode) async {
     if (_isRecording) return;
     
     // Request permission
@@ -47,7 +47,7 @@ class SttService {
     final wsUrl = _baseUrl.replaceFirst('http', 'ws');
     try {
       _channel = WebSocketChannel.connect(
-        Uri.parse('$wsUrl/ws/stt'),
+        Uri.parse('$wsUrl/ws/stt?lang=$languageCode'),
       );
       
       // Listen to transcripts from backend

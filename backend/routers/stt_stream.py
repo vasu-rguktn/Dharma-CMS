@@ -47,6 +47,8 @@ streaming_config = speech.StreamingRecognitionConfig(
     interim_results=True,
 )
 
+
+
 # A thread-safe queue to pass raw audio from the pyaudio callback to the generator
 audio_q = queue.Queue()
 
@@ -125,7 +127,7 @@ def handle_responses(responses):
 # ============================================================================
 
 @router.websocket("/ws/stt")
-async def websocket_stt_endpoint(websocket: WebSocket):
+async def websocket_stt_endpoint(websocket: WebSocket, lang: str = "en-US"):
     """
     WebSocket endpoint for real-time speech-to-text streaming from Flutter.
     Client sends audio chunks (LINEAR16, 16kHz, mono), server responds with transcripts.
@@ -149,9 +151,7 @@ async def websocket_stt_endpoint(websocket: WebSocket):
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=RATE,
-        language_code="en-US",  # TODO: Make dynamic based on client preference
-        # language_code="te-IN",  # TODO: Make dynamic based on client preference
-
+        language_code=lang,
         enable_automatic_punctuation=True,
     )
     

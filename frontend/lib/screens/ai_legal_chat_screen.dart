@@ -609,7 +609,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   /// Toggle recording on/off for speech-to-text
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
-    
+    final langCode = Localizations.localeOf(context).languageCode;
+    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
+
     if (_isRecording) {
       // Stop recording
       print('Stopping recording. Current transcript: "$_currentTranscript"');
@@ -635,7 +637,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     } else {
       // Start recording
       try {
-        await _sttService!.startRecording();
+        await _sttService!.startRecording(sttLang);
         
         // Listen to transcript stream
         _transcriptSubscription = _sttService!.transcriptStream.listen(
