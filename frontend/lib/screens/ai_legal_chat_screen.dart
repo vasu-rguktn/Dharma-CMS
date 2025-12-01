@@ -317,8 +317,7 @@
 
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -394,8 +393,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       String baseUrl;
       if (kIsWeb) {
         baseUrl = 'http://localhost:8000';
-      } else if (Platform.isAndroid) {
-        baseUrl = 'http://10.0.2.2:8000';
+      } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        // Use 127.0.0.1 for physical device with adb reverse
+        baseUrl = 'http://127.0.0.1:8000';
       } else {
         baseUrl = 'http://localhost:8000';
       }
@@ -497,9 +497,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
       baseUrl = 'http://localhost:8000';
-    } else if (Platform.isAndroid) {
-      // Android emulator
-      baseUrl = 'http://10.0.2.2:8000';
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+      baseUrl = 'http://127.0.0.1:8000';
     } else {
       // iOS simulator / other platforms
       baseUrl = 'http://localhost:8000';
