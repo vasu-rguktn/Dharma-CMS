@@ -323,6 +323,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/services/stt_service.dart';
 
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
@@ -346,6 +347,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   bool _isLoading = false;
   bool _errored = false;
   bool _inputError = false;
+
+  // STT (Speech-to-Text) variables
+  SttService? _sttService;
+  bool _isRecording = false;
+  String _currentTranscript = '';
+  StreamSubscription<SttResult>? _transcriptSubscription;
 
   // Orange color
   static const Color orange = Color(0xFFFC633C);
@@ -381,7 +388,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           question: localizations.detailsQuestion ??
               'Please describe your complaint in detail.'),
     ];
-
+    
+    // Initialize STT Service
+    if (_sttService == null) {
+      String baseUrl;
+      if (kIsWeb) {
+        baseUrl = 'http://localhost:8000';
+      } else if (Platform.isAndroid) {
+        baseUrl = 'http://10.0.2.2:8000';
+      } else {
+        baseUrl = 'http://localhost:8000';
+      }
+      print('Initializing STT Service with URL: $baseUrl');
+      _sttService = SttService(baseUrl);
+    }
+    
     if (!_hasStarted) {
       _hasStarted = true;
       _startChatFlow();
@@ -608,11 +629,86 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     Future.delayed(const Duration(milliseconds: 600), _askNextQ);
   }
 
+  /// Toggle recording on/off for speech-to-text
+  Future<void> _toggleRecording() async {
+    if (!_allowInput) return;
+    final langCode = Localizations.localeOf(context).languageCode;
+    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
+
+    if (_isRecording) {
+      // Stop recording
+      print('Stopping recording. Current transcript: "$_currentTranscript"');
+      await _sttService!.stopRecording();
+      _transcriptSubscription?.cancel();
+      
+      // Use the final transcript if available (check both sources)
+      final transcript = _currentTranscript.isNotEmpty 
+          ? _currentTranscript 
+          : _sttService!.lastTranscript;
+          
+      if (transcript.isNotEmpty) {
+        _controller.text = transcript;
+        print('Set text field to: "${_controller.text}"');
+      } else {
+        print('No transcript to set (empty from both sources)');
+      }
+      
+      setState(() {
+        _isRecording = false;
+        _currentTranscript = '';
+      });
+    } else {
+      // Start recording
+      try {
+        await _sttService!.startRecording(sttLang);
+        
+        // Listen to transcript stream
+        _transcriptSubscription = _sttService!.transcriptStream.listen(
+          (result) {
+            setState(() {
+              _currentTranscript = result.transcript;
+              // Update text field with all transcripts (both interim and final)
+              _controller.text = result.transcript;
+              print('Transcript received: "${result.transcript}" (final: ${result.isFinal})');
+            });
+          },
+          onError: (error) {
+            // Handle errors
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Recording error: ${error.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            setState(() {
+              _isRecording = false;
+            });
+          },
+        );
+        
+        setState(() {
+          _isRecording = true;
+        });
+      } catch (e) {
+        // Handle permission denied or other errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+
   @override
   void dispose() {
     _controller.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
+    _sttService?.dispose();
+    _transcriptSubscription?.cancel();
     super.dispose();
   }
 
@@ -687,6 +783,42 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   ),
           ),
 
+          // ── RECORDING INDICATOR ──
+          if (_isRecording)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.red.withOpacity(0.1),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.mic, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _currentTranscript.isEmpty 
+                        ? 'Listening...' 
+                        : _currentTranscript,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // ── INPUT FIELD ──
           if (!_isLoading && !_errored && _allowInput)
             Container(
@@ -725,10 +857,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.mic, color: orange),
-                        onPressed: () {},
-                        tooltip: localizations.voiceInputComingSoon ??
-                            "Voice input (coming soon)",
+                        icon: Icon(
+                          _isRecording ? Icons.stop_circle : Icons.mic,
+                          color: _isRecording ? Colors.red : orange,
+                        ),
+                        onPressed: _toggleRecording,
+                        tooltip: _isRecording 
+                          ? "Tap to stop recording" 
+                          : (localizations.voiceInputComingSoon ?? "Voice input"),
                       ),
                       IconButton(
                         icon: const Icon(Icons.send, color: orange),
