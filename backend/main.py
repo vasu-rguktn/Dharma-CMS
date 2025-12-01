@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from routers.complaint import router as complaint_router
 from routers.ocr import router as ocr_router
+from routers.stt_stream import router as stt_router
 from routers.ocr import health_check as _ocr_health
 from routers.ocr import extract_case as _ocr_extract_case
 
@@ -21,6 +22,7 @@ app.add_middleware(
 
 app.include_router(complaint_router)
 app.include_router(ocr_router)
+app.include_router(stt_router)
 
 @app.get("/")
 def root():

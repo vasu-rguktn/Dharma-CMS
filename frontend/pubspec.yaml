@@ -57,6 +57,11 @@ dependencies:
   dio: ^5.4.0
   http: ^1.1.2
   
+  # Audio Recording for STT
+  record: ^5.0.0
+  permission_handler: ^11.0.0
+  web_socket_channel: ^2.4.0
+  
   # JSON Handling
   json_annotation: ^4.8.1
   
