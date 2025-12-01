@@ -58,7 +58,7 @@ dependencies:
   http: ^1.1.2
   
   # Audio Recording for STT
-  record: ^5.0.0
+  record: ^6.0.0
   permission_handler: ^11.0.0
   web_socket_channel: ^2.4.0
   
@@ -108,4 +108,3 @@ flutter:
   #     fonts:
   #       - asset: fonts/PTSans-Regular.ttf
   #       - asset: fonts/PTSans-Bold.ttf
-  #         weight: 700
