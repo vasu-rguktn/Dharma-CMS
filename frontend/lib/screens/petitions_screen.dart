@@ -457,11 +457,15 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
-      candidates.add('http://10.0.2.2:8000');
-      candidates.add('http://10.0.2.2');
+      // candidates.add('http://10.0.2.2:8000');
+      // candidates.add('http://10.0.2.2');
+    candidates.add('https://dharma-backend-x1g4.onrender.com');
+
     }
 
-    candidates.add('http://localhost:8000');
+    // candidates.add('https://dharma-backend-x1g4.onrender.com');
+    // candidates.add('http://localhost');
+    candidates.add('https://dharma-backend-x1g4.onrender.com');
     candidates.add('http://localhost');
 
     String? resolved;

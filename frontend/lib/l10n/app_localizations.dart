@@ -2520,6 +2520,23 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to sign out?'**
   String get signOutConfirmation;
+
+  String get loginWithPhone;
+String get mobileNumber;
+String get sendOtp;
+String get verifyOtp;
+String get otpSent;
+String get otpResent;
+String get enterValidNumber;
+String get enterOtp;
+String resendIn(int seconds);
+String get resendOtp;
+String get loginSuccessful;
+String get wrongOtp;
+String get otpExpired;
+String get invalidOtp;
+String get backToEmailLogin;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

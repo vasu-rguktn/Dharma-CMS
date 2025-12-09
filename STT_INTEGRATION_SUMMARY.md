@@ -61,11 +61,11 @@ StreamSubscription<SttResult>? _transcriptSubscription;
 if (_sttService == null) {
   String baseUrl;
   if (kIsWeb) {
-    baseUrl = 'http://localhost:8000';
+    baseUrl = 'https://dharma-backend-x1g4.onrender.com';
   } else if (Platform.isAndroid) {
     baseUrl = 'http://10.0.2.2:8000';
   } else {
-    baseUrl = 'http://localhost:8000';
+    baseUrl = 'https://dharma-backend-x1g4.onrender.com';
   }
   _sttService = SttService(baseUrl);
 }
