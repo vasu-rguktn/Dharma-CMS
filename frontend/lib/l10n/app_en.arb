@@ -279,6 +279,7 @@
         "type": "String"
       }
     }
+<<<<<<< HEAD
   },
   "fixFormErrors": "Please fix the errors in the form",
   "@fixFormErrors": {
@@ -709,4 +710,59 @@
   "@somethingWentWrong": {
     "description": "Generic error message"
   }
+=======
+
+
+    "loginWithPhone": "Login with Phone",
+  "@loginWithPhone": { "description": "Title for phone login screen" },
+
+  "mobileNumber": "Mobile Number",
+  "@mobileNumber": { "description": "Label for mobile number input field" },
+
+  "sendOtp": "Send OTP",
+  "@sendOtp": { "description": "Button text to send OTP" },
+
+  "verifyOtp": "Verify OTP",
+  "@verifyOtp": { "description": "Button text to verify OTP" },
+
+  "otpSent": "OTP sent!",
+  "@otpSent": { "description": "Message shown when OTP is sent" },
+
+  "otpResent": "OTP resent!",
+  "@otpResent": { "description": "Message shown when OTP is resent" },
+
+  "enterValidNumber": "Enter valid 10-digit number",
+  "@enterValidNumber": { "description": "Validation message for phone number" },
+
+  "enterOtp": "Enter 6-digit OTP",
+  "@enterOtp": { "description": "Validation message for OTP input" },
+
+  "resendIn": "Resend in {seconds} sec",
+  "@resendIn": {
+    "description": "Countdown text before resend is enabled",
+    "placeholders": {
+      "seconds": { "type": "int", "description": "Remaining seconds" }
+    }
+  },
+
+  "resendOtp": "Resend OTP",
+  "@resendOtp": { "description": "Button to resend OTP" },
+
+  "loginSuccessful": "Login Successful!",
+  "@loginSuccessful": { "description": "Message shown after successful login" },
+
+  "wrongOtp": "Wrong OTP",
+  "@wrongOtp": { "description": "Error message for wrong OTP" },
+
+  "otpExpired": "OTP expired",
+  "@otpExpired": { "description": "Error message for expired OTP" },
+
+  "invalidOtp": "Invalid OTP",
+  "@invalidOtp": { "description": "Generic invalid OTP message" },
+
+  "backToEmailLogin": "Back to Email Login",
+  "@backToEmailLogin": { "description": "Navigation link text to email login" }
+ 
+
+>>>>>>> 9a87f0b8b8d990f957127aedbc12b6795f6dac3b
 }

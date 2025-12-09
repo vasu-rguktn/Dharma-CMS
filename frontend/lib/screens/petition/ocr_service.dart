@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -24,11 +24,13 @@ class OcrService {
 
     final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
-      candidates.add('http://10.0.2.2:8000');
-      candidates.add('http://10.0.2.2');
+      // candidates.add('http://10.0.2.2:8000');
+      // candidates.add('http://10.0.2.2');
+      candidates.add('https://dharma-backend-x1g4.onrender.com');
+
     }
 
-    candidates.add('http://localhost:8000');
+    candidates.add('https://dharma-backend-x1g4.onrender.com');
     candidates.add('http://localhost');
 
     String? resolved;

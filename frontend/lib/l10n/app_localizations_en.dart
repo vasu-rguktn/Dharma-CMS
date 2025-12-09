@@ -1257,6 +1257,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
 
 
+@override
+String get loginWithPhone => 'Login with Phone';
+
+@override
+String get mobileNumber => 'Mobile Number';
+
+@override
+String get sendOtp => 'Send OTP';
+
+@override
+String get verifyOtp => 'Verify OTP';
+
+@override
+String get otpSent => 'OTP sent!';
+
+@override
+String get otpResent => 'OTP resent!';
+
+@override
+String get enterValidNumber => 'Enter valid 10-digit number';
+
+@override
+String get enterOtp => 'Enter 6-digit OTP';
+
+@override
+String resendIn(int seconds) => 'Resend in $seconds sec';
+
+@override
+String get resendOtp => 'Resend OTP';
+
+@override
+String get loginSuccessful => 'Login Successful!';
+
+@override
+String get wrongOtp => 'Wrong OTP';
+
+@override
+String get otpExpired => 'OTP expired';
+
+@override
+String get invalidOtp => 'Invalid OTP';
+
+@override
+String get backToEmailLogin => 'Back to Email Login';
+
+
+
+
+
 
 
 

@@ -6,14 +6,24 @@ class AiChatbotDetailsScreen extends StatelessWidget {
   final Map<String, String> answers;
   final String summary;
   final String classification;
-  const AiChatbotDetailsScreen({super.key, required this.answers, required this.summary, required this.classification});
+  final String originalClassification; // New field
 
-  static AiChatbotDetailsScreen fromRouteSettings(BuildContext context, GoRouterState state) {
+  const AiChatbotDetailsScreen({
+    super.key,
+    required this.answers,
+    required this.summary,
+    required this.classification,
+    required this.originalClassification,
+  });
+
+  static AiChatbotDetailsScreen fromRouteSettings(
+      BuildContext context, GoRouterState state) {
     final q = state.extra as Map<String, dynamic>?;
     return AiChatbotDetailsScreen(
       answers: q?['answers'] as Map<String, String>? ?? {},
       summary: q?['summary'] as String? ?? '',
       classification: q?['classification'] as String? ?? '',
+      originalClassification: q?['originalClassification'] as String? ?? '',
     );
   }
 
@@ -34,22 +44,31 @@ class AiChatbotDetailsScreen extends StatelessWidget {
         child: ListView(
           children: [
             const SizedBox(height: 16),
-            Text(localizations.citizenDetails, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(localizations.citizenDetails,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            ...answers.entries.map((e) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${_labelForKey(e.key, localizations)}:', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(e.value, style: const TextStyle(fontSize: 15))),
-                ],
-              ),
-            ))
-            .toList(),
+            ...answers.entries
+                .map((e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${_labelForKey(e.key, localizations)}:',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 15)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(e.value,
+                                  style: const TextStyle(fontSize: 15))),
+                        ],
+                      ),
+                    ))
+                .toList(),
             const SizedBox(height: 22),
-            Text(localizations.formalComplaintSummary, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(localizations.formalComplaintSummary,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(14),
@@ -61,7 +80,9 @@ class AiChatbotDetailsScreen extends StatelessWidget {
               child: Text(summary, style: const TextStyle(fontSize: 15)),
             ),
             const SizedBox(height: 22),
-            Text('=== ${localizations.offenceClassification} ===', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('=== ${localizations.offenceClassification} ===',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(14),
@@ -76,9 +97,12 @@ class AiChatbotDetailsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => context.go('/cognigible-non-cognigible-separation', extra: {
+                onPressed: () => context
+                    .push('/cognigible-non-cognigible-separation', extra: {
                   'classification': classification,
-                  'complaintData': answers, // Pass the answers map
+                  'originalClassification':
+                      originalClassification, // Pass it on
+                  'complaintData': answers,
                 }),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),
@@ -87,7 +111,11 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(localizations.next, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Colors.white)),
+                child: Text(localizations.next,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: Colors.white)),
               ),
             )
           ],
@@ -98,12 +126,18 @@ class AiChatbotDetailsScreen extends StatelessWidget {
 }
 
 String _labelForKey(String key, AppLocalizations localizations) {
-  switch(key) {
-    case 'full_name': return localizations.fullName;
-    case 'address': return localizations.address;
-    case 'phone': return localizations.phoneNumber;
-    case 'complaint_type': return localizations.complaintType;
-    case 'details': return localizations.details;
-    default: return key;
+  switch (key) {
+    case 'full_name':
+      return localizations.fullName;
+    case 'address':
+      return localizations.address;
+    case 'phone':
+      return localizations.phoneNumber;
+    case 'complaint_type':
+      return localizations.complaintType;
+    case 'details':
+      return localizations.details;
+    default:
+      return key;
   }
 }

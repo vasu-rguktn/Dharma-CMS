@@ -90,7 +90,7 @@
 //     try {
 //       final baseUrl = Theme.of(context).platform == TargetPlatform.android
 //           ? 'http://10.0.2.2:8000'
-//           : 'http://localhost:8000';
+//           : 'https://dharma-backend-x1g4.onrender.com';
 //       final resp = await _dio.post('$baseUrl/complaint/summarize', data: {
 //         'full_name': _answers['full_name']!,
 //         'address': _answers['address']!,
@@ -317,12 +317,12 @@
 
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/services/stt_service.dart';
 
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
@@ -346,6 +346,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   bool _isLoading = false;
   bool _errored = false;
   bool _inputError = false;
+
+  // STT (Speech-to-Text) variables
+  SttService? _sttService;
+  bool _isRecording = false;
+  String _currentTranscript = '';
+  StreamSubscription<SttResult>? _transcriptSubscription;
 
   // Orange color
   static const Color orange = Color(0xFFFC633C);
@@ -381,6 +387,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           question: localizations.detailsQuestion ??
               'Please describe your complaint in detail.'),
     ];
+    
+    // Initialize STT Service
+    if (_sttService == null) {
+      String baseUrl;
+      if (kIsWeb) {
+        // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+        baseUrl="https://dharma-backend-x1g4.onrender.com";
+      } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        // Use 127.0.0.1 for physical device with adb reverse
+        // baseUrl = 'http://127.0.0.1:8000';
+         baseUrl="https://dharma-backend-x1g4.onrender.com";
+      } else {
+        // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+         baseUrl="https://dharma-backend-x1g4.onrender.com";
+      }
+      print('Initializing STT Service with URL: $baseUrl');
+      _sttService = SttService(baseUrl);
+    }
     
     if (!_hasStarted) {
       _hasStarted = true;
@@ -457,7 +481,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       }
     }
     if (missing.isNotEmpty) {
-      _addBot( localizations.pleaseAnswerAllQuestions(missing as String) ?? 
+      _addBot(localizations.pleaseAnswerAllQuestions(missing as String) ??
           'Please answer all questions before submitting. Missing: ${missing.join(', ')}');
       setState(() {
         _allowInput = true;
@@ -475,13 +499,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     String baseUrl;
     if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
-      baseUrl = 'http://localhost:8000';
-    } else if (Platform.isAndroid) {
-      // Android emulator
-      baseUrl = 'http://10.0.2.2:8000';
+      // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+       baseUrl="https://dharma-backend-x1g4.onrender.com";
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+      // baseUrl = 'http://127.0.0.1:8000';
+       baseUrl="https://dharma-backend-x1g4.onrender.com";
     } else {
       // iOS simulator / other platforms
-      baseUrl = 'http://localhost:8000';
+      // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+       baseUrl="https://dharma-backend-x1g4.onrender.com";
     }
 
     final localeCode = Localizations.localeOf(context).languageCode;
@@ -505,16 +532,37 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       );
 
       final data = resp.data ?? {};
-      _addBot(localizations.complaintSummary??'Complaint Summary:');
+      _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
       final formalSummary = (data is Map && data['formal_summary'] != null)
           ? data['formal_summary'].toString()
           : '(no summary)';
       final classification = (data is Map && data['classification'] != null)
           ? data['classification'].toString()
           : '(none)';
+      final originalClassification =
+          (data is Map && data['original_classification'] != null)
+              ? data['original_classification'].toString()
+              : classification; // Fallback to displayed one if missing
+
+      final Map<String, String> localizedAnswers =
+          Map<String, String>.from(_answers);
+      final localizedFields = (data is Map) ? data['localized_fields'] : null;
+      if (localizedFields is Map) {
+        localizedFields.forEach((key, value) {
+          if (key is String && value != null) {
+            localizedAnswers[key] = value.toString();
+          }
+        });
+      }
+
+      // update stored answers to the localized variant so downstream screens see the selected language
+      _answers
+        ..clear()
+        ..addAll(localizedAnswers);
 
       _addBot(formalSummary);
-      _addBot(localizations.classification(classification as String)?? 'Classification: $classification');
+      _addBot(localizations.classification(classification as String) ??
+          'Classification: $classification');
 
       setState(() {
         _isLoading = false;
@@ -527,14 +575,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
         context.go(
           '/ai-chatbot-details',
           extra: {
-            'answers': _answers,
+            'answers': Map<String, String>.from(_answers),
             'summary': formalSummary,
             'classification': classification,
+            'originalClassification': originalClassification, // Pass this!
           },
         );
       });
     } on DioError catch (e) {
-      String msg = localizations.somethingWentWrong ?? 'Sorry, something went wrong. Please try again later.';
+      String msg = localizations.somethingWentWrong ??
+          'Sorry, something went wrong. Please try again later.';
       if (e.response != null && e.response?.data != null) {
         // try to show server-provided message if present
         try {
@@ -585,11 +635,86 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     Future.delayed(const Duration(milliseconds: 600), _askNextQ);
   }
 
+  /// Toggle recording on/off for speech-to-text
+  Future<void> _toggleRecording() async {
+    if (!_allowInput) return;
+    final langCode = Localizations.localeOf(context).languageCode;
+    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
+
+    if (_isRecording) {
+      // Stop recording
+      print('Stopping recording. Current transcript: "$_currentTranscript"');
+      await _sttService!.stopRecording();
+      _transcriptSubscription?.cancel();
+      
+      // Use the final transcript if available (check both sources)
+      final transcript = _currentTranscript.isNotEmpty 
+          ? _currentTranscript 
+          : _sttService!.lastTranscript;
+          
+      if (transcript.isNotEmpty) {
+        _controller.text = transcript;
+        print('Set text field to: "${_controller.text}"');
+      } else {
+        print('No transcript to set (empty from both sources)');
+      }
+      
+      setState(() {
+        _isRecording = false;
+        _currentTranscript = '';
+      });
+    } else {
+      // Start recording
+      try {
+        await _sttService!.startRecording(sttLang);
+        
+        // Listen to transcript stream
+        _transcriptSubscription = _sttService!.transcriptStream.listen(
+          (result) {
+            setState(() {
+              _currentTranscript = result.transcript;
+              // Update text field with all transcripts (both interim and final)
+              _controller.text = result.transcript;
+              print('Transcript received: "${result.transcript}" (final: ${result.isFinal})');
+            });
+          },
+          onError: (error) {
+            // Handle errors
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Recording error: ${error.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            setState(() {
+              _isRecording = false;
+            });
+          },
+        );
+        
+        setState(() {
+          _isRecording = true;
+        });
+      } catch (e) {
+        // Handle permission denied or other errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+
   @override
   void dispose() {
     _controller.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
+    _sttService?.dispose();
+    _transcriptSubscription?.cancel();
     super.dispose();
   }
 
@@ -603,7 +728,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           onPressed: () =>
               context.go('/ai-legal-guider'), // Add this navigation
         ),
-        title: Text(localizations.aiLegalAssistant ??'AI Legal Assistant'),
+        title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
       ),
@@ -664,6 +789,42 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   ),
           ),
 
+          // ── RECORDING INDICATOR ──
+          if (_isRecording)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.red.withOpacity(0.1),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.mic, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _currentTranscript.isEmpty 
+                        ? 'Listening...' 
+                        : _currentTranscript,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // ── INPUT FIELD ──
           if (!_isLoading && !_errored && _allowInput)
             Container(
@@ -689,19 +850,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                             hintText:
                                 _currentQ >= 0 && _currentQ < _questions.length
                                     ? _questions[_currentQ].question
-                                    : localizations.typeMessage??'Type your message...',
+                                    : localizations.typeMessage ??
+                                        'Type your message...',
                             border: InputBorder.none,
-                            errorText:
-                                _inputError ? localizations.pleaseEnterYourAnswer ?? "Please enter your answer" : null,
+                            errorText: _inputError
+                                ? localizations.pleaseEnterYourAnswer ??
+                                    "Please enter your answer"
+                                : null,
                             errorStyle: const TextStyle(fontSize: 12),
                           ),
                           onSubmitted: (_) => _handleSend(),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.mic, color: orange),
-                        onPressed: () {},
-                        tooltip: localizations.voiceInputComingSoon??"Voice input (coming soon)",
+                        icon: Icon(
+                          _isRecording ? Icons.stop_circle : Icons.mic,
+                          color: _isRecording ? Colors.red : orange,
+                        ),
+                        onPressed: _toggleRecording,
+                        tooltip: _isRecording 
+                          ? "Tap to stop recording" 
+                          : (localizations.voiceInputComingSoon ?? "Voice input"),
                       ),
                       IconButton(
                         icon: const Icon(Icons.send, color: orange),

@@ -760,4 +760,56 @@
             }
         }
     }
+
+     "loginWithPhone": "ఫోన్ ద్వారా లాగిన్",
+  "@loginWithPhone": { "description": "Title for phone login screen in Telugu" },
+
+  "mobileNumber": "మొబైల్ నంబర్",
+  "@mobileNumber": { "description": "Label for mobile number input field" },
+
+  "sendOtp": "OTP పంపండి",
+  "@sendOtp": { "description": "Button text to send OTP" },
+
+  "verifyOtp": "OTP నిర్ధారించండి",
+  "@verifyOtp": { "description": "Button text to verify OTP" },
+
+  "otpSent": "OTP పంపబడింది!",
+  "@otpSent": { "description": "Message shown when OTP is sent" },
+
+  "otpResent": "OTP మళ్లీ పంపబడింది!",
+  "@otpResent": { "description": "Message shown when OTP is resent" },
+
+  "enterValidNumber": "గుర్తుపట్టే 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి",
+  "@enterValidNumber": { "description": "Validation message for phone number" },
+
+  "enterOtp": "6 అంకెల OTP నమోదు చేయండి",
+  "@enterOtp": { "description": "Validation message for OTP input" },
+
+  "resendIn": "{seconds} సెకండ్లలో మళ్లీ పంపండి",
+  "@resendIn": {
+    "description": "Countdown text before resend is enabled",
+    "placeholders": {
+      "seconds": { "type": "int", "description": "Remaining seconds" }
+    }
+  },
+
+  "resendOtp": "OTP మళ్లీ పంపండి",
+  "@resendOtp": { "description": "Button to resend OTP" },
+
+  "loginSuccessful": "లాగిన్ విజయవంతం!",
+  "@loginSuccessful": { "description": "Message shown after successful login" },
+
+  "wrongOtp": "తప్పు OTP",
+  "@wrongOtp": { "description": "Error message for wrong OTP" },
+
+  "otpExpired": "OTP గడువు ముగిసింది",
+  "@otpExpired": { "description": "Error message for expired OTP" },
+
+  "invalidOtp": "చెల్లని OTP",
+  "@invalidOtp": { "description": "Generic invalid OTP message" },
+
+  "backToEmailLogin": "ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి",
+  "@backToEmailLogin": { "description": "Navigation link text to email login" },
+ 
+
 }
