@@ -1255,7 +1255,50 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get signOutConfirmation => 'మీరు ఖచ్చితంగా సైన్ అవుట్ చేయాలనుకుంటున్నారా?';
 
+@override
+String get loginWithPhone => 'ఫోన్ ద్వారా లాగిన్';
 
+@override
+String get mobileNumber => 'మొబైల్ నంబర్';
+
+@override
+String get sendOtp => 'OTP పంపండి';
+
+@override
+String get verifyOtp => 'OTP నిర్ధారించండి';
+
+@override
+String get otpSent => 'OTP పంపబడింది!';
+
+@override
+String get otpResent => 'OTP మళ్లీ పంపబడింది!';
+
+@override
+String get enterValidNumber => 'గుర్తుపట్టే 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి';
+
+@override
+String get enterOtp => '6 అంకెల OTP నమోదు చేయండి';
+
+@override
+String resendIn(int seconds) => '$seconds సెకండ్లలో మళ్లీ పంపండి';
+
+@override
+String get resendOtp => 'OTP మళ్లీ పంపండి';
+
+@override
+String get loginSuccessful => 'లాగిన్ విజయవంతం!';
+
+@override
+String get wrongOtp => 'తప్పు OTP';
+
+@override
+String get otpExpired => 'OTP గడువు ముగిసింది';
+
+@override
+String get invalidOtp => 'చెల్లని OTP';
+
+@override
+String get backToEmailLogin => 'ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి';
 
 
 

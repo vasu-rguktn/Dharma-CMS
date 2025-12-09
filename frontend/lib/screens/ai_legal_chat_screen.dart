@@ -90,7 +90,7 @@
 //     try {
 //       final baseUrl = Theme.of(context).platform == TargetPlatform.android
 //           ? 'http://10.0.2.2:8000'
-//           : 'http://localhost:8000';
+//           : 'https://dharma-backend-x1g4.onrender.com';
 //       final resp = await _dio.post('$baseUrl/complaint/summarize', data: {
 //         'full_name': _answers['full_name']!,
 //         'address': _answers['address']!,
@@ -392,12 +392,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     if (_sttService == null) {
       String baseUrl;
       if (kIsWeb) {
-        baseUrl = 'http://localhost:8000';
+        // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+        baseUrl="https://dharma-backend-x1g4.onrender.com";
       } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         // Use 127.0.0.1 for physical device with adb reverse
-        baseUrl = 'http://127.0.0.1:8000';
+        // baseUrl = 'http://127.0.0.1:8000';
+         baseUrl="https://dharma-backend-x1g4.onrender.com";
       } else {
-        baseUrl = 'http://localhost:8000';
+        // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+         baseUrl="https://dharma-backend-x1g4.onrender.com";
       }
       print('Initializing STT Service with URL: $baseUrl');
       _sttService = SttService(baseUrl);
@@ -496,13 +499,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     String baseUrl;
     if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
-      baseUrl = 'http://localhost:8000';
+      // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+       baseUrl="https://dharma-backend-x1g4.onrender.com";
     } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      baseUrl = 'http://127.0.0.1:8000';
+      // baseUrl = 'http://127.0.0.1:8000';
+       baseUrl="https://dharma-backend-x1g4.onrender.com";
     } else {
       // iOS simulator / other platforms
-      baseUrl = 'http://localhost:8000';
+      // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+       baseUrl="https://dharma-backend-x1g4.onrender.com";
     }
 
     final localeCode = Localizations.localeOf(context).languageCode;
