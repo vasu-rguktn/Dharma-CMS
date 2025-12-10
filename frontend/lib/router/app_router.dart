@@ -31,6 +31,7 @@ import 'package:Dharma/screens/ai_chatbot_details_screen.dart';
 import 'package:Dharma/screens/cognigible_non_cognigible_separation.dart';
 import 'package:Dharma/widgets/app_scaffold.dart';
 import 'package:Dharma/screens/petition/create_petition_form.dart';
+import 'package:Dharma/screens/police_dashboard_screen.dart';
 
 // Relative imports
 import '../screens/welcome_screen.dart';
@@ -114,6 +115,10 @@ class AppRouter {
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [
+          GoRoute(
+            path: '/police-dashboard',
+            builder: (context, state) => const PoliceDashboardScreen(),
+          ),
           GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardScreen(),

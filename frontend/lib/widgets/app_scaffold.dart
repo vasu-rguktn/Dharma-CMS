@@ -20,8 +20,12 @@ class _AppScaffoldState extends State<AppScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    // Debug info: print profile state during builds
+    debugPrint('AppScaffold build -> isProfileLoading=${authProvider.isProfileLoading}, userProfile=${authProvider.userProfile}, profile.displayName=${authProvider.userProfile?.displayName}, profile.username=${authProvider.userProfile?.username}, firebaseDisplay=${authProvider.user?.displayName}');
+    
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final localizations = AppLocalizations.of(context)!;
+    final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
 
     return Scaffold(
       key: _scaffoldKey,
@@ -39,13 +43,13 @@ class _AppScaffoldState extends State<AppScaffold> {
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    child: Text(
-                      (authProvider.userProfile?.username ?? authProvider.userProfile?.displayName ?? 'U')[0].toUpperCase(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(authProvider.userProfile?.username ?? authProvider.userProfile?.displayName ?? 'User'),
+                  // Use provider getter directly
+                    CircleAvatar(child: Text((authProvider.displayNameOrUsername.isNotEmpty ? authProvider.displayNameOrUsername[0].toUpperCase() : 'U'))),
+                    const SizedBox(width: 8),
+                    // Show spinner while profile is loading so we don't show the fallback 'User' prematurely
+                    authProvider.isProfileLoading
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(authProvider.displayNameOrUsername),
                   const Icon(Icons.arrow_drop_down),
                 ],
               ),
@@ -92,12 +96,23 @@ class _AppScaffoldState extends State<AppScaffold> {
                 ],
               ),
             ),
-            _buildDrawerItem(context, Icons.dashboard, localizations.dashboard, '/dashboard', isDark),
+            _buildDrawerItem(context, Icons.dashboard, localizations.dashboard, dashboardRoute, isDark),
             
             _buildDrawerSection(localizations.aiTools, isDark),
             _buildDrawerItem(context, Icons.chat, localizations.aiChat, '/ai-legal-chat', isDark),
             
-            if (authProvider.role == 'admin' || authProvider.role == 'police') ...[
+            // Police users see a concise menu that mirrors the Quick Actions
+            // shown on the Police dashboard to avoid duplication and confusion.
+            if (authProvider.role == 'police') ...[
+              _buildDrawerItem(context, Icons.folder_open, localizations.allCases, '/cases', isDark),
+              _buildDrawerItem(context, Icons.archive, localizations.mySavedComplaints, '/complaints', isDark),
+              // Dashboard uses '/ai-tools' but router exposes '/ai-legal-chat' — map to an existing route
+              _buildDrawerItem(context, Icons.psychology, localizations.aiTools, '/ai-legal-chat', isDark),
+              _buildDrawerItem(context, Icons.edit_document, localizations.documentDrafting, '/document-drafting', isDark),
+              _buildDrawerItem(context, Icons.file_present, localizations.chargesheetGen, '/chargesheet-generation', isDark),
+              _buildDrawerItem(context, Icons.image_search, localizations.mediaAnalysis, '/media-analysis', isDark),
+            ] else if (authProvider.role == 'admin') ...[
+              // Admins keep the full advanced menu
               _buildDrawerItem(context, Icons.psychology, localizations.legalQueries, '/legal-queries', isDark),
               _buildDrawerItem(context, Icons.gavel, localizations.legalSuggestion, '/legal-suggestion', isDark),
               _buildDrawerItem(context, Icons.edit_document, localizations.documentDrafting, '/document-drafting', isDark),

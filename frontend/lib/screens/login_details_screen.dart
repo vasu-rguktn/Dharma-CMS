@@ -27,6 +27,9 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
     debugPrint('📧 personalData: $personalData');
     debugPrint('🏠 addressData: $addressData');
     final localizations = AppLocalizations.of(context);
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+    final userType = args?['userType'] as String? ?? 'citizen';
+    debugPrint('👤 User Type: $userType');
 
     if (personalData == null || addressData == null) {
       debugPrint('❌ Missing personal or address data');
@@ -93,7 +96,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           dob: personalData['dob'] as String?,
           gender: personalData['gender'] as String?,
           stationName: addressData['policestation'] as String?,
-          role: 'citizen',
+          role: userType,
         );
 
         debugPrint('✅ Profile created successfully');
@@ -171,7 +174,10 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final personalData = args?['personal'] as Map<String, dynamic>?;
     final addressData = args?['address'] as Map<String, dynamic>?;
+    final userType = args?['userType'] as String? ?? 'citizen';
+    
     debugPrint('📋 Received args in LoginDetailsScreen: $args');
+    debugPrint('📋 Received userType: $userType');
 
     return Scaffold(
       body: Column(

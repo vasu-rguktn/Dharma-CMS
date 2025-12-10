@@ -19,6 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _dobController = TextEditingController();
   String _gender = 'Male';
   bool _prefilledFromArgs = false;
+  Map<String, dynamic>? _incomingAddress;
 
   // Function to show the date picker
   Future<void> _selectDate(BuildContext context) async {
@@ -65,8 +66,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       };
       debugPrint('Submitting personal data: $personalData');
       try {
-        context.go('/address', extra: {'personal': personalData});
-        debugPrint('Navigation to /address attempted');
+        final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+        final userType = args?['userType'] as String? ?? 'citizen';
+        
+        final extra = <String, dynamic>{
+          'personal': personalData,
+          'userType': userType,
+        };
+        if (_incomingAddress != null) extra['address'] = _incomingAddress;
+        context.go('/address', extra: extra);
+        debugPrint('Navigation to /address attempted with userType: $userType');
       } catch (e) {
         debugPrint('Navigation error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,6 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // previously entered values are restored.
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final personal = args?['personal'] as Map<String, dynamic>?;
+    final addressFromArgs = args?['address'] as Map<String, dynamic>?;
     if (!_prefilledFromArgs && personal != null) {
       _nameController.text = personal['name'] ?? _nameController.text;
       _emailController.text = personal['email'] ?? _emailController.text;
@@ -95,6 +105,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _dobController.text = personal['dob'] ?? _dobController.text;
       _gender = personal['gender'] ?? _gender;
       _prefilledFromArgs = true;
+      // Preserve any incoming address so we can forward it when going to /address
+      if (addressFromArgs != null) _incomingAddress = addressFromArgs;
     }
     final screenHeight = MediaQuery.of(context).size.height;
     final localizations=AppLocalizations.of(context);

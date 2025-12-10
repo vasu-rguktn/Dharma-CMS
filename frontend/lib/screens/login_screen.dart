@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
 import 'package:Dharma/l10n/app_localizations.dart'; 
-
+import 'package:cloud_firestore/cloud_firestore.dart'; // ← Add this if not already there
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -28,78 +28,123 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
     try {
       final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+      final selectedUserType = args?['userType'] as String? ?? 'citizen';
+      
       final userCredential = await authProvider.signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
-      if (userCredential?.user != null) {
-        final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
-        final role = extra?['userType'] as String? ?? 'citizen';
+      final uid = userCredential!.user!.uid;
 
-        await authProvider.createUserProfile(
-          uid: userCredential!.user!.uid,
-          email: userCredential.user!.email!,
-          displayName: userCredential.user!.displayName,
-          phoneNumber: userCredential.user!.phoneNumber,
-          role: role,
-        );
+      // Check profile exists in Firestore and get user role
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
 
+      if (!docSnapshot.exists) {
+        await FirebaseAuth.instance.signOut();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login successful')),
+            const SnackBar(content: Text("User not registered")),
           );
-          context.go('/ai-legal-guider'); // ✅ Redirect directly to AI Legal Guider
+        }
+        return;
+      }
+
+      // Get the user's role from the database
+      final userRole = docSnapshot.data()?['role'] as String? ?? 'citizen';
+
+      // Validate that the user is logging in with the correct role
+      if (userRole != selectedUserType) {
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("You are registered as a $userRole, but trying to login as a $selectedUserType. Please select the correct option."),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Wait for profile to fully load from Firestore
+      await authProvider.loadUserProfile(uid);
+
+      // Route based on user role
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Login successful")),
+        );
+        
+        // Navigate based on role: police/admin goes to different screen
+        if (userRole == 'police') {
+          context.go('/police-dashboard');
+        } else {
+          // citizen or other roles go to citizen dashboard
+          context.go('/ai-legal-guider');
         }
       }
+
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Login failed')),
+          SnackBar(content: Text(e.message ?? "Login failed")),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+ Future<void> _googleLogin() async {
+  setState(() => _isGoogleLoading = true);
+  try {
+    final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+    final userCredential = await authProvider.signInWithGoogle();
 
-  Future<void> _googleLogin() async {
-    setState(() => _isGoogleLoading = true);
-    try {
-      final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
-      final userCredential = await authProvider.signInWithGoogle();
+    if (userCredential != null) {
+      final uid = userCredential.user!.uid;
+      final email = userCredential.user!.email!;
+      final displayName = userCredential.user!.displayName ?? 'User';
+      final phoneNumber = userCredential.user!.phoneNumber;
 
-      if (userCredential != null) {
-        final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
-        final role = extra?['userType'] as String? ?? 'citizen';
+      // Check if profile exists
+      final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+      final docSnapshot = await docRef.get();
 
+      if (!docSnapshot.exists) {
+        // Create profile if it doesn't exist
         await authProvider.createUserProfile(
-          uid: userCredential.user!.uid,
-          email: userCredential.user!.email!,
-          displayName: userCredential.user!.displayName,
-          phoneNumber: userCredential.user!.phoneNumber,
-          role: role,
+          uid: uid,
+          email: email,
+          displayName: displayName,
+          phoneNumber: phoneNumber,
+          role: 'citizen', // or get from extra if needed
         );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Google login successful')),
-          );
-          context.go('/ai-legal-guider'); // ✅ Redirect directly to AI Legal Guider
-        }
       }
-    } catch (e) {
+
+      // Always load the profile (now it exists)
+      await authProvider.loadUserProfile(uid);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google login failed: $e')),
+          const SnackBar(content: Text('Google login successful')),
         );
+        context.go('/ai-legal-guider');
       }
-    } finally {
-      if (mounted) setState(() => _isGoogleLoading = false);
     }
+  } catch (e) {
+    // ... error handling
+  } finally {
+    if (mounted) setState(() => _isGoogleLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

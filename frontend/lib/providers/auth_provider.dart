@@ -289,6 +289,22 @@ class AuthProvider with ChangeNotifier {
   // ROLE GETTER
   String get role => _userProfile?.role ?? 'citizen';
 
+  // Friendly display name getter: prefer displayName, then username,
+  // then FirebaseAuth user's displayName, else 'User'. Trims empty strings.
+  String get displayNameOrUsername {
+    final profile = _userProfile;
+    final profileDisplay = profile?.displayName?.trim();
+    if (profileDisplay != null && profileDisplay.isNotEmpty) return profileDisplay;
+
+    final profileUsername = profile?.username?.trim();
+    if (profileUsername != null && profileUsername.isNotEmpty) return profileUsername;
+
+    final firebaseName = _auth.currentUser?.displayName?.trim();
+    if (firebaseName != null && firebaseName.isNotEmpty) return firebaseName;
+
+    return 'User';
+  }
+
   AuthProvider() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
@@ -300,7 +316,12 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     if (firebaseUser != null) {
-      await _loadUserProfile(firebaseUser.uid);
+      debugPrint('AuthProvider: auth state changed -> user uid=${firebaseUser.uid}');
+      try {
+        await _loadUserProfile(firebaseUser.uid);
+      } catch (e, st) {
+        debugPrint('AuthProvider: _loadUserProfile threw: $e\n$st');
+      }
     } else {
       _userProfile = null;
       _isProfileLoading = false;
@@ -315,19 +336,61 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      debugPrint('AuthProvider: loading profile for uid=$uid');
+      final docRef = _firestore.collection('users').doc(uid);
+      final doc = await docRef.get();
+      debugPrint('AuthProvider: firestore get completed for uid=$uid, exists=${doc.exists}');
       if (doc.exists) {
-        _userProfile = UserProfile.fromFirestore(doc);
+        try {
+          _userProfile = UserProfile.fromFirestore(doc);
+          debugPrint('AuthProvider: parsed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
+
+          // If profile fields are missing, try to backfill from FirebaseAuth (or email local-part)
+          final updates = <String, dynamic>{};
+          final firebaseName = _auth.currentUser?.displayName?.trim();
+          final email = _auth.currentUser?.email;
+
+          if ((_userProfile?.displayName == null || _userProfile!.displayName!.trim().isEmpty) && firebaseName != null && firebaseName.isNotEmpty) {
+            updates['displayName'] = firebaseName;
+          }
+
+          if ((_userProfile?.username == null || _userProfile!.username!.trim().isEmpty) && email != null && email.isNotEmpty) {
+            final localPart = email.split('@').first;
+            if (localPart.isNotEmpty) updates['username'] = localPart;
+          }
+
+          if (updates.isNotEmpty) {
+            debugPrint('AuthProvider: backfilling profile for uid=$uid with $updates');
+            try {
+              await docRef.update(updates);
+              final refreshed = await docRef.get();
+              if (refreshed.exists) {
+                _userProfile = UserProfile.fromFirestore(refreshed);
+                debugPrint('AuthProvider: refreshed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
+              }
+            } catch (e, st) {
+              debugPrint('AuthProvider: failed to backfill profile for uid=$uid -> $e\n$st');
+            }
+          }
+        } catch (e, st) {
+          debugPrint('AuthProvider: error parsing UserProfile: $e\n$st');
+          _userProfile = null;
+        }
       } else {
         _userProfile = null;
       }
     } catch (e) {
+      debugPrint('AuthProvider: error loading profile for uid=$uid -> $e');
       _userProfile = null;
     }
 
     _isProfileLoading = false;
     notifyListeners();
   }
+  Future<void> loadUserProfile(String uid) async {
+  return await _loadUserProfile(uid);
+}
+
 
   // ── EMAIL SIGN IN ─────────────────────────────────────────────────
   Future<UserCredential?> signInWithEmail(String email, String password) async {
@@ -477,6 +540,8 @@ class AuthProvider with ChangeNotifier {
       'createdAt': now,
       'updatedAt': now,
     };
+    // Remove any keys with null values so we don't store nulls in Firestore
+    data.removeWhere((key, value) => value == null);
 
     await _firestore.collection('users').doc(uid).set(data);
     await _loadUserProfile(uid);

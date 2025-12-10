@@ -212,7 +212,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         orangeColor: WelcomeScreen.orange,
         options: [
           _OptionItem(label: "Citizen", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'citizen'}); }),
-          _OptionItem(label: "Police", onTap: null, backgroundColor: Colors.grey[400], textColor: Colors.white70),
+          _OptionItem(label: "Police", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'police'}); }),
         ],
       ),
     );

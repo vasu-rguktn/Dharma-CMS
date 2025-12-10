@@ -16,6 +16,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _displayNameController = TextEditingController();
   bool _isLoading = false;
+  bool _prefilledFromArgs = false;
+  Map<String, dynamic>? _incomingPersonal;
+  Map<String, dynamic>? _incomingAddress;
 
   @override
   void dispose() {
@@ -38,10 +41,15 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (credential != null) {
+        // Get the user type from route extra to determine role
+        final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+        final userType = args?['userType'] as String? ?? 'citizen';
+        
         await authProvider.createUserProfile(
           uid: credential.user!.uid,
           email: _emailController.text.trim(),
           displayName: _displayNameController.text.trim(),
+          role: userType, // Set role based on registration type
         );
       }
 
@@ -49,6 +57,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Account created successfully!')),
         );
+        // After signup you typically go to dashboard. We keep that behavior.
         context.go('/dashboard');
       }
     } catch (e) {
@@ -64,6 +73,23 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Capture any incoming data passed via navigation `extra` so we can
+    // prefill fields and forward when navigating back to previous step.
+    final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+    final personal = args?['personal'] as Map<String, dynamic>?;
+    final address = args?['address'] as Map<String, dynamic>?;
+    
+    // Always update controllers and stored extras from route data.
+    // This ensures that when navigating back and forth, the latest
+    // incoming data is reflected in the UI.
+    if (personal != null) {
+      _displayNameController.text = personal['name'] ?? '';
+      _emailController.text = personal['email'] ?? '';
+      _incomingPersonal = personal;
+    }
+    if (address != null) {
+      _incomingAddress = address;
+    }
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -102,12 +128,36 @@ class _SignupScreenState extends State<SignupScreen> {
                         validator: (v) => v == null || v.length < 6 ? 'Password must be at least 6 characters' : null,
                       ),
                       const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleSignup,
-                          child: _isLoading ? const CircularProgressIndicator() : const Text('Sign Up'),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                try {
+                                  final personalData = {
+                                    'name': _displayNameController.text.trim(),
+                                    'email': _emailController.text.trim(),
+                                  };
+                                  // forward the latest address (if any)
+                                  context.go('/address', extra: {
+                                    'personal': personalData,
+                                    if (_incomingAddress != null) 'address': _incomingAddress,
+                                  });
+                                } catch (e) {
+                                  debugPrint('Navigation error: $e');
+                                }
+                              },
+                              child: const Text('Previous'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleSignup,
+                              child: _isLoading ? const CircularProgressIndicator() : const Text('Sign Up'),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Row(
