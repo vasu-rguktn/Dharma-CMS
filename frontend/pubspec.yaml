@@ -63,6 +63,8 @@ dependencies:
   record: ^6.0.0
   permission_handler: ^11.0.0
   web_socket_channel: ^2.4.0
+  speech_to_text: ^7.3.0
+  flutter_tts: ^4.0.0
   
   # JSON Handling
   json_annotation: ^4.8.1
@@ -87,6 +89,13 @@ dev_dependencies:
   
   # Testing
   mockito: ^5.4.4
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/police_logo.png"
+
 
 flutter:
   generate: true  # Enable generation of localization files

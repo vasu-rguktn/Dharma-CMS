@@ -322,7 +322,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
-import 'package:Dharma/services/stt_service.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
@@ -348,10 +350,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   bool _inputError = false;
 
   // STT (Speech-to-Text) variables
-  SttService? _sttService;
+  // STT (Speech-to-Text) variables
+  late final stt.SpeechToText _speech;
+  late final FlutterTts _flutterTts;
   bool _isRecording = false;
   String _currentTranscript = '';
-  StreamSubscription<SttResult>? _transcriptSubscription;
+  // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Orange color
   static const Color orange = Color(0xFFFC633C);
@@ -362,6 +366,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
+    _flutterTts = FlutterTts();
+    _flutterTts.setSpeechRate(0.45);
+    _flutterTts.setPitch(1.0);
   }
 
   @override
@@ -388,23 +396,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
               'Please describe your complaint in detail.'),
     ];
     
-    // Initialize STT Service
-    if (_sttService == null) {
-      String baseUrl;
-      if (kIsWeb) {
-        // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
-        baseUrl="https://dharma-backend-x1g4.onrender.com";
-      } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        // Use 127.0.0.1 for physical device with adb reverse
-        // baseUrl = 'http://127.0.0.1:8000';
-         baseUrl="https://dharma-backend-x1g4.onrender.com";
-      } else {
-        // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
-         baseUrl="https://dharma-backend-x1g4.onrender.com";
-      }
-      print('Initializing STT Service with URL: $baseUrl');
-      _sttService = SttService(baseUrl);
-    }
+    // Initialize STT Service block removed
+
     
     if (!_hasStarted) {
       _hasStarted = true;
@@ -459,6 +452,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _currentQ++;
     if (_currentQ < _questions.length) {
       _addBot(_questions[_currentQ].question);
+      _speak(_questions[_currentQ].question);
       _allowInput = true;
       setState(() => _inputError = false);
       Timer(
@@ -615,6 +609,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   }
 
   void _handleSend() {
+    _flutterTts.stop();
     final text = _controller.text.trim();
     if (!_allowInput || _isLoading) return;
     if (text.isEmpty) {
@@ -638,71 +633,95 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   /// Toggle recording on/off for speech-to-text
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
+
+    // Request microphone permission
+    var status = await Permission.microphone.status;
+    if (!status.isGranted) {
+      status = await Permission.microphone.request();
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required')),
+        );
+        return;
+      }
+    }
+
     final langCode = Localizations.localeOf(context).languageCode;
-    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
+    // Map 'te' to 'te_IN', 'en' to 'en_US'
+    String sttLang = langCode == 'te' ? 'te_IN' : 'en_US';
 
     if (_isRecording) {
       // Stop recording
-      print('Stopping recording. Current transcript: "$_currentTranscript"');
-      await _sttService!.stopRecording();
-      _transcriptSubscription?.cancel();
-      
-      // Use the final transcript if available (check both sources)
-      final transcript = _currentTranscript.isNotEmpty 
-          ? _currentTranscript 
-          : _sttService!.lastTranscript;
-          
-      if (transcript.isNotEmpty) {
-        _controller.text = transcript;
-        print('Set text field to: "${_controller.text}"');
-      } else {
-        print('No transcript to set (empty from both sources)');
-      }
-      
+      await _speech.stop();
       setState(() {
         _isRecording = false;
-        _currentTranscript = '';
+        // Keep the final transcript in _controller.text
       });
     } else {
       // Start recording
-      try {
-        await _sttService!.startRecording(sttLang);
-        
-        // Listen to transcript stream
-        _transcriptSubscription = _sttService!.transcriptStream.listen(
-          (result) {
+      await _flutterTts.stop();
+      bool available = await _speech.initialize(
+        onError: (val) {
+          print('STT Error: $val');
+          setState(() => _isRecording = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${val.errorMsg}')),
+          );
+        },
+        onStatus: (val) {
+          print('STT Status: $val');
+          if (val == 'done' || val == 'notListening') {
+            setState(() => _isRecording = false);
+          }
+        },
+      );
+
+      if (available) {
+        setState(() => _isRecording = true);
+        _speech.listen(
+          localeId: sttLang,
+          onResult: (result) {
             setState(() {
-              _currentTranscript = result.transcript;
-              // Update text field with all transcripts (both interim and final)
-              _controller.text = result.transcript;
-              print('Transcript received: "${result.transcript}" (final: ${result.isFinal})');
-            });
-          },
-          onError: (error) {
-            // Handle errors
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Recording error: ${error.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-            setState(() {
-              _isRecording = false;
+              _currentTranscript = result.recognizedWords;
+              _controller.text = result.recognizedWords;
             });
           },
         );
-        
-        setState(() {
-          _isRecording = true;
-        });
-      } catch (e) {
-        // Handle permission denied or other errors
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+          const SnackBar(
+            content: Text(
+                'Speech recognition not available. Please check if your device supports it.'),
           ),
         );
+      }
+    }
+  }
+
+  bool _textContainsTelugu(String s) {
+    for (final r in s.runes) {
+      if (r >= 0x0C00 && r <= 0x0C7F) return true;
+    }
+    return false;
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.trim().isEmpty) return;
+    final langCode = Localizations.localeOf(context).languageCode;
+    String ttsLang = langCode == 'te' ? 'te-IN' : 'en-US';
+    if (_textContainsTelugu(text)) ttsLang = 'te-IN';
+    
+    try {
+      await _flutterTts.setLanguage(ttsLang);
+      await _flutterTts.speak(text);
+    } catch (e) {
+      print('TTS Error: $e');
+      // Fallback to English if Telugu fails or generic error
+      if (ttsLang == 'te-IN') {
+        try {
+          await _flutterTts.setLanguage('en-US');
+          await _flutterTts.speak(text);
+        } catch (_) {}
       }
     }
   }
@@ -713,8 +732,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _controller.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
-    _sttService?.dispose();
-    _transcriptSubscription?.cancel();
+    _speech.stop();
+    _flutterTts.stop();
     super.dispose();
   }
 
