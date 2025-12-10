@@ -5,8 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:go_router/go_router.dart';
-
-class ChargesheetGenerationScreen extends StatefulWidget {
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';class ChargesheetGenerationScreen extends StatefulWidget {
   const ChargesheetGenerationScreen({super.key});
 
   @override
@@ -118,7 +118,11 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                 children: [
                   // PURE ORANGE BACK ARROW — NO CIRCLE
                   GestureDetector(
-                    onTap: () => context.go('/dashboard'),
+                    onTap: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+                      context.go(dashboardRoute);
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Icon(

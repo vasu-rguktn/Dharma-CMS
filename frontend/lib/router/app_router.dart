@@ -32,6 +32,7 @@ import 'package:Dharma/screens/cognigible_non_cognigible_separation.dart';
 import 'package:Dharma/widgets/app_scaffold.dart';
 import 'package:Dharma/screens/petition/create_petition_form.dart';
 import 'package:Dharma/screens/police_dashboard_screen.dart';
+import 'package:Dharma/screens/Helpline_screen.dart';
 
 // Relative imports
 import '../screens/welcome_screen.dart';
@@ -177,6 +178,10 @@ class AppRouter {
           GoRoute(
             path: '/case-journal',
             builder: (context, state) => const CaseJournalScreen(),
+          ),
+          GoRoute(
+            path: '/helpline',
+            builder: (context, state) => const HelplineScreen(),
           ),
           GoRoute(
             path: '/petitions',
