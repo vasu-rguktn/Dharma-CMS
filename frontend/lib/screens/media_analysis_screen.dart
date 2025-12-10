@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class MediaAnalysisScreen extends StatefulWidget {
   const MediaAnalysisScreen({super.key});
@@ -172,7 +174,11 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => context.go('/dashboard'),
+                    onTap: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+                      context.go(dashboardRoute);
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Icon(

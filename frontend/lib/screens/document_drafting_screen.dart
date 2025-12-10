@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class DocumentDraftingScreen extends StatefulWidget {
   const DocumentDraftingScreen({super.key});
@@ -100,7 +102,11 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                 children: [
                   // PURE ORANGE BACK ARROW — NO CIRCLE
                   GestureDetector(
-                    onTap: () => context.go('/dashboard'),
+                    onTap: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+                      context.go(dashboardRoute);
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Icon(
