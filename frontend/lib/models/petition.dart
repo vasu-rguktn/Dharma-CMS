@@ -118,8 +118,8 @@ extension PetitionStatusExtension on PetitionStatus {
 class Petition {
   final String? id;
   final String title;
-  final PetitionType type;        // default: other
-  final PetitionStatus status;    // default: draft
+  final PetitionType type; // default: other
+  final PetitionStatus status; // default: draft
   final String petitionerName;
   final String? phoneNumber;
   final String? address;
@@ -134,6 +134,8 @@ class Petition {
   final String? orderDetails;
 
   final String? extractedText;
+  final String? handwrittenDocumentUrl;
+  final List<String>? proofDocumentUrls;
   final String userId;
   final Timestamp createdAt;
   final Timestamp updatedAt;
@@ -154,6 +156,8 @@ class Petition {
     this.orderDate,
     this.orderDetails,
     this.extractedText,
+    this.handwrittenDocumentUrl,
+    this.proofDocumentUrls,
     required this.userId,
     required this.createdAt,
     required this.updatedAt,
@@ -178,6 +182,10 @@ class Petition {
       orderDate: data['orderDate'],
       orderDetails: data['orderDetails'],
       extractedText: data['extractedText'],
+      handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
+      proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
@@ -201,6 +209,9 @@ class Petition {
       if (orderDate != null) 'orderDate': orderDate,
       if (orderDetails != null) 'orderDetails': orderDetails,
       if (extractedText != null) 'extractedText': extractedText,
+      if (handwrittenDocumentUrl != null)
+        'handwrittenDocumentUrl': handwrittenDocumentUrl,
+      if (proofDocumentUrls != null) 'proofDocumentUrls': proofDocumentUrls,
       'userId': userId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
