@@ -12,6 +12,7 @@ class AddressFormScreen extends StatefulWidget {
 
 class _AddressFormScreenState extends State<AddressFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _prefilledFromArgs = false;
   final _houseController = TextEditingController();
   final _cityController = TextEditingController();
   final _districtController = TextEditingController();
@@ -20,7 +21,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   final _pincodeController = TextEditingController();
   final _policeStationController = TextEditingController();
 
-  void _submitForm(Map<String, dynamic>? personalData) {
+  void _submitForm(Map<String, dynamic>? personalData, String? userType) {
     final localizations = AppLocalizations.of(context);
     if (personalData == null) {
       debugPrint('Error: Personal data is null');
@@ -45,8 +46,9 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
         context.go('/login_details', extra: {
           'personal': personalData,
           'address': addressData,
+          'userType': userType ?? 'citizen',
         });
-        debugPrint('Navigation to /login_details attempted');
+        debugPrint('Navigation to /login_details attempted with userType: ${userType ?? 'citizen'}');
       } catch (e) {
         debugPrint('Navigation error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -67,7 +69,10 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     final localizations = AppLocalizations.of(context);
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final personalData = args?['personal'] as Map<String, dynamic>?;
+    final addressArgs = args?['address'] as Map<String, dynamic>?;
+    final userType = args?['userType'] as String? ?? 'citizen';
     debugPrint('Received args in AddressFormScreen: $args');
+    debugPrint('Received userType: $userType');
 
     if (personalData == null) {
       debugPrint('Personal data is null, showing error screen');
@@ -75,6 +80,18 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       return Scaffold(
         body: Center(child: Text(localizations?.personalDataNotProvided ?? 'Error: Personal data not provided')),
       );
+    }
+
+    // Prefill address fields if we received them via `extra`.
+    if (!_prefilledFromArgs && addressArgs != null) {
+      _houseController.text = addressArgs['houseNo'] ?? _houseController.text;
+      _cityController.text = addressArgs['address'] ?? _cityController.text;
+      _districtController.text = addressArgs['district'] ?? _districtController.text;
+      _stateController.text = addressArgs['state'] ?? _stateController.text;
+      _countryController.text = addressArgs['country'] ?? _countryController.text;
+      _pincodeController.text = addressArgs['pincode'] ?? _pincodeController.text;
+      _policeStationController.text = addressArgs['policestation'] ?? _policeStationController.text;
+      _prefilledFromArgs = true;
     }
 
     return Scaffold(
@@ -492,9 +509,19 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                           child: OutlinedButton(
                             onPressed: () {
                               // Navigate back to the personal details (signup) step
-                              // and pass the personal data so the form can be prefilled.
+                              // and pass the personal data and current address so the forms
+                              // can be prefilled when navigating back and forth.
                               try {
-                                context.go('/signup', extra: {'personal': personalData});
+                                final currentAddress = {
+                                  'houseNo': _houseController.text.trim(),
+                                  'address': _cityController.text.trim(),
+                                  'district': _districtController.text.trim(),
+                                  'state': _stateController.text.trim(),
+                                  'country': _countryController.text.trim(),
+                                  'pincode': _pincodeController.text.trim(),
+                                  'policestation': _policeStationController.text.trim(),
+                                };
+                                context.go('/signup', extra: {'personal': personalData, 'address': currentAddress});
                               } catch (e) {
                                 debugPrint('Navigation error: $e');
                               }
@@ -514,7 +541,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => _submitForm(personalData),
+                            onPressed: () => _submitForm(personalData, userType),
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 20),
                               backgroundColor: const Color(0xFFFC633C),

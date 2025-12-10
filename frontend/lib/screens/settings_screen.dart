@@ -10,7 +10,9 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = context.watch<AuthProvider>();
+
+    // final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.userProfile;
     final localizations = AppLocalizations.of(context)!;
 

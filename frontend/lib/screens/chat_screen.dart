@@ -1,6 +1,7 @@
 // lib/screens/chat_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart'; // Required for navigation
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -24,6 +25,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.35).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -79,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // ── 1. SVG BACKGROUND ──
+          // ── 1. SVG BACKGROUND HEADER ──
           Positioned(
             top: 0,
             left: 0,
@@ -93,7 +95,36 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // ── 2. CENTERED ANIMATED ROBOT ICON (FIXED: ROBOT IN MIDDLE OF PULSE) ──
+          // ── 2. CLEAN WHITE BACK ARROW (Top-Left) ──
+          Positioned(
+            top: 0,
+            left: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left:5, top:5),
+                child: GestureDetector(
+                  onTap: () => context.go('/dashboard'), // Navigate to Dashboard
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 30,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black54,
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── 3. CENTERED ANIMATED ROBOT ICON ──
           Positioned(
             top: 0,
             left: 0,
@@ -103,14 +134,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 padding: const EdgeInsets.only(top: 20),
                 child: Column(
                   children: [
-                    // Pulsing Glow + Robot (centered together)
                     SizedBox(
                       width: 110,
                       height: 110,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Pulsing Glow Ring (behind)
+                          // Pulsing Glow
                           AnimatedBuilder(
                             animation: _pulseAnimation,
                             builder: (context, child) {
@@ -135,7 +165,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             },
                           ),
 
-                          // White Circle + Robot Icon (on top, centered)
+                          // Robot Icon on White Circle
                           Container(
                             width: 70,
                             height: 70,
@@ -161,17 +191,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-
-
-                    // Subtle subtitle
-                    
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── 3. MESSAGES LIST ──
+          // ── 4. MESSAGES LIST ──
           Positioned(
             top: 240,
             left: 0,
@@ -243,7 +269,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             ),
           ),
 
-          // ── 4. INPUT BAR ──
+          // ── 5. INPUT BAR ──
           Positioned(
             bottom: 0,
             left: 0,
