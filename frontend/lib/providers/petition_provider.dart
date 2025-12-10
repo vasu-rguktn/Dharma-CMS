@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/models/petition.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:Dharma/services/storage_service.dart';
 
 class PetitionProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -24,9 +26,8 @@ class PetitionProvider with ChangeNotifier {
           .orderBy('createdAt', descending: true)
           .get();
 
-      _petitions = snapshot.docs
-          .map((doc) => Petition.fromFirestore(doc))
-          .toList();
+      _petitions =
+          snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint('Error fetching petitions: $e');
     } finally {
@@ -45,9 +46,56 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> createPetition(Petition petition) async {
+  Future<bool> createPetition({
+    required Petition petition,
+    PlatformFile? handwrittenFile,
+    List<PlatformFile>? proofFiles,
+  }) async {
     try {
-      await _firestore.collection('petitions').add(petition.toMap());
+      String? handwrittenUrl;
+      List<String>? proofUrls;
+
+      // 1. Upload Handwritten Document
+      if (handwrittenFile != null) {
+        final path =
+            'petitions/${petition.userId}/handwritten/${DateTime.now().millisecondsSinceEpoch}_${handwrittenFile.name}';
+        handwrittenUrl =
+            await StorageService.uploadFile(file: handwrittenFile, path: path);
+      }
+
+      // 2. Upload Proof Documents
+      if (proofFiles != null && proofFiles.isNotEmpty) {
+        final folderPath =
+            'petitions/${petition.userId}/proofs/${DateTime.now().millisecondsSinceEpoch}';
+        proofUrls = await StorageService.uploadMultipleFiles(
+            files: proofFiles, folderPath: folderPath);
+      }
+
+      // 3. Create Petition Object with URLs
+      final newPetition = Petition(
+        id: petition.id,
+        title: petition.title,
+        type: petition.type,
+        status: petition.status,
+        petitionerName: petition.petitionerName,
+        phoneNumber: petition.phoneNumber,
+        address: petition.address,
+        grounds: petition.grounds,
+        prayerRelief: petition.prayerRelief,
+        firNumber: petition.firNumber,
+        nextHearingDate: petition.nextHearingDate,
+        filingDate: petition.filingDate,
+        orderDate: petition.orderDate,
+        orderDetails: petition.orderDetails,
+        extractedText: petition.extractedText,
+        handwrittenDocumentUrl: handwrittenUrl,
+        proofDocumentUrls: proofUrls,
+        userId: petition.userId,
+        createdAt: petition.createdAt,
+        updatedAt: petition.updatedAt,
+      );
+
+      await _firestore.collection('petitions').add(newPetition.toMap());
       await fetchPetitions(petition.userId);
       await fetchPetitionCount();
       notifyListeners();
@@ -58,7 +106,8 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updatePetition(String petitionId, Map<String, dynamic> updates) async {
+  Future<bool> updatePetition(
+      String petitionId, Map<String, dynamic> updates) async {
     try {
       updates['updatedAt'] = FieldValue.serverTimestamp();
       await _firestore.collection('petitions').doc(petitionId).update(updates);
