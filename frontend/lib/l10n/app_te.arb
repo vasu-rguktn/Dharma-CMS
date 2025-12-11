@@ -477,7 +477,7 @@
     "@raiseComplaint": {
         "description": "Raise complaint button"
     },
-    "mySavedComplaints": "నా సేవ్ చేసిన ఫిర్యాదులు",
+    "mySavedComplaints": "నేను సేవ్ చేసిన ఫిర్యాదులు",
     "@mySavedComplaints": {
         "description": "Saved complaints title"
     },

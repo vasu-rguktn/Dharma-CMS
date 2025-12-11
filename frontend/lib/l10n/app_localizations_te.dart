@@ -374,7 +374,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get raiseComplaint => 'ఫిర్యాదు చేయండి';
 
   @override
-  String get mySavedComplaints => 'నా సేవ్ చేసిన ఫిర్యాదులు';
+  String get mySavedComplaints => 'నేను సేవ్ చేసిన ఫిర్యాదులు';
 
   @override
   String get noSavedComplaints => 'సేవ్ చేసిన ఫిర్యాదులు లేవు';
