@@ -1300,7 +1300,113 @@ String get invalidOtp => 'చెల్లని OTP';
 @override
 String get backToEmailLogin => 'ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి';
 
+@override
+String get emergencyHelplines => 'అత్యవసర హెల్ప్ లైన్లు';
+
+@override
+String get sos112 => 'SOS 112';
+
+@override
+String get helplineEmergencyAll => 'అత్యవసర సేవలు (అన్ని-ఒకటే)';
+
+@override
+String get helplineEmergencyAllDesc => 'పోలీస్, ఫైర్, అంబులెన్స్';
+
+@override
+String get helplinePolice => 'పోలీస్ కంట్రోల్ రూమ్';
+
+@override
+String get helplinePoliceDesc => 'నేరాలు / అత్యవసర పరిస్థితులు';
+
+@override
+String get helplineFire => 'ఫైర్ & రెస్క్యూ';
+
+@override
+String get helplineFireDesc => 'అగ్ని ప్రమాదాలు & రక్షణ';
+
+@override
+String get helplineAmbulance => 'అంబులెన్స్';
+
+@override
+String get helplineAmbulanceDesc => 'వైద్య అత్యవసరాలు';
+
+@override
+String get helplineAmbulanceAlt => 'అంబులెన్స్ (ప్రత్యామ్నాయం)';
+
+@override
+String get helplineAmbulanceAltDesc => 'అత్యవసర వైద్య సేవ';
+
+@override
+String get helplineWomen => 'మహిళల హెల్ప్ లైన్';
+
+@override
+String get helplineWomenDesc => 'మహిళల భద్రత కోసం సహాయం';
+
+@override
+String get helplineDomestic => 'గృహ హింస';
+
+@override
+String get helplineDomesticDesc => 'అత్యాచారం & వేధింపులపై సహాయం';
+
+@override
+String get helplineChild => 'చైల్డ్ హెల్ప్ లైన్';
+
+@override
+String get helplineChildDesc => 'బాధలో ఉన్న పిల్లలకు సహాయం';
+
+@override
+String get helplineCyber => 'సైబర్ క్రైమ్';
+
+@override
+String get helplineCyberDesc => 'మోసం, సైబర్ బెదిరింపులు';
+
+@override
+String get support => 'సహాయం';
+
+@override
+String get yourLegalAssistanceHub => 'మీ లీగల్ అసిస్టెన్స్ హబ్';
+
+@override
+String get received => 'అందుకుంది';
+
+@override
+String get closed => 'మూసివేయబడింది';
+
+@override
+String get inProgress => 'ప్రక్రియలో ఉంది';
+
+@override
+String get welcome => 'స్వాగతం';
+
+@override
+String get policeCommandCenter => 'పోలీస్ కంట్రోల్ సెంటర్';
 
 
+@override
+String get petitionOverview => 'పిటిషన్ అవలోకనం';
+
+@override
+  String get recentActivityDescription => 'మీ ఖాతాకు సంబంధించిన ఇటీవల జరిగిన చర్యలు లేదా నవీకరణలను చూపిస్తుంది'; 
+
+  @override
+  String get helpline => 'హెల్ప్‌లైన్';
+
+  @override
+String get userNotRegistered => 'వినియోగదారు నమోదు కాలేదు';
+
+@override
+String get registeredAs => 'మీరు ఈ పాత్రలో నమోదు అయ్యారు';
+
+@override
+String get tryingToLoginAs => 'కానీ మీరు ఈ పాత్రగా లాగిన్ అవ్వడానికి ప్రయత్నిస్తున్నారు';
+
+@override
+String get selectCorrectOption => 'దయచేసి సరియైన ఎంపికను ఎంచుకోండి';
+
+@override
+String get loginFailed => 'లాగిన్ విఫలమైంది!';
+
+@override
+String get googleLoginSuccessful => 'గూగుల్ లాగిన్ విజయవంతం!';
 
 }
