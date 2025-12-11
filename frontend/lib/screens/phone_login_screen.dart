@@ -477,143 +477,173 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Responsive header height: smaller on small screens
+    final headerHeight = (screenHeight * 0.25).clamp(180.0, 250.0);
+    final logoSize = (headerHeight * 0.45).clamp(80.0, 120.0);
+    
+    // Responsive PIN field dimensions
+    final pinFieldHeight = (screenWidth * 0.12).clamp(45.0, 58.0);
+    final pinFieldWidth = (screenWidth * 0.11).clamp(40.0, 50.0);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Column(
-        children: [
-          // HEADER
-          Container(
-            height: screenHeight * 0.3,
-            width: double.infinity,
-            child: Stack(
-              children: [
-                SvgPicture.asset(
-                  'assets/Frame.svg',
-                  fit: BoxFit.fill,
-                  height: screenHeight * 0.3,
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 20,
-                  child: Image.asset('assets/police_logo.png', height: 120),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // HEADER - Responsive height
+            Container(
+              height: headerHeight,
+              width: double.infinity,
+              child: Stack(
                 children: [
-                  Text(
-                    AppLocalizations.of(context)!.loginWithPhone,
-                    style: const TextStyle(
-                        fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Phone Number
-                  if (!_otpSent)
-                    TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: _inputDecoration(
-                            AppLocalizations.of(context)!.mobileNumber,
-                            prefixText: '+91 ')),
-
-                  // OTP PIN Field
-                  if (_otpSent)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: PinCodeTextField(
-                        appContext: context,
-                        length: 6,
-                        controller: _otpController,
-                        autoFocus: true,
-                        keyboardType: TextInputType.number,
-                        textStyle: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                        pinTheme: PinTheme(
-                          shape: PinCodeFieldShape.box,
-                          borderRadius: BorderRadius.circular(12),
-                          fieldHeight: 58,
-                          fieldWidth: 50,
-                          activeFillColor: Colors.white,
-                          selectedFillColor: Colors.white,
-                          inactiveFillColor: Colors.white,
-                          activeColor: const Color(0xFFFC633C),
-                          selectedColor: const Color(0xFFFC633C),
-                          inactiveColor: Colors.grey.shade300,
-                        ),
-                        enableActiveFill: true,
-                        onChanged: (_) {},
-                        onCompleted: (_) => _verifyOtp(),
-                      ),
-                    ),
-
-                  const SizedBox(height: 32),
-
-                  // Main Button
-                  SizedBox(
+                  SvgPicture.asset(
+                    'assets/Frame.svg',
+                    fit: BoxFit.fill,
+                    height: headerHeight,
                     width: double.infinity,
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: _isLoading || (!_otpSent && _isSendOtpDisabled)
-                          ? null
-                          : _otpSent
-                              ? _verifyOtp
-                              : () => _sendOtp(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: (!_otpSent && _isSendOtpDisabled)
-                            ? Colors.grey
-                            : const Color(0xFFFC633C),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(
-                              _otpSent ? AppLocalizations.of(context)!.verifyOtp : AppLocalizations.of(context)!.sendOtp,
-                              style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                            ),
-                    ),
                   ),
-
-                  // Resend Timer
-                  if (_otpSent) ...[
-                    const SizedBox(height: 20),
-                    _countdown > 0
-                        ? Text('Resend in $_countdown sec',
-                            style: const TextStyle(color: Colors.grey))
-                        : TextButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () => _sendOtp(isResend: true),
-                            child: Text(AppLocalizations.of(context)!.resendOtp,
-                                style:
-                                    const TextStyle(color: Color(0xFFFC633C))),
-                          ),
-                  ],
-
-                  const SizedBox(height: 40),
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: Text(AppLocalizations.of(context)!.backToEmailLogin),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 10,
+                    child: Image.asset('assets/police_logo.png', height: logoSize),
                   ),
-                  const SizedBox(height: 30),
                 ],
               ),
             ),
-          ),
-        ],
+
+            SizedBox(height: screenHeight * 0.02),
+
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.loginWithPhone,
+                      style: TextStyle(
+                        fontSize: (screenWidth * 0.075).clamp(24.0, 32.0),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.025),
+
+                    // Phone Number
+                    if (!_otpSent)
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: _inputDecoration(
+                          AppLocalizations.of(context)!.mobileNumber,
+                          prefixText: '+91 ',
+                        ),
+                      ),
+
+                    // OTP PIN Field - Responsive sizing
+                    if (_otpSent)
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.02,
+                        ),
+                        child: PinCodeTextField(
+                          appContext: context,
+                          length: 6,
+                          controller: _otpController,
+                          autoFocus: true,
+                          keyboardType: TextInputType.number,
+                          textStyle: TextStyle(
+                            fontSize: (pinFieldHeight * 0.35).clamp(16.0, 20.0),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          pinTheme: PinTheme(
+                            shape: PinCodeFieldShape.box,
+                            borderRadius: BorderRadius.circular(8),
+                            fieldHeight: pinFieldHeight,
+                            fieldWidth: pinFieldWidth,
+                            activeFillColor: Colors.white,
+                            selectedFillColor: Colors.white,
+                            inactiveFillColor: Colors.white,
+                            activeColor: const Color(0xFFFC633C),
+                            selectedColor: const Color(0xFFFC633C),
+                            inactiveColor: Colors.grey.shade300,
+                          ),
+                          enableActiveFill: true,
+                          onChanged: (_) {},
+                          onCompleted: (_) => _verifyOtp(),
+                        ),
+                      ),
+
+                    SizedBox(height: screenHeight * 0.03),
+
+                    // Main Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading || (!_otpSent && _isSendOtpDisabled)
+                            ? null
+                            : _otpSent
+                                ? _verifyOtp
+                                : () => _sendOtp(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: (!_otpSent && _isSendOtpDisabled)
+                              ? Colors.grey
+                              : const Color(0xFFFC633C),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              )
+                            : Text(
+                                _otpSent
+                                    ? AppLocalizations.of(context)!.verifyOtp
+                                    : AppLocalizations.of(context)!.sendOtp,
+                                style: TextStyle(
+                                  fontSize: (screenWidth * 0.05).clamp(18.0, 22.0),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    // Resend Timer
+                    if (_otpSent) ...[
+                      SizedBox(height: screenHeight * 0.02),
+                      _countdown > 0
+                          ? Text(
+                              'Resend in $_countdown sec',
+                              style: const TextStyle(color: Colors.grey),
+                            )
+                          : TextButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () => _sendOtp(isResend: true),
+                              child: Text(
+                                AppLocalizations.of(context)!.resendOtp,
+                                style: const TextStyle(color: Color(0xFFFC633C)),
+                              ),
+                            ),
+                    ],
+
+                    SizedBox(height: screenHeight * 0.03),
+                    TextButton(
+                      onPressed: () => context.go('/login'),
+                      child: Text(AppLocalizations.of(context)!.backToEmailLogin),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
