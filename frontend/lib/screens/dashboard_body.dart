@@ -74,7 +74,31 @@ class DashboardBody extends StatelessWidget {
   }
 
   // ── STATISTICS ROW ──
+  // ── STATISTICS SECTION ──
   Widget _buildStatsRow(BuildContext ctx, PetitionProvider petitionProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // PETITIONS SECTION
+        // Since Cases are removed, we can either keep the header or remove it. 
+        // Showing "Petition Overview" is still helpful for context.
+        Text('Petition Overview',
+            style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold, color: Colors.grey[800])),
+        const SizedBox(height: 12),
+        _buildPetitionStatsGrid(ctx, petitionProvider),
+      ],
+    );
+  }
+
+  Widget _buildPetitionStatsGrid(
+      BuildContext ctx, PetitionProvider petitionProvider) {
+    // Select stats based on role
+    final stats = isPolice ? petitionProvider.globalStats : petitionProvider.userStats;
+    
+    // For Citizen, if stats are 0, it might mean they haven't loaded yet OR they have 0.
+    // We display whatever is in the provider. Authentication check logic resides in the Screen.
+
     return Column(
       children: [
         Row(
@@ -82,48 +106,44 @@ class DashboardBody extends StatelessWidget {
             Expanded(
               child: _statCard(
                 ctx,
-                'Total Cases',
-                '${cases.cases.length}',
-                Icons.folder_open,
-                Colors.blue,
+                'Total Petitions',
+                '${stats['total']}',
+                Icons.gavel,
+                Colors.deepPurple,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: _statCard(
                 ctx,
-                'Active Cases',
-                '${cases.cases.where((c) => c.status != CaseStatus.closed && c.status != CaseStatus.resolved).length}',
-                Icons.pending_actions,
-                Colors.orange.shade700,
+                'Received',
+                '${stats['received']}',
+                Icons.call_received,
+                Colors.blue.shade700,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: _statCard(
                 ctx,
-                'Closed Cases',
-                '${cases.cases.where((c) => c.status == CaseStatus.closed).length}',
-                Icons.check_circle,
-                Colors.green,
+                'In Progress',
+                '${stats['inProgress']}',
+                Icons.sync,
+                Colors.orange.shade700,
               ),
             ),
-            const SizedBox(width: 16),
-
-            // ✅ Show petition count only for police
+            const SizedBox(width: 12),
             Expanded(
               child: _statCard(
                 ctx,
-                'Total Petitions',
-                isPolice
-                    ? '${petitionProvider.petitionCount}'
-                    : '0', // show real data for police only
-                Icons.gavel,
-                Colors.red.shade700,
+                'Closed',
+                '${stats['closed']}',
+                Icons.task_alt,
+                Colors.green.shade700,
               ),
             ),
           ],
