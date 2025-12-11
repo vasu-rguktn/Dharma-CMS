@@ -24,6 +24,7 @@ import 'package:Dharma/screens/witness_preparation_screen.dart';
 import 'package:Dharma/screens/media_analysis_screen.dart';
 import 'package:Dharma/screens/case_journal_screen.dart';
 import 'package:Dharma/screens/petition/petitions_screen.dart';
+import 'package:Dharma/screens/police_petitions_screen.dart';
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
 import 'package:Dharma/screens/ai_legal_chat_screen.dart';
 import 'package:Dharma/screens/contact_officer_screen.dart';
@@ -31,6 +32,8 @@ import 'package:Dharma/screens/ai_chatbot_details_screen.dart';
 import 'package:Dharma/screens/cognigible_non_cognigible_separation.dart';
 import 'package:Dharma/widgets/app_scaffold.dart';
 import 'package:Dharma/screens/petition/create_petition_form.dart';
+import 'package:Dharma/screens/police_dashboard_screen.dart';
+import 'package:Dharma/screens/Helpline_screen.dart';
 
 // Relative imports
 import '../screens/welcome_screen.dart';
@@ -115,6 +118,10 @@ class AppRouter {
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [
           GoRoute(
+            path: '/police-dashboard',
+            builder: (context, state) => const PoliceDashboardScreen(),
+          ),
+          GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardScreen(),
           ),
@@ -174,8 +181,18 @@ class AppRouter {
             builder: (context, state) => const CaseJournalScreen(),
           ),
           GoRoute(
+            path: '/helpline',
+            builder: (context, state) => const HelplineScreen(),
+          ),
+          GoRoute(
             path: '/petitions',
-            builder: (context, state) => const PetitionsScreen(),
+            builder: (context, state) {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              if (auth.role == 'police') {
+                return const PolicePetitionsScreen();
+              }
+              return const PetitionsScreen();
+            },
             routes: [
               GoRoute(
                 path: 'create',

@@ -1,6 +1,10 @@
+// lib/screens/document_drafting_screen.dart
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class DocumentDraftingScreen extends StatefulWidget {
   const DocumentDraftingScreen({super.key});
@@ -13,7 +17,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   final _caseDataController = TextEditingController();
   final _additionalInstructionsController = TextEditingController();
   final _dio = Dio();
-  
+
   String? _recipientType;
   bool _isLoading = false;
   Map<String, dynamic>? _draft;
@@ -42,7 +46,6 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
     });
 
     try {
-      // TODO: Replace with your actual API endpoint
       final response = await _dio.post(
         '/api/document-drafting',
         data: {
@@ -84,221 +87,276 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
+    const Color orange = Color(0xFFFC633C);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // SAME PREMIUM HEADER: Orange Arrow + Title
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 16, 24, 12),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.edit_document, color: theme.primaryColor, size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.aiDocumentDrafter,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    localizations.documentDraftingDesc,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  Text(
-                    localizations.caseData,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _caseDataController,
-                    maxLines: 10,
-                    decoration: InputDecoration(
-                      hintText: localizations.pasteCaseDataHint,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Text(
-                    localizations.recipientType,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _recipientType,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      hintText: localizations.selectRecipientType,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'medical officer',
-                        child: Text(localizations.medicalOfficer),
-                      ),
-                      DropdownMenuItem(
-                        value: 'forensic expert',
-                        child: Text(localizations.forensicExpert),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _recipientType = value;
-                      });
+                  // PURE ORANGE BACK ARROW — NO CIRCLE
+                  GestureDetector(
+                    onTap: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+                      context.go(dashboardRoute);
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Text(
-                    localizations.additionalInstructionsOptional,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _additionalInstructionsController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: localizations.additionalInstructionsHint,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _handleSubmit,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.create),
-                      label: Text(_isLoading ? localizations.drafting : localizations.draftDocument),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: orange,
+                        size: 32,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-          
-          if (_isLoading) ...[
-            const SizedBox(height: 24),
-            Center(
-              child: Column(
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(localizations.draftingWait),
-                ],
-              ),
-            ),
-          ],
-          
-          if (_draft != null) ...[
-            const SizedBox(height: 24),
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      localizations.generatedDocumentDraft,
-                      style: theme.textTheme.titleLarge?.copyWith(
+
+                  const SizedBox(width: 8),
+
+                  // Title
+                  Expanded(
+                    child: Text(
+                      localizations.aiDocumentDrafter,
+                      style: const TextStyle(
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      localizations.reviewDraftDesc,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: SelectableText(
-                        _draft!['draft'] ?? localizations.noDraftGenerated,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
+                  ),
+                ],
+              ),
+            ),
+
+            // Subtitle
+            Padding(
+              padding: const EdgeInsets.fromLTRB(56, 0, 24, 24),
+              child: Text(
+                localizations.documentDraftingDesc,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+              ),
+            ),
+
+            // MAIN SCROLLABLE CONTENT
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Input Card
+                    Card(
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.warning_amber, color: Colors.orange[700], size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              localizations.aiDraftDisclaimer,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
+                            Row(
+                              children: [
+                                Icon(Icons.edit_document, color: orange, size: 28),
+                                const SizedBox(width: 12),
+                                Text(
+                                  localizations.aiDocumentDrafter,
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            Text("Case Data", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _caseDataController,
+                              maxLines: 10,
+                              decoration: InputDecoration(
+                                hintText: localizations.pasteCaseDataHint,
+                                hintStyle: TextStyle(color: Colors.grey[500]),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.all(16),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            Text("Recipient Type", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _recipientType,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.all(16),
+                              ),
+                              hint: Text(localizations.selectRecipientType),
+                              items: [
+                                DropdownMenuItem(value: 'medical officer', child: Text(localizations.medicalOfficer)),
+                                DropdownMenuItem(value: 'forensic expert', child: Text(localizations.forensicExpert)),
+                              ],
+                              onChanged: (value) => setState(() => _recipientType = value),
+                            ),
+                            const SizedBox(height: 20),
+
+                            Text("Additional Instructions (Optional)", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _additionalInstructionsController,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                hintText: localizations.additionalInstructionsHint,
+                                hintStyle: TextStyle(color: Colors.grey[500]),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.all(16),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                onPressed: _isLoading ? null : _handleSubmit,
+                                icon: _isLoading
+                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                    : const Icon(Icons.create_rounded),
+                                label: Text(_isLoading ? localizations.drafting : localizations.draftDocument),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: orange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 5,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            // Copy to clipboard functionality would go here
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(localizations.draftCopied),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.copy),
-                          label: Text(localizations.copyDraft),
-                        ),
-                      ],
+                      ),
                     ),
+
+                    // Loading
+                    if (_isLoading) ...[
+                      const SizedBox(height: 32),
+                      Center(
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(color: orange),
+                            const SizedBox(height: 16),
+                            Text(localizations.draftingWait, style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Result
+                    if (_draft != null) ...[
+                      const SizedBox(height: 32),
+                      Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.description, color: orange, size: 28),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    localizations.generatedDocumentDraft,
+                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange[50],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.orange[200]!),
+                                ),
+                                child: SelectableText(
+                                  _draft!['draft'] ?? localizations.noDraftGenerated,
+                                  style: const TextStyle(fontSize: 15, height: 1.6),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 22),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        localizations.aiDraftDisclaimer,
+                                        style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      // Add clipboard copy here later
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(localizations.draftCopied)),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.copy),
+                                    label: Text(localizations.copyDraft),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: orange,
+                                      side: BorderSide(color: orange),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

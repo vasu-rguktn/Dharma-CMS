@@ -7,7 +7,8 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/services/local_storage_service.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 class PetitionsScreen extends StatefulWidget {
   const PetitionsScreen({super.key});
@@ -16,7 +17,8 @@ class PetitionsScreen extends StatefulWidget {
   State<PetitionsScreen> createState() => _PetitionsScreenState();
 }
 
-class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProviderStateMixin {
+class _PetitionsScreenState extends State<PetitionsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -34,7 +36,8 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
 
   Future<void> _fetchPetitions() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+    final petitionProvider =
+        Provider.of<PetitionProvider>(context, listen: false);
 
     if (authProvider.user != null) {
       await petitionProvider.fetchPetitions(authProvider.user!.uid);
@@ -265,9 +268,10 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                     Expanded(
                       child: Text(
                         petition.title,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ),
                     IconButton(
@@ -278,14 +282,16 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _getStatusColor(petition.status),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     petition.status.displayName,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const Divider(height: 32),
@@ -300,8 +306,8 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                 Text(
                   'Grounds',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(petition.grounds),
@@ -310,8 +316,8 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                   Text(
                     'Prayer / Relief Sought',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(petition.prayerRelief!),
@@ -327,19 +333,20 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                   Text(
                     'Order Details',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(petition.orderDetails!),
                 ],
-                if (petition.extractedText != null && petition.extractedText!.isNotEmpty) ...[
+                if (petition.extractedText != null &&
+                    petition.extractedText!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(
                     'Extracted Text from Documents',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -360,8 +367,8 @@ class _PetitionsScreenState extends State<PetitionsScreen> with SingleTickerProv
                   Text(
                     'Extracted Text from Documents',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -430,7 +437,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   final _prayerReliefController = TextEditingController();
 
   bool _isSubmitting = false;
-  List<PlatformFile> _pickedFiles = [];
+  List<PlatformFile> _pickedFiles = []; // Handwritten documents
+  List<PlatformFile> _proofFiles = []; // Related proof documents
 
   bool _isExtracting = false;
   Map<String, dynamic>? _ocrResult;
@@ -455,12 +463,12 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       candidates.add('$scheme://$host');
     }
 
-    final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final bool isAndroid =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
       // candidates.add('http://10.0.2.2:8000');
       // candidates.add('http://10.0.2.2');
-    candidates.add('https://dharma-backend-x1g4.onrender.com');
-
+      candidates.add('https://dharma-backend-x1g4.onrender.com');
     }
 
     // candidates.add('https://dharma-backend-x1g4.onrender.com');
@@ -504,7 +512,9 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
             validateStatus: (_) => true,
           ),
         );
-        if (resp.statusCode != null && resp.statusCode! >= 200 && resp.statusCode! < 400) {
+        if (resp.statusCode != null &&
+            resp.statusCode! >= 200 &&
+            resp.statusCode! < 400) {
           return true;
         }
       }
@@ -555,7 +565,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     setState(() => _isSubmitting = true);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+    final petitionProvider =
+        Provider.of<PetitionProvider>(context, listen: false);
 
     try {
       if (_ocrResult == null && _pickedFiles.isNotEmpty) {
@@ -563,9 +574,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       }
     } catch (_) {}
 
-    final String? extractedText = ((_ocrResult?['text'] as String?)?.trim().isNotEmpty == true)
-        ? _ocrResult!['text']
-        : null;
+    final String? extractedText =
+        ((_ocrResult?['text'] as String?)?.trim().isNotEmpty == true)
+            ? _ocrResult!['text']
+            : null;
 
     final petition = Petition(
       title: _titleController.text,
@@ -575,7 +587,9 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       phoneNumber: _phoneNumberController.text,
       address: _addressController.text,
       grounds: _groundsController.text,
-      prayerRelief: _prayerReliefController.text.isEmpty ? null : _prayerReliefController.text,
+      prayerRelief: _prayerReliefController.text.isEmpty
+          ? null
+          : _prayerReliefController.text,
       extractedText: extractedText,
       userId: authProvider.user!.uid,
       createdAt: Timestamp.now(),
@@ -596,14 +610,21 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       // Silently ignore
     }
 
-    final success = await petitionProvider.createPetition(petition);
+    // Pass files to provider for upload
+    final success = await petitionProvider.createPetition(
+      petition: petition,
+      handwrittenFile: _pickedFiles.isNotEmpty ? _pickedFiles.first : null,
+      proofFiles: _proofFiles,
+    );
 
     setState(() => _isSubmitting = false);
 
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Petition created successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+              content: Text('Petition created successfully!'),
+              backgroundColor: Colors.green),
         );
         _formKey.currentState!.reset();
         _titleController.clear();
@@ -614,13 +635,16 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         _prayerReliefController.clear();
         setState(() {
           _pickedFiles = [];
+          _proofFiles = [];
           _ocrResult = null;
         });
         await petitionProvider.fetchPetitions(authProvider.user!.uid);
         widget.onCreatedSuccess?.call();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to create petition'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Failed to create petition'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -639,7 +663,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       if (_ocrEndpoint.isEmpty) throw Exception('OCR service not available');
 
       if (file.size <= 0) throw Exception('Selected file is empty');
-      if (file.size > 5 * 1024 * 1024) throw Exception('File too large (max 5MB)');
+      if (file.size > 5 * 1024 * 1024)
+        throw Exception('File too large (max 5MB)');
 
       MultipartFile mFile;
       if (file.bytes != null) {
@@ -653,7 +678,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       final formData = FormData.fromMap({'file': mFile});
 
       Response? response;
-      final List<String> allEndpoints = [_ocrEndpoint, ..._ocrEndpointFallbacks];
+      final List<String> allEndpoints = [
+        _ocrEndpoint,
+        ..._ocrEndpointFallbacks
+      ];
       DioException? lastError;
 
       for (final endpoint in allEndpoints) {
@@ -665,7 +693,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
               receiveTimeout: const Duration(seconds: 60),
               sendTimeout: const Duration(seconds: 60),
               followRedirects: false,
-              validateStatus: (code) => code != null && code >= 200 && code < 400,
+              validateStatus: (code) =>
+                  code != null && code >= 200 && code < 400,
             ),
           );
           break;
@@ -690,7 +719,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       } else {
         setState(() => _ocrResult = null);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No text detected in the selected file.')),
+          const SnackBar(
+              content: Text('No text detected in the selected file.')),
         );
       }
     } catch (e) {
@@ -698,7 +728,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       if (e is DioException) {
         final sc = e.response?.statusCode;
         final body = e.response?.data;
-        msg = 'OCR failed (${sc ?? 'network'}): ${body is String ? body : body?['detail'] ?? e.message}';
+        msg =
+            'OCR failed (${sc ?? 'network'}): ${body is String ? body : body?['detail'] ?? e.message}';
       } else {
         msg = 'OCR failed: $e';
       }
@@ -728,10 +759,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                   children: [
                     Text(
                       'Basic Information',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(
@@ -739,20 +770,20 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         hintText: 'Enter a short title',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => v?.isEmpty ?? true ? 'Please enter a title' : null,
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Please enter a title' : null,
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _petitionerNameController,
                       decoration: const InputDecoration(
                         labelText: 'Your Name *',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => v?.isEmpty ?? true ? 'Please enter your name' : null,
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Please enter your name' : null,
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _phoneNumberController,
                       keyboardType: TextInputType.phone,
@@ -761,13 +792,14 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         border: OutlineInputBorder(),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Please enter phone number';
-                        if (!RegExp(r'^\d{10}$').hasMatch(v)) return 'Enter valid 10-digit number';
+                        if (v == null || v.isEmpty)
+                          return 'Please enter phone number';
+                        if (!RegExp(r'^\d{10}$').hasMatch(v))
+                          return 'Enter valid 10-digit number';
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _addressController,
                       maxLines: 3,
@@ -776,7 +808,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         hintText: 'Full residential / office address',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => v?.isEmpty ?? true ? 'Please enter address' : null,
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Please enter address' : null,
                     ),
                   ],
                 ),
@@ -794,7 +827,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                   children: [
                     Text(
                       'Petition Details',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
 
@@ -806,7 +840,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         hintText: 'Explain why you are filing this petition...',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => v?.isEmpty ?? true ? 'Please enter grounds' : null,
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Please enter grounds' : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -821,9 +856,11 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     ),
                     const SizedBox(height: 16),
 
+                    // === HANDWRITTEN DOCUMENT ===
                     Text(
                       'HandWritten Document',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -833,23 +870,25 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       children: [
                         ElevatedButton.icon(
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Documents'),
+                          label: const Text('Upload Handwritten'),
                           onPressed: _isSubmitting
                               ? null
                               : () async {
-                                  final result = await FilePicker.platform.pickFiles(
-                                    allowMultiple: true,
+                                  final result =
+                                      await FilePicker.platform.pickFiles(
+                                    allowMultiple: false,
                                     withData: true,
                                     type: FileType.image,
                                   );
-                                  if (result != null && result.files.isNotEmpty) {
+                                  if (result != null &&
+                                      result.files.isNotEmpty) {
                                     setState(() => _pickedFiles = result.files);
                                     await _runOcrOnFile(result.files.first);
                                   }
                                 },
                         ),
                         if (_pickedFiles.isNotEmpty)
-                          Text('${_pickedFiles.length} file(s) selected'),
+                          Text('${_pickedFiles.length} file selected'),
                         if (_isExtracting)
                           const SizedBox(
                             height: 16,
@@ -865,29 +904,27 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: _pickedFiles.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final f = _pickedFiles[index];
-                            return ListTile(
-                              dense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                              leading: const Icon(Icons.insert_drive_file),
-                              title: Text(f.name, overflow: TextOverflow.ellipsis),
-                              subtitle: Text('${(f.size / 1024).toStringAsFixed(1)} KB'),
-                              trailing: IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                icon: const Icon(Icons.close),
-                                onPressed: _isSubmitting
-                                    ? null
-                                    : () => setState(() => _pickedFiles.removeAt(index)),
-                              ),
-                            );
-                          },
+                        child: ListTile(
+                          dense: true,
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 8),
+                          leading: const Icon(Icons.insert_drive_file),
+                          title: Text(_pickedFiles.first.name,
+                              overflow: TextOverflow.ellipsis),
+                          subtitle: Text(
+                              '${(_pickedFiles.first.size / 1024).toStringAsFixed(1)} KB'),
+                          trailing: IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
+                            icon: const Icon(Icons.close),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() {
+                                      _pickedFiles = [];
+                                      _ocrResult = null;
+                                    }),
+                          ),
                         ),
                       ),
                     ],
@@ -895,10 +932,88 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       const SizedBox(height: 16),
                       Text(
                         'Extracted Details',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       _buildOcrSummaryCard(theme),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // === RELATED DOCUMENT PROOFS ===
+                    Text(
+                      'Related Document Proofs (Optional)',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload Proofs'),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () async {
+                                  final result =
+                                      await FilePicker.platform.pickFiles(
+                                    allowMultiple: true,
+                                    withData: true,
+                                    type: FileType.any,
+                                  );
+                                  if (result != null &&
+                                      result.files.isNotEmpty) {
+                                    setState(() {
+                                      _proofFiles.addAll(result.files);
+                                    });
+                                  }
+                                },
+                        ),
+                        if (_proofFiles.isNotEmpty)
+                          Text('${_proofFiles.length} file(s) selected'),
+                      ],
+                    ),
+                    if (_proofFiles.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: _proofFiles.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final f = _proofFiles[index];
+                            return ListTile(
+                              dense: true,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              leading: const Icon(Icons.attach_file),
+                              title:
+                                  Text(f.name, overflow: TextOverflow.ellipsis),
+                              subtitle: Text(
+                                  '${(f.size / 1024).toStringAsFixed(1)} KB'),
+                              trailing: IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                    minWidth: 32, minHeight: 32),
+                                icon: const Icon(Icons.close),
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : () => setState(
+                                        () => _proofFiles.removeAt(index)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -909,14 +1024,16 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
             ElevatedButton(
               onPressed: _isSubmitting ? null : _submitPetition,
-              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16)),
               child: _isSubmitting
                   ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Create Petition', style: TextStyle(fontSize: 16)),
+                  : const Text('Create Petition',
+                      style: TextStyle(fontSize: 16)),
             ),
           ],
         ),

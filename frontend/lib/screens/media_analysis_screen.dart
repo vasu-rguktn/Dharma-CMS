@@ -1,9 +1,13 @@
+// lib/screens/media_analysis_screen.dart
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class MediaAnalysisScreen extends StatefulWidget {
   const MediaAnalysisScreen({super.key});
@@ -16,12 +20,14 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
   final _userContextController = TextEditingController();
   final _dio = Dio();
   final _imagePicker = ImagePicker();
-  
+
   File? _selectedImage;
   bool _isLoading = false;
   Map<String, dynamic>? _analysisResult;
   String? _editableSceneNarrative;
   String? _editableCaseFileSummary;
+
+  static const Color orange = Color(0xFFFC633C);
 
   @override
   void dispose() {
@@ -31,68 +37,63 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
+      final pickedFile = await _imagePicker.pickImage(
         source: source,
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 85,
       );
 
-      if (image != null) {
-        final file = File(image.path);
-        final fileSize = await file.length();
-        
-        if (fileSize > 10 * 1024 * 1024) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(AppLocalizations.of(context)!.imageSizeLimit),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
+      if (pickedFile == null) return;
 
-        setState(() {
-          _selectedImage = file;
-          _analysisResult = null;
-          _editableSceneNarrative = null;
-          _editableCaseFileSummary = null;
-        });
+      final file = File(pickedFile.path);
+      final fileSize = await file.length();
+
+      if (fileSize > 10 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.imageSizeLimit), backgroundColor: Colors.red),
+          );
+        }
+        return;
       }
+
+      setState(() {
+        _selectedImage = file;
+        _analysisResult = null;
+        _editableSceneNarrative = null;
+        _editableCaseFileSummary = null;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.errorPickingImage(e.toString())),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorPickingImage(e.toString())), backgroundColor: Colors.red),
         );
       }
     }
   }
 
   void _showImageSourceDialog() {
-    final localizations = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.selectImageSource),
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l.selectImageSource),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(localizations.gallery),
+              leading: const Icon(Icons.photo_library_rounded),
+              title: Text(l.gallery),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(localizations.camera),
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: Text(l.camera),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -107,33 +108,23 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
   Future<void> _handleAnalyze() async {
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.pleaseSelectImageToAnalyze),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseSelectImageToAnalyze), backgroundColor: Colors.red),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _analysisResult = null;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Convert image to base64
       final bytes = await _selectedImage!.readAsBytes();
       final base64Image = base64Encode(bytes);
       final imageDataUri = 'data:image/jpeg;base64,$base64Image';
 
-      // TODO: Replace with your actual API endpoint
       final response = await _dio.post(
         '/api/media-analysis',
         data: {
           'imageDataUri': imageDataUri,
-          'userContext': _userContextController.text.trim().isEmpty
-              ? null
-              : _userContextController.text,
+          'userContext': _userContextController.text.trim().isEmpty ? null : _userContextController.text.trim(),
         },
       );
 
@@ -143,419 +134,317 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
         _editableCaseFileSummary = response.data['caseFileSummary'];
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.analysisComplete),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.analysisComplete), backgroundColor: Colors.green),
+      );
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.failedToAnalyzeMedia(error.toString())),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      
+      final errorMsg = error.toString();
       setState(() {
         _analysisResult = {
           'identifiedElements': [
-            {
-              'name': 'Error',
-              'category': 'System',
-              'description': 'Analysis failed: $error'
-            }
+            {'name': 'Analysis Failed', 'category': 'Error', 'description': 'Failed: $errorMsg'}
           ],
-          'sceneNarrative': 'Could not generate scene narrative due to an error.',
-          'caseFileSummary': 'Could not generate case file summary due to an error.',
+          'sceneNarrative': 'Analysis failed.',
+          'caseFileSummary': 'Analysis failed.',
         };
-        _editableSceneNarrative = 'Could not generate scene narrative due to an error.';
-        _editableCaseFileSummary = 'Could not generate case file summary due to an error.';
+        _editableSceneNarrative = 'Analysis failed.';
+        _editableCaseFileSummary = 'Analysis failed.';
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.failedToAnalyzeMedia(errorMsg)), backgroundColor: Colors.red),
+      );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context)!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // HEADER WITH ORANGE BACK ARROW
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 16, 24, 12),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.image_search, color: theme.primaryColor, size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          localizations.aiCrimeSceneInvestigator,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    localizations.mediaAnalysisDesc,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  Text(
-                    localizations.uploadImage,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _showImageSourceDialog,
-                        icon: const Icon(Icons.upload_file),
-                        label: Text(localizations.chooseImage),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                      if (_selectedImage != null) ...[
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _selectedImage!.path.split('/').last,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  
-                  if (_selectedImage != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 300,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          _selectedImage!,
-                          fit: BoxFit.contain,
-                        ),
+                  GestureDetector(
+                    onTap: () {
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+                      context.go(dashboardRoute);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: orange,
+                        size: 32,
+                        shadows: const [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))],
                       ),
                     ),
-                  ],
-                  
-                  const SizedBox(height: 16),
-                  
-                  Text(
-                    localizations.contextInstructions,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _userContextController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: localizations.contextInstructionsHint,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed: (_isLoading || _selectedImage == null) ? null : _handleAnalyze,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.search),
-                      label: Text(_isLoading ? localizations.analyzing : localizations.analyzeImage),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l.aiCrimeSceneInvestigator,
+                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          
-          if (_isLoading) ...[
-            const SizedBox(height: 24),
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      localizations.analyzingImageWait,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      localizations.analyzingComplexityNote,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(56, 0, 24, 24),
+              child: Text(l.mediaAnalysisDesc, style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.4)),
             ),
-          ],
-          
-          if (_analysisResult != null && !_isLoading) ...[
-            const SizedBox(height: 24),
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      localizations.crimeSceneAnalysisReport,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${localizations.date}: ${DateTime.now().toString().split(' ')[0]} | ${localizations.file}: ${_selectedImage?.path.split('/').last ?? 'N/A'}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Identified Elements
-                    Row(
-                      children: [
-                        Icon(Icons.checklist, color: theme.primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          localizations.identifiedElements,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    if (_analysisResult!['identifiedElements'] != null &&
-                        (_analysisResult!['identifiedElements'] as List).isNotEmpty &&
-                        !(_analysisResult!['identifiedElements'][0]['name'] as String).startsWith('Error')) ...[
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 400),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          padding: const EdgeInsets.all(12),
-                          itemCount: (_analysisResult!['identifiedElements'] as List).length,
-                          separatorBuilder: (context, index) => const Divider(),
-                          itemBuilder: (context, index) {
-                            final element = _analysisResult!['identifiedElements'][index];
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(6),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    spreadRadius: 1,
-                                    blurRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${element['name']}${element['count'] != null ? ' (${localizations.count}: ${element['count']})' : ''}',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: theme.primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${localizations.category}: ${element['category']}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${localizations.description}: ${element['description']}',
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ] else ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Text(
-                          _analysisResult!['identifiedElements']?[0]?['description'] ??
-                              localizations.noElementsIdentified,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Scene Narrative
-                    Row(
-                      children: [
-                        Icon(Icons.description, color: theme.primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          localizations.sceneNarrativeEditable,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: TextEditingController(text: _editableSceneNarrative),
-                      onChanged: (value) => _editableSceneNarrative = value,
-                      maxLines: 10,
-                      decoration: InputDecoration(
-                        hintText: localizations.sceneNarrativeHint,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Case File Summary
-                    Row(
-                      children: [
-                        Icon(Icons.lightbulb, color: theme.primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          localizations.caseFileSummaryEditable,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: TextEditingController(text: _editableCaseFileSummary),
-                      onChanged: (value) => _editableCaseFileSummary = value,
-                      maxLines: 8,
-                      decoration: InputDecoration(
-                        hintText: localizations.caseFileSummaryHint,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Footer
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
+                    Card(
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.warning_amber, color: Colors.orange[700], size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                localizations.aiAnalysisDisclaimer,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
+                            Row(
+                              children: [
+                                Icon(Icons.image_search_rounded, color: orange, size: 28),
+                                const SizedBox(width: 12),
+                                Text(l.aiCrimeSceneInvestigator, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 28),
+
+                            const Text("Upload Image", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 12),
+
+                            Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: _showImageSourceDialog,
+                                  icon: const Icon(Icons.add_photo_alternate_rounded),
+                                  label: Text(l.chooseImage),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: orange,
+                                    side: BorderSide(color: orange),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                if (_selectedImage != null)
+                                  Expanded(
+                                    child: Text(
+                                      _selectedImage!.path.split('/').last,
+                                      style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w600, fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                              ],
+                            ),
+
+                            if (_selectedImage != null) ...[
+                              const SizedBox(height: 20),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.file(_selectedImage!, height: 340, width: double.infinity, fit: BoxFit.cover),
+                              ),
+                            ],
+
+                            const SizedBox(height: 24),
+                            const Text("Additional Context (Optional)", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _userContextController,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                hintText: l.contextInstructionsHint,
+                                hintStyle: TextStyle(color: Colors.grey[500]),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                contentPadding: const EdgeInsets.all(16),
+                              ),
+                            ),
+
+                            const SizedBox(height: 32),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                onPressed: (_isLoading || _selectedImage == null) ? null : _handleAnalyze,
+                                icon: _isLoading
+                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                    : const Icon(Icons.search_rounded),
+                                label: Text(_isLoading ? l.analyzing : l.analyzeImage),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: orange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 5,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(localizations.downloadFeatureComingSoon),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.download),
-                          label: Text(localizations.download),
-                        ),
-                      ],
+                      ),
                     ),
+
+                    if (_isLoading) ...[
+                      const SizedBox(height: 32),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: const Padding(
+                          padding: EdgeInsets.all(40),
+                          child: Column(
+                            children: [
+                              CircularProgressIndicator(color: orange, strokeWidth: 5),
+                              SizedBox(height: 24),
+                              Text("Analyzing image...", style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    if (_analysisResult != null && !_isLoading) ...[
+                      const SizedBox(height: 32),
+                      Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.description_rounded, color: orange, size: 30),
+                                  const SizedBox(width: 12),
+                                  Text(l.crimeSceneAnalysisReport, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text('${l.date}: ${DateTime.now().toString().split(' ')[0]}', style: TextStyle(color: Colors.grey[600])),
+                              const SizedBox(height: 28),
+
+                              _buildSection(icon: Icons.check_circle_rounded, color: Colors.blue[700]!, title: l.identifiedElements, child: _buildElementsList(l)),
+                              const SizedBox(height: 28),
+                              _buildSection(icon: Icons.description_rounded, color: Colors.purple[700]!, title: l.sceneNarrativeEditable, child: TextField(
+                                controller: TextEditingController(text: _editableSceneNarrative)
+                                  ..selection = TextSelection.fromPosition(TextPosition(offset: _editableSceneNarrative?.length ?? 0)),
+                                onChanged: (v) => _editableSceneNarrative = v,
+                                maxLines: 12,
+                                decoration: InputDecoration(filled: true, fillColor: Colors.purple[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                              )),
+                              const SizedBox(height: 28),
+                              _buildSection(icon: Icons.lightbulb_rounded, color: Colors.green[700]!, title: l.caseFileSummaryEditable, child: TextField(
+                                controller: TextEditingController(text: _editableCaseFileSummary)
+                                  ..selection = TextSelection.fromPosition(TextPosition(offset: _editableCaseFileSummary?.length ?? 0)),
+                                onChanged: (v) => _editableCaseFileSummary = v,
+                                maxLines: 10,
+                                decoration: InputDecoration(filled: true, fillColor: Colors.green[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                              )),
+                              const SizedBox(height: 32),
+                              OutlinedButton.icon(
+                                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.downloadFeatureComingSoon))),
+                                icon: const Icon(Icons.download_rounded),
+                                label: Text(l.download),
+                                style: OutlinedButton.styleFrom(foregroundColor: orange, side: BorderSide(color: orange)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ],
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection({required IconData icon, required Color color, required String title, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 10),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildElementsList(AppLocalizations l) {
+    final elements = _analysisResult!['identifiedElements'] as List<dynamic>? ?? [];
+
+    if (elements.isEmpty || (elements[0] as Map)['name'] == 'Analysis Failed') {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red[200]!)),
+        child: Text(elements.isEmpty ? l.noElementsIdentified : elements[0]['description'], style: TextStyle(color: Colors.red[700])),
+      );
+    }
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 420),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),  // Fixed here
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: ListView.separated(
+        padding: const EdgeInsets.all(12),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: elements.length,
+        separatorBuilder: (_, __) => const Divider(height: 20),
+        itemBuilder: (context, index) {
+          final e = elements[index];
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),  // Fixed here
+              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 8)],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(e['name'], style: TextStyle(fontWeight: FontWeight.bold, color: orange, fontSize: 16)),
+                if (e['count'] != null) Text("Count: ${e['count']}", style: TextStyle(color: Colors.grey[700])),
+                const SizedBox(height: 6),
+                Text("Category: ${e['category']}", style: TextStyle(color: Colors.grey[600])),
+                const SizedBox(height: 6),
+                Text(e['description'], style: const TextStyle(height: 1.4)),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

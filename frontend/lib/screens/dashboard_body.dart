@@ -200,29 +200,24 @@ class DashboardBody extends StatelessWidget {
 
   // ── CITIZEN QUICK ACTIONS ──
   List<Widget> _citizenActions(BuildContext ctx) => [
-        _quickActionCard(ctx, 'AI Chat', Icons.chat, '/chat', Colors.blue),
-        _quickActionCard(
-            ctx, 'Legal Queries', Icons.psychology, '/legal-queries', Colors.purple),
-        _quickActionCard(ctx, 'View Cases', Icons.folder_open, '/cases', Colors.blue),
-        _quickActionCard(ctx, 'Complaints', Icons.archive, '/complaints', Colors.orange.shade700),
+        _quickActionCard(ctx, 'AI Chat', Icons.chat, '/ai-legal-chat', Colors.blue),
+        _quickActionCard(ctx, 'Legal Queries', Icons.psychology, '/legal-queries', Colors.purple),
         _quickActionCard(ctx, 'Legal Suggestion', Icons.gavel, '/legal-suggestion', Colors.red.shade700),
-        _quickActionCard(ctx, 'Document Drafting', Icons.edit_document, '/document-drafting', Colors.green),
-        _quickActionCard(ctx, 'Chargesheet Gen', Icons.file_present, '/chargesheet-generation', Colors.teal),
-        _quickActionCard(ctx, 'Chargesheet Vetting', Icons.fact_check, '/chargesheet-vetting', Colors.indigo),
+        _quickActionCard(ctx, 'My Saved Complaints', Icons.archive, '/complaints', Colors.orange.shade700),
         _quickActionCard(ctx, 'Witness Prep', Icons.people, '/witness-preparation', Colors.brown),
-        _quickActionCard(ctx, 'Media Analysis', Icons.image_search, '/media-analysis', Colors.cyan.shade700),
-        _quickActionCard(ctx, 'Case Journal', Icons.book, '/case-journal', Colors.deepOrange),
-        _quickActionCard(ctx, 'Petitions', Icons.gavel, '/petitions', Colors.red.shade800),
+        _quickActionCard(ctx, 'Petitions', Icons.book, '/petitions', Colors.red.shade800),
+        _quickActionCard(ctx, 'Helpline', Icons.phone, '/helpline', Colors.red.shade800),
       ];
 
   // ── POLICE QUICK ACTIONS ──
   List<Widget> _policeActions(BuildContext ctx) => [
-        _quickActionCard(ctx, 'Case Management', Icons.folder_open, '/cases', Colors.blue),
-        _quickActionCard(ctx, 'Complaints', Icons.archive, '/complaints', Colors.orange.shade700),
-        _quickActionCard(ctx, 'AI Tools', Icons.psychology, '/ai-tools', Colors.purple),
         _quickActionCard(ctx, 'Document Drafting', Icons.edit_document, '/document-drafting', Colors.green),
-        _quickActionCard(ctx, 'Chargesheet Tools', Icons.file_present, '/chargesheet-generation', Colors.teal),
+        _quickActionCard(ctx, 'Chargesheet Gen', Icons.file_present, '/chargesheet-generation', Colors.teal),
+        _quickActionCard(ctx, 'Chargesheet Vetting', Icons.fact_check, '/chargesheet-vetting', Colors.indigo),
         _quickActionCard(ctx, 'Media Analysis', Icons.image_search, '/media-analysis', Colors.cyan.shade700),
+        _quickActionCard(ctx, 'Case Journal', Icons.book, '/case-journal', Colors.deepOrange),
+        _quickActionCard(ctx, 'Complaints', Icons.archive, '/complaints', Colors.orange.shade700),
+        _quickActionCard(ctx, 'Petitions', Icons.gavel, '/petitions', Colors.red.shade800),
       ];
 
   // ── RECENT ACTIVITY ──
