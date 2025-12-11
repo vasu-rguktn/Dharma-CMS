@@ -29,7 +29,17 @@ class _DetailContent extends StatelessWidget {
 
   const _DetailContent({required this.petition});
 
-  Color _getStatusColor(PetitionStatus status) {
+  Color _getStatusColor(PetitionStatus status, String? policeStatus) {
+    if (policeStatus != null && policeStatus.isNotEmpty) {
+      switch (policeStatus.toLowerCase()) {
+        case 'pending': return Colors.orange;
+        case 'received': return Colors.blue;
+        case 'in progress': return Colors.indigo;
+        case 'closed': return Colors.green;
+        case 'rejected': return Colors.red;
+        default: return Colors.grey;
+      }
+    }
     switch (status) {
       case PetitionStatus.draft: return Colors.grey;
       case PetitionStatus.filed: return Colors.blue;
@@ -65,10 +75,123 @@ class _DetailContent extends StatelessWidget {
     );
   }
 
+  int _currentStep(PetitionStatus status, String? policeStatus) {
+    if (policeStatus != null && policeStatus.isNotEmpty) {
+      switch (policeStatus.toLowerCase()) {
+        case 'pending': 
+        case 'submitted':
+          return 0; // Submitted
+        case 'received': 
+        case 'acknowledged':
+          return 1; // Received
+        case 'in progress': 
+        case 'investigation':
+          return 2; // In Progress
+        case 'closed': 
+        case 'resolved':
+        case 'rejected':
+          return 3; // Closed
+        default:
+          return 0;
+      }
+    }
+
+    switch (status) {
+      case PetitionStatus.draft:
+      case PetitionStatus.filed:
+        return 0; // Submitted
+      case PetitionStatus.underReview:
+        return 1; // Received
+      case PetitionStatus.hearingScheduled:
+        return 2; // In Progress
+      case PetitionStatus.granted:
+      case PetitionStatus.rejected:
+      case PetitionStatus.withdrawn:
+        return 3; // Closed
+    }
+  }
+
+  Widget _buildTrackingTimeline(BuildContext context, PetitionStatus status, String? policeStatus) {
+    final int currentStep = _currentStep(status, policeStatus);
+    final localizations = AppLocalizations.of(context)!;
+    
+    // Labels based on request
+    final steps = [
+      'Submitted', 
+      localizations.received,
+      localizations.inProgress, // Use inProgress usually 'In Progress'
+      localizations.closed,
+    ];
+
+    return Row(
+      children: [
+        for (int i = 0; i < steps.length; i++) 
+          Expanded(
+            child: Column(
+              children: [
+                // Line + Dot + Line
+                Row(
+                  children: [
+                    // Left Line
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: i == 0 ? Colors.transparent : (i <= currentStep ? Colors.green : Colors.grey.shade300),
+                      ),
+                    ),
+                    // Dot
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: i <= currentStep ? Colors.green : Colors.grey.shade300,
+                        border: Border.all(
+                          color: i <= currentStep ? Colors.green : Colors.grey.shade300,
+                          width: 2
+                        )
+                      ),
+                      child: Icon(
+                        i < currentStep ? Icons.check : Icons.circle,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    // Right Line
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: i == steps.length - 1 ? Colors.transparent : (i < currentStep ? Colors.green : Colors.grey.shade300),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Label
+                Text(
+                  steps[i],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 10, 
+                    fontWeight: i <= currentStep ? FontWeight.bold : FontWeight.normal,
+                    color: i <= currentStep ? Colors.black : Colors.grey
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
+    
+    final displayStatus = (petition.policeStatus != null && petition.policeStatus!.isNotEmpty)
+        ? petition.policeStatus!
+        : petition.status.displayName;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,14 +216,17 @@ class _DetailContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: _getStatusColor(petition.status),
+            color: _getStatusColor(petition.status, petition.policeStatus),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            petition.status.displayName,
+            displayStatus,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
+        const SizedBox(height: 24),
+        // Tracking Timeline
+        _buildTrackingTimeline(context, petition.status, petition.policeStatus),
         const Divider(height: 32),
 
         _buildDetailRow(localizations.petitioner, petition.petitionerName),
