@@ -123,8 +123,6 @@ class _AppScaffoldState extends State<AppScaffold> {
                   localizations.legalSuggestion, '/legal-suggestion', isDark),
 
               _buildDrawerSection(localizations.caseManagement, isDark),
-              _buildDrawerItem(context, Icons.folder_open,
-                  localizations.allCases, '/cases', isDark),
               _buildDrawerItem(context, Icons.archive,
                   localizations.mySavedComplaints, '/complaints', isDark),
               _buildDrawerItem(context, Icons.people,
@@ -146,10 +144,10 @@ class _AppScaffoldState extends State<AppScaffold> {
                   localizations.chargesheetVetting, '/chargesheet-vetting', isDark),
               _buildDrawerItem(context, Icons.image_search,
                   localizations.mediaAnalysis, '/media-analysis', isDark),
-
-              _buildDrawerSection(localizations.caseManagement, isDark),
               _buildDrawerItem(context, Icons.book,
                   localizations.caseJournal, '/case-journal', isDark),
+
+              _buildDrawerSection(localizations.caseManagement, isDark),
               _buildDrawerItem(context, Icons.archive,
                   localizations.mySavedComplaints, '/complaints', isDark),
               _buildDrawerItem(context, Icons.gavel, localizations.petitions,
