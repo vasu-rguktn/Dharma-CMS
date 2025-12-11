@@ -202,40 +202,52 @@ class PetitionProvider with ChangeNotifier {
   /// If [userId] is null, fetches global stats (Police)
   Future<void> fetchPetitionStats({String? userId}) async {
     try {
+      debugPrint('🔍 fetchPetitionStats called with userId: $userId');
+      
       final collection = _firestore.collection('petitions');
 
       // Base query
-      Query? query = collection;
+      Query query = collection;
       if (userId != null) {
         query = query.where('userId', isEqualTo: userId);
+        debugPrint('🔍 Querying petitions where userId == $userId');
+      } else {
+        debugPrint('🔍 Querying ALL petitions (police mode)');
       }
 
-      // 1. Total Count
-      final totalSnapshot = await query.count().get();
-      final total = totalSnapshot.count ?? 0;
+      // Fetch documents to count manually
+      final snapshot = await query.get();
+      debugPrint('🔍 Found ${snapshot.docs.length} total documents');
 
-      // 2. Closed Count
-      final closedSnapshot = await query
-          .where('policeStatus', isEqualTo: 'Closed')
-          .count()
-          .get();
-      final closed = closedSnapshot.count ?? 0;
+      int total = snapshot.docs.length;
+      int closed = 0;
+      int received = 0;
+      int inProgress = 0;
 
-      // 3. In Progress Count
-      final inProgressSnapshot = await query
-          .where('policeStatus', isEqualTo: 'In Progress')
-          .count()
-          .get();
-      final inProgress = inProgressSnapshot.count ?? 0;
+      // Count by status
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final policeStatus = data['policeStatus'] as String?;
+        final docUserId = data['userId'];
+        
+        debugPrint('  📄 Doc ${doc.id}: userId=$docUserId, policeStatus=$policeStatus');
 
-      // 4. Received Count (Pending + Received)
-      // Firestore doesn't support OR queries easily with other filters in Count sometimes,
-      // but whereIn works.
-      final receivedSnapshot = await query
-          .where('policeStatus', whereIn: ['Received', 'Pending'])
-          .count()
-          .get();
-      final received = receivedSnapshot.count ?? 0;
+        if (policeStatus != null) {
+          final statusLower = policeStatus.toLowerCase();
+          
+          if (statusLower.contains('close') || statusLower.contains('resolve') || statusLower.contains('reject')) {
+            closed++;
+          } else if (statusLower.contains('progress') || statusLower.contains('investigation')) {
+            inProgress++;
+          } else if (statusLower.contains('receive') || statusLower.contains('pending') || statusLower.contains('acknowledge')) {
+            received++;
+          } else {
+            received++; // Unknown status -> pending
+          }
+        } else {
+          received++; // No status -> pending
+        }
+      }
 
       final statsMap = {
         'total': total,
@@ -244,16 +256,20 @@ class PetitionProvider with ChangeNotifier {
         'inProgress': inProgress,
       };
 
+      debugPrint('🔍 Final stats: $statsMap');
+
       if (userId != null) {
         _userStats = statsMap;
+        debugPrint('🔍 Updated _userStats: $_userStats');
       } else {
         _globalStats = statsMap;
-        _petitionCount = total; // Sync legacy count with global total
+        _petitionCount = total;
+        debugPrint('🔍 Updated _globalStats: $_globalStats');
       }
       
       notifyListeners();
     } catch (e) {
-      debugPrint("Error fetching petition stats: $e");
+      debugPrint("❌ Error fetching petition stats: $e");
     }
   }
 

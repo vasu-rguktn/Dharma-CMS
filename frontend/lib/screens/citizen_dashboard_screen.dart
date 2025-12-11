@@ -17,13 +17,25 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🟢 CitizenDashboardScreen initState');
+    
     // Fetch Citizen petition stats
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('🟢 PostFrameCallback executing');
+      
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final petitionProvider =
           Provider.of<PetitionProvider>(context, listen: false);
-      if (auth.userProfile != null) {
-        petitionProvider.fetchPetitionStats(userId: auth.userProfile!.uid);
+      
+      final userId = auth.user?.uid;
+      debugPrint('🟢 auth.user?.uid = $userId');
+      debugPrint('🟢 auth.userProfile?.uid = ${auth.userProfile?.uid}');
+      
+      if (userId != null) {
+        debugPrint('🟢 Calling fetchPetitionStats with userId: $userId');
+        petitionProvider.fetchPetitionStats(userId: userId);
+      } else {
+        debugPrint('⚠️ Cannot fetch stats - userId is NULL!');
       }
     });
   }
