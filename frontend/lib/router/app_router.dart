@@ -24,6 +24,7 @@ import 'package:Dharma/screens/witness_preparation_screen.dart';
 import 'package:Dharma/screens/media_analysis_screen.dart';
 import 'package:Dharma/screens/case_journal_screen.dart';
 import 'package:Dharma/screens/petition/petitions_screen.dart';
+import 'package:Dharma/screens/police_petitions_screen.dart';
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
 import 'package:Dharma/screens/ai_legal_chat_screen.dart';
 import 'package:Dharma/screens/contact_officer_screen.dart';
@@ -185,7 +186,13 @@ class AppRouter {
           ),
           GoRoute(
             path: '/petitions',
-            builder: (context, state) => const PetitionsScreen(),
+            builder: (context, state) {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              if (auth.role == 'police') {
+                return const PolicePetitionsScreen();
+              }
+              return const PetitionsScreen();
+            },
             routes: [
               GoRoute(
                 path: 'create',

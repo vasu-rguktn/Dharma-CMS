@@ -16,7 +16,20 @@ class PetitionCard extends StatelessWidget {
     required this.onTap,
   });
 
-  Color _statusColor(PetitionStatus status) {
+  Color _statusColor(PetitionStatus status, String? policeStatus) {
+    // If policeStatus is available, prioritize it
+    if (policeStatus != null && policeStatus.isNotEmpty) {
+      switch (policeStatus.toLowerCase()) {
+        case 'pending': return Colors.orange;
+        case 'received': return Colors.blue;
+        case 'in progress': return Colors.indigo;
+        case 'closed': return Colors.green;
+        case 'rejected': return Colors.red;
+        default: return Colors.grey;
+      }
+    }
+
+    // Fallback to internal status
     switch (status) {
       case PetitionStatus.draft: return Colors.grey;
       case PetitionStatus.filed: return Colors.blue;
@@ -32,6 +45,11 @@ class PetitionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
+
+    // Determine what text to show: policeStatus takes precedence
+    final String displayStatus = (petition.policeStatus != null && petition.policeStatus!.isNotEmpty)
+        ? petition.policeStatus!
+        : petition.status.displayName;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -55,11 +73,11 @@ class PetitionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _statusColor(petition.status),
+                      color: _statusColor(petition.status, petition.policeStatus),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      petition.status.displayName,
+                      displayStatus,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
