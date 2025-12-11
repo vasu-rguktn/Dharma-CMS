@@ -1,33 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 
 class HelplineScreen extends StatelessWidget {
   static const Color primaryColor = Color(0xFFFC633C);
-
-  final List<Map<String, String>> helplines = const [
-    {"type": "Emergency (All-in-One)", "number": "112", "description": "Police, Fire, Ambulance", "icon": "🚨"},
-    {"type": "Police Control Room", "number": "100", "description": "Crime / Emergencies", "icon": "👮"},
-    {"type": "Fire & Rescue", "number": "101", "description": "Fire accidents & rescue", "icon": "🚒"},
-    {"type": "Ambulance", "number": "102", "description": "Medical emergencies", "icon": "🚑"},
-    {"type": "Ambulance (Alternative)", "number": "108", "description": "Emergency medical service", "icon": "🚑"},
-    {"type": "Women Helpline", "number": "1091", "description": "Support for women safety", "icon": "👩‍🦰"},
-    {"type": "Domestic Violence", "number": "181", "description": "Help against abuse", "icon": "🛡️"},
-    {"type": "Child Helpline", "number": "1098", "description": "Children in trouble", "icon": "👶"},
-    {"type": "Cyber Crime", "number": "1930", "description": "Fraud, cyber threats", "icon": "💻"},
-  ];
 
   const HelplineScreen({super.key});
 
   Future<void> _makeCall(String number) async {
     final Uri url = Uri(scheme: 'tel', path: number);
-    if (!await launchUrl(url)) {
-      debugPrint("Cannot call $number");
+    if (!await launchUrl(url)) { 
+     debugPrint("Cannot call $number");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final localization = AppLocalizations.of(context)!;
+
+    final List<Map<String, String>> helplines = [
+      {"type": localization.helplineEmergencyAll, "number": "112", "description": localization.helplineEmergencyAllDesc, "icon": "🚨"},
+      {"type": localization.helplinePolice, "number": "100", "description": localization.helplinePoliceDesc, "icon": "👮"},
+      {"type": localization.helplineFire, "number": "101", "description": localization.helplineFireDesc, "icon": "🚒"},
+      {"type": localization.helplineAmbulance, "number": "102", "description": localization.helplineAmbulanceDesc, "icon": "🚑"},
+      {"type": localization.helplineAmbulanceAlt, "number": "108", "description": localization.helplineAmbulanceAltDesc, "icon": "🚑"},
+      {"type": localization.helplineWomen, "number": "1091", "description": localization.helplineWomenDesc, "icon": "👩‍🦰"},
+      {"type": localization.helplineDomestic, "number": "181", "description": localization.helplineDomesticDesc, "icon": "🛡️"},
+      {"type": localization.helplineChild, "number": "1098", "description": localization.helplineChildDesc, "icon": "👶"},
+      {"type": localization.helplineCyber, "number": "1930", "description": localization.helplineCyberDesc, "icon": "💻"},
+    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
@@ -36,9 +38,9 @@ class HelplineScreen extends StatelessWidget {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Emergency Helplines",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        title: Text(
+          localization.emergencyHelplines,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
       ),
 
@@ -125,9 +127,9 @@ class HelplineScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: primaryColor,
         elevation: 8,
-        label: const Text(
-          "SOS 112",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        label: Text(
+          localization.sos112,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         icon: const Icon(Icons.warning_rounded, size: 28),
         onPressed: () => _makeCall("112"),

@@ -477,7 +477,7 @@
     "@raiseComplaint": {
         "description": "Raise complaint button"
     },
-    "mySavedComplaints": "నా సేవ్ చేసిన ఫిర్యాదులు",
+    "mySavedComplaints": "నేను సేవ్ చేసిన ఫిర్యాదులు",
     "@mySavedComplaints": {
         "description": "Saved complaints title"
     },
@@ -811,5 +811,176 @@
   "backToEmailLogin": "ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి",
   "@backToEmailLogin": { "description": "Navigation link text to email login" },
  
+"emergencyHelplines": "అత్యవసర హెల్ప్‌లైన్లు",
+  "@emergencyHelplines": {
+    "description": "Title of the Emergency Helplines screen in Telugu"
+  },
+
+  "sos112": "SOS 112",
+  "@sos112": {
+    "description": "Text on the SOS emergency call button in Telugu"
+  },
+
+  "helplineEmergencyAll": "అత్యవసర సేవలు (అన్ని-ఒకటే)",
+  "@helplineEmergencyAll": {
+    "description": "Type of emergency service in Telugu"
+  },
+  "helplineEmergencyAllDesc": "పోలీస్, ఫైర్, అంబులెన్స్",
+  "@helplineEmergencyAllDesc": {
+    "description": "Description for all-in-one emergency number in Telugu"
+  },
+
+  "helplinePolice": "పోలీస్ కంట్రోల్ రూమ్",
+  "@helplinePolice": {
+    "description": "Police emergency helpline title in Telugu"
+  },
+  "helplinePoliceDesc": "నేరాలు / అత్యవసర పరిస్థితులు",
+  "@helplinePoliceDesc": {
+    "description": "Description for police control room helpline in Telugu"
+  },
+
+  "helplineFire": "ఫైర్ & రెస్క్యూ",
+  "@helplineFire": {
+    "description": "Fire and rescue service in Telugu"
+  },
+  "helplineFireDesc": "అగ్ని ప్రమాదాలు & రక్షణ",
+  "@helplineFireDesc": {
+    "description": "Description for fire emergency in Telugu"
+  },
+
+  "helplineAmbulance": "అంబులెన్స్",
+  "@helplineAmbulance": {
+    "description": "Ambulance helpline title in Telugu"
+  },
+  "helplineAmbulanceDesc": "వైద్య అత్యవసరాలు",
+  "@helplineAmbulanceDesc": {
+    "description": "Description for ambulance emergency in Telugu"
+  },
+
+  "helplineAmbulanceAlt": "అంబులెన్స్ (ప్రత్యామ్నాయం)",
+  "@helplineAmbulanceAlt": {
+    "description": "Alternate ambulance service in Telugu"
+  },
+  "helplineAmbulanceAltDesc": "అత్యవసర వైద్య సేవ",
+  "@helplineAmbulanceAltDesc": {
+    "description": "Description for alternate ambulance number in Telugu"
+  },
+
+  "helplineWomen": "మహిళల హెల్ప్‌లైన్",
+  "@helplineWomen": {
+    "description": "Women helpline title in Telugu"
+  },
+  "helplineWomenDesc": "మహిళల భద్రత కోసం సహాయం",
+  "@helplineWomenDesc": {
+    "description": "Description for women safety helpline in Telugu"
+  },
+
+  "helplineDomestic": "గృహ హింస",
+  "@helplineDomestic": {
+    "description": "Domestic violence helpline title in Telugu"
+  },
+  "helplineDomesticDesc": "అత్యాచారం & వేధింపులపై సహాయం",
+  "@helplineDomesticDesc": {
+    "description": "Description for domestic violence helpline in Telugu"
+  },
+
+  "helplineChild": "చైల్డ్ హెల్ప్‌లైన్",
+  "@helplineChild": {
+    "description": "Child helpline title in Telugu"
+  },
+  "helplineChildDesc": "బాధలో ఉన్న పిల్లలకు సహాయం",
+  "@helplineChildDesc": {
+    "description": "Description for child helpline in Telugu"
+  },
+
+  "helplineCyber": "సైబర్ క్రైమ్",
+  "@helplineCyber": {
+    "description": "Cyber crime helpline title in Telugu"
+  },
+  "helplineCyberDesc": "మోసం, సైబర్ బెదిరింపులు",
+  "@helplineCyberDesc": {
+    "description": "Description for cyber crime helpline in Telugu"
+  }
+
+
+  "support": "సహాయం",
+  "@support": {
+    "description": "Label for support service or helpline in Telugu"
+  }
+
+
+"closed": "మూసివేయబడింది",
+  "@closed": {
+    "description": "Status indicating the case or request is closed in Telugu"
+  },
+
+  "inProgress": "ప్రక్రియలో ఉంది",
+  "@inProgress": {
+    "description": "Status indicating the case or request is ongoing in Telugu"
+  },
+
+
+  "yourLegalAssistanceHub": "మీ లీగల్ అసిస్టెన్స్ హబ్",
+  "@yourLegalAssistanceHub": {
+    "description": "Label for the user's legal assistance hub in Telugu"
+  }
+
+ "received": "అందుకుంది",
+  "@received": {
+    "description": "Indicates that a request, message, or submission was received in Telugu"
+  },
+
+  "welcome": "స్వాగతం",
+  "@welcome": {
+    "description": "Welcome message in Telugu"
+  },
+  "policeCommandCenter": "పోలీస్ కంట్రోల్ సెంటర్",
+  "@policeCommandCenter": {
+    "description": "Title for police dashboard in Telugu"
+  },
+  "quickActions": "త్వరిత చర్యలు",
+  "@quickActions": {
+    "description": "Quick actions section title in Telugu"
+  },
+  "recentActivity": "ఇటీవలి కార్యకలాపాలు",
+  "@recentActivity": {
+    "description": "Recent activity section title in Telugu"
+  },
+  "petitionOverview": "పిటిషన్ అవలోకనం",
+  "@petitionOverview": {
+    "description": "Petition overview section title in Telugu"
+  },
+
+ "recentActivityDescription": "మీ ఖాతాకు సంబంధించిన ఇటీవల జరిగిన చర్యలు లేదా నవీకరణలను చూపిస్తుంది",
+  "@recentActivityDescription": {
+    "description": "Description text for the recent activity section in Telugu"
+  },
+
+  "userNotRegistered": "వినియోగదారు నమోదు కాలేదు",
+  "@userNotRegistered": {
+    "description": "Message indicating that the user is not registered in Telugu"
+  },
+
+  "registeredAs": "మీరు ఈ పాత్రలో నమోదు అయ్యారు",
+  "@registeredAs": {
+    "description": "Message indicating the user's registration status in Telugu"
+  },
+
+  "tryingToLoginAs": "కానీ మీరు ఈ పాత్రగా లాగిన్ అవ్వడానికి ప్రయత్నిస్తున్నారు",
+  "@tryingToLoginAs": {
+    "description": "Message indicating that the user is trying to login as a different user in Telugu"
+  },
+
+  "selectCorrectOption": "దయచేసి సరియైన ఎంపికను ఎంచుకోండి",
+  "@selectCorrectOption": {
+    "description": "Message indicating that the user should select the correct option in Telugu"
+  },
+
+  "loginFailed": "లాగిన్ విఫలమైంది",
+"@loginFailed": {
+  "description": "Message shown when login attempt fails"
+}
+
+
 
 }

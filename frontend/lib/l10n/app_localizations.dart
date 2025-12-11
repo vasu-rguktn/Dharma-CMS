@@ -2536,7 +2536,43 @@ String get wrongOtp;
 String get otpExpired;
 String get invalidOtp;
 String get backToEmailLogin;
+String get emergencyHelplines;
+String get sos112;
+String get helplineEmergencyAll;
+String get helplineEmergencyAllDesc;
+String get helplinePolice;
+String get helplinePoliceDesc;
+String get helplineFire;
+String get helplineFireDesc;
+String get helplineAmbulance;
+String get helplineAmbulanceDesc;
+String get helplineAmbulanceAlt;
+String get helplineAmbulanceAltDesc;
+String get helplineWomen;
+String get helplineWomenDesc;
+String get helplineDomestic;
+String get helplineDomesticDesc;
+String get helplineChild;
+String get helplineChildDesc;
+String get helplineCyber;
+String get helplineCyberDesc;
+String get support;
+String get yourLegalAssistanceHub;
 
+String get inProgress;
+String get closed;
+String get received;
+String get welcome;
+String get policeCommandCenter;
+String get petitionOverview;
+String get recentActivityDescription;
+  String get helpline;
+String get userNotRegistered;
+String get registeredAs;
+String get tryingToLoginAs;
+String get selectCorrectOption;
+String get loginFailed;
+String get googleLoginSuccessful;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

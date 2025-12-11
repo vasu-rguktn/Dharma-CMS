@@ -25,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color orange = Color(0xFFFC633C);
 
   Future<void> _login() async {
+    final localizations = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -80,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Route based on user role
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login successful")),
+          SnackBar(content: Text(localizations?.loginSuccessful ?? 'Login successful')),
         );
         
         // Navigate based on role: police/admin goes to different screen
@@ -95,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? "Login failed")),
+          SnackBar(content: Text(e.message ?? localizations?.loginFailed ?? 'Login failed')),
         );
       }
     } finally {
@@ -103,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
  Future<void> _googleLogin() async {
+  final localizations = AppLocalizations.of(context);
   setState(() => _isGoogleLoading = true);
   try {
     final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
@@ -134,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google login successful')),
+          SnackBar(content: Text(localizations?.googleLoginSuccessful ?? 'Google login successful')),
         );
         context.go('/ai-legal-guider');
       }
@@ -238,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: _inputDecoration(localizations?.email??'Email', Icons.email),
                       validator: (v) =>
-                          v!.isEmpty || !v.contains('@') ? 'Enter valid email' : null,
+                          v!.isEmpty || !v.contains('@') ? localizations?.pleaseEnterValidEmail ?? 'Enter valid email' : null,
                     ),
                     const SizedBox(height: 20),
 
@@ -258,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               setState(() => _obscureText = !_obscureText),
                         ),
                       ),
-                      validator: (v) => v!.isEmpty ? 'Enter password' : null,
+                      validator: (v) => v!.isEmpty ? localizations?.enterPassword ?? 'Enter password' : null,
                     ),
                     const SizedBox(height: 20),
 
@@ -267,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Forgot password clicked')),
+                          SnackBar(content: Text(localizations?.forgotPassword ?? 'Forgot Password?')),
                         ),
                         child:  Text(
                           localizations?.forgotPassword ??'Forget Password?',

@@ -26,6 +26,17 @@ class PolicePetitionsScreen extends StatelessWidget {
     }
   }
 
+  Color _getStringStatusColor(String status) {
+    switch (status) {
+      case 'Received': return Colors.blue;
+      case 'In Progress': return Colors.indigo;
+      case 'Closed': return Colors.green;
+      case 'Rejected': return Colors.red;
+      case 'Pending': return Colors.orange;
+      default: return Colors.grey;
+    }
+  }
+
   String _formatTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
     return '${date.day}/${date.month}/${date.year}';
@@ -321,7 +332,7 @@ class PolicePetitionsScreen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.blueGrey,
+                                  color: _getStringStatusColor(p.policeStatus!),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(

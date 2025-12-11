@@ -52,7 +52,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       } catch (e) {
         debugPrint('Navigation error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Navigation failed: $e')),
+          SnackBar(content: Text(localizations?.personalDataNotProvided ?? 'Error: Personal data not provided')),
         );
       }
     } else {

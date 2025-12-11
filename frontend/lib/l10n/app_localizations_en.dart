@@ -1303,10 +1303,119 @@ String get invalidOtp => 'Invalid OTP';
 String get backToEmailLogin => 'Back to Email Login';
 
 
+@override
+String get emergencyHelplines => 'Emergency Helplines';
+
+@override
+String get sos112 => 'SOS 112';
+
+@override
+String get helplineEmergencyAll => 'Emergency (All-in-One)';
+
+@override
+String get helplineEmergencyAllDesc => 'Police, Fire, Ambulance';
+
+@override
+String get helplinePolice => 'Police Control Room';
+
+@override
+String get helplinePoliceDesc => 'Crime / Emergencies';
+
+@override
+String get helplineFire => 'Fire & Rescue';
+
+@override
+String get helplineFireDesc => 'Fire accidents & rescue';
+
+@override
+String get helplineAmbulance => 'Ambulance';
+
+@override
+String get helplineAmbulanceDesc => 'Medical emergencies';
+
+@override
+String get helplineAmbulanceAlt => 'Ambulance (Alternative)';
+
+@override
+String get helplineAmbulanceAltDesc => 'Emergency medical service';
+
+@override
+String get helplineWomen => 'Women Helpline';
+
+@override
+String get helplineWomenDesc => 'Support for women safety';
+
+@override
+String get helplineDomestic => 'Domestic Violence';
+
+@override
+String get helplineDomesticDesc => 'Help against abuse';
+
+@override
+String get helplineChild => 'Child Helpline';
+
+@override
+String get helplineChildDesc => 'Children in trouble';
+
+@override
+String get helplineCyber => 'Cyber Crime';
+
+@override
+String get helplineCyberDesc => 'Fraud, cyber threats';
+
+@override
+String get support => 'Support';
+
+@override
+String get closed => 'Closed'; 
+
+@override
+String get inProgress => 'In Progress';
+
+@override
+String get yourLegalAssistanceHub => 'Your Legal Assistance Hub';
+
+
+@override
+String get received => 'Received';
+
+@override
+String get welcome => 'Welcome';
+
+@override
+String get policeCommandCenter => 'Police Command Centre';
 
 
 
+@override
+String get petitionOverview => 'Petition Overview';
 
+
+@override
+
+  @override
+  String get recentActivityDescription => 'Shows the most recent actions or updates related to your account'; 
+
+  @override
+  String get helpline => 'Helpline';
+
+@override
+String get userNotRegistered => 'User not registered';
+
+@override
+String get registeredAs => 'You are registered as a';
+
+@override
+String get tryingToLoginAs => 'but trying to login as a';
+
+@override
+String get selectCorrectOption => 'Please select the correct option';
+
+@override
+String get loginFailed => 'Login Failed';
+
+@override
+String get googleLoginSuccessful => 'Google Login Successful';
 
 
 }

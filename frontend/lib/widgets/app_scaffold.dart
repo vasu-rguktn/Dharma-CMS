@@ -129,7 +129,7 @@ class _AppScaffoldState extends State<AppScaffold> {
                   localizations.witnessPrep, '/witness-preparation', isDark),
               _buildDrawerItem(context, Icons.book, localizations.petitions,
                   '/petitions', isDark),
-              _buildDrawerItem(context, Icons.phone, 'Helpline',
+              _buildDrawerItem(context, Icons.phone, localizations.support,
                   '/helpline', isDark),
             ],
 

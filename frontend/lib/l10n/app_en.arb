@@ -279,7 +279,6 @@
         "type": "String"
       }
     }
-<<<<<<< HEAD
   },
   "fixFormErrors": "Please fix the errors in the form",
   "@fixFormErrors": {
@@ -710,7 +709,6 @@
   "@somethingWentWrong": {
     "description": "Generic error message"
   }
-=======
 
 
     "loginWithPhone": "Login with Phone",
@@ -763,6 +761,179 @@
   "backToEmailLogin": "Back to Email Login",
   "@backToEmailLogin": { "description": "Navigation link text to email login" }
  
+"emergencyHelplines": "Emergency Helplines",
+  "@emergencyHelplines": {
+    "description": "Title of the Emergency Helplines screen"
+  },
 
->>>>>>> 9a87f0b8b8d990f957127aedbc12b6795f6dac3b
+  "sos112": "SOS 112",
+  "@sos112": {
+    "description": "Text on the SOS emergency call button"
+  },
+
+  "helplineEmergencyAll": "Emergency (All-in-One)",
+  "@helplineEmergencyAll": {
+    "description": "Type of emergency service"
+  },
+  "helplineEmergencyAllDesc": "Police, Fire, Ambulance",
+  "@helplineEmergencyAllDesc": {
+    "description": "Description for all-in-one emergency number"
+  },
+
+  "helplinePolice": "Police Control Room",
+  "@helplinePolice": {
+    "description": "Police emergency helpline title"
+  },
+  "helplinePoliceDesc": "Crime / Emergencies",
+  "@helplinePoliceDesc": {
+    "description": "Description for police control room helpline"
+  },
+
+  "helplineFire": "Fire & Rescue",
+  "@helplineFire": {
+    "description": "Fire and rescue emergency service"
+  },
+  "helplineFireDesc": "Fire accidents & rescue",
+  "@helplineFireDesc": {
+    "description": "Description for fire emergency"
+  },
+
+  "helplineAmbulance": "Ambulance",
+  "@helplineAmbulance": {
+    "description": "Ambulance helpline title"
+  },
+  "helplineAmbulanceDesc": "Medical emergencies",
+  "@helplineAmbulanceDesc": {
+    "description": "Description for ambulance helpline"
+  },
+
+  "helplineAmbulanceAlt": "Ambulance (Alternative)",
+  "@helplineAmbulanceAlt": {
+    "description": "Alternative ambulance service"
+  },
+  "helplineAmbulanceAltDesc": "Emergency medical service",
+  "@helplineAmbulanceAltDesc": {
+    "description": "Description for alternate ambulance number"
+  },
+
+  "helplineWomen": "Women Helpline",
+  "@helplineWomen": {
+    "description": "Women's safety helpline"
+  },
+  "helplineWomenDesc": "Support for women safety",
+  "@helplineWomenDesc": {
+    "description": "Description for women helpline"
+  },
+
+  "helplineDomestic": "Domestic Violence",
+  "@helplineDomestic": {
+    "description": "Domestic violence helpline"
+  },
+  "helplineDomesticDesc": "Help against abuse",
+  "@helplineDomesticDesc": {
+    "description": "Description for domestic violence helpline"
+  },
+
+  "helplineChild": "Child Helpline",
+  "@helplineChild": {
+    "description": "Child helpline title"
+  },
+  "helplineChildDesc": "Children in trouble",
+  "@helplineChildDesc": {
+    "description": "Description for child helpline"
+  },
+
+  "helplineCyber": "Cyber Crime",
+  "@helplineCyber": {
+    "description": "Cyber crime helpline"
+  },
+  "helplineCyberDesc": "Fraud, cyber threats",
+  "@helplineCyberDesc": {
+    "description": "Description for cyber crime helpline"
+  }
+
+  "support": "Support",
+  "@support": {
+    "description": "Label for support service or helpline"
+  
+}
+
+"closed": "Closed",
+  "@closed": {
+    "description": "Status indicating the case or request is closed"
+  },
+
+  "inProgress": "In Progress",
+  "@inProgress": {
+    "description": "Status indicating the case or request is ongoing"
+  },
+
+  
+  "yourLegalAssistanceHub": "Your Legal Assistance Hub",
+  "@yourLegalAssistanceHub": {
+    "description": "Label for the user's legal assistance hub"
+  }
+
+"received": "Received",
+  "@received": {
+    "description": "Indicates that a request, message, or submission was received"
+  },
+
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  "policeCommandCenter": "Police Command Centre",
+  "@policeCommandCenter": {
+    "description": "Title for police dashboard"
+  },
+  "quickActions": "Quick Actions",
+  "@quickActions": {
+    "description": "Quick actions section title"
+  },
+  "recentActivity": "Recent Activity",
+  "@recentActivity": {
+    "description": "Recent activity section title"
+  },
+  "petitionOverview": "Petition Overview",
+  "@petitionOverview": {
+    "description": "Petition overview section title"
+  },
+  "totalPetitions": "Total Petitions",
+  "@totalPetitions": {
+    "description": "Label for total petitions"
+  },
+
+  "recentActivityDescription": "Shows the most recent actions or updates related to your account",
+  "@recentActivityDescription": {
+    "description": "Description text for the recent activity section"
+  },
+
+  "loginFailed": "Login Failed",
+  "@loginFailed": {
+    "description": "Error message for failed login attempt"
+  },
+  "userNotRegistered": "User not registered",
+  "@userNotRegistered": {
+    "description": "Message shown when the user is not registered"
+  },
+
+  "registeredAs": "You are registered as a",
+  "@registeredAs": {
+    "description": "Message indicating the user is registered as a certain role"
+  },
+
+  "tryingToLoginAs": "but trying to login as a",
+  "@tryingToLoginAs": {
+    "description": "Message indicating the user is trying to login as a different role"
+  },
+
+  "googleLoginSuccessful": "Google Login Successful",
+  "@googleLoginSuccessful": {
+    "description": "Success message for Google login"
+  },
+
+  
+
+  
 }
