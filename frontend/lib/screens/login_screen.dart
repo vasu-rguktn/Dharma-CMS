@@ -5,8 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
-import 'package:Dharma/l10n/app_localizations.dart'; 
+import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // ← Add this if not already there
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -31,10 +32,11 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final authProvider =
+          Provider.of<custom_auth.AuthProvider>(context, listen: false);
       final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
       final selectedUserType = args?['userType'] as String? ?? 'citizen';
-      
+
       final userCredential = await authProvider.signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text,
@@ -43,12 +45,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final uid = userCredential!.user!.uid;
 
       // Check profile exists in Firestore and get user role
-      final docSnapshot = await FirebaseFirestore.instance
+      // FIXED: search by 'uid' field instead of document ID
+      final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
-          .doc(uid)
+          .where('uid', isEqualTo: uid)
+          .limit(1)
           .get();
 
-      if (!docSnapshot.exists) {
+      if (querySnapshot.docs.isEmpty) {
         await FirebaseAuth.instance.signOut();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -58,8 +62,10 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      final docSnapshot = querySnapshot.docs.first;
+
       // Get the user's role from the database
-      final userRole = docSnapshot.data()?['role'] as String? ?? 'citizen';
+      final userRole = docSnapshot.data()['role'] as String? ?? 'citizen';
 
       // Validate that the user is logging in with the correct role
       if (userRole != selectedUserType) {
@@ -67,7 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("You are registered as a $userRole, but trying to login as a $selectedUserType. Please select the correct option."),
+              content: Text(
+                  "You are registered as a $userRole, but trying to login as a $selectedUserType. Please select the correct option."),
               duration: const Duration(seconds: 4),
             ),
           );
@@ -81,9 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
       // Route based on user role
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(localizations?.loginSuccessful ?? 'Login successful')),
+          SnackBar(
+              content:
+                  Text(localizations?.loginSuccessful ?? 'Login successful')),
         );
-        
+
         // Navigate based on role: police/admin goes to different screen
         if (userRole == 'police') {
           context.go('/police-dashboard');
@@ -92,61 +101,70 @@ class _LoginScreenState extends State<LoginScreen> {
           context.go('/ai-legal-guider');
         }
       }
-
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? localizations?.loginFailed ?? 'Login failed')),
+          SnackBar(
+              content: Text(
+                  e.message ?? localizations?.loginFailed ?? 'Login failed')),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
- Future<void> _googleLogin() async {
-  final localizations = AppLocalizations.of(context);
-  setState(() => _isGoogleLoading = true);
-  try {
-    final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
-    final userCredential = await authProvider.signInWithGoogle();
 
-    if (userCredential != null) {
-      final uid = userCredential.user!.uid;
-      final email = userCredential.user!.email!;
-      final displayName = userCredential.user!.displayName ?? 'User';
-      final phoneNumber = userCredential.user!.phoneNumber;
+  Future<void> _googleLogin() async {
+    final localizations = AppLocalizations.of(context);
+    setState(() => _isGoogleLoading = true);
+    try {
+      final authProvider =
+          Provider.of<custom_auth.AuthProvider>(context, listen: false);
+      final userCredential = await authProvider.signInWithGoogle();
 
-      // Check if profile exists
-      final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
-      final docSnapshot = await docRef.get();
+      if (userCredential != null) {
+        final uid = userCredential.user!.uid;
+        final email = userCredential.user!.email!;
+        final displayName = userCredential.user!.displayName ?? 'User';
+        final phoneNumber = userCredential.user!.phoneNumber;
 
-      if (!docSnapshot.exists) {
-        // Create profile if it doesn't exist
-        await authProvider.createUserProfile(
-          uid: uid,
-          email: email,
-          displayName: displayName,
-          phoneNumber: phoneNumber,
-          role: 'citizen', // or get from extra if needed
-        );
+        // Check if profile exists
+        // FIXED: search by 'uid' field instead of document ID
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('uid', isEqualTo: uid)
+            .limit(1)
+            .get();
+
+        if (querySnapshot.docs.isEmpty) {
+          // Create profile if it doesn't exist (this creates the custom ID)
+          await authProvider.createUserProfile(
+            uid: uid,
+            email: email,
+            displayName: displayName,
+            phoneNumber: phoneNumber,
+            role: 'citizen',
+          );
+        }
+
+        // Always load the profile (now it exists)
+        await authProvider.loadUserProfile(uid);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(localizations?.googleLoginSuccessful ??
+                    'Google login successful')),
+          );
+          context.go('/ai-legal-guider');
+        }
       }
-
-      // Always load the profile (now it exists)
-      await authProvider.loadUserProfile(uid);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(localizations?.googleLoginSuccessful ?? 'Google login successful')),
-        );
-        context.go('/ai-legal-guider');
-      }
+    } catch (e) {
+      // ... error handling
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
-  } catch (e) {
-    // ... error handling
-  } finally {
-    if (mounted) setState(() => _isGoogleLoading = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      
       body: Column(
         children: [
           // TOP LOGO + SVG
@@ -210,22 +227,20 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 32),
 
           // FORM
-          
-            Expanded(
-  child: SingleChildScrollView(
-    physics: const ClampingScrollPhysics(), // ✅ Stops extra scroll
-    padding: const EdgeInsets.symmetric(
-      horizontal: 24,
-      vertical: 16,
-    ), // ✅ REMOVED keyboard bottom padding
-    child: Form(
 
-              
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(), // ✅ Stops extra scroll
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 16,
+              ), // ✅ REMOVED keyboard bottom padding
+              child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     Text(
-                      localizations ?.login ??'Login',
+                      localizations?.login ?? 'Login',
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
@@ -238,9 +253,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: _inputDecoration(localizations?.email??'Email', Icons.email),
-                      validator: (v) =>
-                          v!.isEmpty || !v.contains('@') ? localizations?.pleaseEnterValidEmail ?? 'Enter valid email' : null,
+                      decoration: _inputDecoration(
+                          localizations?.email ?? 'Email', Icons.email),
+                      validator: (v) => v!.isEmpty || !v.contains('@')
+                          ? localizations?.pleaseEnterValidEmail ??
+                              'Enter valid email'
+                          : null,
                     ),
                     const SizedBox(height: 20),
 
@@ -248,7 +266,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscureText,
-                      decoration: _inputDecoration(localizations?.password ??'Password', Icons.lock).copyWith(
+                      decoration: _inputDecoration(
+                              localizations?.password ?? 'Password', Icons.lock)
+                          .copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureText
@@ -260,7 +280,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               setState(() => _obscureText = !_obscureText),
                         ),
                       ),
-                      validator: (v) => v!.isEmpty ? localizations?.enterPassword ?? 'Enter password' : null,
+                      validator: (v) => v!.isEmpty
+                          ? localizations?.enterPassword ?? 'Enter password'
+                          : null,
                     ),
                     const SizedBox(height: 20),
 
@@ -269,10 +291,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(localizations?.forgotPassword ?? 'Forgot Password?')),
+                          SnackBar(
+                              content: Text(localizations?.forgotPassword ??
+                                  'Forgot Password?')),
                         ),
-                        child:  Text(
-                          localizations?.forgotPassword ??'Forget Password?',
+                        child: Text(
+                          localizations?.forgotPassword ?? 'Forget Password?',
                           style: const TextStyle(
                             color: orange,
                             fontSize: 14,
@@ -297,9 +321,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           elevation: 5,
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : Text(
-                                localizations?.login??'Login',
+                                localizations?.login ?? 'Login',
                                 style: const TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w700,
@@ -317,7 +342,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: WrapAlignment.center,
                           children: [
                             Text(
-                              localizations?.dontHaveAccount??"Don't have an account? ",
+                              localizations?.dontHaveAccount ??
+                                  "Don't have an account? ",
                               style: const TextStyle(
                                   fontSize: 14, color: Colors.black),
                             ),
@@ -341,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: const TextStyle(
                                   fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
-                               const TextSpan(
+                                const TextSpan(
                                   text: "Login with",
                                   style: TextStyle(color: Colors.black),
                                 ),
@@ -349,7 +375,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: GestureDetector(
                                     onTap: () => context.go('/phone-login'),
                                     child: Text(
-                                      localizations?.phoneNumber??'Phone Number',
+                                      localizations?.phoneNumber ??
+                                          'Phone Number',
                                       style: const TextStyle(
                                         fontSize: 18,
                                         color: orange,
@@ -383,11 +410,9 @@ class _LoginScreenState extends State<LoginScreen> {
       filled: true,
       fillColor: Colors.white,
       prefixIcon: Icon(icon, color: Colors.black),
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey[300]!)),

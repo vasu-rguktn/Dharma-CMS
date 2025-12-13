@@ -37,8 +37,15 @@ class StorageService {
     List<String> downloadUrls = [];
 
     for (var file in files) {
-      final String fileName =
-          '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+      // Generate readable timestamp: 2025-12-13_14-05-08
+      final timestamp = DateTime.now()
+          .toString()
+          .split('.')
+          .first
+          .replaceAll(':', '-')
+          .replaceAll(' ', '_');
+
+      final String fileName = 'Proof_${timestamp}_${file.name}';
       final String path = '$folderPath/$fileName';
 
       final String? url = await uploadFile(file: file, path: path);

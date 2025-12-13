@@ -148,7 +148,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           Expanded(
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -171,7 +172,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           hintText: 'Enter 6-digit OTP',
                           filled: true,
                           fillColor: Colors.grey[200],
-                          prefixIcon: const Icon(Icons.vpn_key, color: Color(0xFF1976D2)),
+                          prefixIcon: const Icon(Icons.vpn_key,
+                              color: Color(0xFF1976D2)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                             borderSide: const BorderSide(color: Colors.grey),
@@ -182,15 +184,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF1976D2), width: 2),
                           ),
                           errorBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.red, width: 2),
+                            borderSide:
+                                const BorderSide(color: Colors.red, width: 2),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.red, width: 2),
+                            borderSide:
+                                const BorderSide(color: Colors.red, width: 2),
                           ),
                           errorStyle: const TextStyle(
                             fontSize: 14,
@@ -206,7 +211,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         validator: (value) {
                           debugPrint('🔍 Validating OTP: "$value"');
                           if (value == null || value.length != 6) {
-                            debugPrint('❌ OTP invalid: length=${value?.length}');
+                            debugPrint(
+                                '❌ OTP invalid: length=${value?.length}');
                             return 'Enter a 6-digit OTP';
                           }
                           debugPrint('✅ OTP valid');
@@ -217,7 +223,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : () => _submitForm(args),
+                          onPressed:
+                              _isLoading ? null : () => _submitForm(args),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             backgroundColor: const Color(0xFF1976D2),
@@ -227,7 +234,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             elevation: 5,
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Verify & Complete',
                                   style: TextStyle(

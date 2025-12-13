@@ -256,8 +256,6 @@
 //   }
 // }
 
-
-
 // lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -294,10 +292,12 @@ class AuthProvider with ChangeNotifier {
   String get displayNameOrUsername {
     final profile = _userProfile;
     final profileDisplay = profile?.displayName?.trim();
-    if (profileDisplay != null && profileDisplay.isNotEmpty) return profileDisplay;
+    if (profileDisplay != null && profileDisplay.isNotEmpty)
+      return profileDisplay;
 
     final profileUsername = profile?.username?.trim();
-    if (profileUsername != null && profileUsername.isNotEmpty) return profileUsername;
+    if (profileUsername != null && profileUsername.isNotEmpty)
+      return profileUsername;
 
     final firebaseName = _auth.currentUser?.displayName?.trim();
     if (firebaseName != null && firebaseName.isNotEmpty) return firebaseName;
@@ -316,7 +316,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     if (firebaseUser != null) {
-      debugPrint('AuthProvider: auth state changed -> user uid=${firebaseUser.uid}');
+      debugPrint(
+          'AuthProvider: auth state changed -> user uid=${firebaseUser.uid}');
       try {
         await _loadUserProfile(firebaseUser.uid);
       } catch (e, st) {
@@ -337,39 +338,59 @@ class AuthProvider with ChangeNotifier {
 
     try {
       debugPrint('AuthProvider: loading profile for uid=$uid');
-      final docRef = _firestore.collection('users').doc(uid);
-      final doc = await docRef.get();
-      debugPrint('AuthProvider: firestore get completed for uid=$uid, exists=${doc.exists}');
-      if (doc.exists) {
+      // Changed from doc(uid) to query where('uid' == uid) because we now use custom document IDs
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('uid', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      debugPrint(
+          'AuthProvider: firestore query completed for uid=$uid, found=${querySnapshot.docs.isNotEmpty}');
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final doc = querySnapshot.docs.first;
+        final docRef = doc.reference;
+
         try {
           _userProfile = UserProfile.fromFirestore(doc);
-          debugPrint('AuthProvider: parsed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
+          debugPrint(
+              'AuthProvider: parsed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
 
           // If profile fields are missing, try to backfill from FirebaseAuth (or email local-part)
           final updates = <String, dynamic>{};
           final firebaseName = _auth.currentUser?.displayName?.trim();
           final email = _auth.currentUser?.email;
 
-          if ((_userProfile?.displayName == null || _userProfile!.displayName!.trim().isEmpty) && firebaseName != null && firebaseName.isNotEmpty) {
+          if ((_userProfile?.displayName == null ||
+                  _userProfile!.displayName!.trim().isEmpty) &&
+              firebaseName != null &&
+              firebaseName.isNotEmpty) {
             updates['displayName'] = firebaseName;
           }
 
-          if ((_userProfile?.username == null || _userProfile!.username!.trim().isEmpty) && email != null && email.isNotEmpty) {
+          if ((_userProfile?.username == null ||
+                  _userProfile!.username!.trim().isEmpty) &&
+              email != null &&
+              email.isNotEmpty) {
             final localPart = email.split('@').first;
             if (localPart.isNotEmpty) updates['username'] = localPart;
           }
 
           if (updates.isNotEmpty) {
-            debugPrint('AuthProvider: backfilling profile for uid=$uid with $updates');
+            debugPrint(
+                'AuthProvider: backfilling profile for uid=$uid with $updates');
             try {
               await docRef.update(updates);
               final refreshed = await docRef.get();
               if (refreshed.exists) {
                 _userProfile = UserProfile.fromFirestore(refreshed);
-                debugPrint('AuthProvider: refreshed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
+                debugPrint(
+                    'AuthProvider: refreshed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
               }
             } catch (e, st) {
-              debugPrint('AuthProvider: failed to backfill profile for uid=$uid -> $e\n$st');
+              debugPrint(
+                  'AuthProvider: failed to backfill profile for uid=$uid -> $e\n$st');
             }
           }
         } catch (e, st) {
@@ -379,18 +400,18 @@ class AuthProvider with ChangeNotifier {
       } else {
         _userProfile = null;
       }
-    } catch (e) {
-      debugPrint('AuthProvider: error loading profile for uid=$uid -> $e');
+    } catch (e, st) {
+      debugPrint('AuthProvider: error loading profile for uid=$uid -> $e\n$st');
       _userProfile = null;
     }
 
     _isProfileLoading = false;
     notifyListeners();
   }
-  Future<void> loadUserProfile(String uid) async {
-  return await _loadUserProfile(uid);
-}
 
+  Future<void> loadUserProfile(String uid) async {
+    return await _loadUserProfile(uid);
+  }
 
   // ── EMAIL SIGN IN ─────────────────────────────────────────────────
   Future<UserCredential?> signInWithEmail(String email, String password) async {
@@ -543,7 +564,23 @@ class AuthProvider with ChangeNotifier {
     // Remove any keys with null values so we don't store nulls in Firestore
     data.removeWhere((key, value) => value == null);
 
-    await _firestore.collection('users').doc(uid).set(data);
+    // 1. Generate your custom ID: Dharma_Name_Date_Time
+    // Sanitizing the string to be safe for filenames/IDs (replacing spaces with underscores)
+    final safeName = (displayName ?? 'User').replaceAll(' ', '_');
+    final safeDate = DateTime.now()
+        .toString()
+        .replaceAll(' ', '_')
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+    String dharmaId = "Dharma_${safeName}_$safeDate";
+
+    debugPrint('AuthProvider: Creating user with custom ID: $dharmaId');
+
+    // 2. Use it as the document name
+    await _firestore.collection('users').doc(dharmaId).set(data);
+
+    // 3. Reload profile to confirm (this will use the new _loadUserProfile logic)
     await _loadUserProfile(uid);
   }
 }
