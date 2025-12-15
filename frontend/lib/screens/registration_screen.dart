@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart'; // Add this for date formatting
-
+import 'package:intl/intl.dart'; 
 import 'package:Dharma/l10n/app_localizations.dart';
+
+
+import 'package:Dharma/utils/validators.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -237,7 +240,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return localizations?.pleaseEnterName ?? 'Please enter your name';
                         }
-                        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                        if (!Validators.isValidName(value)) {
                           return localizations?.nameOnlyLetters ?? 'Name can only contain letters and spaces';
                         }
                         return null;
@@ -289,9 +292,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return localizations?.pleaseEnterEmail ?? 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!Validators.isValidEmail(value)) {
                           return localizations?.pleaseEnterValidEmail ?? 'Please enter a valid email';
                         }
+                  
                         return null;
                       },
                     ),
@@ -341,7 +345,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return localizations?.pleaseEnterPhone ?? 'Please enter your phone number';
                         }
-                        if (!RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(value)) {
+                        if (!Validators.isValidIndianPhone(value)) {
+
                           return localizations?.pleaseEnterValidPhone ?? 'Please enter a valid phone number';
                         }
                         return null;
@@ -394,8 +399,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return localizations?.pleaseSelectDOB ?? 'Please select your date of birth';
                         }
-                        if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
-                          return localizations?.enterValidDateFormat ?? 'Enter date in YYYY-MM-DD format';
+                       if (!Validators.isValidDOB(value)) {
+
+                          return localizations?.enterValidDateFormat ?? 'Age must be between 18 and 120 years';;
                         }
                         return null;
                       },

@@ -18,13 +18,13 @@ class AppLocalizationsTe extends AppLocalizations {
   
   
   @override
-  String get welcomeDescription => 'ఆంధ్ర ప్రదేశ్ పోలీస్ రికార్డులు, నిర్వహణ మరియు విశ్లేషణల కోసం డిజిటల్ కేంద్రం';
+  String get welcomeDescription => 'ఆంధ్ర ప్రదేశ్ పోలీస్ రికార్డులు, నిర్వహణ మరియు విశ్లేషణల కోసం డిజిటల్ కేంద్రం.';
 
   @override
   String get loginAs => 'లాగిన్ అవ్వండి';
 
   @override
-  String get registerAs => 'గా నమోదు చేయండి';
+  String get registerAs => 'నమోదు చేయండి';
 
   @override
   String get citizen => 'పౌరుడు';

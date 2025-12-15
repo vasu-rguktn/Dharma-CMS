@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
-
+import 'package:Dharma/utils/validators.dart';
 class AddressFormScreen extends StatefulWidget {
   const AddressFormScreen({super.key});
 
@@ -15,11 +15,41 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   bool _prefilledFromArgs = false;
   final _houseController = TextEditingController();
   final _cityController = TextEditingController();
-  final _districtController = TextEditingController();
-  final _stateController = TextEditingController();
-  final _countryController = TextEditingController();
+  
+
   final _pincodeController = TextEditingController();
   final _policeStationController = TextEditingController();
+
+
+   String? _selectedDistrict;
+
+final List<String> _apDistricts = [
+  'Alluri Sitharama Raju',
+  'Anakapalli',
+  'Anantapur',
+  'Annamayya',
+  'Bapatla',
+  'Chittoor',
+  'East Godavari',
+  'Eluru',
+  'Guntur',
+  'Kadapa',
+  'Kakinada',
+  'Konaseema',
+  'Krishna',
+  'Kurnool',
+  'Manyam',
+  'Nandyal',
+  'NTR',
+  'Palnadu',
+  'Prakasam',
+  'Sri Sathya Sai',
+  'Srikakulam',
+  'Tirupati',
+  'Visakhapatnam',
+  'Vizianagaram',
+  'West Godavari',
+]..sort();
 
   void _submitForm(Map<String, dynamic>? personalData, String? userType) {
     final localizations = AppLocalizations.of(context);
@@ -35,9 +65,9 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       final addressData = {
         'houseNo': _houseController.text.trim(),
         'address': _cityController.text.trim(),
-        'district': _districtController.text.trim(),
-        'state': _stateController.text.trim(),
-        'country': _countryController.text.trim(),
+        'district': _selectedDistrict,
+
+        
         'pincode': _pincodeController.text.trim(),
         'policestation': _policeStationController.text.trim(),
       };
@@ -86,9 +116,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     if (!_prefilledFromArgs && addressArgs != null) {
       _houseController.text = addressArgs['houseNo'] ?? _houseController.text;
       _cityController.text = addressArgs['address'] ?? _cityController.text;
-      _districtController.text = addressArgs['district'] ?? _districtController.text;
-      _stateController.text = addressArgs['state'] ?? _stateController.text;
-      _countryController.text = addressArgs['country'] ?? _countryController.text;
+     _selectedDistrict = addressArgs['district'];
+
       _pincodeController.text = addressArgs['pincode'] ?? _pincodeController.text;
       _policeStationController.text = addressArgs['policestation'] ?? _policeStationController.text;
       _prefilledFromArgs = true;
@@ -259,148 +288,53 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     ),
                     const SizedBox(height: 20),
                     // District Field
-                    TextFormField(
-                      controller: _districtController,
-                      decoration: InputDecoration(
-                        labelText: localizations?.district ?? 'District',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.map, color: Colors.black),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
-                      ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return localizations?.enterDistrict ?? 'Enter your district';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+  value: _selectedDistrict,
+  decoration: InputDecoration(
+    labelText: localizations?.district ?? 'District',
+    prefixIcon: const Icon(Icons.map),
+    filled: true,                     // ✅ add
+    fillColor: Colors.white,           // ✅ add
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: Colors.grey[300]!),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.black, width: 2),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.red, width: 2),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Colors.red, width: 2),
+    ),
+  ),
+  items: _apDistricts
+      .map(
+        (district) => DropdownMenuItem(
+          value: district,
+          child: Text(district),
+        ),
+      )
+      .toList(),
+  onChanged: (value) {
+    setState(() {
+      _selectedDistrict = value;
+    });
+  },
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return localizations?.enterDistrict ?? 'Select your district';
+    }
+    return null;
+  },
+),
+
                     // State Field
-                    TextFormField(
-                      controller: _stateController,
-                      decoration: InputDecoration(
-                        labelText: localizations?.state ?? 'State',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.location_on, color: Colors.black),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
-                      ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return localizations?.enterState ?? 'Enter your state';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    // Country Field
-                    TextFormField(
-                      controller: _countryController,
-                      decoration: InputDecoration(
-                        labelText: localizations?.country ?? 'Country',
-                        labelStyle: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.public, color: Colors.black),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 20.0,
-                          horizontal: 16.0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
-                      ),
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return localizations?.enterCountry ?? 'Enter your country';
-                        }
-                        return null;
-                      },
-                    ),
+                    
                     const SizedBox(height: 20),
                     // Pincode Field
                     TextFormField(
@@ -447,9 +381,11 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return localizations?.enterPincode ?? 'Please enter your pincode';
                         }
-                        if (!RegExp(r'^\d{6}$').hasMatch(value)) {
-                          return localizations?.enterValidPincode ?? 'Enter a valid 6-digit pincode';
-                        }
+                       if (!Validators.isValidAndhraPradeshPincode(value)) {
+  return localizations?.enterValidPincode ??
+      'Enter a valid Andhra Pradesh pincode';
+}
+
                         return null;
                       },
                     ),
@@ -515,9 +451,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                                 final currentAddress = {
                                   'houseNo': _houseController.text.trim(),
                                   'address': _cityController.text.trim(),
-                                  'district': _districtController.text.trim(),
-                                  'state': _stateController.text.trim(),
-                                  'country': _countryController.text.trim(),
+                                  'district': _selectedDistrict,
                                   'pincode': _pincodeController.text.trim(),
                                   'policestation': _policeStationController.text.trim(),
                                 };
@@ -577,9 +511,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   void dispose() {
     _houseController.dispose();
     _cityController.dispose();
-    _districtController.dispose();
-    _stateController.dispose();
-    _countryController.dispose();
+    
     _pincodeController.dispose();
     _policeStationController.dispose();
     super.dispose();
