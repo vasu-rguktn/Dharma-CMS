@@ -203,16 +203,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _showRegisterBottomSheet(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _BottomSheetContent(
-        title: "Register as",
+        title: localizations.registerAs ?? "Register as",
         orangeColor: WelcomeScreen.orange,
         options: [
-          _OptionItem(label: "Citizen", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'citizen'}); }),
-          _OptionItem(label: "Police", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'police'}); }),
+          _OptionItem(label:localizations.citizen ?? "Citizen", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'citizen'}); }),
+          _OptionItem(label:localizations.police ?? "Police", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'police'}); }),
         ],
       ),
     );

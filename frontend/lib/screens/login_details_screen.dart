@@ -89,8 +89,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           houseNo: addressData['houseNo'] as String?,
           address: addressData['address'] as String?,
           district: addressData['district'] as String?,
-          state: addressData['state'] as String?,
-          country: addressData['country'] as String?,
+          
           pincode: addressData['pincode'] as String?,
           username: _usernameController.text,
           dob: personalData['dob'] as String?,

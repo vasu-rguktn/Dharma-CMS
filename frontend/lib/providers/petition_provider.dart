@@ -134,9 +134,6 @@
 //   }
 // }
 
-
-
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -149,7 +146,7 @@ class PetitionProvider with ChangeNotifier {
   List<Petition> _petitions = [];
   bool _isLoading = false;
   int _petitionCount = 0;
-  
+
   // Separate stats to avoid collisions
   Map<String, int> _globalStats = {
     'total': 0,
@@ -168,10 +165,10 @@ class PetitionProvider with ChangeNotifier {
   List<Petition> get petitions => _petitions;
   bool get isLoading => _isLoading;
   int get petitionCount => _petitionCount;
-  
+
   Map<String, int> get globalStats => _globalStats;
   Map<String, int> get userStats => _userStats;
-  
+
   // Legacy getter for backward compatibility (returns global)
   Map<String, int> get stats => _globalStats;
 
@@ -203,7 +200,7 @@ class PetitionProvider with ChangeNotifier {
   Future<void> fetchPetitionStats({String? userId}) async {
     try {
       debugPrint('🔍 fetchPetitionStats called with userId: $userId');
-      
+
       final collection = _firestore.collection('petitions');
 
       // Base query
@@ -229,17 +226,23 @@ class PetitionProvider with ChangeNotifier {
         final data = doc.data() as Map<String, dynamic>;
         final policeStatus = data['policeStatus'] as String?;
         final docUserId = data['userId'];
-        
-        debugPrint('  📄 Doc ${doc.id}: userId=$docUserId, policeStatus=$policeStatus');
+
+        debugPrint(
+            '  📄 Doc ${doc.id}: userId=$docUserId, policeStatus=$policeStatus');
 
         if (policeStatus != null) {
           final statusLower = policeStatus.toLowerCase();
-          
-          if (statusLower.contains('close') || statusLower.contains('resolve') || statusLower.contains('reject')) {
+
+          if (statusLower.contains('close') ||
+              statusLower.contains('resolve') ||
+              statusLower.contains('reject')) {
             closed++;
-          } else if (statusLower.contains('progress') || statusLower.contains('investigation')) {
+          } else if (statusLower.contains('progress') ||
+              statusLower.contains('investigation')) {
             inProgress++;
-          } else if (statusLower.contains('receive') || statusLower.contains('pending') || statusLower.contains('acknowledge')) {
+          } else if (statusLower.contains('receive') ||
+              statusLower.contains('pending') ||
+              statusLower.contains('acknowledge')) {
             received++;
           } else {
             received++; // Unknown status -> pending
@@ -266,7 +269,7 @@ class PetitionProvider with ChangeNotifier {
         _petitionCount = total;
         debugPrint('🔍 Updated _globalStats: $_globalStats');
       }
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint("❌ Error fetching petition stats: $e");
@@ -290,23 +293,50 @@ class PetitionProvider with ChangeNotifier {
 
       // Upload Handwritten Document
       if (handwrittenFile != null) {
-        final path =
-            'petitions/${petition.userId}/handwritten/${DateTime.now().millisecondsSinceEpoch}_${handwrittenFile.name}';
+        // Generate readable timestamp
+        final timestamp = DateTime.now()
+            .toString()
+            .split('.')
+            .first
+            .replaceAll(':', '-')
+            .replaceAll(' ', '_');
+        final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
+
+        final path = 'petitions/${petition.userId}/handwritten/$fileName';
         handwrittenUrl =
             await StorageService.uploadFile(file: handwrittenFile, path: path);
       }
 
       // Upload Proof Documents
       if (proofFiles != null && proofFiles.isNotEmpty) {
+        // Generate readable timestamp for folder
+        final timestamp = DateTime.now()
+            .toString()
+            .split('.')
+            .first
+            .replaceAll(':', '-')
+            .replaceAll(' ', '_');
         final folderPath =
-            'petitions/${petition.userId}/proofs/${DateTime.now().millisecondsSinceEpoch}';
+            'petitions/${petition.userId}/proofs/Proofs_$timestamp';
+
         proofUrls = await StorageService.uploadMultipleFiles(
             files: proofFiles, folderPath: folderPath);
       }
 
-      // Create petition with uploaded file URLs
+      // Generate Custom Petition ID
+      final safeName =
+          (petition.petitionerName ?? 'Petitioner').replaceAll(' ', '_');
+      final safeDate = DateTime.now()
+          .toString()
+          .replaceAll(' ', '_')
+          .replaceAll(':', '-')
+          .split('.')
+          .first;
+      String petitionCustomId = "Petition_${safeName}_$safeDate";
+
+      // Create petition with uploaded file URLs and new Custom ID
       final newPetition = Petition(
-        id: petition.id,
+        id: petitionCustomId, // Set the ID here
         title: petition.title,
         type: petition.type,
         status: petition.status,
@@ -330,7 +360,11 @@ class PetitionProvider with ChangeNotifier {
         updatedAt: petition.updatedAt,
       );
 
-      await _firestore.collection('petitions').add(newPetition.toMap());
+      // Use .set() with the custom ID instead of .add()
+      await _firestore
+          .collection('petitions')
+          .doc(petitionCustomId)
+          .set(newPetition.toMap());
       await fetchPetitions(petition.userId);
       // Update stats for the user
       await fetchPetitionStats(userId: petition.userId);

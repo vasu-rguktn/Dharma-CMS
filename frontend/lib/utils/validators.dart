@@ -6,7 +6,7 @@ class Validators {
     ).hasMatch(email.trim());
   }
 
-  // Indian phone number (10 digits or +91)
+  // Indian phone number
   static bool isValidIndianPhone(String phone) {
     return RegExp(r'^(\+91)?[6-9]\d{9}$').hasMatch(phone.trim());
   }
@@ -21,7 +21,7 @@ class Validators {
     return RegExp(r'^[1-9][0-9]{5}$').hasMatch(pincode.trim());
   }
 
-  // DOB validation (18–120 years, no future date)
+  // DOB validation
   static bool isValidDOB(String dob) {
     try {
       final date = DateTime.parse(dob.trim());
@@ -39,5 +39,10 @@ class Validators {
     } catch (_) {
       return false;
     }
+  }
+
+  // ✅ ADD THIS INSIDE THE CLASS (NOT BELOW IT)
+  static bool isValidAndhraPradeshPincode(String pincode) {
+    return RegExp(r'^(51|52|53)\d{4}$').hasMatch(pincode.trim());
   }
 }

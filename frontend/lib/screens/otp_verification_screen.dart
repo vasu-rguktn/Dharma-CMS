@@ -15,7 +15,8 @@ class OtpVerificationScreen extends StatefulWidget {
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> with CodeAutoFill {
+class _OtpVerificationScreenState extends State<OtpVerificationScreen>
+    with CodeAutoFill {
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
   bool _isLoading = false;
@@ -43,16 +44,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
       // Get app signature for SMS verification
       _appSignature = await SmsAutoFill().getAppSignature;
       debugPrint('📱 App Signature: $_appSignature');
-      
+
       // Request SMS permission
       final status = await Permission.sms.status;
       debugPrint('📋 Current SMS permission status: $status');
-      
+
       if (status.isDenied) {
         debugPrint('⚠️ SMS permission denied, requesting...');
         final result = await Permission.sms.request();
         debugPrint('📋 Permission request result: $result');
-        
+
         if (result.isGranted) {
           debugPrint('✅ SMS permission granted!');
           _listenForOtp();
@@ -115,7 +116,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
       debugPrint('👂 Starting to listen for OTP SMS...');
       listenForCode(); // From CodeAutoFill mixin
       debugPrint('✅ SMS listener started successfully');
-      
+
       // Also try the alternative method
       await SmsAutoFill().listenForCode();
       debugPrint('✅ SmsAutoFill listener started');
@@ -132,7 +133,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
       // Extract only digits from the code
       final digits = code!.replaceAll(RegExp(r'\D'), '');
       debugPrint('📩 Extracted digits: $digits');
-      
+
       if (digits.length >= 6) {
         final otp = digits.substring(0, 6);
         if (mounted) {
@@ -140,11 +141,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
             _otpController.text = otp;
           });
           debugPrint('✅ OTP auto-filled: $otp');
-          
+
           // Auto-submit the form after a brief delay
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted) {
-              final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
+              final args =
+                  GoRouterState.of(context).extra as Map<String, dynamic>?;
               _submitForm(args);
             }
           });
@@ -279,7 +281,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
           Expanded(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -313,7 +316,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
                         ),
                       ),
                       const SizedBox(height: 40),
-                      
+
                       // PIN Code Field with auto-fill support
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -356,7 +359,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
                           validator: (value) {
                             debugPrint('🔍 Validating OTP: "$value"');
                             if (value == null || value.length != 6) {
-                              debugPrint('❌ OTP invalid: length=${value?.length}');
+                              debugPrint(
+                                  '❌ OTP invalid: length=${value?.length}');
                               return 'Enter 6-digit OTP';
                             }
                             debugPrint('✅ OTP valid');
@@ -364,14 +368,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
                           },
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
-                      
+
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : () => _submitForm(args),
+                          onPressed:
+                              _isLoading ? null : () => _submitForm(args),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             backgroundColor: const Color(0xFF1976D2),
@@ -399,9 +404,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> with Code
                                 ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Resend OTP option
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,

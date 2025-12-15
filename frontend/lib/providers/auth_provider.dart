@@ -6,7 +6,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:Dharma/models/user_profile.dart';
 import 'package:Dharma/utils/validators.dart';
-
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -269,8 +268,7 @@ class AuthProvider with ChangeNotifier {
   String? houseNo,
   String? address,
   String? district,
-  String? state,
-  String? country,
+  
   String? pincode,
   String? stationName,
   String role = 'citizen',
@@ -309,8 +307,7 @@ class AuthProvider with ChangeNotifier {
     'houseNo': houseNo,
     'address': address,
     'district': district,
-    'state': state,
-    'country': country,
+    
     'pincode': pincode,
     'stationName': stationName,
     'role': role,

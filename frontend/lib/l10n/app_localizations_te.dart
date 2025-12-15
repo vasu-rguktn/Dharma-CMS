@@ -24,7 +24,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get loginAs => 'లాగిన్ అవ్వండి';
 
   @override
-  String get registerAs => 'గా నమోదు చేయండి';
+  String get registerAs => 'నమోదు చేయండి';
 
   @override
   String get citizen => 'పౌరుడు';
