@@ -1,7 +1,14 @@
-// lib/screens/legal_queries_screen.dart
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+
+import '../providers/legal_queries_provider.dart';
+import '../models/chat_message.dart';
+
+const Color orange = Color(0xFFFC633C);
 
 class LegalQueriesScreen extends StatefulWidget {
   const LegalQueriesScreen({super.key});
@@ -11,260 +18,293 @@ class LegalQueriesScreen extends StatefulWidget {
 }
 
 class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
-  final TextEditingController _queryController = TextEditingController();
-  final List<Map<String, String>> _queries = [];
+  final TextEditingController _controller = TextEditingController();
+  final SpeechToText _speech = SpeechToText();
+  final ImagePicker _imagePicker = ImagePicker();
 
-  @override
-  void dispose() {
-    _queryController.dispose();
-    super.dispose();
+  bool _isListening = false;
+
+  /* ---------------- VOICE ---------------- */
+  Future<void> _startListening() async {
+    final available = await _speech.initialize();
+    if (available) {
+      setState(() => _isListening = true);
+      _speech.listen(onResult: (r) {
+        setState(() => _controller.text = r.recognizedWords);
+      });
+    }
   }
 
-  void _submitQuery() {
-    if (_queryController.text.trim().isEmpty) return;
+  void _stopListening() {
+    _speech.stop();
+    setState(() => _isListening = false);
+  }
 
-    setState(() {
-      _queries.insert(0, {
-        'query': _queryController.text.trim(),
-        'status': AppLocalizations.of(context)!.answered,
-        'date': DateTime.now().toString().split(' ')[0],
-      });
-    });
+  /* ---------------- SEND ---------------- */
+  void _send() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
 
-    _queryController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFFFC633C),
-        content: Text(AppLocalizations.of(context)!.querySubmittedSuccessfully),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    context.read<LegalQueriesProvider>().sendMessage(text);
+    _controller.clear();
+  }
+
+  /* ---------------- ATTACHMENTS ---------------- */
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: orange),
+                title: const Text("Take Photo"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final image =
+                      await _imagePicker.pickImage(source: ImageSource.camera);
+                  if (image != null) {
+                    debugPrint("Camera image path: ${image.path}");
+                    // TODO: upload image
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo, color: orange),
+                title: const Text("Choose from Gallery"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final image = await _imagePicker.pickImage(
+                      source: ImageSource.gallery);
+                  if (image != null) {
+                    debugPrint("Gallery image path: ${image.path}");
+                    // TODO: upload image
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.attach_file, color: orange),
+                title: const Text("Upload File"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result =
+                      await FilePicker.platform.pickFiles(allowMultiple: false);
+                  if (result != null) {
+                    debugPrint(
+                        "File selected: ${result.files.single.name}");
+                    // TODO: upload file
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    const Color orange = Color(0xFFFC633C);
+  /* ---------------- CHAT BUBBLE ---------------- */
+  Widget _bubble(ChatMessage msg) {
+    final isUser = msg.sender == 'user';
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.all(14),
+        constraints: const BoxConstraints(maxWidth: 320),
+        decoration: BoxDecoration(
+          color: isUser ? orange : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER: Pure Orange Arrow + Title (very close)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 16, 24, 12),
-              child: Row(
-                children: [
-                  // PURE ORANGE ARROW — NO BACKGROUND CIRCLE
-                  GestureDetector(
-                    onTap: () => context.go('/dashboard'),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.arrow_back_rounded,
-                        color: orange,
-                        size: 32,
-                        shadows: const [
-                          Shadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Super tight gap — feels connected
-                  const SizedBox(width: 8),
-
-                  // Title
-                  Text(
-                    localizations.legalQueries,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
+            Text(
+              msg.text,
+              style: TextStyle(
+                color: isUser ? Colors.white : Colors.black87,
               ),
             ),
-
-            // Subtitle (aligned under title)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(56, 0, 24, 24),
-              child: Text(
-                localizations.askLegalQuestions,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey[700],
-                  height: 1.4,
-                ),
-              ),
-            ),
-
-            // MAIN CONTENT
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    // Submit Query Card
-                    Card(
-                      elevation: 6,
-                      shadowColor: Colors.black12,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.edit_note, color: orange, size: 26),
-                                const SizedBox(width: 10),
-                                Text(
-                                  localizations.submitAQuery,
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _queryController,
-                              maxLines: 5,
-                              decoration: InputDecoration(
-                                hintText: localizations.enterLegalQuestion,
-                                hintStyle: TextStyle(color: Colors.grey[500]),
-                                filled: true,
-                                fillColor: Colors.grey[50],
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.all(16),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: _submitQuery,
-                                icon: const Icon(Icons.send_rounded),
-                                label: Text(localizations.submitQuery, style: const TextStyle(fontSize: 16)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: orange,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Previous Queries Title
-                    Row(
-                      children: [
-                        Icon(Icons.history, color: orange, size: 24),
-                        const SizedBox(width: 8),
-                        Text(
-                          localizations.previousQueries,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Queries List
-                    Expanded(
-                      child: _queries.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.menu_book_rounded, size: 80, color: Colors.grey[300]),
-                                  const SizedBox(height: 20),
-                                  Text(
-                                    localizations.noQueriesYet,
-                                    style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(localizations.submitFirstQuery, style: TextStyle(color: Colors.grey[500])),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: _queries.length,
-                              itemBuilder: (context, index) {
-                                final query = _queries[index];
-                                return Card(
-                                  elevation: 4,
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.all(16),
-                                    leading: CircleAvatar(
-                                      backgroundColor: orange,
-                                      child: const Icon(Icons.gavel, color: Colors.white),
-                                    ),
-                                    title: Text(
-                                      query['query']!,
-                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        '${query['status']} • ${query['date']}',
-                                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                                      ),
-                                    ),
-                                    trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => AlertDialog(
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          title: Row(
-                                            children: [
-                                              Icon(Icons.question_answer, color: orange),
-                                              const SizedBox(width: 8),
-                                              Text(localizations.queryDetails),
-                                            ],
-                                          ),
-                                          content: SingleChildScrollView(child: Text(query['query']!)),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context),
-                                              child: Text(localizations.close, style: TextStyle(color: orange)),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 4),
+            Text(
+              DateFormat('hh:mm a').format(msg.timestamp),
+              style: TextStyle(
+                fontSize: 11,
+                color: isUser ? Colors.white70 : Colors.black45,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /* ---------------- UI ---------------- */
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<LegalQueriesProvider>();
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: orange,
+        title: const Text("Legal Assistant"),
+      ),
+
+      /* ---------------- DRAWER : CHAT HISTORY ---------------- */
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Chat History",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () async {
+                        await context
+                            .read<LegalQueriesProvider>()
+                            .createNewSession();
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              Expanded(
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: provider.chatSessionsStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    final sessions = snapshot.data!;
+                    if (sessions.isEmpty) {
+                      return const Center(
+                        child: Text("No previous chats"),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: sessions.length,
+                      itemBuilder: (_, index) {
+                        final session = sessions[index];
+                        return ListTile(
+                          leading: const Icon(Icons.chat),
+                          title: Text(session['title']),
+                          onTap: () {
+                            context
+                                .read<LegalQueriesProvider>()
+                                .openSession(session['id']);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+
+      /* ---------------- BODY ---------------- */
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<List<ChatMessage>>(
+              stream: provider.messagesStream(),
+              builder: (_, snap) {
+                if (!snap.hasData) {
+                  return const Center(
+                    child: Text("Ask your legal question"),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: snap.data!.length,
+                  itemBuilder: (_, i) => _bubble(snap.data![i]),
+                );
+              },
+            ),
+          ),
+
+          /* ---------------- INPUT BAR ---------------- */
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.black12)),
+            ),
+            child: Row(
+              children: [
+                // ➕ ATTACHMENTS
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  color: orange,
+                  onPressed: _showAttachmentOptions,
+                ),
+
+                // TEXT FIELD
+                Expanded(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      minLines: 1,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        hintText: "Ask a legal question...",
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // MIC
+                IconButton(
+                  icon: Icon(
+                    _isListening ? Icons.mic : Icons.mic_none,
+                    color: orange,
+                  ),
+                  onPressed:
+                      _isListening ? _stopListening : _startListening,
+                ),
+
+                // SEND
+                IconButton(
+                  icon: const Icon(Icons.arrow_upward),
+                  color: Colors.white,
+                  style:
+                      IconButton.styleFrom(backgroundColor: orange),
+                  onPressed: _send,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

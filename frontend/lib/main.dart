@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:Dharma/providers/settings_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:Dharma/providers/legal_queries_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => LegalQueriesProvider()),
+
         ChangeNotifierProxyProvider<AuthProvider, CaseProvider>(
           create: (_) => CaseProvider(),
           update: (_, auth, previous) => previous ?? CaseProvider(),
