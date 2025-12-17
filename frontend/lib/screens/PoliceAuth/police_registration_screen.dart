@@ -35,12 +35,18 @@ class _PoliceRegistrationScreenState
   Map<String, List<String>> _districtStations = {};
 
   final List<String> _ranks = const [
-    'Constable',
+    'Director General of Police',
+    'Additional Director General of Police',
+    'Inspector General of Police',
+    'Deputy Inspector General of Police',
+    'Superintendent of Police',
+    'Additional Superintendent of Police',
+    'Deputy Superintendent of Police',
+    'Inspector of Police',
+    'Sub Inspector of Police',
+    'Assistant Sub Inspector of Police',
     'Head Constable',
-    'Sub Inspector',
-    'Inspector',
-    'DSP',
-    'SP',
+    'Police Constable',
   ];
 
   @override
@@ -68,10 +74,109 @@ class _PoliceRegistrationScreenState
     }
   }
 
+  /* ================= SEARCHABLE DROPDOWN ================= */
+
+  Future<void> _openSearchableDropdown({
+    required String title,
+    required List<String> items,
+    required String? selectedValue,
+    required void Function(String value) onSelected,
+  }) async {
+    if (items.isEmpty) return;
+
+    final searchController = TextEditingController();
+    List<String> filtered = List.from(items);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        setModalState(() {
+                          filtered = items
+                              .where((e) => e
+                                  .toLowerCase()
+                                  .contains(value.toLowerCase()))
+                              .toList();
+                        });
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Expanded(
+                    child: Scrollbar(
+                      thumbVisibility: true,
+                      child: ListView.builder(
+                        itemCount: filtered.length,
+                        itemBuilder: (_, index) {
+                          final item = filtered[index];
+                          return ListTile(
+                            title: Text(item),
+                            trailing: item == selectedValue
+                                ? const Icon(Icons.check,
+                                    color: Colors.green)
+                                : null,
+                            onTap: () {
+                              onSelected(item);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   /* ================= SUBMIT ================= */
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedDistrict == null ||
+        _selectedStation == null ||
+        _selectedRank == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select all dropdown fields')),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
 
@@ -91,7 +196,6 @@ class _PoliceRegistrationScreenState
         const SnackBar(content: Text('Police registered successfully')),
       );
 
-      // ✅ After registration → go to police login
       context.go('/police-login');
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -105,15 +209,13 @@ class _PoliceRegistrationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final h = MediaQuery.of(context).size.height;
 
     return Scaffold(
       body: Column(
         children: [
-          // ───────── HEADER ─────────
           SizedBox(
-            height: screenHeight * 0.3,
-            width: double.infinity,
+            height: h * 0.3,
             child: Stack(
               children: [
                 SvgPicture.asset(
@@ -128,19 +230,15 @@ class _PoliceRegistrationScreenState
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/');
-                        }
-                      },
+        context.go('/'); // ✅ Always go to Home page
+      },
                     ),
                   ),
                 ),
                 Positioned(
+                  bottom: 0,
                   left: 0,
                   right: 0,
-                  bottom: 0,
                   child: Image.asset(
                     'assets/police_logo.png',
                     width: 120,
@@ -151,11 +249,9 @@ class _PoliceRegistrationScreenState
             ),
           ),
 
-          const SizedBox(height: 24),
-
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              padding: const EdgeInsets.all(24),
               child: _dataLoading
                   ? const Center(child: CircularProgressIndicator())
                   : Form(
@@ -169,13 +265,14 @@ class _PoliceRegistrationScreenState
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+
                           const SizedBox(height: 24),
 
                           _textField(
-                            controller: _nameController,
-                            label: 'Full Name',
-                            icon: Icons.person,
-                            validator: (v) =>
+                            _nameController,
+                            'Full Name',
+                            Icons.person,
+                            (v) =>
                                 Validators.isValidName(v ?? '')
                                     ? null
                                     : 'Invalid name',
@@ -184,10 +281,10 @@ class _PoliceRegistrationScreenState
                           const SizedBox(height: 20),
 
                           _textField(
-                            controller: _emailController,
-                            label: 'Email',
-                            icon: Icons.email,
-                            validator: (v) =>
+                            _emailController,
+                            'Email',
+                            Icons.email,
+                            (v) =>
                                 Validators.isValidEmail(v ?? '')
                                     ? null
                                     : 'Invalid email',
@@ -196,50 +293,72 @@ class _PoliceRegistrationScreenState
                           const SizedBox(height: 20),
 
                           _textField(
-                            controller: _passwordController,
-                            label: 'Password',
-                            icon: Icons.lock,
-                            obscure: true,
-                            validator: (v) =>
+                            _passwordController,
+                            'Password',
+                            Icons.lock,
+                            (v) =>
                                 Validators.isValidPassword(v ?? '')
                                     ? null
                                     : 'Min 8 chars, 1 number',
+                            obscure: true,
                           ),
 
                           const SizedBox(height: 20),
 
-                          _dropdown(
+                          _picker(
                             label: 'District',
                             value: _selectedDistrict,
-                            items: _districtStations.keys.toList(),
-                            onChanged: (v) {
-                              setState(() {
-                                _selectedDistrict = v;
-                                _selectedStation = null;
-                              });
+                            onTap: () {
+                              _openSearchableDropdown(
+                                title: 'Select District',
+                                items: _districtStations.keys.toList(),
+                                selectedValue: _selectedDistrict,
+                                onSelected: (v) {
+                                  setState(() {
+                                    _selectedDistrict = v;
+                                    _selectedStation = null;
+                                  });
+                                },
+                              );
                             },
                           ),
 
                           const SizedBox(height: 20),
 
-                          _dropdown(
+                          _picker(
                             label: 'Police Station',
                             value: _selectedStation,
-                            items: _selectedDistrict == null
-                                ? []
-                                : _districtStations[_selectedDistrict!]!,
-                            onChanged: (v) =>
-                                setState(() => _selectedStation = v),
+                            onTap: _selectedDistrict == null
+                                ? null
+                                : () {
+                                    _openSearchableDropdown(
+                                      title: 'Select Police Station',
+                                      items: _districtStations[
+                                          _selectedDistrict!]!,
+                                      selectedValue: _selectedStation,
+                                      onSelected: (v) {
+                                        setState(() =>
+                                            _selectedStation = v);
+                                      },
+                                    );
+                                  },
                           ),
 
                           const SizedBox(height: 20),
 
-                          _dropdown(
+                          _picker(
                             label: 'Rank',
                             value: _selectedRank,
-                            items: _ranks,
-                            onChanged: (v) =>
-                                setState(() => _selectedRank = v),
+                            onTap: () {
+                              _openSearchableDropdown(
+                                title: 'Select Rank',
+                                items: _ranks,
+                                selectedValue: _selectedRank,
+                                onSelected: (v) {
+                                  setState(() => _selectedRank = v);
+                                },
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 30),
@@ -270,8 +389,6 @@ class _PoliceRegistrationScreenState
                                     ),
                             ),
                           ),
-
-                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
@@ -284,12 +401,12 @@ class _PoliceRegistrationScreenState
 
   /* ================= HELPERS ================= */
 
-  Widget _textField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
+  Widget _textField(
+    TextEditingController controller,
+    String label,
+    IconData icon,
+    String? Function(String?) validator, {
     bool obscure = false,
-    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -298,7 +415,6 @@ class _PoliceRegistrationScreenState
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -306,27 +422,33 @@ class _PoliceRegistrationScreenState
     );
   }
 
-  Widget _dropdown({
+  /// ✅ SAFE PICKER (NO onTap CRASH)
+  Widget _picker({
     required String label,
     required String? value,
-    required List<String> items,
-    required void Function(String?) onChanged,
+    required VoidCallback? onTap,
   }) {
-    return DropdownButtonFormField<String>(
-      isExpanded: true,
-      value: value,
-      items: items
-          .map((e) =>
-              DropdownMenuItem(value: e, child: Text(e)))
-          .toList(),
-      onChanged: items.isEmpty ? null : onChanged,
-      validator: (v) => v == null ? 'Required' : null,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.arrow_drop_down),
-        filled: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap == null ? null : () => onTap(),
+      child: IgnorePointer(
+        ignoring: onTap == null,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: const Icon(Icons.arrow_drop_down),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            value ?? 'Select $label',
+            style: TextStyle(
+              color: onTap == null ? Colors.grey : Colors.black,
+              fontSize: 16,
+            ),
+          ),
         ),
       ),
     );
