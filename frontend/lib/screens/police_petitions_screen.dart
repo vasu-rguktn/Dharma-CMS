@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/models/Petition.dart';   // ✅ Correct model import
 import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/providers/police_auth_provider.dart';
 
 class PolicePetitionsScreen extends StatelessWidget {
   const PolicePetitionsScreen({super.key});
@@ -282,86 +283,103 @@ class PolicePetitionsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('All Petitions')),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('petitions')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+Widget build(BuildContext context) {
+  final policeProvider = context.watch<PoliceAuthProvider>();
+  final policeStation = policeProvider.policeProfile?['stationName'];
 
-          final petitions =
-              snapshot.data!.docs.map((d) => Petition.fromFirestore(d)).toList();
-
-          if (petitions.isEmpty) {
-            return const Center(child: Text('No petitions found.'));
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: petitions.length,
-            itemBuilder: (context, index) {
-              final p = petitions[index];
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  onTap: () => _showPetitionDetails(context, p),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                p.title,
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            if (p.policeStatus != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: _getStringStatusColor(p.policeStatus!),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  p.policeStatus!,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          p.petitionerName,
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Created: ${_formatTimestamp(p.createdAt)}',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+  if (policeStation == null) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Petitions – $policeStation'),
+    ),
+    body: StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('petitions')
+          .where('stationName', isEqualTo: policeStation)
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('No petitions for your station'));
+        }
+
+        final petitions = snapshot.data!.docs
+            .map((d) => Petition.fromFirestore(d))
+            .toList();
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: petitions.length,
+          itemBuilder: (context, index) {
+            final p = petitions[index];
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                onTap: () => _showPetitionDetails(context, p),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              p.title,
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          if (p.policeStatus != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _getStringStatusColor(p.policeStatus!),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                p.policeStatus!,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        p.petitionerName,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Created: ${_formatTimestamp(p.createdAt)}',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ),
+  );
+}
 }

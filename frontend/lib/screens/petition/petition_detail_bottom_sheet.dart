@@ -238,6 +238,63 @@ class _DetailContent extends StatelessWidget {
           _buildDetailRow(localizations.firNumber, petition.firNumber!),
 
         const SizedBox(height: 16),
+        
+
+
+const SizedBox(height: 8),
+
+// ================= INCIDENT DETAILS =================
+Text(
+  'Incident Details',
+  style: theme.textTheme.titleMedium?.copyWith(
+    fontWeight: FontWeight.bold,
+  ),
+),
+
+const SizedBox(height: 8),
+
+if (petition.incidentAddress != null &&
+    petition.incidentAddress!.isNotEmpty)
+  _buildDetailRow(
+    'Incident Address',
+    petition.incidentAddress!,
+  ),
+
+if (petition.incidentDate != null)
+  _buildDetailRow(
+    'Incident Date',
+    petition.incidentDate!
+        .toDate()
+        .toLocal()
+        .toString()
+        .split(' ')[0],
+  ),
+
+const SizedBox(height: 16),
+
+// ================= JURISDICTION DETAILS =================
+Text(
+  'Jurisdiction for Filing Complaint',
+  style: theme.textTheme.titleMedium?.copyWith(
+    fontWeight: FontWeight.bold,
+  ),
+),
+
+const SizedBox(height: 8),
+
+if (petition.district != null && petition.district!.isNotEmpty)
+  _buildDetailRow(
+    'District',
+    petition.district!,
+  ),
+
+if (petition.stationName != null && petition.stationName!.isNotEmpty)
+  _buildDetailRow(
+    'Police Station',
+    petition.stationName!,
+  ),
+
+
         Text(localizations.grounds, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text(petition.grounds),

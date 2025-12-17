@@ -41,11 +41,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(),
         ),
+         ChangeNotifierProvider<PoliceAuthProvider>(
+  create: (_) => PoliceAuthProvider()..loadPoliceProfileIfLoggedIn(),
+),
 
         /// 🔹 Police Auth (NEW)
-        ChangeNotifierProvider<PoliceAuthProvider>(
-          create: (_) => PoliceAuthProvider(),
-        ),
+        
 
         ChangeNotifierProvider<SettingsProvider>(
           create: (_) => SettingsProvider(),
