@@ -6,6 +6,11 @@ class PoliceAuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Logged-in police profile (cached)
+  Map<String, dynamic>? _policeProfile;
+
+  Map<String, dynamic>? get policeProfile => _policeProfile;
+
   /* =====================================================
    * POLICE REGISTRATION
    * ===================================================== */
@@ -19,16 +24,15 @@ class PoliceAuthProvider with ChangeNotifier {
     required String rank,
   }) async {
     try {
-      // 1️⃣ Create Firebase Auth account
-      UserCredential credential =
-          await _auth.createUserWithEmailAndPassword(
+      // 1️⃣ Create Auth account
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       final uid = credential.user!.uid;
 
-      // 2️⃣ Store police profile in 'police' collection (for police-specific data)
+      // 2️⃣ Save ONLY in police collection
       await _firestore.collection('police').doc(uid).set({
         'uid': uid,
         'displayName': name,
@@ -37,26 +41,13 @@ class PoliceAuthProvider with ChangeNotifier {
         'stationName': stationName,
         'rank': rank,
         'role': 'police',
-        'isApproved': true, // keep true for now
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // 3️⃣ Also store in 'users' collection for consistency with AuthProvider
-      await _firestore.collection('users').doc(uid).set({
-        'uid': uid,
-        'displayName': name,
-        'email': email,
-        'district': district,
-        'stationName': stationName,
-        'rank': rank,
-        'role': 'police',
+        'isApproved': true, // later admin controlled
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthError(e));
-    } catch (e) {
+    } catch (_) {
       throw Exception('Police registration failed');
     }
   }
@@ -70,45 +61,61 @@ class PoliceAuthProvider with ChangeNotifier {
     required String password,
   }) async {
     try {
-      // 1️⃣ Firebase Auth login
-      UserCredential credential =
-          await _auth.signInWithEmailAndPassword(
+      // 1️⃣ Login
+      final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       final uid = credential.user!.uid;
 
-      // 2️⃣ Verify police profile exists
-      final doc =
-          await _firestore.collection('police').doc(uid).get();
+      // 2️⃣ Fetch police profile
+      final doc = await _firestore.collection('police').doc(uid).get();
 
       if (!doc.exists) {
         await _auth.signOut();
         throw Exception('Not a police account');
       }
 
+      final data = doc.data()!;
+
       // 3️⃣ Approval check
-      if (doc.data()?['isApproved'] != true) {
+      if (data['isApproved'] != true) {
         await _auth.signOut();
         throw Exception('Police account not approved');
       }
 
-      // ✅ SUCCESS — DO NOT update UI state here
-      // UI state is handled by AuthProvider
+      // 4️⃣ Cache police profile
+      _policeProfile = data;
+      notifyListeners();
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthError(e));
     } catch (e) {
       rethrow;
     }
   }
+  Future<void> loadPoliceProfileIfLoggedIn() async {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  final doc =
+      await _firestore.collection('police').doc(user.uid).get();
+
+  if (doc.exists) {
+    _policeProfile = doc.data();
+    notifyListeners();
+  }
+}
+
 
   /* =====================================================
    * LOGOUT
    * ===================================================== */
 
   Future<void> logout() async {
+    _policeProfile = null;
     await _auth.signOut();
+    notifyListeners();
   }
 
   /* =====================================================

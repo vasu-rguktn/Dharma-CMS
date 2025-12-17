@@ -9,6 +9,10 @@ import 'package:Dharma/services/local_storage_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
+
 import 'ocr_service.dart';
 
 class CreatePetitionForm extends StatefulWidget {
@@ -34,28 +38,170 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   final _addressController = TextEditingController();
   final _groundsController = TextEditingController();
   final _prayerReliefController = TextEditingController();
+  final _districtController = TextEditingController();
+final _stationController = TextEditingController();
+
+  // INCIDENT DETAILS
+final _incidentAddressController = TextEditingController();
+DateTime? _incidentDate;
+
+// District & Police Station
+String? _selectedDistrict;
+String? _selectedStation;
+
 
   bool _isSubmitting = false;
+  Map<String, List<String>> _districtStations = {};
+bool _dataLoading = true;
+
   List<PlatformFile> _pickedFiles = []; // Handwritten documents
   List<PlatformFile> _proofFiles = []; // Related proof documents
 
   final _ocrService = OcrService();
 
   @override
-  void initState() {
-    super.initState();
-    _ocrService.init();
+void initState() {
+  super.initState();
+  _ocrService.init();
+  _loadDistrictStations();
 
-    // Auto-fill form if initial data exists
-    final data = widget.initialData;
-    if (data != null) {
-      _titleController.text = data['complaintType']?.toString() ?? '';
-      _petitionerNameController.text = data['fullName']?.toString() ?? '';
-      _phoneNumberController.text = data['phone']?.toString() ?? '';
-      _addressController.text = data['address']?.toString() ?? '';
-      _groundsController.text = data['details']?.toString() ?? '';
-    }
+  final data = widget.initialData;
+  if (data != null) {
+    _titleController.text = data['complaintType']?.toString() ?? '';
+    _petitionerNameController.text = data['fullName']?.toString() ?? '';
+    _phoneNumberController.text = data['phone']?.toString() ?? '';
+    _addressController.text = data['address']?.toString() ?? '';
+    _groundsController.text = data['details']?.toString() ?? '';
   }
+}
+Future<void> _loadDistrictStations() async {
+  try {
+    final jsonStr = await rootBundle
+        .loadString('assets/data/district_police_stations.json');
+
+    final Map<String, dynamic> data = json.decode(jsonStr);
+
+    setState(() {
+      _districtStations =
+          data.map((k, v) => MapEntry(k, List<String>.from(v)));
+      _dataLoading = false;
+    });
+  } catch (e) {
+    debugPrint('Error loading district data: $e');
+    setState(() => _dataLoading = false);
+  }
+}
+Future<void> _openSearchableDropdown({
+  required String title,
+  required List<String> items,
+  required String? selectedValue,
+  required void Function(String value) onSelected,
+}) async {
+  if (items.isEmpty) return;
+
+  final searchController = TextEditingController();
+  List<String> filtered = List.from(items);
+
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.65,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'Search...',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setModalState(() {
+                        filtered = items
+                            .where((e) => e
+                                .toLowerCase()
+                                .contains(value.toLowerCase()))
+                            .toList();
+                      });
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (_, index) {
+                      final item = filtered[index];
+                      return ListTile(
+                        title: Text(item),
+                        trailing: item == selectedValue
+                            ? const Icon(Icons.check, color: Colors.green)
+                            : null,
+                        onTap: () {
+                          onSelected(item);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _picker({
+  required String label,
+  required String? value,
+  required VoidCallback? onTap,
+}) {
+  return InkWell(
+    onTap: onTap == null ? null : () => onTap(),
+    child: IgnorePointer(
+      ignoring: onTap == null,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: const Icon(Icons.arrow_drop_down),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          value ?? 'Select $label',
+          style: TextStyle(
+            color: onTap == null ? Colors.grey : Colors.black,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 
   @override
   void dispose() {
@@ -65,6 +211,11 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     _addressController.dispose();
     _groundsController.dispose();
     _prayerReliefController.dispose();
+    _incidentAddressController.dispose();
+    _districtController.dispose();
+_stationController.dispose();
+
+
     super.dispose();
   }
 
@@ -87,21 +238,36 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         : null;
 
     final petition = Petition(
-      title: _titleController.text,
-      type: PetitionType.other,
-      status: PetitionStatus.draft,
-      petitionerName: _petitionerNameController.text,
-      phoneNumber: _phoneNumberController.text,
-      address: _addressController.text,
-      grounds: _groundsController.text,
-      prayerRelief: _prayerReliefController.text.isEmpty
-          ? null
-          : _prayerReliefController.text,
-      extractedText: extractedText,
-      userId: authProvider.user!.uid,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    );
+  title: _titleController.text,
+  type: PetitionType.other,
+  status: PetitionStatus.draft,
+  petitionerName: _petitionerNameController.text,
+  phoneNumber: _phoneNumberController.text,
+  address: _addressController.text,
+  grounds: _groundsController.text,
+
+  // ✅ NEW FIELDS
+  incidentAddress: _incidentAddressController.text,
+  incidentDate: _incidentDate == null
+      ? null
+      : Timestamp.fromDate(_incidentDate!),
+  district: _districtController.text.trim().isEmpty
+    ? null
+    : _districtController.text.trim(),
+stationName: _stationController.text.trim().isEmpty
+    ? null
+    : _stationController.text.trim(),
+
+
+  prayerRelief: _prayerReliefController.text.isEmpty
+      ? null
+      : _prayerReliefController.text,
+  extractedText: extractedText,
+  userId: authProvider.user!.uid,
+  createdAt: Timestamp.now(),
+  updatedAt: Timestamp.now(),
+);
+
 
     // Save files locally (optional, for offline access or caching)
     if (_pickedFiles.isNotEmpty) {
@@ -154,19 +320,30 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   }
 
   void _resetForm() {
-    _formKey.currentState!.reset();
-    _titleController.clear();
-    _petitionerNameController.clear();
-    _phoneNumberController.clear();
-    _addressController.clear();
-    _groundsController.clear();
-    _prayerReliefController.clear();
-    setState(() {
-      _pickedFiles = [];
-      _proofFiles = [];
-      _ocrService.clearResult();
-    });
-  }
+  _formKey.currentState!.reset();
+
+  _titleController.clear();
+  _petitionerNameController.clear();
+  _phoneNumberController.clear();
+  _addressController.clear();
+  _groundsController.clear();
+  _prayerReliefController.clear();
+
+  // ✅ NEW FIELDS RESET
+  _incidentAddressController.clear();
+  _districtController.clear();
+  _stationController.clear();
+  _incidentDate = null;
+  _selectedDistrict = null;
+  _selectedStation = null;
+
+  setState(() {
+    _pickedFiles = [];
+    _proofFiles = [];
+    _ocrService.clearResult();
+  });
+}
+
 
   Future<void> _pickAndOcr() async {
     final localizations = AppLocalizations.of(context)!;
@@ -254,6 +431,21 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     );
   }
 
+  Future<void> _pickIncidentDate() async {
+  final picked = await showDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime(2000),
+    lastDate: DateTime.now(),
+  );
+
+  if (picked != null) {
+    setState(() {
+      _incidentDate = picked;
+    });
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -325,6 +517,113 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
             ),
 
             const SizedBox(height: 16),
+            
+
+// === INCIDENT DETAILS ===
+// === INCIDENT & JURISDICTION DETAILS ===
+Card(
+  child: Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        // ================= INCIDENT DETAILS =================
+        Text(
+          'Incident Details',
+          style: theme.textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+
+        // Incident Address
+        TextFormField(
+          controller: _incidentAddressController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Incident Address',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) =>
+              v == null || v.isEmpty ? 'Enter incident address' : null,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Incident Date
+        InkWell(
+          onTap: _pickIncidentDate,
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Incident Date',
+              border: OutlineInputBorder(),
+            ),
+            child: Text(
+              _incidentDate == null
+                  ? 'Select date'
+                  : _incidentDate!.toLocal().toString().split(' ')[0],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // ================= JURISDICTION DETAILS =================
+        Text(
+          'Jurisdiction for Filing Complaint',
+          style: theme.textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+
+        // District
+        _picker(
+          label: 'District',
+          value: _districtController.text.isEmpty
+              ? null
+              : _districtController.text,
+          onTap: () {
+            _openSearchableDropdown(
+              title: 'Select District',
+              items: _districtStations.keys.toList(),
+              selectedValue: _districtController.text,
+              onSelected: (v) {
+                setState(() {
+                  _districtController.text = v;
+                  _stationController.clear();
+                });
+              },
+            );
+          },
+        ),
+
+        const SizedBox(height: 16),
+
+        // Police Station
+        _picker(
+          label: 'Police Station',
+          value: _stationController.text.isEmpty
+              ? null
+              : _stationController.text,
+          onTap: _districtController.text.isEmpty
+              ? null
+              : () {
+                  _openSearchableDropdown(
+                    title: 'Select Police Station',
+                    items: _districtStations[_districtController.text] ?? [],
+                    selectedValue: _stationController.text,
+                    onSelected: (v) {
+                      setState(() => _stationController.text = v);
+                    },
+                  );
+                },
+        ),
+      ],
+    ),
+  ),
+),
+
+
 
             // === PETITION DETAILS ===
             Card(
