@@ -105,6 +105,11 @@ class AppRouter {
 
       // ROLE-BASED ROUTE PROTECTION
       if (auth.isAuthenticated) {
+        // Police should never see the citizen AI guider screen
+        if (auth.role == 'police' && path == '/ai-legal-guider') {
+          return '/police-dashboard';
+        }
+
         // Police-only routes
         final policeOnlyRoutes = [
           '/police-dashboard',
