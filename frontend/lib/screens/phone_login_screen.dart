@@ -656,7 +656,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
                     SizedBox(height: screenHeight * 0.03),
                     TextButton(
                       onPressed: () => context.go('/login'),
-                      child: Text(AppLocalizations.of(context)!.backToEmailLogin),
+                      child: Text('Back to Citizen Email Login'),
                     ),
                     SizedBox(height: screenHeight * 0.02),
                   ],

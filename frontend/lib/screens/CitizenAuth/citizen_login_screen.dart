@@ -1,4 +1,4 @@
-// screens/login_screen.dart
+// screens/CitizenAuth/citizen_login_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,16 +6,16 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
 import 'package:Dharma/l10n/app_localizations.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ← Add this if not already there
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class CitizenLoginScreen extends StatefulWidget {
+  const CitizenLoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<CitizenLoginScreen> createState() => _CitizenLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();

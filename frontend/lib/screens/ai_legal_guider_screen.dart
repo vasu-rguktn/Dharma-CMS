@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 
 class AiLegalGuiderScreen extends StatelessWidget {
@@ -152,7 +154,15 @@ class AiLegalGuiderScreen extends StatelessWidget {
                         const SizedBox(width: 16),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => context.go('/dashboard'),
+                            onPressed: () {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
+                              final role = auth.role;
+                              if (role == 'police') {
+                                context.go('/police-dashboard');
+                              } else {
+                                context.go('/dashboard');
+                              }
+                            },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               shape: RoundedRectangleBorder(
