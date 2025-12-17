@@ -47,8 +47,15 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
 
-      // Allow read/update/delete only on own cases
-      allow read, update, delete: if request.auth != null
+      // Citizens can read only their own cases.
+      // Police (role == 'police' in users collection) can read all cases.
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'police'
+      );
+
+      // Updates/deletes are restricted to the owner of the case
+      allow update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
     }
   }
