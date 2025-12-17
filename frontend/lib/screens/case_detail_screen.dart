@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
+import 'package:Dharma/models/case_doc.dart';
 import 'package:Dharma/models/case_status.dart';
 import 'package:Dharma/models/case_journal_entry.dart';
 import 'package:Dharma/models/crime_details.dart';
@@ -124,12 +125,49 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          // Align tabs starting from the very left to avoid wasted space
+          tabAlignment: TabAlignment.start,
+          labelColor: theme.primaryColor,
+          unselectedLabelColor: Colors.black87,
+          indicator: const BoxDecoration(), // no underline
+          dividerColor: Colors.transparent,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 9),
           tabs: const [
-            Tab(icon: Icon(Icons.description), text: 'FIR Details'),
-            Tab(icon: Icon(Icons.search), text: 'Crime Scene'),
-            Tab(icon: Icon(Icons.book), text: 'Investigation'),
-            Tab(icon: Icon(Icons.archive), text: 'Evidence'),
-            Tab(icon: Icon(Icons.gavel), text: 'Final Report'),
+            Tab(
+              icon: Icon(Icons.description, size: 20),
+              child: Text(
+                'FIR Details',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            Tab(
+              icon: Icon(Icons.search, size: 20),
+              child: Text(
+                'Crime Scene',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            Tab(
+              icon: Icon(Icons.book, size: 20),
+              child: Text(
+                'Investigation',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            Tab(
+              icon: Icon(Icons.archive, size: 20),
+              child: Text(
+                'Evidence',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            Tab(
+              icon: Icon(Icons.gavel, size: 20),
+              child: Text(
+                'Final Report',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
           ],
         ),
       ),
@@ -146,47 +184,236 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildFIRDetailsTab(caseDoc, ThemeData theme) {
+  Widget _buildFIRDetailsTab(CaseDoc caseDoc, ThemeData theme) {
+    String _boolText(bool? value) => value == true ? 'Yes' : 'No';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _getStatusColor(caseDoc.status),
+          // Top summary card with status + key info
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Text(
-              caseDoc.status.displayName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            child: Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'FIR No: ${caseDoc.firNumber}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              caseDoc.status.displayName,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[800],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Filed on: ${_formatTimestamp(caseDoc.dateFiled)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(caseDoc.status),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          caseDoc.status.displayName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (caseDoc.policeStation != null || caseDoc.district != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        [
+                          if (caseDoc.policeStation != null)
+                            caseDoc.policeStation!,
+                          if (caseDoc.district != null) caseDoc.district!,
+                        ].join(' • '),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
 
+          const SizedBox(height: 16),
+
+          // Case information
           _buildSection(
             theme,
             'Case Information',
             [
               _buildInfoRow('FIR Number', caseDoc.firNumber),
+              if (caseDoc.year != null) _buildInfoRow('Year', caseDoc.year!),
+              if (caseDoc.originalComplaintId != null)
+                _buildInfoRow('Complaint ID', caseDoc.originalComplaintId!),
+              if (caseDoc.date != null)
+                _buildInfoRow('FIR Date', caseDoc.date!),
+              if (caseDoc.firFiledTimestamp != null)
+                _buildInfoRow(
+                  'FIR Filed At',
+                  _formatTimestamp(caseDoc.firFiledTimestamp!),
+                ),
               if (caseDoc.district != null)
                 _buildInfoRow('District', caseDoc.district!),
               if (caseDoc.policeStation != null)
                 _buildInfoRow('Police Station', caseDoc.policeStation!),
-              if (caseDoc.year != null) _buildInfoRow('Year', caseDoc.year!),
             ],
           ),
+
           const SizedBox(height: 16),
 
+          // Occurrence details
+          if (caseDoc.occurrenceDay != null ||
+              caseDoc.occurrenceDateTimeFrom != null ||
+              caseDoc.occurrenceDateTimeTo != null ||
+              caseDoc.placeOfOccurrenceStreet != null ||
+              caseDoc.placeOfOccurrenceCity != null)
+            _buildSection(
+              theme,
+              'Occurrence of Offence',
+              [
+                if (caseDoc.occurrenceDay != null)
+                  _buildInfoRow('Day of Occurrence', caseDoc.occurrenceDay!),
+                if (caseDoc.occurrenceDateTimeFrom != null)
+                  _buildInfoRow(
+                    'From',
+                    caseDoc.occurrenceDateTimeFrom!,
+                  ),
+                if (caseDoc.occurrenceDateTimeTo != null)
+                  _buildInfoRow(
+                    'To',
+                    caseDoc.occurrenceDateTimeTo!,
+                  ),
+                if (caseDoc.timePeriod != null)
+                  _buildInfoRow('Time Period', caseDoc.timePeriod!),
+                if (caseDoc.priorToDateTimeDetails != null)
+                  _buildInfoRow(
+                    'Prior to Date/Time Details',
+                    caseDoc.priorToDateTimeDetails!,
+                  ),
+                if (caseDoc.beatNumber != null)
+                  _buildInfoRow('Beat Number', caseDoc.beatNumber!),
+                if (caseDoc.placeOfOccurrenceStreet != null)
+                  _buildInfoRow(
+                    'Street / Village',
+                    caseDoc.placeOfOccurrenceStreet!,
+                  ),
+                if (caseDoc.placeOfOccurrenceArea != null)
+                  _buildInfoRow(
+                    'Area / Mandal',
+                    caseDoc.placeOfOccurrenceArea!,
+                  ),
+                if (caseDoc.placeOfOccurrenceCity != null)
+                  _buildInfoRow(
+                    'City / District',
+                    caseDoc.placeOfOccurrenceCity!,
+                  ),
+                if (caseDoc.placeOfOccurrenceState != null)
+                  _buildInfoRow(
+                    'State',
+                    caseDoc.placeOfOccurrenceState!,
+                  ),
+                if (caseDoc.placeOfOccurrencePin != null)
+                  _buildInfoRow('PIN', caseDoc.placeOfOccurrencePin!),
+                if (caseDoc.placeOfOccurrenceLatitude != null)
+                  _buildInfoRow(
+                    'Latitude',
+                    caseDoc.placeOfOccurrenceLatitude!,
+                  ),
+                if (caseDoc.placeOfOccurrenceLongitude != null)
+                  _buildInfoRow(
+                    'Longitude',
+                    caseDoc.placeOfOccurrenceLongitude!,
+                  ),
+                if (caseDoc.distanceFromPS != null)
+                  _buildInfoRow(
+                    'Distance from PS',
+                    caseDoc.distanceFromPS!,
+                  ),
+                if (caseDoc.directionFromPS != null)
+                  _buildInfoRow(
+                    'Direction from PS',
+                    caseDoc.directionFromPS!,
+                  ),
+                if (caseDoc.isOutsideJurisdiction != null)
+                  _buildInfoRow(
+                    'Outside Jurisdiction',
+                    _boolText(caseDoc.isOutsideJurisdiction),
+                  ),
+              ],
+            ),
+
+          const SizedBox(height: 16),
+
+          // Information received
+          if (caseDoc.informationReceivedDateTime != null ||
+              caseDoc.generalDiaryEntryNumber != null ||
+              caseDoc.informationType != null)
+            _buildSection(
+              theme,
+              'Information Received at PS',
+              [
+                if (caseDoc.informationReceivedDateTime != null)
+                  _buildInfoRow(
+                    'Date & Time Received',
+                    caseDoc.informationReceivedDateTime!,
+                  ),
+                if (caseDoc.generalDiaryEntryNumber != null)
+                  _buildInfoRow(
+                    'GD Entry No.',
+                    caseDoc.generalDiaryEntryNumber!,
+                  ),
+                if (caseDoc.informationType != null)
+                  _buildInfoRow('Type of Information', caseDoc.informationType!),
+              ],
+            ),
+
+          const SizedBox(height: 16),
+
+          // Complainant
           if (caseDoc.complainantName != null)
             _buildSection(
               theme,
-              'Complainant Information',
+              'Complainant / Informant Details',
               [
                 _buildInfoRow('Name', caseDoc.complainantName!),
                 if (caseDoc.complainantFatherHusbandName != null)
@@ -196,37 +423,323 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                   ),
                 if (caseDoc.complainantGender != null)
                   _buildInfoRow('Gender', caseDoc.complainantGender!),
+                if (caseDoc.complainantDob != null)
+                  _buildInfoRow('Date of Birth', caseDoc.complainantDob!),
+                if (caseDoc.complainantAge != null)
+                  _buildInfoRow('Age', caseDoc.complainantAge!),
+                if (caseDoc.complainantNationality != null)
+                  _buildInfoRow(
+                    'Nationality',
+                    caseDoc.complainantNationality!,
+                  ),
+                if (caseDoc.complainantCaste != null)
+                  _buildInfoRow('Caste', caseDoc.complainantCaste!),
+                if (caseDoc.complainantOccupation != null)
+                  _buildInfoRow(
+                    'Occupation',
+                    caseDoc.complainantOccupation!,
+                  ),
                 if (caseDoc.complainantMobileNumber != null)
                   _buildInfoRow(
                     'Mobile Number',
                     caseDoc.complainantMobileNumber!,
                   ),
+                if (caseDoc.complainantAddress != null)
+                  _buildInfoRow(
+                    'Address',
+                    caseDoc.complainantAddress!,
+                  ),
+                if (caseDoc.complainantPassportNumber != null ||
+                    caseDoc.complainantPassportPlaceOfIssue != null ||
+                    caseDoc.complainantPassportDateOfIssue != null)
+                  const SizedBox(height: 8),
+                if (caseDoc.complainantPassportNumber != null)
+                  _buildInfoRow(
+                    'Passport No.',
+                    caseDoc.complainantPassportNumber!,
+                  ),
+                if (caseDoc.complainantPassportPlaceOfIssue != null)
+                  _buildInfoRow(
+                    'Passport Place of Issue',
+                    caseDoc.complainantPassportPlaceOfIssue!,
+                  ),
+                if (caseDoc.complainantPassportDateOfIssue != null)
+                  _buildInfoRow(
+                    'Passport Date of Issue',
+                    caseDoc.complainantPassportDateOfIssue!,
+                  ),
               ],
             ),
+
           const SizedBox(height: 16),
 
-          if (caseDoc.incidentDetails != null)
+          // Victim
+          if (caseDoc.victimName != null ||
+              caseDoc.isComplainantAlsoVictim != null)
             _buildSection(
               theme,
-              'Incident Details',
+              'Victim Details',
               [
-                Text(
-                  caseDoc.incidentDetails!,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                if (caseDoc.victimName != null)
+                  _buildInfoRow('Name', caseDoc.victimName!),
+                if (caseDoc.victimFatherHusbandName != null)
+                  _buildInfoRow(
+                    'Father/Husband Name',
+                    caseDoc.victimFatherHusbandName!,
+                  ),
+                if (caseDoc.victimGender != null)
+                  _buildInfoRow('Gender', caseDoc.victimGender!),
+                if (caseDoc.victimDob != null)
+                  _buildInfoRow('Date of Birth', caseDoc.victimDob!),
+                if (caseDoc.victimAge != null)
+                  _buildInfoRow('Age', caseDoc.victimAge!),
+                if (caseDoc.victimNationality != null)
+                  _buildInfoRow('Nationality', caseDoc.victimNationality!),
+                if (caseDoc.victimReligion != null)
+                  _buildInfoRow('Religion', caseDoc.victimReligion!),
+                if (caseDoc.victimCaste != null)
+                  _buildInfoRow('Caste', caseDoc.victimCaste!),
+                if (caseDoc.victimOccupation != null)
+                  _buildInfoRow(
+                    'Occupation',
+                    caseDoc.victimOccupation!,
+                  ),
+                if (caseDoc.victimAddress != null)
+                  _buildInfoRow('Address', caseDoc.victimAddress!),
+                if (caseDoc.isComplainantAlsoVictim != null)
+                  _buildInfoRow(
+                    'Complainant is also the Victim',
+                    _boolText(caseDoc.isComplainantAlsoVictim),
+                  ),
               ],
             ),
+
           const SizedBox(height: 16),
 
-          if (caseDoc.actsAndSectionsInvolved != null)
+          // Accused
+          if (caseDoc.accusedPersons != null &&
+              caseDoc.accusedPersons!.isNotEmpty)
             _buildSection(
               theme,
-              'Acts and Sections',
+              'Accused Details',
               [
-                Text(
-                  caseDoc.actsAndSectionsInvolved!,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                ...caseDoc.accusedPersons!.asMap().entries.map((entry) {
+                  final index = entry.key + 1;
+                  final data = (entry.value as Map?) ?? {};
+                  String valueOrEmpty(String key) =>
+                      (data[key] as String?)?.trim().isNotEmpty == true
+                          ? (data[key] as String).trim()
+                          : '-';
+
+                  // Build a readable physical-features string from the stored fields
+                  final physicalParts = <String>[];
+                  final build = (data['build'] as String?)?.trim();
+                  final height = (data['heightCms'] as String?)?.trim();
+                  final complexion = (data['complexion'] as String?)?.trim();
+                  final deformities = (data['deformities'] as String?)?.trim();
+
+                  if (build != null && build.isNotEmpty) {
+                    physicalParts.add('Build: $build');
+                  }
+                  if (height != null && height.isNotEmpty) {
+                    physicalParts.add('Height: ${height} cm');
+                  }
+                  if (complexion != null && complexion.isNotEmpty) {
+                    physicalParts.add('Complexion: $complexion');
+                  }
+                  if (deformities != null && deformities.isNotEmpty) {
+                    physicalParts.add('Deformities: $deformities');
+                  }
+
+                  final physicalFeatures =
+                      physicalParts.isEmpty ? '-' : physicalParts.join(', ');
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Accused $index',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildInfoRow('Name', valueOrEmpty('name')),
+                        _buildInfoRow(
+                          'Father/Husband Name',
+                          valueOrEmpty('fatherHusbandName'),
+                        ),
+                        _buildInfoRow('Gender', valueOrEmpty('gender')),
+                        _buildInfoRow('Age', valueOrEmpty('age')),
+                        _buildInfoRow('Nationality', valueOrEmpty('nationality')),
+                        _buildInfoRow('Caste', valueOrEmpty('caste')),
+                        _buildInfoRow('Occupation', valueOrEmpty('occupation')),
+                        _buildInfoRow('Cell No.', valueOrEmpty('cellNo')),
+                        _buildInfoRow('Email', valueOrEmpty('email')),
+                        _buildInfoRow('Address', valueOrEmpty('address')),
+                        _buildInfoRow(
+                          'Physical Features',
+                          physicalFeatures,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+
+          const SizedBox(height: 16),
+
+          // Properties / Delay / Inquest
+          if (caseDoc.propertiesDetails != null ||
+              caseDoc.propertiesTotalValueInr != null ||
+              caseDoc.isDelayInReporting != null ||
+              caseDoc.inquestReportCaseNo != null)
+            _buildSection(
+              theme,
+              'Properties / Delay / Inquest',
+              [
+                if (caseDoc.propertiesDetails != null)
+                  _buildInfoRow(
+                    'Properties Involved',
+                    caseDoc.propertiesDetails!,
+                  ),
+                if (caseDoc.propertiesTotalValueInr != null)
+                  _buildInfoRow(
+                    'Total Value (INR)',
+                    caseDoc.propertiesTotalValueInr!,
+                  ),
+                if (caseDoc.isDelayInReporting != null)
+                  _buildInfoRow(
+                    'Delay in Reporting',
+                    _boolText(caseDoc.isDelayInReporting),
+                  ),
+                if (caseDoc.inquestReportCaseNo != null)
+                  _buildInfoRow(
+                    'Inquest Report / U.D. Case No.',
+                    caseDoc.inquestReportCaseNo!,
+                  ),
+              ],
+            ),
+
+          const SizedBox(height: 16),
+
+          // Acts & Complaint / Incident
+          if (caseDoc.actsAndSectionsInvolved != null ||
+              caseDoc.complaintStatement != null ||
+              caseDoc.incidentDetails != null)
+            _buildSection(
+              theme,
+              'Acts & Statement',
+              [
+                if (caseDoc.actsAndSectionsInvolved != null) ...[
+                  Text(
+                    'Acts & Sections Involved:',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    caseDoc.actsAndSectionsInvolved!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (caseDoc.complaintStatement != null) ...[
+                  Text(
+                    'Complaint / Statement of Complainant:',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    caseDoc.complaintStatement!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (caseDoc.incidentDetails != null) ...[
+                  Text(
+                    'Brief Incident Details:',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    caseDoc.incidentDetails!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
+
+          const SizedBox(height: 16),
+
+          // Action taken / Dispatch / Confirmation
+          if (caseDoc.actionTakenDetails != null ||
+              caseDoc.dispatchDateTime != null ||
+              caseDoc.isFirReadOverAndAdmittedCorrect != null)
+            _buildSection(
+              theme,
+              'Action Taken & Confirmation',
+              [
+                if (caseDoc.actionTakenDetails != null)
+                  _buildInfoRow(
+                    'Action Taken',
+                    caseDoc.actionTakenDetails!,
+                  ),
+                if (caseDoc.investigatingOfficerName != null)
+                  _buildInfoRow(
+                    'Investigating Officer',
+                    caseDoc.investigatingOfficerName!,
+                  ),
+                if (caseDoc.investigatingOfficerRank != null)
+                  _buildInfoRow(
+                    'Rank',
+                    caseDoc.investigatingOfficerRank!,
+                  ),
+                if (caseDoc.investigatingOfficerDistrict != null)
+                  _buildInfoRow(
+                    'District',
+                    caseDoc.investigatingOfficerDistrict!,
+                  ),
+                if (caseDoc.dispatchDateTime != null)
+                  _buildInfoRow(
+                    'Dispatch to Court (Date & Time)',
+                    caseDoc.dispatchDateTime!,
+                  ),
+                if (caseDoc.dispatchOfficerName != null)
+                  _buildInfoRow(
+                    'Dispatching Officer',
+                    caseDoc.dispatchOfficerName!,
+                  ),
+                if (caseDoc.dispatchOfficerRank != null)
+                  _buildInfoRow(
+                    'Dispatching Officer Rank',
+                    caseDoc.dispatchOfficerRank!,
+                  ),
+                if (caseDoc.isFirReadOverAndAdmittedCorrect != null)
+                  _buildInfoRow(
+                    'FIR read over and admitted correct',
+                    _boolText(caseDoc.isFirReadOverAndAdmittedCorrect),
+                  ),
+                if (caseDoc.isFirCopyGivenFreeOfCost != null)
+                  _buildInfoRow(
+                    'Copy of FIR given free of cost',
+                    _boolText(caseDoc.isFirCopyGivenFreeOfCost),
+                  ),
+                if (caseDoc.isRoacRecorded != null)
+                  _buildInfoRow(
+                    'ROAC recorded',
+                    _boolText(caseDoc.isRoacRecorded),
+                  ),
+                if (caseDoc.complainantSignatureNote != null)
+                  _buildInfoRow(
+                    'Signature / Thumb Impression',
+                    caseDoc.complainantSignatureNote!,
+                  ),
               ],
             ),
         ],
@@ -234,7 +747,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildCrimeSceneTab(caseDoc, ThemeData theme) {
+  Widget _buildCrimeSceneTab(CaseDoc caseDoc, ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -368,7 +881,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildInvestigationTab(caseDoc, ThemeData theme) {
+  Widget _buildInvestigationTab(CaseDoc caseDoc, ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -481,7 +994,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildEvidenceTab(caseDoc, ThemeData theme) {
+  Widget _buildEvidenceTab(CaseDoc caseDoc, ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Card(
@@ -512,7 +1025,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildFinalReportTab(caseDoc, ThemeData theme) {
+  Widget _buildFinalReportTab(CaseDoc caseDoc, ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Card(
@@ -570,22 +1083,24 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 150,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+              fontSize: 12,
             ),
           ),
-          Expanded(
-            child: Text(value),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+            ),
           ),
         ],
       ),
