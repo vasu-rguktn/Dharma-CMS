@@ -6,8 +6,33 @@ import 'package:Dharma/models/case_status.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 
-class CasesScreen extends StatelessWidget {
+import 'package:Dharma/providers/auth_provider.dart';
+
+class CasesScreen extends StatefulWidget {
   const CasesScreen({super.key});
+
+  @override
+  State<CasesScreen> createState() => _CasesScreenState();
+}
+
+class _CasesScreenState extends State<CasesScreen> {
+  bool _hasLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasLoaded) {
+      _hasLoaded = true;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        caseProvider.fetchCases(
+          userId: auth.user?.uid,
+          isAdmin: auth.role == 'police',
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

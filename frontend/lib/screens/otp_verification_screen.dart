@@ -43,7 +43,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     try {
       // Get app signature for SMS verification
       _appSignature = await SmsAutoFill().getAppSignature;
-      debugPrint('📱 App Signature: $_appSignature');
+      debugPrint('📱 App Signature (include in OTP SMS): $_appSignature');
 
       // Request SMS permission
       final status = await Permission.sms.status;
@@ -114,8 +114,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   void _listenForOtp() async {
     try {
       debugPrint('👂 Starting to listen for OTP SMS...');
+      await SmsAutoFill().unregisterListener();
       listenForCode(); // From CodeAutoFill mixin
-      debugPrint('✅ SMS listener started successfully');
+      debugPrint('✅ CodeAutoFill listener started');
 
       // Also try the alternative method
       await SmsAutoFill().listenForCode();
