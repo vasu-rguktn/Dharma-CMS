@@ -1,0 +1,473 @@
+{
+    "Annamayya": [
+    "B. Kothakota",
+    "Madanapalle I Town",
+    "Madanapalle II Town",
+    "Madanapalle Rural",
+    "Mudiveedu",
+    "Nimmanapalle",
+    "Ramasamudram",
+    "Mulakalacheruvu",
+    "P.T. Samudram (PTM)",
+    "Peddamandayam",
+    "Thamballapalli",
+    "Kodur",
+    "Mannur",
+    "Rajampet",
+    "Chitvel",
+    "Obulavaripalli",
+    "Nandalur",
+    "Penagalur",
+    "Pullampeta",
+    "Kalikiri",
+    "Piler",
+    "Rayachoty",
+    "Rayachoty Traffic",
+    "K.V. Palli",
+    "Kalakada",
+    "Galiveedu",
+    "Lakkireddipalli",
+    "Ramapuram",
+    "Chinnamandem",
+    "Sambepalli",
+    "T. Sundupalli",
+    "Veeraballi",
+    "Gurramkonda",
+    "Voyalpadu"
+  ],
+  "Eluru": [
+    "Eluru Traffic",
+    "Mahila UPS, Eluru",
+    "Eluru I Town",
+    "Eluru II Town",
+    "Eluru III Town",
+    "Kaikaluru Town",
+    "Bhimadole",
+    "Dwaraka Tirumala",
+    "Eluru Rural",
+    "Kaikaluru Rural",
+    "Kalidindi",
+    "Mandavalli",
+    "Mudinepalli",
+    "Chebrole",
+    "Ganapavaram",
+    "Nidamarru",
+    "Chintalapudi",
+    "Dharmajigudem",
+    "Jangareddygudem",
+    "Jangareddygudem Traffic",
+    "Lakkavaram",
+    "Tadikalapudi",
+    "Nuzvid Town",
+    "Agiripalli",
+    "Chatrai",
+    "Musunuru",
+    "Nuzvid Rural",
+    "Denduluru",
+    "Pedapadu",
+    "Pedavegi",
+    "Buttaigudem",
+    "Jeelugumilli",
+    "T. Narasapuram",
+    "Kukunoor",
+    "Velerupadu",
+    "Koyyalagudem",
+    "Polavaram"
+  ],
+  "Kurnool": [
+    "Kurnool Traffic",
+    "Mahila UPS, Kurnool",
+
+    "Adoni I Town",
+    "Adoni II Town",
+    "Adoni III Town",
+    "Adoni Traffic",
+
+    "Adoni Rural",
+    "Isvi",
+    "Peddathumbalam",
+
+    "Kurnool I Town",
+    "Kurnool II Town",
+    "Kurnool III Town",
+    "Kurnool IV Town",
+    "Kurnool Taluk",
+
+    "C. Belgal",
+    "Gudur",
+    "Kodumur",
+
+    "K. Nagalapuram",
+    "Oravakal",
+    "Ulindakonda",
+
+    "Aspari",
+    "Devanakonda",
+    "Pathikonda",
+
+    "Alur",
+    "Chippagiri",
+    "Halaharvi",
+    "Holagunda",
+
+    "Jonnagiri",
+    "Maddikera",
+    "Tuggali",
+
+    "Krishnagiri",
+    "Veldurthi",
+
+    "Gonegandla",
+    "Kowthalam",
+    "Yemmiganur Town",
+
+    "Kosigi",
+    "Peddakadubur",
+
+    "Madhavaram",
+    "Manthralayam",
+
+    "Nandavaram",
+    "Yemmiganur Rural",
+    "Yemmiganur Traffic"
+  ],
+  "Palnadu": [
+    "Mahila UPS, Palnadu",
+
+    "Dachepalli",
+    "Gurazala Town",
+    "Macherla Town",
+    "Piduguralla",
+
+    "Machavaram",
+
+    "Durgi",
+    "Karempudi",
+    "Rentachinthala",
+
+    "Macherla Rural",
+    "Nagarjunasagar",
+    "Veldurthy",
+
+    "Chilakaluripet Town",
+    "Narsaraopet I Town",
+    "Narsaraopet II Town",
+    "Vinukonda",
+
+    "Chilakaluripet Rural",
+    "Edlapadu",
+    "Nadendla",
+
+    "Narasaraopet Traffic PS",
+
+    "Narasaraopet Rural",
+    "Rompicherla",
+
+    "Bandlamotu",
+    "Inavole",
+    "Ipur",
+    "Savalyapuram",
+
+    "Amaravathi",
+    "Sattenapalli Town",
+
+    "Atchampet",
+    "Bellamkonda",
+    "Krosuru",
+    "Pedakurapadu",
+
+    "Muppalla",
+    "Nekarekal",
+    "Rajupalem"
+  ],
+  "Tirupati": [
+    "Naidupet",
+
+    "Doravari Satram",
+    "Ozili",
+    "Pellakur",
+
+    "Sriharikota",
+    "Sullurpet",
+    "Tada",
+
+    "CCS, Tirumala",
+    "CCS, Tirupathi",
+    "Mahila UPS, Tirupathi",
+    "Tirumala Traffic",
+    "Tirupathi Traffic",
+
+    "Pakala",
+    "Tirchanur",
+    "Tirupati Rural",
+
+    "Bhakarapet",
+    "Yerravaripalem",
+
+    "Chandragiri UPS",
+    "R.C. Puram",
+
+    "Gudur I Town",
+    "Gudur II Town",
+
+    "Chillakur",
+    "Gudur Rural",
+
+    "Chittamuru",
+    "Kota",
+    "Vakadu",
+
+    "Balayapalli",
+    "Dakkili",
+    "Venkatagiri",
+
+    "Puttur",
+
+    "K.V.B. Puram",
+    "Narayanavanam",
+    "Pitchatoor",
+    "Vadamalpet",
+
+    "Nagalapuram",
+    "Satyavedu",
+    "Vardaiahpalem",
+
+    "Renigunta",
+    "Yerpedu",
+
+    "Airport",
+    "Gajula Mandhyam",
+
+    "Sri City",
+
+    "Srikalahasthi I Town",
+    "Srikalahasthi Rural",
+    "Srikalahasti II Town",
+
+    "B.N. Kandriga",
+    "Thottambedu",
+
+    "Tirumala I Town",
+    "Tirumala II Town",
+
+    "Alipiri",
+    "S.V.U. Campus",
+    "Tirupathi East",
+    "Tirupathi West"
+  ],
+  "Vizianagaram": [
+    "Mahila UPS, Vizianagaram",
+    "Vizianagaram Traffic",
+
+    "Bobbili Town",
+
+    "Badangi",
+    "Ramabhadrapuram",
+    "Therlam",
+
+    "Bobbili Traffic",
+
+    "Andra",
+    "Bondapalli",
+    "Burjavalasa",
+    "Gajapathinagaram",
+    "Pedamanapuram",
+
+    "Rajam Town",
+
+    "Budarayavalasa",
+    "Cheepurupalli",
+    "Garividi",
+    "Gurla",
+
+    "Regidi Amudalavalsa",
+    "Santhakaviti",
+    "Vangara",
+
+    "Bhogapuram",
+    "Kothavalasa",
+    "S. Kota",
+    "Vizianagaram I Town",
+    "Vizianagaram II Town",
+
+    "Denkada",
+    "Nellimarla",
+    "Pusapatirega",
+
+    "Jami",
+    "L. Kota",
+    "Vallampudi",
+
+    "Gantyada",
+    "Vizianagaram Rural"
+  ],
+  "Alluri Sitarama Raju": [
+    "Annavaram",
+    "Chinthapalli",
+
+    "Gudemkothaveedi (G.K. Veedhi)",
+    "Sileru",
+
+    "Koyyuru",
+    "Mampa",
+
+    "Chintoor",
+    "Donkarai",
+    "Moothugudem",
+
+    "Kunavaram",
+    "Vara Ramachandrapuram",
+    "Yetapaka",
+
+    "Anantagiri",
+    "Araku",
+    "Dumbriguda",
+
+    "Gangaraju Madugula (G. Madugula)",
+    "Munchingiput",
+    "Pedabayalu",
+
+    "Hukumpeta",
+    "Paderu",
+
+    "Addateegala",
+    "Dutcherthi",
+    "Gangavaram",
+    "Y. Ramavaram",
+
+    "Gurthedu",
+    "Maredumilli",
+
+    "Jaddangi",
+    "Rajavommangi",
+
+    "Devipatnam",
+    "Rampachodavaram"
+  ],
+  "Anantapur": [
+    "Anantapur Traffic",
+    "CCS, Anantapur",
+    "Mahila UPS, Anantapur",
+    "Anantapur Rural",
+    "Bukkaraya Samudram",
+    "Rapthadu",
+    "Atmakur",
+    "Itukalapalli",
+    "Putlur",
+    "Yellanur",
+    "Garladinne",
+    "Narpala",
+    "Singanamala",
+    "Anantapur I Town",
+    "Anantapur II Town",
+    "Anantapur III Town",
+    "Anantapur IV Town",
+    "Gooty",
+    "Guntakal I Town",
+    "Guntakal II Town",
+    "Kuderu UPS",
+    "Pamidi",
+    "Uravakonda",
+    "Guntakal Rural",
+    "Kasapuram",
+    "Beluguppa",
+    "Palthur",
+    "Vajrakarur",
+    "Vidapanakal",
+    "Kalyandurg Rural",
+    "Kalyandurg Town",
+    "Rayadurg",
+    "Brahmasamudram",
+    "Kambadur",
+    "Kundurpi",
+    "Settur",
+    "Bommanahal",
+    "D. Hirehal",
+    "Gummagatta",
+    "Kanekal",
+    "Tadipathri Rural",
+    "Tadipathri Town",
+    "Yadiki",
+    "Peddapappur",
+    "Peddavadugur"
+  ],
+  "Dr. B. R. Ambedkar Konaseema": [
+    "Amalapuram Town",
+
+    "Allavaram",
+    "Amalapuram Rural",
+    "Uppalaguptam",
+
+    "I. Polavaram",
+    "Katrenikona",
+    "Mummidivaram",
+
+    "Ambajipeta",
+    "Inavilli",
+    "Nagaram",
+    "P. Gannavaram",
+
+    "Alamuru",
+    "Athreyapuram",
+    "Kothapeta",
+    "Ravulapalem",
+
+    "Malkipuram",
+    "Razole",
+    "Sakhinetipalli",
+
+    "Mandapeta Town",
+
+    "Angara",
+    "Mandapeta Rural",
+    "Rayavaram",
+
+    "Draksharama",
+    "Pamarru",
+    "Ramachandrapuram"
+  ],
+  "East Godavari": [
+    "Mahila UPS, East Godavari",
+    "Traffic, East Godavari",
+
+    "Prakash Nagar",
+    "Rajahmundry I Town",
+    "Rajahmundry III Town",
+
+    "Bommuru",
+
+    "Anaparthi",
+    "Biccavole",
+    "Rangampeta",
+
+    "Kovvur Town",
+    "Nallajerla",
+
+    "Devarapalli",
+    "Gopalapuram",
+
+    "Chagallu",
+    "Kovvur Rural",
+    "Tallapudi",
+
+    "Nidadavole Town",
+    "Peravalli",
+    "Samisrigudem",
+    "Undrajavaram",
+
+    "Rajanagaram",
+
+    "Airport PS",
+    "Gokavaram",
+    "Korukonda",
+    "Seethanagaram",
+
+    "Rajahmundry East CCS",
+    "Rajahmundry North CCS",
+    "Rajahmundry South CCS",
+
+    "Dowaleswaram",
+    "Kadiam",
+    "Rajahmundry II Town"
+  ]
+}

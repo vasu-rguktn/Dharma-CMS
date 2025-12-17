@@ -185,41 +185,68 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _showLoginBottomSheet(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _BottomSheetContent(
-        title: localizations.loginAs ?? "Login as",
-        // Pass the color explicitly so it's available
-        orangeColor: WelcomeScreen.orange,
-        options: [
-          _OptionItem(label: localizations.citizen ?? "Citizen", onTap: () { Navigator.pop(context); context.go('/login', extra: {'userType': 'citizen'}); }),
-          _OptionItem(label: localizations.police ?? "Police", onTap: () { Navigator.pop(context); context.go('/login', extra: {'userType': 'police'}); }),
-        ],
-      ),
-    );
-  }
+  final localizations = AppLocalizations.of(context)!;
 
-  void _showRegisterBottomSheet(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _BottomSheetContent(
-        title: localizations.registerAs ?? "Register as",
-        orangeColor: WelcomeScreen.orange,
-        options: [
-          _OptionItem(label:localizations.citizen ?? "Citizen", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'citizen'}); }),
-          _OptionItem(label:localizations.police ?? "Police", onTap: () { Navigator.pop(context); context.go('/signup', extra: {'userType': 'police'}); }),
-        ],
-      ),
-    );
-  }
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _BottomSheetContent(
+      title: localizations.loginAs ?? "Login as",
+      orangeColor: WelcomeScreen.orange,
+      options: [
+        // ✅ Citizen → Citizen Login
+        _OptionItem(
+          label: localizations.citizen ?? "Citizen",
+          onTap: () {
+            Navigator.pop(context);
+            context.go('/login'); // ✅ citizen login
+          },
+        ),
+
+        // ✅ Police → Police Login
+        _OptionItem(
+          label: localizations.police ?? "Police",
+          onTap: () {
+            Navigator.pop(context);
+            context.go('/police-login'); // ✅ police login
+          },
+        ),
+      ],
+    ),
+  );
 }
 
+
+  void _showRegisterBottomSheet(BuildContext context) {
+  final localizations = AppLocalizations.of(context)!;
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _BottomSheetContent(
+      title: localizations.registerAs ?? "Register as",
+      orangeColor: WelcomeScreen.orange,
+      options: [
+        _OptionItem(
+          label: localizations.citizen ?? "Citizen",
+          onTap: () {
+            Navigator.pop(context);
+            context.go('/signup/citizen'); // ✅ CHANGED
+          },
+        ),
+        _OptionItem(
+          label: localizations.police ?? "Police",
+          onTap: () {
+            Navigator.pop(context);
+            context.go('/signup/police'); // ✅ CHANGED
+          },
+        ),
+      ],
+    ),
+  );
+}
+}
 // Beautiful bottom sheet — only added orangeColor parameter
 class _BottomSheetContent extends StatelessWidget {
   final String title;
