@@ -40,5 +40,16 @@ service cloud.firestore {
       
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+
+    // CASES COLLECTION (FIRs)
+    match /cases/{caseId} {
+      // Allow authenticated users to create a case where userId matches their uid
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+
+      // Allow read/update/delete only on own cases
+      allow read, update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
   }
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -63,7 +62,9 @@ class AppRouter {
     redirect: (context, state) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
 
-      if (auth.isLoading) return null;
+      // Wait until both auth state AND user profile are loaded,
+      // otherwise role will default to 'citizen'
+      if (auth.isLoading || auth.isProfileLoading) return null;
 
       final path = state.uri.path;
 
@@ -104,6 +105,11 @@ class AppRouter {
 
       // ROLE-BASED ROUTE PROTECTION
       if (auth.isAuthenticated) {
+        // Police should never see the citizen AI guider screen
+        if (auth.role == 'police' && path == '/ai-legal-guider') {
+          return '/police-dashboard';
+        }
+
         // Police-only routes
         final policeOnlyRoutes = [
           '/police-dashboard',

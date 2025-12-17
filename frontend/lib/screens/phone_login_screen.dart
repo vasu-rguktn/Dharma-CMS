@@ -313,16 +313,19 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   Timer? _timer;
 
   String? _verificationId;
+  // ignore: unused_field
   int? _resendToken;
 
   @override
   void initState() {
     super.initState();
+    debugPrint('📲 PhoneLoginScreen initState -> starting OTP listener');
     _listenForOtp();
   }
 
   @override
   void dispose() {
+    debugPrint('🧹 PhoneLoginScreen dispose -> stopping listeners');
     cancel(); // From CodeAutoFill mixin
     _timer?.cancel();
     _phoneController.dispose();
@@ -331,12 +334,28 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
     super.dispose();
   }
 
-  void _listenForOtp() async {
-    await SmsAutoFill().listenForCode; // CORRECT: SmsAutoFill()
+  Future<void> _listenForOtp() async {
+    try {
+      final signature = await SmsAutoFill().getAppSignature;
+      debugPrint('📱 App signature (add to OTP SMS): $signature');
+
+      // restart listeners to avoid stale state
+      await SmsAutoFill().unregisterListener();
+
+      // CodeAutoFill mixin listener
+      listenForCode();
+
+      // SmsAutoFill listener (note the parentheses)
+      await SmsAutoFill().listenForCode();
+      debugPrint('✅ SMS auto-fill listener started/restarted');
+    } catch (e) {
+      debugPrint('❌ Failed to start SMS listener: $e');
+    }
   }
 
   @override
   void codeUpdated() {
+    debugPrint('📩 codeUpdated fired with code: $code');
     if (code != null && code!.length == 6) {
       setState(() => _otpController.text = code!);
       _verifyOtp(); // Auto verify instantly
@@ -383,6 +402,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
             _resendToken = resendToken;
             _startCountdown();
           });
+          // Ensure listener is hot right after code is sent
+          _listenForOtp();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: Colors.green,
