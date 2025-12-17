@@ -41,8 +41,16 @@ class Validators {
     }
   }
 
-  // ✅ ADD THIS INSIDE THE CLASS (NOT BELOW IT)
+  // Andhra Pradesh pincode
   static bool isValidAndhraPradeshPincode(String pincode) {
     return RegExp(r'^(51|52|53)\d{4}$').hasMatch(pincode.trim());
+  }
+
+  // ✅ ADD THIS (FOR POLICE PASSWORD)
+  static bool isValidPassword(String password) {
+    // Minimum 8 chars, at least 1 letter and 1 number
+    return RegExp(
+      r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$',
+    ).hasMatch(password.trim());
   }
 }
