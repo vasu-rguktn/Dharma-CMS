@@ -10,6 +10,8 @@ class CaseJournalEntry {
   final String entryText;
   final String activityType;
   final String? relatedDocumentId;
+  final List<String>? attachmentUrls;
+  final Timestamp? modifiedAt;
 
   CaseJournalEntry({
     this.id,
@@ -21,6 +23,8 @@ class CaseJournalEntry {
     required this.entryText,
     required this.activityType,
     this.relatedDocumentId,
+    this.attachmentUrls,
+    this.modifiedAt,
   });
 
   factory CaseJournalEntry.fromFirestore(DocumentSnapshot doc) {
@@ -35,6 +39,10 @@ class CaseJournalEntry {
       entryText: data['entryText'] ?? '',
       activityType: data['activityType'] ?? '',
       relatedDocumentId: data['relatedDocumentId'],
+      attachmentUrls: data['attachmentUrls'] != null
+          ? List<String>.from(data['attachmentUrls'] as List)
+          : null,
+      modifiedAt: data['modifiedAt'] as Timestamp?,
     );
   }
 
@@ -48,6 +56,9 @@ class CaseJournalEntry {
       'entryText': entryText,
       'activityType': activityType,
       if (relatedDocumentId != null) 'relatedDocumentId': relatedDocumentId,
+      if (attachmentUrls != null && attachmentUrls!.isNotEmpty)
+        'attachmentUrls': attachmentUrls,
+      if (modifiedAt != null) 'modifiedAt': modifiedAt,
     };
   }
 }
