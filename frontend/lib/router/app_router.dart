@@ -61,19 +61,20 @@ class AppRouter {
     // 🔐 AUTH + ROLE BASED REDIRECT
     redirect: (context, state) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-
-      // Wait until both auth state AND user profile are loaded,
-      // otherwise role will default to 'citizen'
-      if (auth.isLoading || auth.isProfileLoading) return null;
-
       final path = state.uri.path;
 
-      // Logged-in users should not see welcome again
-      if (auth.isAuthenticated && path == '/') {
-        return auth.role == 'police'
-            ? '/police-dashboard'
-            : '/ai-legal-guider';
-      }
+      // List of public routes that don't require authentication
+      final publicRoutes = [
+        '/',
+        '/login',
+        '/police-login',
+        '/phone-login',
+        '/signup/citizen',
+        '/signup/police',
+        '/address',
+        '/login_details',
+        '/otp_verification',
+      ];
 
       // List of routes that require authentication
       final protectedRoutes = [
@@ -95,7 +96,28 @@ class AppRouter {
         '/chargesheet-vetting',
         '/media-analysis',
         '/case-journal',
+        '/ai-chatbot-details',
+        '/contact-officer',
+        '/cognigible-non-cognigible-separation',
       ];
+
+      // During loading, block access to protected routes
+      // This prevents unauthorized access while auth state is being determined
+      if (auth.isLoading || auth.isProfileLoading) {
+        // Allow public routes during loading
+        if (publicRoutes.contains(path) || publicRoutes.any((route) => path.startsWith(route))) {
+          return null;
+        }
+        // Block all protected routes during loading - redirect to login
+        return '/login';
+      }
+
+      // Logged-in users should not see welcome again
+      if (auth.isAuthenticated && path == '/') {
+        return auth.role == 'police'
+            ? '/police-dashboard'
+            : '/ai-legal-guider';
+      }
 
       // Redirect unauthenticated users to login
       if (!auth.isAuthenticated && 
@@ -118,6 +140,8 @@ class AppRouter {
           '/chargesheet-vetting',
           '/media-analysis',
           '/case-journal',
+          '/cases',
+
         ];
 
         // Citizen-only routes
