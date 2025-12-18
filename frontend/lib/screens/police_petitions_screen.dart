@@ -1,13 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'package:Dharma/models/Petition.dart';   // ✅ Correct model import
+
+import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/police_auth_provider.dart';
 
-class PolicePetitionsScreen extends StatelessWidget {
+class PolicePetitionsScreen extends StatefulWidget {
   const PolicePetitionsScreen({super.key});
 
+  @override
+  State<PolicePetitionsScreen> createState() =>
+      _PolicePetitionsScreenState();
+}
+
+class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
+  String? _stationName;
+
+  /* ---------------- INIT ---------------- */
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final policeProvider = context.read<PoliceAuthProvider>();
+      final station = policeProvider.policeProfile?['stationName'];
+
+      if (station != null && station.toString().trim().isNotEmpty) {
+        setState(() {
+          _stationName = station.toString().trim();
+        });
+        debugPrint('✅ Station loaded: $_stationName');
+      } else {
+        debugPrint('❌ Station name not found');
+      }
+    });
+  }
+
+  /* ---------------- HELPERS ---------------- */
   Color _getStatusColor(PetitionStatus status) {
     switch (status) {
       case PetitionStatus.draft:
@@ -27,46 +57,52 @@ class PolicePetitionsScreen extends StatelessWidget {
     }
   }
 
-  Color _getStringStatusColor(String status) {
+  Color _getPoliceStatusColor(String status) {
     switch (status) {
-      case 'Received': return Colors.blue;
-      case 'In Progress': return Colors.indigo;
-      case 'Closed': return Colors.green;
-      case 'Rejected': return Colors.red;
-      case 'Pending': return Colors.orange;
-      default: return Colors.grey;
+      case 'Received':
+        return Colors.blue;
+      case 'In Progress':
+        return Colors.indigo;
+      case 'Closed':
+        return Colors.green;
+      case 'Rejected':
+        return Colors.red;
+      case 'Pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
     }
   }
 
   String _formatTimestamp(Timestamp timestamp) {
-    final date = timestamp.toDate();
-    return '${date.day}/${date.month}/${date.year}';
+    final d = timestamp.toDate();
+    return '${d.day}/${d.month}/${d.year}';
   }
 
+  /* ---------------- PETITION DETAIL (ORIGINAL FEATURE) ---------------- */
   void _showPetitionDetails(BuildContext context, Petition petition) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
+      builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.9,
-        minChildSize: 0.5,
         maxChildSize: 0.95,
+        minChildSize: 0.5,
         expand: false,
-        builder: (context, scrollController) {
-          // Local state for the modal
+        builder: (_, scrollController) {
           String? selectedStatus = petition.policeStatus;
           String? selectedSubStatus = petition.policeSubStatus;
           bool isSubmitting = false;
 
           return StatefulBuilder(
-            builder: (context, setState) {
+            builder: (context, setModalState) {
               return SingleChildScrollView(
                 controller: scrollController,
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// Title Row
+                    /// TITLE
                     Row(
                       children: [
                         Expanded(
@@ -81,11 +117,13 @@ class PolicePetitionsScreen extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () => Navigator.pop(context),
-                        ),
+                        )
                       ],
                     ),
+
                     const SizedBox(height: 8),
 
+                    /// PETITION STATUS
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
@@ -96,165 +134,134 @@ class PolicePetitionsScreen extends StatelessWidget {
                       child: Text(
                         petition.status.displayName,
                         style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
 
                     const Divider(height: 32),
 
-                    _buildDetailRow('Petitioner', petition.petitionerName),
+                    _detailRow('Petitioner', petition.petitionerName),
                     if (petition.phoneNumber != null)
-                      _buildDetailRow('Phone', petition.phoneNumber!),
+                      _detailRow('Phone', petition.phoneNumber!),
                     if (petition.address != null)
-                      _buildDetailRow('Address', petition.address!),
+                      _detailRow('Address', petition.address!),
                     if (petition.firNumber != null)
-                      _buildDetailRow('FIR Number', petition.firNumber!),
+                      _detailRow('FIR No', petition.firNumber!),
 
                     const SizedBox(height: 16),
-                    Text('Grounds',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Grounds',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     Text(petition.grounds),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                    /// 🔥 POLICE STATUS UPDATE UI STARTS HERE
-                    Text(
-                      "Police Status Update",
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                    /// POLICE STATUS UPDATE
+                    const Text(
+                      'Police Status Update',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
 
                     DropdownButtonFormField<String>(
-                      // Ensure value matches one of the items or is null
-                      value: ["Received", "In Progress", "Closed"].contains(selectedStatus)
+                      value: ['Received', 'In Progress', 'Closed']
+                              .contains(selectedStatus)
                           ? selectedStatus
                           : null,
                       decoration: const InputDecoration(
-                        labelText: "Select Status",
+                        labelText: 'Select Status',
                         border: OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(
-                            value: "Received", child: Text("Received")),
+                            value: 'Received', child: Text('Received')),
                         DropdownMenuItem(
-                            value: "In Progress", child: Text("In Progress")),
+                            value: 'In Progress',
+                            child: Text('In Progress')),
                         DropdownMenuItem(
-                            value: "Closed", child: Text("Closed")),
+                            value: 'Closed', child: Text('Closed')),
                       ],
-                      onChanged: (value) {
-                        setState(() {
-                          selectedStatus = value;
-                          // Reset subStatus if not closed
-                          if (value != "Closed") {
-                            selectedSubStatus = null;
-                          }
+                      onChanged: (v) {
+                        setModalState(() {
+                          selectedStatus = v;
+                          if (v != 'Closed') selectedSubStatus = null;
                         });
                       },
                     ),
 
-                    if (selectedStatus == "Closed") ...[
+                    if (selectedStatus == 'Closed') ...[
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         value: selectedSubStatus,
                         decoration: const InputDecoration(
-                          labelText: "Select Closure",
+                          labelText: 'Closure Type',
                           border: OutlineInputBorder(),
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: "Rejected", child: Text("Rejected")),
+                              value: 'Rejected',
+                              child: Text('Rejected')),
                           DropdownMenuItem(
-                              value: "FIR Registered",
-                              child: Text("FIR Registered")),
+                              value: 'FIR Registered',
+                              child: Text('FIR Registered')),
                           DropdownMenuItem(
-                            value: "Compromised / Disposed",
-                            child: Text("Compromised / Disposed"),
-                          ),
+                              value: 'Compromised / Disposed',
+                              child:
+                                  Text('Compromised / Disposed')),
                         ],
-                        onChanged: (value) {
-                          setState(() {
-                            selectedSubStatus = value;
-                          });
-                        },
+                        onChanged: (v) =>
+                            setModalState(() => selectedSubStatus = v),
                       ),
                     ],
 
                     const SizedBox(height: 24),
 
+                    /// SUBMIT
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: 48,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[800],
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
                         onPressed: isSubmitting
                             ? null
                             : () async {
                                 if (selectedStatus == null) return;
 
-                                setState(() => isSubmitting = true);
+                                setModalState(() => isSubmitting = true);
 
-                                try {
-                                  Map<String, dynamic> updates = {
+                                await context
+                                    .read<PetitionProvider>()
+                                    .updatePetition(
+                                  petition.id!,
+                                  {
                                     'policeStatus': selectedStatus,
                                     'policeSubStatus': selectedSubStatus,
-                                  };
+                                  },
+                                  petition.userId,
+                                );
 
-                                  await context
-                                      .read<PetitionProvider>()
-                                      .updatePetition(
-                                        petition.id!,
-                                        updates,
-                                        petition.userId,
-                                      );
-
-                                  if (context.mounted) {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Petition status updated successfully'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content:
-                                            Text('Error updating status: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                } finally {
-                                  if (context.mounted) {
-                                    setState(() => isSubmitting = false);
-                                  }
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Status updated successfully'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
                                 }
                               },
                         child: isSubmitting
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
-                            : const Text(
-                                'Submit Update',
-                                style:
-                                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
+                            : const Text('Submit Update'),
                       ),
-                    ),
-                    /// 🔥 END OF POLICE STATUS UI
+                    )
                   ],
                 ),
               );
@@ -265,16 +272,16 @@ class PolicePetitionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _detailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
             child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.grey)),
           ),
           Expanded(child: Text(value)),
         ],
@@ -282,104 +289,113 @@ class PolicePetitionsScreen extends StatelessWidget {
     );
   }
 
+  /* ---------------- UI ---------------- */
   @override
-Widget build(BuildContext context) {
-  final policeProvider = context.watch<PoliceAuthProvider>();
-  final policeStation = policeProvider.policeProfile?['stationName'];
+  Widget build(BuildContext context) {
+    if (_stationName == null) {
+      debugPrint('⏳ Waiting for station name...');
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  if (policeStation == null) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
-  }
+    return Scaffold(
+      appBar: AppBar(title: Text('Petitions – $_stationName')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('petitions')
+            .where('stationName', isEqualTo: _stationName)
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          debugPrint('📡 Snapshot state: ${snapshot.connectionState}');
+          debugPrint('📡 Snapshot hasData: ${snapshot.hasData}');
+          debugPrint('📡 Snapshot error: ${snapshot.error}');
+          debugPrint(
+              '📡 Docs count: ${snapshot.data?.docs.length ?? 0}');
 
-  return Scaffold(
-    appBar: AppBar(
-      title: Text('Petitions – $policeStation'),
-    ),
-    body: StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('petitions')
-          .where('stationName', isEqualTo: policeStation)
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No petitions for your station'));
-        }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text('No petitions for your station'),
+            );
+          }
 
-        final petitions = snapshot.data!.docs
-            .map((d) => Petition.fromFirestore(d))
-            .toList();
+          final petitions = snapshot.data!.docs
+              .map((d) => Petition.fromFirestore(d))
+              .toList();
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: petitions.length,
-          itemBuilder: (context, index) {
-            final p = petitions[index];
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: petitions.length,
+            itemBuilder: (_, i) {
+              final p = petitions[i];
+              debugPrint(
+                  '🧾 Rendering petition: ${p.title} | station=${p.stationName}');
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: InkWell(
-                onTap: () => _showPetitionDetails(context, p),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              p.title,
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          if (p.policeStatus != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _getStringStatusColor(p.policeStatus!),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  onTap: () => _showPetitionDetails(context, p),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
                               child: Text(
-                                p.policeStatus!,
-                                style: const TextStyle(color: Colors.white),
+                                p.title,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        p.petitionerName,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Created: ${_formatTimestamp(p.createdAt)}',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600),
-                      ),
-                    ],
+                            if (p.policeStatus != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _getPoliceStatusColor(
+                                      p.policeStatus!),
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  p.policeStatus!,
+                                  style: const TextStyle(
+                                      color: Colors.white),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          p.petitionerName,
+                          style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Created: ${_formatTimestamp(p.createdAt)}',
+                          style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 11),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-}
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }

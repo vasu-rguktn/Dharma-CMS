@@ -58,6 +58,34 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+
+  /// 🚓 Fetch petitions for POLICE by station name ✅
+  Future<void> fetchPetitionsByStation(String stationName) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      debugPrint('🔍 Fetching petitions for station: $stationName');
+
+      final snapshot = await _firestore
+          .collection('petitions')
+          .where('stationName', isEqualTo: stationName)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      _petitions =
+          snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
+
+      debugPrint('✅ Fetched ${_petitions.length} petitions for station');
+    } catch (e) {
+      debugPrint('❌ Error fetching station petitions: $e');
+      _petitions = [];
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
   String generateCaseId({
   required String district,
   required String stationName,
@@ -320,3 +348,4 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 }
+
