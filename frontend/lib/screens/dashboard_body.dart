@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
-import 'package:Dharma/models/case_status.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 class DashboardBody extends StatelessWidget {
   final AuthProvider auth;
@@ -239,14 +238,26 @@ class DashboardBody extends StatelessWidget {
   List<Widget> _policeActions(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
     return [
-        _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document, '/document-drafting', Colors.green),
-        _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present, '/chargesheet-generation', Colors.teal),
-        _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check, '/chargesheet-vetting', Colors.indigo),
-        _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search, '/media-analysis', Colors.cyan.shade700),
-        _quickActionCard(ctx, localizations.caseJournal, Icons.book, '/case-journal', Colors.deepOrange),
-        _quickActionCard(ctx, localizations.complaints, Icons.archive, '/complaints', Colors.orange.shade700),
-        _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions', Colors.red.shade800),
-      ];
+       _quickActionCard(ctx, localizations.allCases,
+          Icons.file_copy_rounded, '/cases', Colors.blueGrey),
+           _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions',
+          Colors.red.shade800),
+      _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document,
+          '/document-drafting', Colors.green),
+      _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present,
+          '/chargesheet-generation', Colors.teal),
+      _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check,
+          '/chargesheet-vetting', Colors.indigo),
+      _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search,
+          '/media-analysis', Colors.cyan.shade700),
+      _quickActionCard(ctx, localizations.caseJournal, Icons.book,
+          '/case-journal', Colors.deepOrange),
+      // New quick action: All Cases (Case Management)
+     
+      _quickActionCard(ctx, localizations.complaints, Icons.archive,
+          '/complaints', Colors.orange.shade700),
+     
+    ];
   }
 
   // ── RECENT ACTIVITY ──

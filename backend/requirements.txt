@@ -8,3 +8,4 @@ loguru
 aiofiles
 google-cloud-speech
 google-cloud-storage
+reportlab

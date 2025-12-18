@@ -4,12 +4,14 @@ import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/models/case_doc.dart';
 import 'package:Dharma/models/case_journal_entry.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/storage_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 
 class CaseJournalScreen extends StatefulWidget {
   const CaseJournalScreen({super.key});
@@ -25,6 +27,16 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
   // Your signature orange
   static const Color orange = Color(0xFFFC633C);
+
+  // AI Investigation Report state
+  // NOTE: For Flutter web, we call the FastAPI backend explicitly via full URL.
+  // In production, replace this with your deployed API base URL or an environment-based config.
+  final Dio _dio = Dio();
+  String? _generatedReportText;
+  String? _finalPdfUrl;
+  bool _isGeneratingReport = false;
+  bool _isSavingFinalReport = false;
+  final TextEditingController _reportController = TextEditingController();
 
   Future<void> _fetchJournalEntries(String caseId) async {
     setState(() {
@@ -444,6 +456,162 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
     );
   }
 
+  dynamic _serializeForApi(dynamic value) {
+    if (value is Timestamp) {
+      return {
+        '__type': 'timestamp',
+        'value': value.toDate().toIso8601String(),
+      };
+    }
+    if (value is Map<String, dynamic>) {
+      return value.map((key, v) => MapEntry(key, _serializeForApi(v)));
+    }
+    if (value is List) {
+      return value.map(_serializeForApi).toList();
+    }
+    return value;
+  }
+
+  Map<String, dynamic> _buildFirPayload(CaseDoc caseDoc) {
+    final raw = caseDoc.toMap();
+    final withId = {
+      'id': caseDoc.id,
+      ...raw,
+    };
+    return withId.map((key, value) => MapEntry(key, _serializeForApi(value)));
+  }
+
+  Map<String, dynamic> _buildJournalEntryPayload(CaseJournalEntry entry) {
+    final raw = entry.toMap();
+    final withId = {
+      'id': entry.id,
+      ...raw,
+    };
+    return withId.map((key, value) => MapEntry(key, _serializeForApi(value)));
+  }
+
+  List<Map<String, dynamic>> _deriveEvidenceList() {
+    final List<Map<String, dynamic>> evidence = [];
+    for (final entry in _journalEntries) {
+      if (entry.attachmentUrls != null && entry.attachmentUrls!.isNotEmpty) {
+        for (final url in entry.attachmentUrls!) {
+          evidence.add({
+            'description': '${entry.activityType} - attachment',
+            'url': url,
+          });
+        }
+      }
+    }
+    return evidence;
+  }
+
+  Future<void> _generateInvestigationReport({required bool finaliseWithOverride}) async {
+    final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+
+    if (_selectedCaseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select a case to generate the investigation report.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final selectedCase = caseProvider.cases.firstWhere(
+      (c) => c.id == _selectedCaseId,
+      orElse: () => throw Exception('Selected case not found'),
+    );
+
+    if (_journalEntries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No journal entries available for this case.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      if (finaliseWithOverride) {
+        _isSavingFinalReport = true;
+      } else {
+        _isGeneratingReport = true;
+        _generatedReportText = null;
+        _finalPdfUrl = null;
+      }
+    });
+
+    try {
+      final firPayload = _buildFirPayload(selectedCase);
+      final journalPayload = _journalEntries.map(_buildJournalEntryPayload).toList();
+      final evidenceList = _deriveEvidenceList();
+
+      final Map<String, dynamic> requestBody = {
+        'fir': firPayload,
+        'case_journal_entries': journalPayload,
+        'evidence_list': evidenceList,
+      };
+
+      if (finaliseWithOverride) {
+        requestBody['override_report_text'] = _reportController.text.trim();
+      }
+
+      final response = await _dio.post(
+        'http://127.0.0.1:8000/api/generate-investigation-report',
+        data: requestBody,
+      );
+
+      final data = response.data as Map<String, dynamic>;
+      final reportText = data['report_text'] as String? ?? '';
+      final pdfUrl = data['pdf_url'] as String? ?? '';
+
+      setState(() {
+        _generatedReportText = reportText;
+        if (!finaliseWithOverride) {
+          _reportController.text = reportText;
+        }
+        _finalPdfUrl = pdfUrl.isNotEmpty ? pdfUrl : null;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              finaliseWithOverride
+                  ? 'Investigation report finalised and PDF generated.'
+                  : 'AI investigation report draft generated. Please review before finalising.',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate investigation report: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingReport = false;
+          _isSavingFinalReport = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _reportController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final caseProvider = Provider.of<CaseProvider>(context);
@@ -562,6 +730,31 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                   Text(localizations.investigationDiary, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                                   Row(
                                     children: [
+                                      ElevatedButton.icon(
+                                        onPressed: _isGeneratingReport
+                                            ? null
+                                            : () {
+                                                _generateInvestigationReport(finaliseWithOverride: false);
+                                              },
+                                        icon: _isGeneratingReport
+                                            ? const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                ),
+                                              )
+                                            : const Icon(Icons.description_rounded, size: 20),
+                                        label: const Text('Generate Court Document'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: orange,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
                                       IconButton(
                                         icon: Icon(Icons.add_circle, color: orange, size: 32),
                                         tooltip: localizations.addJournalEntryTooltip,
@@ -598,6 +791,125 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           ),
                         ),
                       ),
+
+                    if (_generatedReportText != null) ...[
+                      const SizedBox(height: 24),
+                      Card(
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.gavel_rounded, color: orange, size: 28),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Investigation Report Draft',
+                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange[50],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.orange[200]!),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'AI-generated draft – Verified by Investigating Officer',
+                                        style: TextStyle(color: Colors.orange[800], fontSize: 13, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Review and edit the draft before finalising and generating the court PDF.',
+                                style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 320,
+                                child: TextField(
+                                  controller: _reportController,
+                                  maxLines: null,
+                                  expands: true,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                  ),
+                                  style: const TextStyle(fontSize: 14, height: 1.4),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: _isSavingFinalReport
+                                        ? null
+                                        : () {
+                                            _generateInvestigationReport(finaliseWithOverride: true);
+                                          },
+                                    icon: _isSavingFinalReport
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
+                                          )
+                                        : const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                                    label: const Text('Confirm & Generate PDF'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: orange,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  if (_finalPdfUrl != null)
+                                    OutlinedButton.icon(
+                                      onPressed: () async {
+                                        // Resolve relative URLs (e.g. "/static/reports/...") against the FastAPI backend.
+                                        final String resolvedUrl = _finalPdfUrl!.startsWith('http')
+                                            ? _finalPdfUrl!
+                                            : 'http://127.0.0.1:8000$_finalPdfUrl';
+
+                                        final url = Uri.parse(resolvedUrl);
+                                        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                                          debugPrint('Could not open $url');
+                                        }
+                                      },
+                                      icon: const Icon(Icons.open_in_new),
+                                      label: const Text('Open Generated PDF'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: orange,
+                                        side: BorderSide(color: orange),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
