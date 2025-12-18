@@ -6,8 +6,10 @@ import 'package:Dharma/models/case_status.dart';
 import 'package:Dharma/models/case_journal_entry.dart';
 import 'package:Dharma/models/crime_details.dart';
 import 'package:Dharma/models/media_analysis.dart';
+import 'package:Dharma/models/petition.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CaseDetailScreen extends StatefulWidget {
   final String caseId;
@@ -24,6 +26,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   CrimeDetails? _crimeDetails;
   bool _isLoadingJournal = false;
   bool _isLoadingMedia = false;
+  bool _isLoadingPetitions = false;
+  List<Petition> _linkedPetitions = [];
 
   @override
   void initState() {
@@ -32,6 +36,10 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     _fetchCaseJournal();
     _fetchMediaAnalyses();
     _fetchCrimeDetails();
+    // Fetch petitions linked to this case (by FIR number) after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchLinkedPetitions();
+    });
   }
 
   @override
@@ -97,6 +105,38 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
       }
     } catch (e) {
       print('Error fetching crime details: $e');
+    }
+  }
+
+  Future<void> _fetchLinkedPetitions() async {
+    setState(() => _isLoadingPetitions = true);
+    try {
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      final caseDoc = caseProvider.cases.firstWhere(
+        (c) => c.id == widget.caseId,
+        orElse: () => throw Exception('Case not found'),
+      );
+
+      final firNumber = caseDoc.firNumber;
+      if (firNumber.isEmpty) {
+        setState(() => _isLoadingPetitions = false);
+        return;
+      }
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('petitions')
+          .where('firNumber', isEqualTo: firNumber)
+          .get();
+
+      setState(() {
+        _linkedPetitions = snapshot.docs
+            .map((doc) => Petition.fromFirestore(doc))
+            .toList();
+      });
+    } catch (e) {
+      print('Error fetching linked petitions: $e');
+    } finally {
+      setState(() => _isLoadingPetitions = false);
     }
   }
 
@@ -995,60 +1035,296 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   }
 
   Widget _buildEvidenceTab(CaseDoc caseDoc, ThemeData theme) {
+    final hasJournalEvidence = _journalEntries.any(
+      (e) => e.attachmentUrls != null && e.attachmentUrls!.isNotEmpty,
+    );
+    final hasPetitionEvidence = _linkedPetitions.any(
+      (p) =>
+          (p.proofDocumentUrls != null && p.proofDocumentUrls!.isNotEmpty) ||
+          p.handwrittenDocumentUrl != null,
+    );
+
+    final isLoading = _isLoadingJournal || _isLoadingPetitions;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Icon(Icons.archive, size: 64, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Text(
-                'Evidence & Seizures',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isLoading)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Loading linked evidence from investigation diary and petitions...',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: Colors.grey[700]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Evidence management coming soon. This will include collected evidence and seized property details.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+            ),
+          if (!isLoading && !(hasJournalEvidence || hasPetitionEvidence))
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Icon(Icons.archive, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No linked evidence documents yet',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'When officers attach documents in the Case Journal or upload proofs in related petitions, they will appear here.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
-        ),
+            ),
+          if (hasJournalEvidence)
+            _buildSection(
+              theme,
+              'From Investigation Diary',
+              _buildJournalEvidenceWidgets(theme),
+            ),
+          if (hasPetitionEvidence)
+            _buildSection(
+              theme,
+              'From Petitions',
+              _buildPetitionEvidenceWidgets(theme),
+            ),
+        ],
       ),
     );
   }
 
+  List<Widget> _buildJournalEvidenceWidgets(ThemeData theme) {
+    final List<Widget> widgets = [];
+
+    for (final entry in _journalEntries) {
+      if (entry.attachmentUrls == null || entry.attachmentUrls!.isEmpty) {
+        continue;
+      }
+
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.activityType,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatTimestamp(entry.dateTime),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (int i = 0; i < entry.attachmentUrls!.length; i++)
+                    ActionChip(
+                      avatar: const Icon(Icons.attach_file, size: 16),
+                      label: Text('Journal Doc ${i + 1}'),
+                      onPressed: () async {
+                        final url = Uri.parse(entry.attachmentUrls![i]);
+                        if (!await launchUrl(url,
+                            mode: LaunchMode.externalApplication)) {
+                          debugPrint('Could not open $url');
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (widgets.isEmpty) {
+      widgets.add(
+        Text(
+          'No documents attached in the investigation diary yet.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  List<Widget> _buildPetitionEvidenceWidgets(ThemeData theme) {
+    final List<Widget> widgets = [];
+
+    for (final petition in _linkedPetitions) {
+      final List<String> docs = [];
+      if (petition.handwrittenDocumentUrl != null) {
+        docs.add(petition.handwrittenDocumentUrl!);
+      }
+      if (petition.proofDocumentUrls != null) {
+        docs.addAll(petition.proofDocumentUrls!);
+      }
+      if (docs.isEmpty) continue;
+
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                petition.title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                petition.type.displayName,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (int i = 0; i < docs.length; i++)
+                    ActionChip(
+                      avatar: const Icon(Icons.picture_as_pdf, size: 16),
+                      label: Text('Petition Doc ${i + 1}'),
+                      onPressed: () async {
+                        final url = Uri.parse(docs[i]);
+                        if (!await launchUrl(url,
+                            mode: LaunchMode.externalApplication)) {
+                          debugPrint('Could not open $url');
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (widgets.isEmpty) {
+      widgets.add(
+        Text(
+          'No petition documents linked to this case yet.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
   Widget _buildFinalReportTab(CaseDoc caseDoc, ThemeData theme) {
+    final String? pdfUrl = caseDoc.investigationReportPdfUrl;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.gavel, size: 64, color: Colors.grey[400]),
+              Row(
+                children: [
+                  Icon(Icons.gavel, size: 48, color: Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Final Investigation Report / Court Document',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (caseDoc.investigationReportGeneratedAt != null)
+                Text(
+                  'Generated on: ${_formatTimestamp(caseDoc.investigationReportGeneratedAt!)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[700],
+                  ),
+                ),
               const SizedBox(height: 16),
-              Text(
-                'Final Report/Chargesheet',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+              if (pdfUrl == null || pdfUrl.isEmpty) ...[
+                Text(
+                  'No final investigation report has been attached to this case yet.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[700],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Final report section coming soon. This will include charge sheet or case closure report.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                const SizedBox(height: 8),
+                Text(
+                  'Once an investigating officer generates and confirms the AI-assisted investigation report from the Case Journal screen, the final PDF will be linked here.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ] else ...[
+                Text(
+                  'A court-ready investigation report PDF has been generated and attached to this case.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final String resolvedUrl = pdfUrl.startsWith('http')
+                        ? pdfUrl
+                        : 'http://127.0.0.1:8000$pdfUrl';
+
+                    final url = Uri.parse(resolvedUrl);
+                    if (!await launchUrl(url,
+                        mode: LaunchMode.externalApplication)) {
+                      debugPrint('Could not open $url');
+                    }
+                  },
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Download / View Final Report PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

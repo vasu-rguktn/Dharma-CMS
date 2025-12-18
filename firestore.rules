@@ -52,8 +52,16 @@ service cloud.firestore {
         isPolice()
       );
 
-      // Only the owner can update/delete their case
-      allow update, delete: if request.auth != null &&
+      // Updates:
+      // - Citizen owner can update their own case
+      // - Approved police can update any case (to attach investigation PDFs, etc.)
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+
+      // Deletions remain restricted to the citizen owner
+      allow delete: if request.auth != null &&
         resource.data.userId == request.auth.uid;
     }
 
@@ -89,9 +97,20 @@ service cloud.firestore {
       allow create: if isPolice() &&
         request.resource.data.officerUid == request.auth.uid;
 
-      // Any approved police officer can read journal entries
-      // (for supervisor / station-level review).
-      allow read: if isPolice();
+      // Read access:
+      // - Any approved police officer can read journal entries
+      //   (for supervisor / station-level review).
+      // - The citizen who owns the underlying FIR/case can also read
+      //   entries for their own case, so that evidence attachments
+      //   show up under Case Details → Evidence tab.
+      allow read: if
+        isPolice() ||
+        (
+          request.auth != null &&
+          resource.data.caseId is string &&
+          exists(/databases/$(database)/documents/cases/$(resource.data.caseId)) &&
+          get(/databases/$(database)/documents/cases/$(resource.data.caseId)).data.userId == request.auth.uid
+        );
 
       // Only the officer who created the entry can modify/delete it.
       allow update, delete: if isPolice() &&

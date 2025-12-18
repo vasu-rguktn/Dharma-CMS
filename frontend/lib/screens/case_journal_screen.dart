@@ -575,12 +575,24 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
         _finalPdfUrl = pdfUrl.isNotEmpty ? pdfUrl : null;
       });
 
+      // If this is the finalised report, persist the PDF URL onto the case document
+      // so that it appears under Case Details → Final Report tab.
+      if (finaliseWithOverride && pdfUrl.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('cases')
+            .doc(_selectedCaseId)
+            .update({
+          'investigationReportPdfUrl': pdfUrl,
+          'investigationReportGeneratedAt': Timestamp.now(),
+        });
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               finaliseWithOverride
-                  ? 'Investigation report finalised and PDF generated.'
+                  ? 'Investigation report finalised and PDF attached to case.'
                   : 'AI investigation report draft generated. Please review before finalising.',
             ),
             backgroundColor: Colors.green,

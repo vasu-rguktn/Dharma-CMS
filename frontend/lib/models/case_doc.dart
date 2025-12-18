@@ -97,6 +97,10 @@ class CaseDoc {
   
   // Accused details (optional, as a list of maps)
   final List<dynamic>? accusedPersons;
+
+  // AI-generated investigation report (court document)
+  final String? investigationReportPdfUrl;
+  final Timestamp? investigationReportGeneratedAt;
   
   CaseDoc({
     this.id,
@@ -174,6 +178,8 @@ class CaseDoc {
     this.isRoacRecorded,
     this.complainantSignatureNote,
     this.accusedPersons,
+    this.investigationReportPdfUrl,
+    this.investigationReportGeneratedAt,
   });
 
   factory CaseDoc.fromFirestore(DocumentSnapshot doc) {
@@ -254,6 +260,9 @@ class CaseDoc {
       isRoacRecorded: data['isRoacRecorded'] as bool?,
       complainantSignatureNote: data['complainantSignatureNote'],
       accusedPersons: data['accusedPersons'] as List<dynamic>?,
+      investigationReportPdfUrl: data['investigationReportPdfUrl'],
+      investigationReportGeneratedAt:
+          data['investigationReportGeneratedAt'] as Timestamp?,
     );
   }
 
@@ -333,6 +342,8 @@ class CaseDoc {
       'isRoacRecorded': isRoacRecorded,
       'complainantSignatureNote': complainantSignatureNote,
       'accusedPersons': accusedPersons,
+      'investigationReportPdfUrl': investigationReportPdfUrl,
+      'investigationReportGeneratedAt': investigationReportGeneratedAt,
     };
   }
 }
