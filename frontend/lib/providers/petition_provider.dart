@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -59,6 +57,25 @@ class PetitionProvider with ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  String generateCaseId({
+  required String district,
+  required String stationName,
+}) {
+  final date = DateTime.now();
+  final formattedDate =
+      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+
+  final random = DateTime.now().millisecondsSinceEpoch
+      .toString()
+      .substring(7); // pseudo-random
+
+  final safeDistrict = district.replaceAll(' ', '');
+  final safeStation = stationName.replaceAll(' ', '');
+
+  return 'case-$safeDistrict-$safeStation-$formattedDate-$random';
+}
+
 
   /// Fetch petition stats (Total, Closed, Received, In Progress)
   /// If [userId] is provided, fetches stats for that specific user (Citizen)
@@ -148,110 +165,120 @@ class PetitionProvider with ChangeNotifier {
   }
 
   /// Create a new petition with document uploads
-  Future<bool> createPetition({
-    required Petition petition,
-    PlatformFile? handwrittenFile,
-    List<PlatformFile>? proofFiles,
-  }) async {
-    try {
-      String? handwrittenUrl;
-      List<String>? proofUrls;
+  
 
-      // Upload Handwritten Document
-      if (handwrittenFile != null) {
-        // Generate readable timestamp
-        final timestamp = DateTime.now()
-            .toString()
-            .split('.')
-            .first
-            .replaceAll(':', '-')
-            .replaceAll(' ', '_');
-        final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
+     Future<bool> createPetition({
+  required Petition petition,
+  PlatformFile? handwrittenFile,
+  List<PlatformFile>? proofFiles,
+}) async {
+  try {
+    String? handwrittenUrl;
+    List<String>? proofUrls;
 
-        final path = 'petitions/${petition.userId}/handwritten/$fileName';
-        handwrittenUrl =
-            await StorageService.uploadFile(file: handwrittenFile, path: path);
-      }
+    // ✅ GENERATE CASE ID ONCE
+    final caseId = generateCaseId(
+      district: petition.district ?? 'UnknownDistrict',
+      stationName: petition.stationName ?? 'UnknownStation',
+    );
 
-      // Upload Proof Documents
-      if (proofFiles != null && proofFiles.isNotEmpty) {
-        // Generate readable timestamp for folder
-        final timestamp = DateTime.now()
-            .toString()
-            .split('.')
-            .first
-            .replaceAll(':', '-')
-            .replaceAll(' ', '_');
-        final folderPath =
-            'petitions/${petition.userId}/proofs/Proofs_$timestamp';
-
-        proofUrls = await StorageService.uploadMultipleFiles(
-            files: proofFiles, folderPath: folderPath);
-      }
-
-      // Generate Custom Petition ID
-      final safeName =
-          (petition.petitionerName ?? 'Petitioner').replaceAll(' ', '_');
-      final safeDate = DateTime.now()
+    // Upload Handwritten Document
+    if (handwrittenFile != null) {
+      final timestamp = DateTime.now()
           .toString()
-          .replaceAll(' ', '_')
-          .replaceAll(':', '-')
           .split('.')
-          .first;
-      String petitionCustomId = "Petition_${safeName}_$safeDate";
+          .first
+          .replaceAll(':', '-')
+          .replaceAll(' ', '_');
 
-      // Create petition with uploaded file URLs and new Custom ID
-      final newPetition = Petition(
-  id: petitionCustomId,
-  title: petition.title,
-  type: petition.type,
-  status: petition.status,
-  petitionerName: petition.petitionerName,
-  phoneNumber: petition.phoneNumber,
-  address: petition.address,
-  grounds: petition.grounds,
+      final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
+      final path = 'petitions/${petition.userId}/handwritten/$fileName';
 
-  // ✅ ADD THESE (PASS THROUGH)
-  incidentAddress: petition.incidentAddress,
-  incidentDate: petition.incidentDate,
-  district: petition.district,
-  stationName: petition.stationName,
-
-  prayerRelief: petition.prayerRelief,
-  firNumber: petition.firNumber,
-  nextHearingDate: petition.nextHearingDate,
-  filingDate: petition.filingDate,
-  orderDate: petition.orderDate,
-  orderDetails: petition.orderDetails,
-  policeStatus: 'Pending',
-  policeSubStatus: petition.policeSubStatus,
-  extractedText: petition.extractedText,
-  handwrittenDocumentUrl: handwrittenUrl,
-  proofDocumentUrls: proofUrls,
-  userId: petition.userId,
-  createdAt: petition.createdAt,
-  updatedAt: petition.updatedAt,
-);
-
-
-      // Use .set() with the custom ID instead of .add()
-      await _firestore
-          .collection('petitions')
-          .doc(petitionCustomId)
-          .set(newPetition.toMap());
-      await fetchPetitions(petition.userId);
-      // Update stats for the user
-      await fetchPetitionStats(userId: petition.userId);
-      // Update global stats
-      await fetchPetitionStats();
-      notifyListeners();
-
-      return true;
-    } catch (e) {
-      debugPrint("Error creating petition: $e");
-      return false;
+      handwrittenUrl =
+          await StorageService.uploadFile(file: handwrittenFile, path: path);
     }
+
+    // Upload Proof Documents
+    if (proofFiles != null && proofFiles.isNotEmpty) {
+      final timestamp = DateTime.now()
+          .toString()
+          .split('.')
+          .first
+          .replaceAll(':', '-')
+          .replaceAll(' ', '_');
+
+      final folderPath =
+          'petitions/${petition.userId}/proofs/Proofs_$timestamp';
+
+      proofUrls = await StorageService.uploadMultipleFiles(
+        files: proofFiles,
+        folderPath: folderPath,
+      );
+    }
+
+    // Custom Petition ID
+    final safeName =
+        petition.petitionerName.replaceAll(' ', '_');
+    final safeDate = DateTime.now()
+        .toString()
+        .replaceAll(' ', '_')
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+
+    final petitionCustomId = "Petition_${safeName}_$safeDate";
+
+    // ✅ FINAL PETITION OBJECT
+    final newPetition = Petition(
+      id: petitionCustomId,
+      caseId: caseId, // ✅ NOW WORKS
+      title: petition.title,
+      type: petition.type,
+      status: petition.status,
+      petitionerName: petition.petitionerName,
+      phoneNumber: petition.phoneNumber,
+      address: petition.address,
+      grounds: petition.grounds,
+
+      incidentAddress: petition.incidentAddress,
+      incidentDate: petition.incidentDate,
+      district: petition.district,
+      stationName: petition.stationName,
+
+      prayerRelief: petition.prayerRelief,
+      firNumber: petition.firNumber,
+      nextHearingDate: petition.nextHearingDate,
+      filingDate: petition.filingDate,
+      orderDate: petition.orderDate,
+      orderDetails: petition.orderDetails,
+
+      policeStatus: 'Pending',
+      policeSubStatus: petition.policeSubStatus,
+      extractedText: petition.extractedText,
+      handwrittenDocumentUrl: handwrittenUrl,
+      proofDocumentUrls: proofUrls,
+
+      userId: petition.userId,
+      createdAt: petition.createdAt,
+      updatedAt: petition.updatedAt,
+    );
+
+    await _firestore
+        .collection('petitions')
+        .doc(petitionCustomId)
+        .set(newPetition.toMap());
+
+    await fetchPetitions(petition.userId);
+    await fetchPetitionStats(userId: petition.userId);
+    await fetchPetitionStats();
+
+    notifyListeners();
+    return true;
+  } catch (e) {
+    debugPrint("Error creating petition: $e");
+    return false;
   }
+}
 
   /// Update any petition field (including police status fields)
   Future<bool> updatePetition(
