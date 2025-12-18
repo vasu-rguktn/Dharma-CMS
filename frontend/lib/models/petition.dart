@@ -112,6 +112,8 @@ extension PetitionStatusExtension on PetitionStatus {
 class Petition {
   final String? id;
   final String title;
+  final String? caseId;
+
   final PetitionType type;
   final PetitionStatus status;
   final String petitionerName;
@@ -149,6 +151,8 @@ final String? stationName;
     this.type = PetitionType.other,
     this.status = PetitionStatus.draft,
     required this.petitionerName,
+    this.caseId,
+
     this.phoneNumber,
     this.address,
     required this.grounds,
@@ -177,6 +181,9 @@ final String? stationName;
     final data = doc.data() as Map<String, dynamic>;
     return Petition(
       id: doc.id,
+     caseId: data['case_id'],
+
+
       title: data['title'] ?? '',
       type: PetitionTypeExtension.fromString(data['type'] ?? 'other'),
       status: PetitionStatusExtension.fromString(data['status'] ?? 'draft'),
@@ -212,6 +219,8 @@ stationName: data['stationName'],
     return {
       'title': title,
       'type': type.displayName,
+      'case_id': caseId,
+
       'status': status.displayName,
       'petitionerName': petitionerName,
       if (phoneNumber != null) 'phoneNumber': phoneNumber,
