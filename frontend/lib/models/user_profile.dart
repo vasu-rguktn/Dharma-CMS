@@ -70,4 +70,50 @@ class UserProfile {
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
     );
   }
+
+  UserProfile copyWith({
+    String? uid,
+    String? email,
+    String? displayName,
+    String? phoneNumber,
+    String? stationName,
+    String? district,
+    String? rank,
+    String? badgeNumber,
+    String? employeeId,
+    String? houseNo,
+    String? address,
+    String? state,
+    String? country,
+    String? pincode,
+    String? username,
+    String? dob,
+    String? gender,
+    String? role,
+    Timestamp? createdAt,
+    Timestamp? updatedAt,
+  }) {
+    return UserProfile(
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      stationName: stationName ?? this.stationName,
+      district: district ?? this.district,
+      rank: rank ?? this.rank,
+      badgeNumber: badgeNumber ?? this.badgeNumber,
+      employeeId: employeeId ?? this.employeeId,
+      houseNo: houseNo ?? this.houseNo,
+      address: address ?? this.address,
+      state: state ?? this.state,
+      country: country ?? this.country,
+      pincode: pincode ?? this.pincode,
+      username: username ?? this.username,
+      dob: dob ?? this.dob,
+      gender: gender ?? this.gender,
+      role: role ?? this.role,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

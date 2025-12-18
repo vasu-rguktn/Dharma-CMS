@@ -72,61 +72,61 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _loadUserProfile(String uid) async {
-    _isProfileLoading = true;
-    notifyListeners();
+  _isProfileLoading = true;
+  notifyListeners();
 
-    try {
-      debugPrint('AuthProvider: loading profile for uid=$uid');
-      final docRef = _firestore.collection('users').doc(uid);
-      final doc = await docRef.get();
-      debugPrint('AuthProvider: firestore get completed for uid=$uid, exists=${doc.exists}');
-      if (doc.exists) {
-        try {
-          _userProfile = UserProfile.fromFirestore(doc);
-          debugPrint('AuthProvider: parsed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
+  try {
+    debugPrint('AuthProvider: checking police collection for uid=$uid');
 
-          // If profile fields are missing, try to backfill from FirebaseAuth (or email local-part)
-          final updates = <String, dynamic>{};
-          final firebaseName = _auth.currentUser?.displayName?.trim();
-          final email = _auth.currentUser?.email;
+    // 1️⃣ CHECK POLICE COLLECTION FIRST
+    final policeQuery = await _firestore
+        .collection('police')
+        .where('uid', isEqualTo: uid)
+        .limit(1)
+        .get();
 
-          if ((_userProfile?.displayName == null || _userProfile!.displayName!.trim().isEmpty) && firebaseName != null && firebaseName.isNotEmpty) {
-            updates['displayName'] = firebaseName;
-          }
+    if (policeQuery.docs.isNotEmpty) {
+      final doc = policeQuery.docs.first;
+      _userProfile = UserProfile.fromFirestore(doc);
 
-          if ((_userProfile?.username == null || _userProfile!.username!.trim().isEmpty) && email != null && email.isNotEmpty) {
-            final localPart = email.split('@').first;
-            if (localPart.isNotEmpty) updates['username'] = localPart;
-          }
+      // Force role
+      _userProfile = _userProfile!.copyWith(role: 'police');
 
-          if (updates.isNotEmpty) {
-            debugPrint('AuthProvider: backfilling profile for uid=$uid with $updates');
-            try {
-              await docRef.update(updates);
-              final refreshed = await docRef.get();
-              if (refreshed.exists) {
-                _userProfile = UserProfile.fromFirestore(refreshed);
-                debugPrint('AuthProvider: refreshed userProfile for uid=$uid -> displayName=${_userProfile?.displayName}, username=${_userProfile?.username}');
-              }
-            } catch (e, st) {
-              debugPrint('AuthProvider: failed to backfill profile for uid=$uid -> $e\n$st');
-            }
-          }
-        } catch (e, st) {
-          debugPrint('AuthProvider: error parsing UserProfile: $e\n$st');
-          _userProfile = null;
-        }
-      } else {
-        _userProfile = null;
-      }
-    } catch (e) {
-      debugPrint('AuthProvider: error loading profile for uid=$uid -> $e');
+      debugPrint('AuthProvider: police profile loaded for uid=$uid');
+      _isProfileLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    debugPrint('AuthProvider: not police, checking users collection');
+
+    // 2️⃣ CHECK USERS (CITIZEN)
+    final userQuery = await _firestore
+        .collection('users')
+        .where('uid', isEqualTo: uid)
+        .limit(1)
+        .get();
+
+    if (userQuery.docs.isNotEmpty) {
+      _userProfile = UserProfile.fromFirestore(userQuery.docs.first);
+
+      debugPrint('AuthProvider: citizen profile loaded for uid=$uid');
+    } else {
+      debugPrint('AuthProvider: no profile found for uid=$uid');
       _userProfile = null;
     }
 
-    _isProfileLoading = false;
-    notifyListeners();
+  } catch (e, st) {
+    debugPrint('AuthProvider: error loading profile -> $e\n$st');
+    _userProfile = null;
   }
+
+  _isProfileLoading = false;
+  notifyListeners();
+}
+
+ 
+ 
   Future<void> loadUserProfile(String uid) async {
   return await _loadUserProfile(uid);
 }

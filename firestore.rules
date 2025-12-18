@@ -6,11 +6,10 @@ service cloud.firestore {
     // Modified to allow custom document IDs (Dharma_Name_Date) 
     // by checking the 'uid' field inside the document instead of the document name.
     match /users/{userId} {
-      allow read: if request.auth != null && (
-        resource.data.uid == request.auth.uid || 
-        // Also allow if the user is a police officer (optional, but good for admin)
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'police'
-      );
+      // Allow read if:
+      // 1. The document's uid field matches the authenticated user's uid
+      // 2. OR the user is authenticated (simplified for now to avoid nested get() calls)
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
       
       // Allow create if the new document's 'uid' matches the logged-in user
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
@@ -19,44 +18,58 @@ service cloud.firestore {
       allow update: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
+    // POLICE COLLECTION (for police-specific data)
+    match /police/{policeId} {
+      // Allow read if authenticated and document's uid matches user's uid
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      
+      // Allow create if the new document's 'uid' matches the logged-in user
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      
+      // Allow update if the existing document belongs to the user
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    
+    // CASES COLLECTION
+  // CASES COLLECTION (FIRs)
+	match /cases/{caseId} {
+    // Allow authenticated users to create a case where userId matches their uid
+    allow create: if request.auth != null
+      && request.resource.data.userId == request.auth.uid;
+
+    // Citizens: only own cases
+    // Police (role == 'police' in users collection): all cases
+    allow read: if request.auth != null && (
+      resource.data.userId == request.auth.uid ||
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'police'
+    );
+
+    // Only the owner can update/delete their case
+    allow update, delete: if request.auth != null
+      && resource.data.userId == request.auth.uid;
+  }
+
     // PETITIONS COLLECTION
     match /petitions/{petitionId} {
-      allow read: if true;
+      // Allow anyone authenticated to read petitions (for now)
+      // This allows both citizens to see their own and police to see all
+      allow read: if request.auth != null;
+      
+      // Allow authenticated users to create petitions
       allow create: if request.auth != null;
       
-      // Allow update if user is OWNER (userId field) or POLICE
-      // Note: checking police role requires looking up the user's profile.
-      // Since user profile IDs are now custom, we rely on the query to find the user profile.
-      // However, for rules, looking up by custom ID is hard. 
-      // SIMPLIFIED: We assume if they can read the police dashboard, they can update.
+      // Allow update if user is the owner
+      // Note: For police updates, we rely on authentication only
+      // since checking role requires a complex get() call with custom IDs
       allow update: if request.auth != null && (
         resource.data.userId == request.auth.uid ||
-        // Check if the user trying to update has a role of 'police'
-        // WARNING: This lookup might fail if your rule expects the doc ID to be the auth UID. 
-        // If we strictly need police access, we might need a separate 'admins' collection or similar.
-        // For now, let's keep the owner check as primary.
-        resource.data.userId == request.auth.uid 
+        // Allow if user is authenticated (police can update any petition)
+        // This is a simplified rule; for production, consider using custom claims
+        request.auth != null
       );
       
+      // Allow delete only if user is the owner
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    // CASES COLLECTION (FIRs)
-    match /cases/{caseId} {
-      // Allow authenticated users to create a case where userId matches their uid
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
-
-      // Citizens can read only their own cases.
-      // Police (role == 'police' in users collection) can read all cases.
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'police'
-      );
-
-      // Updates/deletes are restricted to the owner of the case
-      allow update, delete: if request.auth != null
-        && resource.data.userId == request.auth.uid;
     }
   }
 }
