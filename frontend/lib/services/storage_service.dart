@@ -14,12 +14,46 @@ class StorageService {
       final ref = _storage.ref().child(path);
       UploadTask uploadTask;
 
+      // Try to preserve a reasonable content type and mark as inline so that
+      // supported types (audio, video, PDF, images) can be streamed/viewed
+      // instead of always being downloaded.
+      String contentType = 'application/octet-stream';
+      final ext = file.extension?.toLowerCase();
+      switch (ext) {
+        case 'jpg':
+        case 'jpeg':
+          contentType = 'image/jpeg';
+          break;
+        case 'png':
+          contentType = 'image/png';
+          break;
+        case 'pdf':
+          contentType = 'application/pdf';
+          break;
+        case 'mp3':
+          contentType = 'audio/mpeg';
+          break;
+        case 'wav':
+          contentType = 'audio/wav';
+          break;
+        case 'mp4':
+          contentType = 'video/mp4';
+          break;
+        default:
+          break;
+      }
+
+      final metadata = SettableMetadata(
+        contentType: contentType,
+        contentDisposition: 'inline',
+      );
+
       if (kIsWeb) {
         if (file.bytes == null) return null;
-        uploadTask = ref.putData(file.bytes!);
+        uploadTask = ref.putData(file.bytes!, metadata);
       } else {
         if (file.path == null) return null;
-        uploadTask = ref.putFile(File(file.path!));
+        uploadTask = ref.putFile(File(file.path!), metadata);
       }
 
       final snapshot = await uploadTask;
