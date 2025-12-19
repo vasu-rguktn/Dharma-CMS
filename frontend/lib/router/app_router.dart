@@ -33,7 +33,7 @@ import 'package:Dharma/screens/media_analysis_screen.dart';
 import 'package:Dharma/screens/case_journal_screen.dart';
 import 'package:Dharma/screens/settings_screen.dart';
 import 'package:Dharma/screens/Helpline_screen.dart';
-
+import 'package:Dharma/screens/Investigation_Guidelines/AI_Investigation_Guidelines.dart';
 // ───────────────── AI ─────────────────
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
 import 'package:Dharma/screens/ai_legal_chat_screen.dart';
@@ -85,6 +85,7 @@ class AppRouter {
         '/cases',
         '/complaints',
         '/chat',
+        '/ai-investigation-guidelines',
         '/petitions',
         '/settings',
         '/legal-queries',
@@ -141,6 +142,7 @@ class AppRouter {
           '/media-analysis',
           '/case-journal',
           '/cases',
+          '/ai-investigation-guidelines'
 
         ];
 
@@ -252,6 +254,11 @@ class AppRouter {
             builder: (context, state) =>
                 AiChatbotDetailsScreen.fromRouteSettings(context, state),
           ),
+           GoRoute(
+  path: '/ai-investigation-guidelines',
+  builder: (context, state) =>
+      const AiInvestigationGuidelinesScreen(),
+),
 
           GoRoute(
             path: '/contact-officer',
