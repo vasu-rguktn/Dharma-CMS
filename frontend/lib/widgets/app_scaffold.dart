@@ -159,7 +159,7 @@ class _AppScaffoldState extends State<AppScaffold> {
               _buildDrawerItem(context, Icons.image_search,
                   localizations.mediaAnalysis, '/media-analysis', isDark),
               _buildDrawerItem(context, Icons.search,
-                  'AI Investigation', '/ai-investigation-guidelines', isDark),
+                  localizations.aiInvestigationGuidelines, '/ai-investigation-guidelines', isDark),
               _buildDrawerItem(context, Icons.book,
                   localizations.caseJournal, '/case-journal', isDark),
 

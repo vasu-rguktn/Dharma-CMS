@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 
 class DocumentDraftingScreen extends StatefulWidget {
-  const DocumentDraftingScreen({super.key});
+  const DocumentDraftingScreen({super.key});  
 
   @override
   State<DocumentDraftingScreen> createState() => _DocumentDraftingScreenState();
@@ -324,7 +324,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               ],
                             ),
                             const SizedBox(height: 24),
-                            Text("Case Data",
+                            Text(localizations.caseData,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
@@ -344,7 +344,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            Text("Recipient Type",
+                            Text(localizations.recipientType,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
@@ -372,7 +372,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                   setState(() => _recipientType = value),
                             ),
                             const SizedBox(height: 20),
-                            Text("Additional Instructions (Optional)",
+                            Text(localizations.additionalInstructionsOptional,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),

@@ -8,6 +8,7 @@ import 'package:Dharma/models/case_status.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../utils/district_translations.dart';
 
 class _AccusedFormData {
   final name = TextEditingController();
@@ -187,19 +188,19 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   DateTime? _occurrenceDateTimeFrom;
   DateTime? _occurrenceDateTimeTo;
   
-  // Dropdown values
-  String? _selectedDistrict;
+  // Dropdown values - storing English names internally for data consistency
+  String? _selectedDistrict; // English name
   String? _selectedSubDivision;
   String? _selectedCircle;
-  String? _selectedPoliceStation;
+  String? _selectedPoliceStation; // English name
   DateTime? _firRegistrationDate;
   
   bool _isLoading = false;
   int _currentStep = 0;
   final int _totalSteps = 9;
   
-  // District list
-  final List<String> _apDistricts = [
+  // District list (English names - will be displayed localized)
+  final List<String> _apDistrictsEnglish = [
     'Alluri Sitharama Raju',
     'Anakapalli',
     'Anantapur',
@@ -245,20 +246,29 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     // Add more as needed
   ];
   
-  // Police Station list (example - you may need to populate based on selected circle)
-  final List<String> _policeStations = [
-    'Nuzvid Town',
-    'Nuzvid Rural',
-    'Gudivada',
-    'Machilipatnam',
-    // Add more as needed
-  ];
+  // Police Station list - will be loaded dynamically from JSON
+  List<String> _policeStationsEnglish = []; // English names
 
   @override
   void initState() {
     super.initState();
     // Start with one accused by default
     _accusedList.add(_AccusedFormData());
+    // Load police stations when district is selected
+    _loadPoliceStationsForDistrict();
+  }
+
+  Future<void> _loadPoliceStationsForDistrict() async {
+    if (_selectedDistrict != null) {
+      final stations = await DistrictTranslations.getPoliceStationsForDistrict(
+        context,
+        _selectedDistrict!,
+      );
+      // Stations are returned in English for storage
+      setState(() {
+        _policeStationsEnglish = stations;
+      });
+    }
   }
 
   @override
@@ -896,7 +906,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '1. District & FIR Details',
+              "1. ${localizations.districtAndFirDetails}",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).primaryColor,
@@ -928,20 +938,34 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.location_city),
               ),
-              items: _apDistricts
-                  .map((district) => DropdownMenuItem(
-                        value: district,
-                        child: Text(district),
-                      ))
+              items: _apDistrictsEnglish
+                  .map((districtEnglish) {
+                    final localizedName = DistrictTranslations.getDistrictName(context, districtEnglish);
+                    return DropdownMenuItem(
+                      value: districtEnglish, // Store English name
+                      child: Text(localizedName), // Display localized name
+                    );
+                  })
                   .toList(),
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() {
                   _selectedDistrict = value;
                   // Reset dependent dropdowns when district changes
                   _selectedSubDivision = null;
                   _selectedCircle = null;
                   _selectedPoliceStation = null;
+                  _policeStationsEnglish = [];
                 });
+                // Load police stations for selected district
+                if (value != null) {
+                  final stations = await DistrictTranslations.getPoliceStationsForDistrict(
+                    context,
+                    value,
+                  );
+                  setState(() {
+                    _policeStationsEnglish = stations;
+                  });
+                }
               },
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -1018,15 +1042,39 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.local_police),
               ),
-              items: _policeStations
-                  .map((station) => DropdownMenuItem(
-                        value: station,
-                        child: Text(station),
-                      ))
-                  .toList(),
+              items: _policeStationsEnglish.isEmpty
+                  ? [
+                      DropdownMenuItem(
+                        value: null,
+                        enabled: false,
+                        child: Text(
+                          _selectedDistrict == null
+                              ? 'Please select a district'
+                              : localizations.loading,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      )
+                    ]
+                  : _policeStationsEnglish
+                      .map((stationEnglish) {
+                        // Store English name, display localized name
+                        final localizedName = DistrictTranslations.getLocalizedPoliceStationName(
+                          context,
+                          stationEnglish,
+                        );
+                        return DropdownMenuItem(
+                          value: stationEnglish, // Store English name for data consistency
+                          child: Text(
+                            localizedName, // Display localized name
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      })
+                      .toList(),
               onChanged: (value) {
                 setState(() {
-                  _selectedPoliceStation = value;
+                  _selectedPoliceStation = value; // Store English name
                 });
               },
               validator: (value) {

@@ -1480,5 +1480,7 @@ String get enterOfficerResponse => 'Enter officer response...';
 @override
 String get errorContactingInvestigationAI => 'Error contacting investigation AI';
 
+@override
+String get districtAndFirDetails => 'District and FIR Details';
 
 }

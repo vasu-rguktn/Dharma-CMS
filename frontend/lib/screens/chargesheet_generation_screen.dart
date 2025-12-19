@@ -186,7 +186,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                             ),
                             const SizedBox(height: 24),
 
-                            Text("Case Documents", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.caseDocuments, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             OutlinedButton.icon(
                               onPressed: _pickFiles,
@@ -244,7 +244,7 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
 
                             const SizedBox(height: 24),
 
-                            Text("Additional Instructions (Optional)", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.additionalInstructionsOptional, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             TextField(
                               controller: _additionalInstructionsController,
