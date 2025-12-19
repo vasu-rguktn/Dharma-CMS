@@ -24,6 +24,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   String? _selectedCaseId;
   List<CaseJournalEntry> _journalEntries = [];
   bool _isLoading = false;
+  bool _hasLoaded = false;
 
   // Your signature orange
   static const Color orange = Color(0xFFFC633C);
@@ -37,6 +38,22 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   bool _isGeneratingReport = false;
   bool _isSavingFinalReport = false;
   final TextEditingController _reportController = TextEditingController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasLoaded) {
+      _hasLoaded = true;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        caseProvider.fetchCases(
+          userId: auth.user?.uid,
+          isAdmin: auth.role == 'police',
+        );
+      });
+    }
+  }
 
   Future<void> _fetchJournalEntries(String caseId) async {
     setState(() {
@@ -559,7 +576,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       }
 
       final response = await _dio.post(
-        'http://127.0.0.1:8000/api/generate-investigation-report',
+        'https://fastapi-app-335340524683.asia-south1.run.app/api/generate-investigation-report',
         data: requestBody,
       );
 
@@ -700,17 +717,30 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                             else
                               DropdownButtonFormField<String>(
                                 value: _selectedCaseId,
+                                isExpanded: true,
                                 decoration: InputDecoration(
                                   hintText: localizations.chooseCaseToViewJournal,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                   filled: true,
                                   fillColor: Colors.grey[50],
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 ),
+                                selectedItemBuilder: (BuildContext context) {
+                                  return caseProvider.cases.map<Widget>((caseDoc) {
+                                    return Text(
+                                      '${caseDoc.firNumber} - ${caseDoc.title}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 16),
+                                    );
+                                  }).toList();
+                                },
                                 items: caseProvider.cases.map((caseDoc) {
                                   return DropdownMenuItem(
                                     value: caseDoc.id,
                                     child: Text(
                                       '${caseDoc.firNumber} - ${caseDoc.title}',
+                                      maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   );
@@ -730,70 +760,130 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     if (_selectedCaseId != null)
                       Card(
                         elevation: 6,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Title + open case icon
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(localizations.investigationDiary, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                                  Row(
-                                    children: [
-                                      ElevatedButton.icon(
-                                        onPressed: _isGeneratingReport
-                                            ? null
-                                            : () {
-                                                _generateInvestigationReport(finaliseWithOverride: false);
-                                              },
-                                        icon: _isGeneratingReport
-                                            ? const SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                ),
-                                              )
-                                            : const Icon(Icons.description_rounded, size: 20),
-                                        label: const Text('Generate Court Document'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: orange,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  Expanded(
+                                    child: Text(
+                                      localizations.investigationDiary,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.open_in_new),
+                                    tooltip: localizations.openCaseDetails,
+                                    onPressed: () => context.go('/cases/$_selectedCaseId'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // Action buttons – vertical alignment for better mobile UX
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: _isGeneratingReport
+                                          ? null
+                                          : () {
+                                              _generateInvestigationReport(
+                                                finaliseWithOverride: false,
+                                              );
+                                            },
+                                      icon: _isGeneratingReport
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            )
+                                          : const Icon(Icons.description_rounded, size: 20),
+                                      label: const Text('Generate Court Document'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: orange,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: Icon(Icons.add_circle, color: orange, size: 32),
-                                        tooltip: localizations.addJournalEntryTooltip,
-                                        onPressed: _showAddEntryDialog,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: _showAddEntryDialog,
+                                      icon: Icon(
+                                        Icons.add_circle_outline,
+                                        color: orange,
+                                        size: 22,
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.open_in_new),
-                                        tooltip: localizations.openCaseDetails,
-                                        onPressed: () => context.go('/cases/$_selectedCaseId'),
+                                      label: Text(
+                                        localizations.addJournalEntryTooltip,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ],
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: orange,
+                                        side: BorderSide(color: orange.withOpacity(0.5)),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 16),
 
                               if (_isLoading)
-                                const Center(child: CircularProgressIndicator(color: orange))
+                                const Center(
+                                  child: CircularProgressIndicator(color: orange),
+                                )
                               else if (_journalEntries.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.all(32),
                                   child: Column(
                                     children: [
-                                      Icon(Icons.description_outlined, size: 80, color: Colors.grey[400]),
+                                      Icon(
+                                        Icons.description_outlined,
+                                        size: 80,
+                                        color: Colors.grey[400],
+                                      ),
                                       const SizedBox(height: 16),
-                                      Text(localizations.noJournalEntries, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                                      Text(localizations.noJournalEntriesDesc, style: TextStyle(color: Colors.grey[600]), textAlign: TextAlign.center),
+                                      Text(
+                                        localizations.noJournalEntries,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        localizations.noJournalEntriesDesc,
+                                        style: TextStyle(color: Colors.grey[600]),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ],
                                   ),
                                 )
@@ -901,7 +991,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                         // Resolve relative URLs (e.g. "/static/reports/...") against the FastAPI backend.
                                         final String resolvedUrl = _finalPdfUrl!.startsWith('http')
                                             ? _finalPdfUrl!
-                                            : 'http://127.0.0.1:8000$_finalPdfUrl';
+                                            : 'https://fastapi-app-335340524683.asia-south1.run.app$_finalPdfUrl';
 
                                         final url = Uri.parse(resolvedUrl);
                                         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
@@ -946,50 +1036,89 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   }
 
   Widget _buildTimelineItem(CaseJournalEntry entry, bool isLast) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: orange,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [BoxShadow(color: orange.withOpacity(0.3), blurRadius: 8)],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline dot and line
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                // Dot vertically aligned with the heading inside the card
+                Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.only(top: 10),
+                  decoration: BoxDecoration(
+                    color: orange,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: orange.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (!isLast)
-                Expanded(child: Container(width: 2, color: Colors.grey[300])),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 28),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: Colors.grey[300],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            // Journal entry card
+            Expanded(
               child: Card(
-                elevation: 3,
+                elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
+                      // Activity type and officer rank - properly aligned vertically
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: Text(
-                              entry.activityType,
-                              style: TextStyle(fontWeight: FontWeight.bold, color: orange, fontSize: 16),
+                          Text(
+                            entry.activityType,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: orange,
+                              fontSize: 16,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: orange.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                            child: Text(entry.officerRank, style: TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                entry.officerRank,
+                                style: TextStyle(
+                                  color: orange,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -1070,8 +1199,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

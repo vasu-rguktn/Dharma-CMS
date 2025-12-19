@@ -1,0 +1,47 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Generated reports (will be created in container)
+generated_reports/
+
+# Test files
+test_*.py
+*_test.py
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+README.md
+
+# Environment files (should be passed as env vars)
+.env
+.env.local
+*.json
+!package.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
