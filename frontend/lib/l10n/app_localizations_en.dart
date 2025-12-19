@@ -1483,4 +1483,6 @@ String get errorContactingInvestigationAI => 'Error contacting investigation AI'
 @override
 String get districtAndFirDetails => 'District and FIR Details';
 
+String get occurenceOfOffence => 'Occurence of Offence';
+
 }

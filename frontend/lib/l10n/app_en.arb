@@ -945,6 +945,18 @@
   "@createCase": {
     "description": "Button text to create a case"
   },
+  "caseId": "Case ID",
+  "@caseId": {
+    "description": "Case ID field label"
+  },
+  "caseIdHint": "Enter case ID",
+  "@caseIdHint": {
+    "description": "Hint text for case ID field"
+  },
+  "pleaseEnterCaseId": "Please enter case ID",
+  "@pleaseEnterCaseId": {
+    "description": "Validation message for case ID"
+  },
   "caseTitleRequired": "Case Title",
   "@caseTitleRequired": {
     "description": "Case title field label"
@@ -1465,5 +1477,49 @@
   "actsAndSections": "Acts & Sections (comma-separated or detailed)",
   "@actsAndSections": {
     "description": "Acts and sections field label"
+  },
+  "subDivisionSdpoLabel": "Sub-Division (SDPO)",
+  "@subDivisionSdpoLabel": {
+    "description": "Sub-division field label"
+  },
+  "circleLabel": "Circle",
+  "@circleLabel": {
+    "description": "Circle field label"
+  },
+  "circle1": "Circle 1",
+  "@circle1": {
+    "description": "Circle 1 option"
+  },
+  "circle2": "Circle 2",
+  "@circle2": {
+    "description": "Circle 2 option"
+  },
+  "circle3": "Circle 3",
+  "@circle3": {
+    "description": "Circle 3 option"
+  },
+  "firRegistrationDateLabel": "FIR Registration Date",
+  "@firRegistrationDateLabel": {
+    "description": "FIR registration date field label"
+  },
+  "selectDatePlaceholder": "Select date",
+  "@selectDatePlaceholder": {
+    "description": "Date picker placeholder text"
+  },
+  "nuzvidSdpo": "Nuzvid SDPO",
+  "@nuzvidSdpo": {
+    "description": "Nuzvid SDPO sub-division"
+  },
+  "gudivadaSdpo": "Gudivada SDPO",
+  "@gudivadaSdpo": {
+    "description": "Gudivada SDPO sub-division"
+  },
+  "machilipatnamSdpo": "Machilipatnam SDPO",
+  "@machilipatnamSdpo": {
+    "description": "Machilipatnam SDPO sub-division"
+  },
+  "vijayawadaSdpo": "Vijayawada SDPO",
+  "@vijayawadaSdpo": {
+    "description": "Vijayawada SDPO sub-division"
   }
 }

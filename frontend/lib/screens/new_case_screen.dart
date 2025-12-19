@@ -90,6 +90,7 @@ class NewCaseScreen extends StatefulWidget {
 
 class _NewCaseScreenState extends State<NewCaseScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _caseIdController = TextEditingController();
   final _titleController = TextEditingController();
   final _firNumberController = TextEditingController();
   final _yearController = TextEditingController(text: DateTime.now().year.toString());
@@ -271,8 +272,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     }
   }
 
+  /// Helper method to get localized label based on current locale
+  String _getLocalizedLabel(String english, String telugu) {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'te' ? telugu : english;
+  }
+
   @override
   void dispose() {
+    _caseIdController.dispose();
     _titleController.dispose();
     _firNumberController.dispose();
     _yearController.dispose();
@@ -537,6 +545,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       final caseProvider = Provider.of<CaseProvider>(context, listen: false);
 
       final newCase = CaseDoc(
+        caseId: _caseIdController.text.isNotEmpty ? _caseIdController.text : null,
         title: _titleController.text,
         firNumber: _firNumberController.text,
         district: _selectedDistrict,
@@ -781,6 +790,16 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   bool _validateCurrentStep() {
     switch (_currentStep) {
       case 0: // District & FIR Details
+        if (_caseIdController.text.isEmpty) {
+          final locale = Localizations.localeOf(context);
+          final msg = locale.languageCode == 'te'
+              ? 'దయచేసి కేసు ID ను నమోదు చేయండి'
+              : 'Please enter case ID';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)),
+          );
+          return false;
+        }
         if (_titleController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -796,26 +815,42 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           return false;
         }
         if (_selectedSubDivision == null || _selectedSubDivision!.isEmpty) {
+          final locale = Localizations.localeOf(context);
+          final msg = locale.languageCode == 'te' 
+              ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
+              : 'Please select a Sub-Division (SDPO)';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a Sub-Division (SDPO)')),
+            SnackBar(content: Text(msg)),
           );
           return false;
         }
         if (_selectedCircle == null || _selectedCircle!.isEmpty || _selectedCircle == '-') {
+          final locale = Localizations.localeOf(context);
+          final msg = locale.languageCode == 'te'
+              ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
+              : 'Please select a Circle';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a Circle')),
+            SnackBar(content: Text(msg)),
           );
           return false;
         }
         if (_selectedPoliceStation == null || _selectedPoliceStation!.isEmpty) {
+          final locale = Localizations.localeOf(context);
+          final msg = locale.languageCode == 'te'
+              ? 'దయచేసి పోలీస్ స్టేషన్ ను ఎంచుకోండి'
+              : 'Please select a Police Station';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a Police Station')),
+            SnackBar(content: Text(msg)),
           );
           return false;
         }
         if (_yearController.text.isEmpty) {
+          final locale = Localizations.localeOf(context);
+          final msg = locale.languageCode == 'te'
+              ? 'దయచేసి సంవత్సరాన్ని నమోదు చేయండి'
+              : 'Please enter the year';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter the year')),
+            SnackBar(content: Text(msg)),
           );
           return false;
         }
@@ -828,8 +863,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           return false;
         }
         if (_firRegistrationDate == null) {
+          final locale = Localizations.localeOf(context);
+          final msg = locale.languageCode == 'te'
+              ? 'దయచేసి FIR నమోదు తేదీని ఎంచుకోండి'
+              : 'Please select FIR Registration Date';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select FIR Registration Date')),
+            SnackBar(content: Text(msg)),
           );
           return false;
         }
@@ -913,6 +952,34 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            // Case ID
+            Builder(
+              builder: (context) {
+                final locale = Localizations.localeOf(context);
+                final labelText = locale.languageCode == 'te' ? 'కేసు ID' : 'Case ID';
+                final hintText = locale.languageCode == 'te' ? 'కేసు ID ను నమోదు చేయండి' : 'Enter case ID';
+                final validationMsg = locale.languageCode == 'te'
+                    ? 'దయచేసి కేసు ID ను నమోదు చేయండి'
+                    : 'Please enter case ID';
+                
+                return TextFormField(
+                  controller: _caseIdController,
+                  decoration: InputDecoration(
+                    labelText: '$labelText *',
+                    hintText: hintText,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.tag),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return validationMsg;
+                    }
+                    return null;
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             // Case Title
             TextFormField(
               controller: _titleController,
@@ -976,61 +1043,87 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             ),
             const SizedBox(height: 16),
             // Sub-Division (SDPO) Dropdown
-            DropdownButtonFormField<String>(
-              value: _selectedSubDivision,
-              decoration: InputDecoration(
-                labelText: 'Sub-Division (SDPO) *',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.account_tree),
-              ),
-              items: _subDivisions
-                  .map((subDiv) => DropdownMenuItem(
-                        value: subDiv,
-                        child: Text(subDiv),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSubDivision = value;
-                  // Reset dependent dropdowns when sub-division changes
-                  _selectedCircle = null;
-                  _selectedPoliceStation = null;
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please select a Sub-Division (SDPO)';
-                }
-                return null;
+            Builder(
+              builder: (context) {
+                final locale = Localizations.localeOf(context);
+                final labelText = locale.languageCode == 'te' ? 'ఉప-విభాగం (SDPO)' : 'Sub-Division (SDPO)';
+                final validationMsg = locale.languageCode == 'te' 
+                    ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
+                    : 'Please select a Sub-Division (SDPO)';
+                
+                return DropdownButtonFormField<String>(
+                  value: _selectedSubDivision,
+                  decoration: InputDecoration(
+                    labelText: '$labelText *',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.account_tree),
+                  ),
+                  items: _subDivisions
+                      .map((subDivEnglish) {
+                        final localizedName = DistrictTranslations.getSubDivisionName(context, subDivEnglish);
+                        return DropdownMenuItem(
+                          value: subDivEnglish, // Store English name
+                          child: Text(localizedName), // Display localized name
+                        );
+                      })
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSubDivision = value;
+                      // Reset dependent dropdowns when sub-division changes
+                      _selectedCircle = null;
+                      _selectedPoliceStation = null;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return validationMsg;
+                    }
+                    return null;
+                  },
+                );
               },
             ),
             const SizedBox(height: 16),
             // Circle Dropdown
-            DropdownButtonFormField<String>(
-              value: _selectedCircle,
-              decoration: InputDecoration(
-                labelText: 'Circle *',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.place),
-              ),
-              items: _circles
-                  .map((circle) => DropdownMenuItem(
-                        value: circle,
-                        child: Text(circle),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCircle = value;
-                  // Reset police station when circle changes
-                  _selectedPoliceStation = null;
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty || value == '-') {
-                  return 'Please select a Circle';
-                }
-                return null;
+            Builder(
+              builder: (context) {
+                final locale = Localizations.localeOf(context);
+                final labelText = locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
+                final validationMsg = locale.languageCode == 'te'
+                    ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
+                    : 'Please select a Circle';
+                
+                return DropdownButtonFormField<String>(
+                  value: _selectedCircle,
+                  decoration: InputDecoration(
+                    labelText: '$labelText *',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.place),
+                  ),
+                  items: _circles
+                      .map((circleEnglish) {
+                        final localizedName = DistrictTranslations.getCircleName(context, circleEnglish);
+                        return DropdownMenuItem(
+                          value: circleEnglish, // Store English name
+                          child: Text(localizedName), // Display localized name
+                        );
+                      })
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCircle = value;
+                      // Reset police station when circle changes
+                      _selectedPoliceStation = null;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty || value == '-') {
+                      return validationMsg;
+                    }
+                    return null;
+                  },
+                );
               },
             ),
             const SizedBox(height: 16),
@@ -1090,8 +1183,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               controller: _yearController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Year *',
-                hintText: 'E.g., 2025',
+                labelText: _getLocalizedLabel('Year *', 'సంవత్సరం *'),
+                hintText: _getLocalizedLabel('E.g., 2025', 'ఉదా: 2025'),
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.calendar_today),
               ),
@@ -1125,26 +1218,34 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             ),
             const SizedBox(height: 16),
             // FIR Registration Date
-            InkWell(
-              onTap: _selectFirRegistrationDate,
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: 'FIR Registration Date *',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.calendar_month),
-                  suffixIcon: const Icon(Icons.arrow_drop_down),
-                ),
-                child: Text(
-                  _firRegistrationDate != null
-                      ? DateFormat('dd-MM-yyyy').format(_firRegistrationDate!)
-                      : 'Select date',
-                  style: TextStyle(
-                    color: _firRegistrationDate != null
-                        ? Theme.of(context).textTheme.bodyLarge?.color
-                        : Colors.grey[600],
+            Builder(
+              builder: (context) {
+                final locale = Localizations.localeOf(context);
+                final labelText = locale.languageCode == 'te' ? 'FIR నమోదు తేదీ' : 'FIR Registration Date';
+                final placeholderText = locale.languageCode == 'te' ? 'తేదీని ఎంచుకోండి' : 'Select date';
+                
+                return InkWell(
+                  onTap: _selectFirRegistrationDate,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: '$labelText *',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.calendar_month),
+                      suffixIcon: const Icon(Icons.arrow_drop_down),
+                    ),
+                    child: Text(
+                      _firRegistrationDate != null
+                          ? DateFormat('dd-MM-yyyy').format(_firRegistrationDate!)
+                          : placeholderText,
+                      style: TextStyle(
+                        color: _firRegistrationDate != null
+                            ? Theme.of(context).textTheme.bodyLarge?.color
+                            : Colors.grey[600],
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -1160,7 +1261,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '2. Occurrence of Offence',
+              '${2}. ${localizations.occurenceOfOffence}',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).primaryColor,
@@ -2497,6 +2598,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            if (_caseIdController.text.isNotEmpty) ...[
+              _buildReviewItem(
+                _getLocalizedLabel('Case ID', 'కేసు ID'),
+                _caseIdController.text,
+                Icons.tag,
+              ),
+              const Divider(),
+            ],
             _buildReviewItem(
               localizations.caseTitleRequired,
               _titleController.text,
@@ -2519,16 +2628,16 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             if (_selectedSubDivision != null) ...[
               const Divider(),
               _buildReviewItem(
-                'Sub-Division (SDPO)',
-                _selectedSubDivision!,
+                _getLocalizedLabel('Sub-Division (SDPO)', 'ఉప-విభాగం (SDPO)'),
+                DistrictTranslations.getSubDivisionName(context, _selectedSubDivision!),
                 Icons.account_tree,
               ),
             ],
             if (_selectedCircle != null && _selectedCircle != '-') ...[
               const Divider(),
               _buildReviewItem(
-                'Circle',
-                _selectedCircle!,
+                _getLocalizedLabel('Circle', 'సర్కిల్'),
+                DistrictTranslations.getCircleName(context, _selectedCircle!),
                 Icons.place,
               ),
             ],
@@ -2536,7 +2645,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               const Divider(),
               _buildReviewItem(
                 localizations.policeStation,
-                _selectedPoliceStation!,
+                DistrictTranslations.getLocalizedPoliceStationName(context, _selectedPoliceStation!),
                 Icons.local_police,
               ),
             ],
@@ -2551,7 +2660,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             if (_firRegistrationDate != null) ...[
               const Divider(),
               _buildReviewItem(
-                'FIR Registration Date',
+                _getLocalizedLabel('FIR Registration Date', 'FIR నమోదు తేదీ'),
                 DateFormat('dd-MM-yyyy').format(_firRegistrationDate!),
                 Icons.calendar_month,
               ),

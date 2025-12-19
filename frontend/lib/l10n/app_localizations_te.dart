@@ -1475,4 +1475,6 @@ String get errorContactingInvestigationAI => 'దర్యాప్తు AI న
 @override
 String get districtAndFirDetails => 'జిల్లా మరియు FIR వివరాలు';
 
+String get occurenceOfOffence => 'దర్యాప్తు అవతరణ';
+
 }

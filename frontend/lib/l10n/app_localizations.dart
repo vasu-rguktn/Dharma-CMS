@@ -2596,6 +2596,8 @@ String get startInvestigation;
 String get enterOfficerResponse;
 String get errorContactingInvestigationAI;
 String get districtAndFirDetails;
+String get occurenceOfOffence;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -993,6 +993,18 @@
   "@createCase": {
     "description": "కేసు సృష్టించడానికి బటన్ టెక్స్ట్"
   },
+  "caseId": "కేసు ID",
+  "@caseId": {
+    "description": "కేసు ID ఫీల్డ్ లేబుల్"
+  },
+  "caseIdHint": "కేసు ID ను నమోదు చేయండి",
+  "@caseIdHint": {
+    "description": "కేసు ID ఫీల్డ్ కోసం హింట్ టెక్స్ట్"
+  },
+  "pleaseEnterCaseId": "దయచేసి కేసు ID ను నమోదు చేయండి",
+  "@pleaseEnterCaseId": {
+    "description": "కేసు ID కోసం ధ్రువీకరణ సందేశం"
+  },
   "caseTitleRequired": "కేసు శీర్షిక",
   "@caseTitleRequired": {
     "description": "కేసు శీర్షిక ఫీల్డ్ లేబుల్"
@@ -1513,5 +1525,50 @@
   "actsAndSections": "చట్టాలు & సెక్షన్లు (కామా-విభజించబడిన లేదా వివరణాత్మకం)",
   "@actsAndSections": {
     "description": "చట్టాలు మరియు సెక్షన్లు ఫీల్డ్ లేబుల్"
+  },
+  "subDivisionSdpoLabel": "ఉప-విభాగం (SDPO)",
+  "@subDivisionSdpoLabel": {
+    "description": "ఉప-విభాగం ఫీల్డ్ లేబుల్"
+  },
+  "circleLabel": "సర్కిల్",
+  "@circleLabel": {
+    "description": "సర్కిల్ ఫీల్డ్ లేబుల్"
+  },
+  "circle1": "సర్కిల్ 1",
+  "@circle1": {
+    "description": "సర్కిల్ 1 ఎంపిక"
+  },
+  "circle2": "సర్కిల్ 2",
+  "@circle2": {
+    "description": "సర్కిల్ 2 ఎంపిక"
+  },
+  "circle3": "సర్కిల్ 3",
+  "@circle3": {
+    "description": "సర్కిల్ 3 ఎంపిక"
+  },
+  "firRegistrationDateLabel": "FIR నమోదు తేదీ",
+  "@firRegistrationDateLabel": {
+    "description": "FIR నమోదు తేదీ ఫీల్డ్ లేబుల్"
+  },
+  "selectDatePlaceholder": "తేదీని ఎంచుకోండి",
+  "@selectDatePlaceholder": {
+    "description": "తేదీ పికర్ ప్లేస్‌హోల్డర్ టెక్స్ట్"
+  },
+  "nuzvidSdpo": "నూజివీడు SDPO",
+  "@nuzvidSdpo": {
+    "description": "నూజివీడు SDPO ఉప-విభాగం"
+  },
+  "gudivadaSdpo": "గుడివాడ SDPO",
+  "@gudivadaSdpo": {
+    "description": "గుడివాడ SDPO ఉప-విభాగం"
+  },
+  "machilipatnamSdpo": "మచిలీపట్నం SDPO",
+  "@machilipatnamSdpo": {
+    "description": "మచిలీపట్నం SDPO ఉప-విభాగం"
+  },
+  "vijayawadaSdpo": "విజయవాడ SDPO",
+  "@vijayawadaSdpo": {
+    "description": "విజయవాడ SDPO ఉప-విభాగం"
   }
+  
 }
