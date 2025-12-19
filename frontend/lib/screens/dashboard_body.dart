@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
-import 'package:Dharma/models/case_status.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 class DashboardBody extends StatelessWidget {
   final AuthProvider auth;

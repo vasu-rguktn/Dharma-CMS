@@ -204,7 +204,10 @@ class _AppScaffoldState extends State<AppScaffold> {
       ),
       selected: isActive,
       onTap: () {
-        Navigator.of(context).pop();
+        // Safely close the drawer if it's open, then navigate.
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
         context.go(route);
       },
     );
