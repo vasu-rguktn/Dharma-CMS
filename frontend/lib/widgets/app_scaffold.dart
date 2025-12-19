@@ -35,7 +35,21 @@ class _AppScaffoldState extends State<AppScaffold> {
             _scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: Text(localizations.dharma ?? 'Dharma'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/police_logo.png',
+              height: 32,
+              width: 32,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(Icons.balance, color: Theme.of(context).primaryColor);
+              },
+            ),
+            const SizedBox(width: 8),
+            Text(localizations.dharma ?? 'Dharma'),
+          ],
+        ),
         actions: [
           PopupMenuButton<String>(
             child: Padding(
@@ -144,6 +158,8 @@ class _AppScaffoldState extends State<AppScaffold> {
                   localizations.chargesheetVetting, '/chargesheet-vetting', isDark),
               _buildDrawerItem(context, Icons.image_search,
                   localizations.mediaAnalysis, '/media-analysis', isDark),
+              _buildDrawerItem(context, Icons.search,
+                  'AI Investigation', '/ai-investigation-guidelines', isDark),
               _buildDrawerItem(context, Icons.book,
                   localizations.caseJournal, '/case-journal', isDark),
 
