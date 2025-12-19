@@ -254,10 +254,12 @@ class AppRouter {
             builder: (context, state) =>
                 AiChatbotDetailsScreen.fromRouteSettings(context, state),
           ),
-           GoRoute(
+         GoRoute(
   path: '/ai-investigation-guidelines',
-  builder: (context, state) =>
-      const AiInvestigationGuidelinesScreen(),
+  builder: (context, state) {
+    final caseId = state.uri.queryParameters['caseId'];
+    return AiInvestigationGuidelinesScreen(caseId: caseId);
+  },
 ),
 
           GoRoute(

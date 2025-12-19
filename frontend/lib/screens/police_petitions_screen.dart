@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/providers/petition_provider.dart';
@@ -493,7 +494,35 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                       style: TextStyle(
                                           color: Colors.grey.shade600,
                                           fontSize: 11),
-                                    )
+                                    ),
+                                    // AI Investigation Button
+                                    if (p.caseId != null && p.caseId!.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () {
+                                            context.go(
+                                              '/ai-investigation-guidelines?caseId=${p.caseId}',
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.psychology,
+                                            size: 16,
+                                          ),
+                                          label: const Text(
+                                            'AI Investigation Guidelines',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),

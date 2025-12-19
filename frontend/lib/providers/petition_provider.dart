@@ -86,6 +86,31 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 🔍 Fetch a single petition by caseId (for AI Investigation)
+  Future<Petition?> fetchPetitionByCaseId(String caseId) async {
+    try {
+      debugPrint('🔍 Fetching petition with caseId: $caseId');
+
+      final snapshot = await _firestore
+          .collection('petitions')
+          .where('case_id', isEqualTo: caseId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        debugPrint('❌ No petition found with caseId: $caseId');
+        return null;
+      }
+
+      final petition = Petition.fromFirestore(snapshot.docs.first);
+      debugPrint('✅ Found petition: ${petition.title}');
+      return petition;
+    } catch (e) {
+      debugPrint('❌ Error fetching petition by caseId: $e');
+      return null;
+    }
+  }
+
   String generateCaseId({
   required String district,
   required String stationName,
