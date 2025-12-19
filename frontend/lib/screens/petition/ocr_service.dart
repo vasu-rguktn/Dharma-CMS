@@ -26,11 +26,11 @@ class OcrService {
     if (isAndroid) {
       // candidates.add('http://10.0.2.2:8000');
       // candidates.add('http://10.0.2.2');
-      candidates.add('https://dharma-backend-x1g4.onrender.com');
+      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
 
     }
 
-    candidates.add('https://dharma-backend-x1g4.onrender.com');
+    candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
     candidates.add('http://localhost');
 
     String? resolved;

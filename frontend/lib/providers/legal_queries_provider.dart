@@ -16,11 +16,15 @@ class LegalQueriesProvider with ChangeNotifier {
 
   /* ---------------- BASE URL ---------------- */
   String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:8000';
-    } else {
-      return 'http://10.0.2.2:8000';
-    }
+    // Use deployed Cloud Run backend URL
+    return 'https://fastapi-app-335340524683.asia-south1.run.app';
+    
+    // Uncomment below for local development
+    // if (kIsWeb) {
+    //   return 'http://localhost:8000';
+    // } else {
+    //   return 'http://10.0.2.2:8000';
+    // }
   }
 
   /* ---------------- CREATE NEW SESSION ---------------- */

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dharma-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Required: Set your Gemini API key
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Optional: Custom reports directory
+      - INVESTIGATION_REPORTS_DIR=${INVESTIGATION_REPORTS_DIR:-generated_reports}
+    volumes:
+      # Mount reports directory to persist generated PDFs
+      - ./generated_reports:/app/generated_reports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

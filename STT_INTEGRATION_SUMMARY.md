@@ -61,11 +61,11 @@ StreamSubscription<SttResult>? _transcriptSubscription;
 if (_sttService == null) {
   String baseUrl;
   if (kIsWeb) {
-    baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+    baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
   } else if (Platform.isAndroid) {
-    baseUrl = 'http://10.0.2.2:8000';
+    baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
   } else {
-    baseUrl = 'https://dharma-backend-x1g4.onrender.com';
+    baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
   }
   _sttService = SttService(baseUrl);
 }

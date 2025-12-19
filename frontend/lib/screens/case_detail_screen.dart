@@ -171,7 +171,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           unselectedLabelColor: Colors.black87,
           indicator: const BoxDecoration(), // no underline
           dividerColor: Colors.transparent,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 9),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
           tabs: const [
             Tab(
               icon: Icon(Icons.description, size: 20),
@@ -230,7 +230,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Top summary card with status + key info
           Card(
@@ -791,7 +791,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Card(
             child: Padding(
@@ -803,10 +803,12 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                     children: [
                       const Icon(Icons.location_on, color: Colors.red),
                       const SizedBox(width: 8),
-                      Text(
-                        'Crime Scene Details',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Crime Scene Details',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -841,10 +843,12 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                     children: [
                       const Icon(Icons.image, color: Colors.purple),
                       const SizedBox(width: 8),
-                      Text(
-                        'Crime Scene Analysis Reports',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Crime Scene Analysis Reports',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -869,7 +873,10 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
-        title: Text(report.originalFileName),
+        title: Text(
+          report.originalFileName,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Text('Analyzed: ${_formatTimestamp(report.createdAt)}'),
         children: [
           Padding(
@@ -891,6 +898,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                       child: Text(
                         '• ${element.name} (${element.category}): ${element.description}',
                         style: theme.textTheme.bodySmall,
+                        overflow: TextOverflow.visible,
+                        softWrap: true,
                       ),
                     ),
                   ),
@@ -903,7 +912,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(report.sceneNarrative),
+                Text(
+                  report.sceneNarrative,
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Case File Summary:',
@@ -912,7 +925,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(report.caseFileSummary),
+                Text(
+                  report.caseFileSummary,
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
+                ),
               ],
             ),
           ),
@@ -925,7 +942,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Card(
             child: Padding(
@@ -937,10 +954,12 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                     children: [
                       const Icon(Icons.book, color: Colors.blue),
                       const SizedBox(width: 8),
-                      Text(
-                        'Case Journal (IO\'s Diary)',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Case Journal (IO\'s Diary)',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -1258,7 +1277,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
@@ -1309,7 +1328,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                   onPressed: () async {
                     final String resolvedUrl = pdfUrl.startsWith('http')
                         ? pdfUrl
-                        : 'http://127.0.0.1:8000$pdfUrl';
+                        : 'https://fastapi-app-335340524683.asia-south1.run.app$pdfUrl';
 
                     final url = Uri.parse(resolvedUrl);
                     if (!await launchUrl(url,
@@ -1337,21 +1356,24 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     String title,
     List<Widget> children,
   ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
+              const SizedBox(height: 16),
+              ...children,
+            ],
+          ),
         ),
       ),
     );
@@ -1370,6 +1392,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
               color: Colors.grey,
               fontSize: 12,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
@@ -1377,6 +1400,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
             style: const TextStyle(
               fontSize: 14,
             ),
+            overflow: TextOverflow.visible,
+            softWrap: true,
           ),
         ],
       ),
