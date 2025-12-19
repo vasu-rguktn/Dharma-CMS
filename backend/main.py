@@ -6,12 +6,13 @@ from fastapi.staticfiles import StaticFiles
 
 from routers.complaint import router as complaint_router
 from routers.ocr import router as ocr_router
-# from routers.stt_stream import router as stt_router
+from routers.stt_stream import router as stt_router
 from routers.ocr import health_check as _ocr_health
 from routers.ocr import extract_case as _ocr_extract_case
 from routers.ai_investigation import router as ai_investigation_router
 from routers.legal_chat import router as legal_chat_router
 from routers.investigation_report import router as investigation_report_router
+from routers.document_drafting import router as document_drafting_router
 
 app = FastAPI(
     title="Police Complaint Chatbot API",
@@ -43,6 +44,7 @@ app.include_router(ai_investigation_router)
 app.include_router(legal_chat_router)
 # app.include_router(stt_router)
 app.include_router(investigation_report_router)
+app.include_router(document_drafting_router)
 
 
 @app.get("/")
