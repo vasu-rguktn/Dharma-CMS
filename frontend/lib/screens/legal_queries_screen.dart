@@ -152,9 +152,16 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: orange,
-        title: const Text("Legal Assistant"),
-      ),
+  backgroundColor: orange,
+  title: const Text("Legal Assistant"),
+
+  leading: Builder(
+    builder: (context) => IconButton(
+      icon: const Icon(Icons.history), // 👈 CHANGE ICON HERE
+      onPressed: () => Scaffold.of(context).openDrawer(),
+    ),
+  ),
+),
 
       /* ---------------- DRAWER : CHAT HISTORY ---------------- */
       drawer: Drawer(
