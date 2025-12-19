@@ -34,7 +34,7 @@ class _AiInvestigationGuidelinesScreenState
   Petition? _petition;
 
   // 🔗 CHANGE THIS TO YOUR BACKEND IP
-  final String _apiUrl = "https://fastapi-app-335340524683.asia-south1.run.app/api/ai-investigation";
+  final String _apiUrl = "http://127.0.0.1:8000/api/ai-investigation";
 
   @override
   void initState() {
