@@ -2573,6 +2573,28 @@ String get tryingToLoginAs;
 String get selectCorrectOption;
 String get loginFailed;
 String get googleLoginSuccessful;
+
+// Police Login & Registration
+String get policeLogin;
+String get policeRegistration;
+String get policeLoginSuccessful;
+String get policeRegisteredSuccessfully;
+String get dontHavePoliceAccount;
+String get invalidName;
+String get invalidEmailShort;
+String get passwordMinRequirement;
+String get rank;
+String get selectRank;
+String get selectDistrict;
+String get selectPoliceStationText;
+String get pleaseSelectAllDropdownFields;
+String get searchHint;
+String selectLabel(String label);
+String get aiInvestigationGuidelines;
+String get enterFirNumber;
+String get startInvestigation;
+String get enterOfficerResponse;
+String get errorContactingInvestigationAI;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
