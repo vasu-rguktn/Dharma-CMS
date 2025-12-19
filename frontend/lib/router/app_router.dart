@@ -34,6 +34,7 @@ import 'package:Dharma/screens/case_journal_screen.dart';
 import 'package:Dharma/screens/settings_screen.dart';
 import 'package:Dharma/screens/Helpline_screen.dart';
 import 'package:Dharma/screens/Investigation_Guidelines/AI_Investigation_Guidelines.dart';
+import 'package:Dharma/screens/image_lab_screen.dart';
 // ───────────────── AI ─────────────────
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
 import 'package:Dharma/screens/ai_legal_chat_screen.dart';
@@ -49,14 +50,12 @@ import 'package:Dharma/screens/petition/create_petition_form.dart';
 // ───────────────── UI ─────────────────
 import 'package:Dharma/widgets/app_scaffold.dart';
 
-
 // ───────────────── ROUTER ─────────────────
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
-
 
     // 🔐 AUTH + ROLE BASED REDIRECT
     redirect: (context, state) {
@@ -106,7 +105,8 @@ class AppRouter {
       // This prevents unauthorized access while auth state is being determined
       if (auth.isLoading || auth.isProfileLoading) {
         // Allow public routes during loading
-        if (publicRoutes.contains(path) || publicRoutes.any((route) => path.startsWith(route))) {
+        if (publicRoutes.contains(path) ||
+            publicRoutes.any((route) => path.startsWith(route))) {
           return null;
         }
         // Block all protected routes during loading - redirect to login
@@ -115,13 +115,11 @@ class AppRouter {
 
       // Logged-in users should not see welcome again
       if (auth.isAuthenticated && path == '/') {
-        return auth.role == 'police'
-            ? '/police-dashboard'
-            : '/ai-legal-guider';
+        return auth.role == 'police' ? '/police-dashboard' : '/ai-legal-guider';
       }
 
       // Redirect unauthenticated users to login
-      if (!auth.isAuthenticated && 
+      if (!auth.isAuthenticated &&
           protectedRoutes.any((route) => path.startsWith(route))) {
         return '/login';
       }
@@ -142,8 +140,8 @@ class AppRouter {
           '/media-analysis',
           '/case-journal',
           '/cases',
-          '/ai-investigation-guidelines'
-
+          '/ai-investigation-guidelines',
+          '/image-lab',
         ];
 
         // Citizen-only routes
@@ -158,13 +156,13 @@ class AppRouter {
         ];
 
         // Prevent citizens from accessing police routes
-        if (auth.role == 'citizen' && 
+        if (auth.role == 'citizen' &&
             policeOnlyRoutes.any((route) => path.startsWith(route))) {
           return '/ai-legal-guider'; // Redirect to citizen dashboard
         }
 
         // Prevent police from accessing citizen routes
-        if (auth.role == 'police' && 
+        if (auth.role == 'police' &&
             citizenOnlyRoutes.any((route) => path.startsWith(route))) {
           return '/police-dashboard'; // Redirect to police dashboard
         }
@@ -174,7 +172,6 @@ class AppRouter {
     },
 
     routes: [
-
       // ───────────── PUBLIC ROUTES ─────────────
 
       GoRoute(
@@ -184,7 +181,8 @@ class AppRouter {
 
       GoRoute(
         path: '/login',
-        builder: (context, state) => const CitizenLoginScreen(), // citizen login
+        builder: (context, state) =>
+            const CitizenLoginScreen(), // citizen login
       ),
 
       GoRoute(
@@ -227,7 +225,6 @@ class AppRouter {
       ShellRoute(
         builder: (context, state, child) => AppScaffold(child: child),
         routes: [
-
           GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardScreen(),
@@ -254,13 +251,13 @@ class AppRouter {
             builder: (context, state) =>
                 AiChatbotDetailsScreen.fromRouteSettings(context, state),
           ),
-         GoRoute(
-  path: '/ai-investigation-guidelines',
-  builder: (context, state) {
-    final caseId = state.uri.queryParameters['caseId'];
-    return AiInvestigationGuidelinesScreen(caseId: caseId);
-  },
-),
+          GoRoute(
+            path: '/ai-investigation-guidelines',
+            builder: (context, state) {
+              final caseId = state.uri.queryParameters['caseId'];
+              return AiInvestigationGuidelinesScreen(caseId: caseId);
+            },
+          ),
 
           GoRoute(
             path: '/contact-officer',
@@ -270,7 +267,8 @@ class AppRouter {
           GoRoute(
             path: '/cognigible-non-cognigible-separation',
             builder: (context, state) =>
-                CognigibleNonCognigibleSeparationScreen.fromRouteSettings(context, state),
+                CognigibleNonCognigibleSeparationScreen.fromRouteSettings(
+                    context, state),
           ),
 
           GoRoute(
@@ -319,6 +317,11 @@ class AppRouter {
             builder: (context, state) => const CaseJournalScreen(),
           ),
 
+          GoRoute(
+            path: '/image-lab',
+            builder: (context, state) => const ImageLabScreen(),
+          ),
+
           // ─── SHARED SCREENS (Both roles) ───
 
           GoRoute(
@@ -358,10 +361,9 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: 'create',
-                builder: (context, state) =>
-                    CreatePetitionForm(
-                      initialData: state.extra as Map<String, dynamic>?,
-                    ),
+                builder: (context, state) => CreatePetitionForm(
+                  initialData: state.extra as Map<String, dynamic>?,
+                ),
               ),
             ],
           ),

@@ -16,7 +16,7 @@ if not GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not found environment variables")
 
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+model = genai.GenerativeModel("models/gemini-pro")
 
 # ───────────────── ROUTER ─────────────────
 router = APIRouter(
@@ -36,22 +36,15 @@ class DraftingResponse(BaseModel):
     draft: str
 
 # ───────────────── ENDPOINT ─────────────────
-@router.post("/", response_model=DraftingResponse)
+@router.post("", response_model=DraftingResponse)
 async def generate_document_draft(req: DraftingRequest):
     try:
         print(f"DEBUG: Processing Document Draft Request for recipient: {req.recipientType}")
-
-        # Validate required fields
-        if not req.caseData or not req.caseData.strip():
-            raise HTTPException(status_code=400, detail="Case data is required")
-        
-        if not req.recipientType or not req.recipientType.strip():
-            raise HTTPException(status_code=400, detail="Recipient type is required")
         
         # 1. Construct the detailed prompt
         # We explicitly handle the knowledge base context if present
         kb_section = ""
-        if req.knowledgeBaseContext and req.knowledgeBaseContext.strip():
+        if req.knowledgeBaseContext:
             kb_section = f"""
 Before drafting, strictly adhere to the following internal formatting and content rules:
 <knowledge_base_context>
@@ -80,42 +73,17 @@ Draft the document now:
 """
 
         # 2. Call Gemini API
-        try:
-            response = model.generate_content(prompt)
-        except Exception as gemini_error:
-            print(f"Gemini API Error: {str(gemini_error)}")
-            raise HTTPException(
-                status_code=503,
-                detail=f"AI service unavailable: {str(gemini_error)}"
-            )
+        response = model.generate_content(prompt)
         
         # 3. Handle Empty/Error Response
-        if not response or not hasattr(response, 'text') or not response.text:
-            raise HTTPException(
-                status_code=502,
-                detail="Empty or invalid response received from AI model"
-            )
+        if not response.text:
+            raise ValueError("Empty response received from AI model.")
             
         draft_text = response.text.strip()
-        
-        if not draft_text:
-            raise HTTPException(
-                status_code=502,
-                detail="AI model returned empty content"
-            )
         
         # 4. Return Success
         return DraftingResponse(draft=draft_text)
 
-    except HTTPException:
-        # Re-raise HTTP exceptions as-is
-        raise
     except Exception as e:
         print(f"CRITICAL ERROR in document-drafting: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Draft generation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Draft generation failed: {str(e)}")
