@@ -118,6 +118,34 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     return '${d.day}/${d.month}/${d.year}';
   }
 
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFilterChip<T>({
     required String label,
     required T? value,
@@ -230,8 +258,109 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
                     const Divider(),
 
-                    Text('Petitioner: ${petition.petitionerName}'),
-                    Text('Phone: ${petition.phoneNumber ?? "-"}'),
+                    // Petition Details Section
+                    const Text(
+                      'Petition Details',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildDetailRow('Petition ID', petition.id ?? '-'),
+                    _buildDetailRow('Petition Type', petition.type.displayName),
+                    _buildDetailRow('Status', petition.status.displayName),
+                    _buildDetailRow('Petitioner Name', petition.petitionerName),
+                    _buildDetailRow('Phone Number', petition.phoneNumber ?? '-'),
+                    if (petition.address != null && petition.address!.isNotEmpty)
+                      _buildDetailRow('Address', petition.address!),
+                    if (petition.district != null && petition.district!.isNotEmpty)
+                      _buildDetailRow('District', petition.district!),
+                    if (petition.stationName != null && petition.stationName!.isNotEmpty)
+                      _buildDetailRow('Police Station', petition.stationName!),
+                    if (petition.incidentAddress != null && petition.incidentAddress!.isNotEmpty)
+                      _buildDetailRow('Incident Address', petition.incidentAddress!),
+                    if (petition.incidentDate != null)
+                      _buildDetailRow('Incident Date', _formatTimestamp(petition.incidentDate!)),
+                    if (petition.caseId != null && petition.caseId!.isNotEmpty)
+                      _buildDetailRow('Related Case ID', petition.caseId!),
+                    if (petition.firNumber != null && petition.firNumber!.isNotEmpty)
+                      _buildDetailRow('FIR Number', petition.firNumber!),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Grounds Section
+                    if (petition.grounds.isNotEmpty) ...[
+                      const Text(
+                        'Grounds',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          petition.grounds,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Prayer/Relief Section
+                    if (petition.prayerRelief != null && petition.prayerRelief!.isNotEmpty) ...[
+                      const Text(
+                        'Prayer/Relief Sought',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          petition.prayerRelief!,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Dates Section
+                    const Text(
+                      'Important Dates',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow('Created At', _formatTimestamp(petition.createdAt)),
+                    _buildDetailRow('Last Updated', _formatTimestamp(petition.updatedAt)),
+                    if (petition.filingDate != null && petition.filingDate!.isNotEmpty)
+                      _buildDetailRow('Filing Date', petition.filingDate!),
+                    if (petition.nextHearingDate != null && petition.nextHearingDate!.isNotEmpty)
+                      _buildDetailRow('Next Hearing Date', petition.nextHearingDate!),
+                    if (petition.orderDate != null && petition.orderDate!.isNotEmpty)
+                      _buildDetailRow('Order Date', petition.orderDate!),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Police Status Section
+                    const Text(
+                      'Police Status',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    if (petition.policeStatus != null)
+                      _buildDetailRow('Status', petition.policeStatus!),
+                    if (petition.policeSubStatus != null)
+                      _buildDetailRow('Sub Status', petition.policeSubStatus!),
+                    
                     const SizedBox(height: 16),
 
                     const Text(
@@ -289,6 +418,100 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     ],
 
                     const SizedBox(height: 24),
+
+                    // Register FIR Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context); // Close the modal first
+                          
+                          // Prepare data for navigation - convert Timestamp to Map for serialization
+                          final Map<String, dynamic> petitionData = {};
+                          
+                          // Use case_id from petition (not petition.id)
+                          if (petition.caseId != null && petition.caseId!.isNotEmpty) {
+                            petitionData['caseId'] = petition.caseId;
+                            debugPrint('✅ Using petition.caseId: ${petition.caseId}');
+                          } else if (petition.id != null && petition.id!.isNotEmpty) {
+                            // Fallback to petition.id if caseId is not available
+                            petitionData['caseId'] = petition.id;
+                            debugPrint('⚠️ Using petition.id as fallback: ${petition.id}');
+                          }
+                          
+                          // Map petition fields to FIR form fields
+                          if (petition.title.isNotEmpty) {
+                            petitionData['title'] = petition.title;
+                          }
+                          if (petition.petitionerName.isNotEmpty) {
+                            petitionData['petitionerName'] = petition.petitionerName;
+                          }
+                          if (petition.phoneNumber != null && petition.phoneNumber!.isNotEmpty) {
+                            petitionData['phoneNumber'] = petition.phoneNumber;
+                          }
+                          // grounds maps to complaint narrative in FIR
+                          if (petition.grounds.isNotEmpty) {
+                            petitionData['grounds'] = petition.grounds;
+                          }
+                          if (petition.district != null && petition.district!.isNotEmpty) {
+                            petitionData['district'] = petition.district;
+                          }
+                          if (petition.stationName != null && petition.stationName!.isNotEmpty) {
+                            petitionData['stationName'] = petition.stationName;
+                          }
+                          if (petition.incidentAddress != null && petition.incidentAddress!.isNotEmpty) {
+                            petitionData['incidentAddress'] = petition.incidentAddress;
+                          }
+                          if (petition.address != null && petition.address!.isNotEmpty) {
+                            petitionData['address'] = petition.address;
+                          }
+                          
+                          // Convert Timestamp to serializable format
+                          if (petition.incidentDate != null) {
+                            petitionData['incidentDate'] = {
+                              'seconds': petition.incidentDate!.seconds,
+                              'nanoseconds': petition.incidentDate!.nanoseconds,
+                            };
+                          }
+                          
+                          debugPrint('🚀 Navigating to new case screen');
+                          debugPrint('📦 Petition data being passed: $petitionData');
+                          debugPrint('📦 Data keys: ${petitionData.keys.toList()}');
+                          for (var key in petitionData.keys) {
+                            final value = petitionData[key];
+                            if (value is Map) {
+                              debugPrint('   $key: Map with keys ${value.keys.toList()}');
+                            } else {
+                              debugPrint('   $key: $value (${value.runtimeType})');
+                            }
+                          }
+                          
+                          // Navigate to new case screen with petition data
+                          context.go(
+                            '/cases/new',
+                            extra: petitionData,
+                          );
+                        },
+                        icon: const Icon(Icons.gavel, size: 20),
+                        label: const Text(
+                          'Register FIR',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
 
                     SizedBox(
                       width: double.infinity,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
@@ -82,7 +84,9 @@ class _AccusedFormData {
 }
 
 class NewCaseScreen extends StatefulWidget {
-  const NewCaseScreen({super.key});
+  final Map<String, dynamic>? initialData;
+  
+  const NewCaseScreen({super.key, this.initialData});
 
   @override
   State<NewCaseScreen> createState() => _NewCaseScreenState();
@@ -250,6 +254,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   // Police Station list - will be loaded dynamically from JSON
   List<String> _policeStationsEnglish = []; // English names
 
+  bool _hasPrefilled = false; // Flag to prevent multiple pre-fills
+  
+  // Search controllers for dropdowns
+  final TextEditingController _districtSearchController = TextEditingController();
+  final TextEditingController _policeStationSearchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -259,6 +269,179 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _firRegistrationDate = DateTime.now();
     // Load police stations when district is selected
     _loadPoliceStationsForDistrict();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-fill from petition data if available (after dependencies are ready)
+    if (!_hasPrefilled && widget.initialData != null) {
+      _hasPrefilled = true;
+      // Use a small delay to ensure all controllers are fully initialized
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _prefillFromPetition();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  void _prefillFromPetition() {
+    if (widget.initialData == null) {
+      debugPrint('❌ No initial data provided for pre-filling');
+      return;
+    }
+    
+    final data = widget.initialData!;
+    debugPrint('✅ Pre-filling from petition data. Keys: ${data.keys.toList()}');
+    debugPrint('✅ Full data: $data');
+    
+    // Use setState to batch all updates
+    setState(() {
+      // Pre-fill case ID from petition case_id (not petition.id)
+      if (data['caseId'] != null) {
+        final caseId = data['caseId'].toString().trim();
+        if (caseId.isNotEmpty && caseId != 'null') {
+          _caseIdController.text = caseId;
+          debugPrint('✅ Pre-filled case ID: $caseId');
+        }
+      }
+      
+      // Pre-fill case title from petition title
+      if (data['title'] != null) {
+        final title = data['title'].toString().trim();
+        if (title.isNotEmpty && title != 'null') {
+          _titleController.text = title;
+          debugPrint('✅ Pre-filled title: $title');
+        }
+      }
+      
+      // Pre-fill complainant name from petitioner name
+      if (data['petitionerName'] != null) {
+        final name = data['petitionerName'].toString().trim();
+        if (name.isNotEmpty && name != 'null') {
+          _complainantNameController.text = name;
+          debugPrint('✅ Pre-filled complainant name: $name');
+        }
+      }
+      
+      // Pre-fill mobile number from phone number
+      if (data['phoneNumber'] != null) {
+        final phone = data['phoneNumber'].toString().trim();
+        if (phone.isNotEmpty && phone != 'null') {
+          _mobileNumberController.text = phone;
+          debugPrint('✅ Pre-filled mobile number: $phone');
+        }
+      }
+      
+      // Pre-fill complaint narrative from grounds (grounds = complaint statement)
+      if (data['grounds'] != null) {
+        final grounds = data['grounds'].toString().trim();
+        if (grounds.isNotEmpty && grounds != 'null') {
+          _complaintNarrativeController.text = grounds;
+          debugPrint('✅ Pre-filled complaint narrative (length: ${grounds.length})');
+        }
+      }
+      
+      // Pre-fill incident address if available
+      if (data['incidentAddress'] != null) {
+        final address = data['incidentAddress'].toString().trim();
+        if (address.isNotEmpty && address != 'null') {
+          _streetVillageController.text = address;
+          debugPrint('✅ Pre-filled incident address: $address');
+        }
+      }
+      
+      // Pre-fill address if available (complainant address)
+      if (data['address'] != null) {
+        final address = data['address'].toString().trim();
+        if (address.isNotEmpty && address != 'null') {
+          _complainantStreetController.text = address;
+          debugPrint('✅ Pre-filled complainant address: $address');
+        }
+      }
+      
+      // Pre-fill district if available
+      if (data['district'] != null) {
+        final districtName = data['district'].toString().trim();
+        if (districtName.isNotEmpty && districtName != 'null') {
+          debugPrint('🔍 Attempting to pre-fill district: $districtName');
+          if (_apDistrictsEnglish.contains(districtName)) {
+            _selectedDistrict = districtName;
+            debugPrint('✅ Pre-filled district: $districtName');
+            // Load police stations for the district (async, will update later)
+            _loadPoliceStationsForDistrict().then((_) {
+              if (mounted && data['stationName'] != null) {
+                final stationName = data['stationName'].toString().trim();
+                if (stationName.isNotEmpty && stationName != 'null') {
+                  debugPrint('🔍 Attempting to pre-fill police station: $stationName');
+                  debugPrint('🔍 Available stations count: ${_policeStationsEnglish.length}');
+                  if (_policeStationsEnglish.contains(stationName)) {
+                    setState(() {
+                      _selectedPoliceStation = stationName;
+                    });
+                    debugPrint('✅ Pre-filled police station: $stationName');
+                  } else {
+                    debugPrint('❌ Police station "$stationName" not found in list');
+                    debugPrint('🔍 First few stations: ${_policeStationsEnglish.take(3).toList()}');
+                  }
+                }
+              }
+            });
+          } else {
+            debugPrint('❌ District "$districtName" not found in list');
+            debugPrint('🔍 Available districts: ${_apDistrictsEnglish.take(5).toList()}...');
+          }
+        }
+      } else if (data['stationName'] != null) {
+        // If district is not available but station is, just set it
+        final stationName = data['stationName'].toString().trim();
+        if (stationName.isNotEmpty && stationName != 'null') {
+          _selectedPoliceStation = stationName;
+          debugPrint('✅ Pre-filled police station (without district): $stationName');
+        }
+      }
+      
+      // Pre-fill occurrence date from incident date if available
+      if (data['incidentDate'] != null) {
+        try {
+          final timestampData = data['incidentDate'];
+          Timestamp? timestamp;
+          
+          // Handle both Timestamp object and serialized Map format
+          if (timestampData is Timestamp) {
+            timestamp = timestampData;
+          } else if (timestampData is Map) {
+            // Reconstruct Timestamp from serialized format
+            final seconds = timestampData['seconds'];
+            final nanoseconds = timestampData['nanoseconds'] ?? 0;
+            if (seconds != null) {
+              timestamp = Timestamp(seconds as int, nanoseconds as int);
+            }
+          }
+          
+        if (timestamp != null) {
+          final date = timestamp.toDate();
+          _occurrenceDateTimeFrom = date;
+          // Auto-fill day of occurrence based on the date
+          final dayName = DateFormat('EEEE').format(date);
+          _occurrenceDayController.text = dayName;
+          debugPrint('✅ Pre-filled occurrence date: $date');
+          debugPrint('✅ Pre-filled day of occurrence: $dayName');
+        } else {
+            debugPrint('❌ Could not parse incident date: $timestampData (type: ${timestampData.runtimeType})');
+          }
+        } catch (e) {
+          debugPrint('❌ Error parsing incident date: $e');
+        }
+      }
+    });
+    
+    debugPrint('✅ Pre-fill completed. UI should update now.');
   }
 
   Future<void> _loadPoliceStationsForDistrict() async {
@@ -278,6 +461,324 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   String _getLocalizedLabel(String english, String telugu) {
     final locale = Localizations.localeOf(context);
     return locale.languageCode == 'te' ? telugu : english;
+  }
+
+  /// Auto-fill Mandal and District based on Street/Village name
+  Future<void> _autoFillMandalAndDistrict() async {
+    final villageName = _streetVillageController.text.trim();
+    if (villageName.isEmpty) return;
+
+    try {
+      // Load police stations data
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+
+      String? foundDistrict;
+      String? foundMandal;
+
+      // Search through all districts and their police stations
+      for (var districtEntry in jsonData.entries) {
+        final districtName = districtEntry.key;
+        final policeStations = (districtEntry.value as List).cast<String>();
+
+        // Search for village name in police station names
+        for (var stationName in policeStations) {
+          // Remove common suffixes for matching
+          final cleanStationName = stationName
+              .replaceAll(' Town', '')
+              .replaceAll(' Rural', '')
+              .replaceAll(' Traffic', '')
+              .replaceAll(' Traffic PS', '')
+              .replaceAll(' Taluk', '')
+              .replaceAll(' Taluk PS', '')
+              .replaceAll(' UPS', '')
+              .replaceAll(' CCS', '')
+              .replaceAll('I Town', '')
+              .replaceAll('II Town', '')
+              .replaceAll('III Town', '')
+              .replaceAll('IV Town', '')
+              .replaceAll('Mahila UPS, ', '')
+              .trim();
+
+          // Check if village name matches or is contained in station name
+          if (cleanStationName.toLowerCase() == villageName.toLowerCase() ||
+              cleanStationName.toLowerCase().contains(villageName.toLowerCase()) ||
+              villageName.toLowerCase().contains(cleanStationName.toLowerCase())) {
+            foundDistrict = districtName;
+            
+            // Try to extract mandal from station name
+            // Many police stations are named after mandals
+            if (cleanStationName.isNotEmpty) {
+              foundMandal = cleanStationName;
+            }
+            break;
+          }
+
+          // Also check if any part of the station name matches
+          final stationParts = cleanStationName.split(' ');
+          for (var part in stationParts) {
+            if (part.toLowerCase() == villageName.toLowerCase() ||
+                part.toLowerCase().contains(villageName.toLowerCase()) ||
+                villageName.toLowerCase().contains(part.toLowerCase())) {
+              if (part.length >= 3) { // Only consider meaningful matches
+                foundDistrict = districtName;
+                foundMandal = part;
+                break;
+              }
+            }
+          }
+
+          if (foundDistrict != null) break;
+        }
+
+        if (foundDistrict != null) break;
+      }
+
+      // Update the form fields if matches found
+      if (mounted && (foundDistrict != null || foundMandal != null)) {
+        setState(() {
+          if (foundDistrict != null) {
+            _cityDistrictController.text = foundDistrict;
+          }
+          if (foundMandal != null && foundMandal.isNotEmpty) {
+            _areaMandalController.text = foundMandal;
+          }
+        });
+
+        if (foundDistrict != null || foundMandal != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                foundDistrict != null && foundMandal != null
+                    ? 'Auto-filled: $foundMandal, $foundDistrict'
+                    : foundDistrict != null
+                        ? 'Auto-filled District: $foundDistrict'
+                        : 'Auto-filled Mandal: $foundMandal',
+              ),
+              duration: const Duration(seconds: 2),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else if (mounted) {
+        // No match found
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_getLocalizedLabel(
+              'Could not find matching Mandal/District. Please enter manually.',
+              'సరిపోలే మండలం/జిల్లా కనుగొనబడలేదు. దయచేసి మాన్యువల్‌గా నమోదు చేయండి.',
+            )),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error auto-filling mandal and district: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_getLocalizedLabel(
+              'Error looking up location. Please enter manually.',
+              'స్థానాన్ని శోధించడంలో లోపం. దయచేసి మాన్యువల్‌గా నమోదు చేయండి.',
+            )),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Build a searchable dropdown widget
+  Widget _buildSearchableDropdown<T>({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required T? value,
+    required List<T> items,
+    required TextEditingController searchController,
+    required String Function(T) getDisplayText,
+    required void Function(T?) onChanged,
+    String? Function(T?)? validator,
+    String? emptyMessage,
+  }) {
+    return FormField<T>(
+      initialValue: value,
+      validator: validator,
+      builder: (formFieldState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // TextField for search and display
+            InkWell(
+              onTap: () {
+                _showSearchableDropdownDialog<T>(
+                  context: context,
+                  label: label,
+                  hint: hint,
+                  icon: icon,
+                  items: items,
+                  searchController: searchController,
+                  getDisplayText: getDisplayText,
+                  onSelected: (selectedValue) {
+                    onChanged(selectedValue);
+                    formFieldState.didChange(selectedValue);
+                  },
+                  emptyMessage: emptyMessage,
+                );
+              },
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: label,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: Icon(icon),
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                  errorText: formFieldState.hasError ? formFieldState.errorText : null,
+                ),
+                child: Text(
+                  value != null ? getDisplayText(value) : hint,
+                  style: TextStyle(
+                    color: value != null
+                        ? Theme.of(context).textTheme.bodyLarge?.color
+                        : Colors.grey[600],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show a dialog with searchable dropdown
+  void _showSearchableDropdownDialog<T>({
+    required BuildContext context,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required List<T> items,
+    required TextEditingController searchController,
+    required String Function(T) getDisplayText,
+    required void Function(T?) onSelected,
+    String? emptyMessage,
+  }) {
+    List<T> filteredItems = List.from(items);
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Filter items based on search query
+            void filterItems(String query) {
+              setDialogState(() {
+                if (query.isEmpty) {
+                  filteredItems = List.from(items);
+                } else {
+                  filteredItems = items.where((item) {
+                    final displayText = getDisplayText(item).toLowerCase();
+                    final englishText = item.toString().toLowerCase();
+                    return displayText.contains(query.toLowerCase()) ||
+                        englishText.contains(query.toLowerCase());
+                  }).toList();
+                }
+              });
+            }
+
+            // Initialize filtered items
+            if (searchController.text.isNotEmpty) {
+              filterItems(searchController.text);
+            }
+
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(icon, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      label.replaceAll(' *', ''),
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Search TextField
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: hint,
+                        prefixIcon: const Icon(Icons.search),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  searchController.clear();
+                                  filterItems('');
+                                },
+                              )
+                            : null,
+                      ),
+                      onChanged: filterItems,
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 16),
+                    // List of items
+                    Flexible(
+                      child: filteredItems.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Text(
+                                emptyMessage ?? _getLocalizedLabel(
+                                  'No items found',
+                                  'ఎటువంటి అంశాలు కనుగొనబడలేదు',
+                                ),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: filteredItems.length,
+                              itemBuilder: (context, index) {
+                                final item = filteredItems[index];
+                                final displayText = getDisplayText(item);
+                                return ListTile(
+                                  title: Text(displayText),
+                                  onTap: () {
+                                    onSelected(item);
+                                    Navigator.pop(dialogContext);
+                                  },
+                                  dense: true,
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    searchController.clear();
+                    Navigator.pop(dialogContext);
+                  },
+                  child: Text(_getLocalizedLabel('Cancel', 'రద్దు చేయి')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -344,6 +845,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _dispatchOfficerNameController.dispose();
     _dispatchOfficerRankController.dispose();
     _complainantSignatureNoteController.dispose();
+    _districtSearchController.dispose();
+    _policeStationSearchController.dispose();
     super.dispose();
   }
   
@@ -408,6 +911,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             time.hour,
             time.minute,
           );
+          // Auto-fill day of occurrence based on the selected date
+          final dayName = DateFormat('EEEE').format(_occurrenceDateTimeFrom!);
+          _occurrenceDayController.text = dayName;
         });
       }
     }
@@ -999,23 +1505,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            // District Dropdown
-            DropdownButtonFormField<String>(
+            // District Searchable Dropdown
+            _buildSearchableDropdown<String>(
+              label: '${localizations.district} *',
+              hint: _getLocalizedLabel('Search district...', 'జిల్లాను శోధించండి...'),
+              icon: Icons.location_city,
               value: _selectedDistrict,
-              decoration: InputDecoration(
-                labelText: '${localizations.district} *',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.location_city),
-              ),
-              items: _apDistrictsEnglish
-                  .map((districtEnglish) {
-                    final localizedName = DistrictTranslations.getDistrictName(context, districtEnglish);
-                    return DropdownMenuItem(
-                      value: districtEnglish, // Store English name
-                      child: Text(localizedName), // Display localized name
-                    );
-                  })
-                  .toList(),
+              items: _apDistrictsEnglish,
+              searchController: _districtSearchController,
+              getDisplayText: (districtEnglish) => DistrictTranslations.getDistrictName(context, districtEnglish),
               onChanged: (value) async {
                 setState(() {
                   _selectedDistrict = value;
@@ -1024,6 +1522,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _selectedCircle = null;
                   _selectedPoliceStation = null;
                   _policeStationsEnglish = [];
+                  _districtSearchController.clear();
                 });
                 // Load police stations for selected district
                 if (value != null) {
@@ -1129,47 +1628,22 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            // Police Station Dropdown
-            DropdownButtonFormField<String>(
+            // Police Station Searchable Dropdown
+            _buildSearchableDropdown<String>(
+              label: '${localizations.policeStation} *',
+              hint: _getLocalizedLabel('Search police station...', 'పోలీస్ స్టేషన్‌ను శోధించండి...'),
+              icon: Icons.local_police,
               value: _selectedPoliceStation,
-              decoration: InputDecoration(
-                labelText: '${localizations.policeStation} *',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.local_police),
+              items: _policeStationsEnglish,
+              searchController: _policeStationSearchController,
+              getDisplayText: (stationEnglish) => DistrictTranslations.getLocalizedPoliceStationName(
+                context,
+                stationEnglish,
               ),
-              items: _policeStationsEnglish.isEmpty
-                  ? [
-                      DropdownMenuItem(
-                        value: null,
-                        enabled: false,
-                        child: Text(
-                          _selectedDistrict == null
-                              ? 'Please select a district'
-                              : localizations.loading,
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      )
-                    ]
-                  : _policeStationsEnglish
-                      .map((stationEnglish) {
-                        // Store English name, display localized name
-                        final localizedName = DistrictTranslations.getLocalizedPoliceStationName(
-                          context,
-                          stationEnglish,
-                        );
-                        return DropdownMenuItem(
-                          value: stationEnglish, // Store English name for data consistency
-                          child: Text(
-                            localizedName, // Display localized name
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      })
-                      .toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedPoliceStation = value; // Store English name
+                  _policeStationSearchController.clear();
                 });
               },
               validator: (value) {
@@ -1178,6 +1652,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 }
                 return null;
               },
+              emptyMessage: _selectedDistrict == null
+                  ? _getLocalizedLabel('Please select a district first', 'దయచేసి ముందు జిల్లాను ఎంచుకోండి')
+                  : localizations.loading,
             ),
             const SizedBox(height: 16),
             // Year Field
@@ -1375,7 +1852,27 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 labelText: localizations.streetVillage,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.location_on),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  tooltip: 'Auto-fill Mandal and District',
+                  onPressed: () => _autoFillMandalAndDistrict(),
+                ),
+                helperText: _getLocalizedLabel(
+                  'Type village name and click search icon to auto-fill Mandal & District',
+                  'గ్రామం పేరు టైప్ చేసి, మండలం & జిల్లాను స్వయంచాలకంగా నింపడానికి శోధన చిహ్నంపై క్లిక్ చేయండి',
+                ),
+                helperMaxLines: 2,
               ),
+              onChanged: (value) {
+                // Auto-fill when user finishes typing (after a delay)
+                if (value.isNotEmpty && value.length >= 3) {
+                  Future.delayed(const Duration(milliseconds: 1500), () {
+                    if (_streetVillageController.text == value && mounted) {
+                      _autoFillMandalAndDistrict();
+                    }
+                  });
+                }
+              },
             ),
             const SizedBox(height: 16),
             // Area/Mandal
