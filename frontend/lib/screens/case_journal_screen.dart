@@ -576,7 +576,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       }
 
       final response = await _dio.post(
-        'http://127.0.0.1:8000/api/generate-investigation-report',
+        'https://fastapi-app-335340524683.asia-south1.run.app/api/generate-investigation-report',
         data: requestBody,
       );
 
@@ -918,7 +918,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                         // Resolve relative URLs (e.g. "/static/reports/...") against the FastAPI backend.
                                         final String resolvedUrl = _finalPdfUrl!.startsWith('http')
                                             ? _finalPdfUrl!
-                                            : 'http://127.0.0.1:8000$_finalPdfUrl';
+                                            : 'https://fastapi-app-335340524683.asia-south1.run.app$_finalPdfUrl';
 
                                         final url = Uri.parse(resolvedUrl);
                                         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {

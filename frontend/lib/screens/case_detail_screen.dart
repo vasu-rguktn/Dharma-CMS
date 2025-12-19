@@ -1328,7 +1328,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                   onPressed: () async {
                     final String resolvedUrl = pdfUrl.startsWith('http')
                         ? pdfUrl
-                        : 'http://127.0.0.1:8000$pdfUrl';
+                        : 'https://fastapi-app-335340524683.asia-south1.run.app$pdfUrl';
 
                     final url = Uri.parse(resolvedUrl);
                     if (!await launchUrl(url,

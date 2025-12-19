@@ -494,15 +494,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
       // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
-       baseUrl="https://dharma-backend-x1g4.onrender.com";
+       baseUrl="https://fastapi-app-335340524683.asia-south1.run.app";
     } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       // Android physical device (requires adb reverse tcp:8000 tcp:8000)
       // baseUrl = 'http://127.0.0.1:8000';
-       baseUrl="https://dharma-backend-x1g4.onrender.com";
+       baseUrl="https://fastapi-app-335340524683.asia-south1.run.app";
     } else {
       // iOS simulator / other platforms
-      // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
-       baseUrl="https://dharma-backend-x1g4.onrender.com";
+      // baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
+       baseUrl="https://fastapi-app-335340524683.asia-south1.run.app";
     }
 
     final localeCode = Localizations.localeOf(context).languageCode;
