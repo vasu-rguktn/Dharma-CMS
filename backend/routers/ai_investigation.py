@@ -18,7 +18,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 # ✅ IMPORTANT: Supported model
 # model = genai.GenerativeModel("gemini-pro")
 # ✅ MUST USE FULL MODEL NAME
-model = genai.GenerativeModel("models/gemini-pro")
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 # ───────────────── ROUTER ─────────────────
 router = APIRouter(
