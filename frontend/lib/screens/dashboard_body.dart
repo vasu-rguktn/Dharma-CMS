@@ -5,6 +5,7 @@ import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+
 class DashboardBody extends StatelessWidget {
   final AuthProvider auth;
   final CaseProvider cases;
@@ -42,7 +43,9 @@ class DashboardBody extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            isPolice ? localizations.policeCommandCenter : localizations.yourLegalAssistanceHub,
+            isPolice
+                ? localizations.policeCommandCenter
+                : localizations.yourLegalAssistanceHub,
             style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
@@ -81,7 +84,7 @@ class DashboardBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // PETITIONS SECTION
-        // Since Cases are removed, we can either keep the header or remove it. 
+        // Since Cases are removed, we can either keep the header or remove it.
         // Showing "Petition Overview" is still helpful for context.
         Text(localizations.petitionOverview,
             style: theme.textTheme.titleMedium?.copyWith(
@@ -96,8 +99,9 @@ class DashboardBody extends StatelessWidget {
       BuildContext ctx, PetitionProvider petitionProvider) {
     final localizations = AppLocalizations.of(ctx)!;
     // Select stats based on role
-    final stats = isPolice ? petitionProvider.globalStats : petitionProvider.userStats;
-    
+    final stats =
+        isPolice ? petitionProvider.globalStats : petitionProvider.userStats;
+
     // For Citizen, if stats are 0, it might mean they haven't loaded yet OR they have 0.
     // We display whatever is in the provider. Authentication check logic resides in the Screen.
 
@@ -154,8 +158,8 @@ class DashboardBody extends StatelessWidget {
     );
   }
 
-  Widget _statCard(
-      BuildContext ctx, String title, String value, IconData icon, Color iconColor) {
+  Widget _statCard(BuildContext ctx, String title, String value, IconData icon,
+      Color iconColor) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -226,37 +230,53 @@ class DashboardBody extends StatelessWidget {
   List<Widget> _citizenActions(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
     return [
-        _quickActionCard(ctx, localizations.aiChat, Icons.chat, '/ai-legal-chat', Colors.blue),
-        _quickActionCard(ctx, localizations.legalQueries, Icons.psychology, '/legal-queries', Colors.purple),
-        _quickActionCard(ctx, localizations.legalSuggestion, Icons.gavel, '/legal-suggestion', Colors.red.shade700),
-        _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive, '/complaints', Colors.orange.shade700),
-        _quickActionCard(ctx, localizations.witnessPrep, Icons.people, '/witness-preparation', Colors.brown),
-        _quickActionCard(ctx, localizations.petitions, Icons.book, '/petitions', Colors.red.shade800),
-        _quickActionCard(ctx, localizations.helpline, Icons.phone, '/helpline', Colors.red.shade800),
-      ];
+      _quickActionCard(
+          ctx, localizations.aiChat, Icons.chat, '/ai-legal-chat', Colors.blue),
+      _quickActionCard(ctx, localizations.legalQueries, Icons.psychology,
+          '/legal-queries', Colors.purple),
+      _quickActionCard(ctx, localizations.legalSuggestion, Icons.gavel,
+          '/legal-suggestion', Colors.red.shade700),
+      _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
+          '/complaints', Colors.orange.shade700),
+      _quickActionCard(ctx, localizations.witnessPrep, Icons.people,
+          '/witness-preparation', Colors.brown),
+      _quickActionCard(ctx, localizations.petitions, Icons.book, '/petitions',
+          Colors.red.shade800),
+      _quickActionCard(ctx, localizations.helpline, Icons.phone, '/helpline',
+          Colors.red.shade800),
+    ];
   }
 
   // ── POLICE QUICK ACTIONS ──
   List<Widget> _policeActions(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
     return [
-        _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document, '/document-drafting', Colors.green),
-        _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present, '/chargesheet-generation', Colors.teal),
-        _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check, '/chargesheet-vetting', Colors.indigo),
-        _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search, '/media-analysis', Colors.cyan.shade700),
-        _quickActionCard(ctx, localizations.caseJournal, Icons.book, '/case-journal', Colors.deepOrange),
-        _quickActionCard(
-          ctx,
-          localizations.aiInvestigationGuidelines,
-          Icons.rule,
-          '/ai-investigation-guidelines',
-          Colors.deepPurple,
-        ),
-        _quickActionCard(ctx, localizations.allCases, Icons.file_copy_rounded, '/cases', Colors.blue.shade700),
-        _quickActionCard(ctx, localizations.complaints, Icons.archive, '/complaints', Colors.orange.shade700),
-        _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions', Colors.red.shade800),
-
-      ];
+      _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document,
+          '/document-drafting', Colors.green),
+      _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present,
+          '/chargesheet-generation', Colors.teal),
+      _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check,
+          '/chargesheet-vetting', Colors.indigo),
+      _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search,
+          '/media-analysis', Colors.cyan.shade700),
+      _quickActionCard(ctx, localizations.caseJournal, Icons.book,
+          '/case-journal', Colors.deepOrange),
+      _quickActionCard(
+        ctx,
+        localizations.aiInvestigationGuidelines,
+        Icons.rule,
+        '/ai-investigation-guidelines',
+        Colors.deepPurple,
+      ),
+      _quickActionCard(ctx, localizations.allCases, Icons.file_copy_rounded,
+          '/cases', Colors.blue.shade700),
+      _quickActionCard(ctx, localizations.complaints, Icons.archive,
+          '/complaints', Colors.orange.shade700),
+      _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions',
+          Colors.red.shade800),
+      _quickActionCard(
+          ctx, "Image Lab", Icons.camera_alt, '/image-lab', Colors.deepPurple),
+    ];
   }
 
   // ── RECENT ACTIVITY ──
