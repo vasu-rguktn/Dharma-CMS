@@ -24,6 +24,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   String? _selectedCaseId;
   List<CaseJournalEntry> _journalEntries = [];
   bool _isLoading = false;
+  bool _hasLoaded = false;
 
   // Your signature orange
   static const Color orange = Color(0xFFFC633C);
@@ -37,6 +38,22 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   bool _isGeneratingReport = false;
   bool _isSavingFinalReport = false;
   final TextEditingController _reportController = TextEditingController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasLoaded) {
+      _hasLoaded = true;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        caseProvider.fetchCases(
+          userId: auth.user?.uid,
+          isAdmin: auth.role == 'police',
+        );
+      });
+    }
+  }
 
   Future<void> _fetchJournalEntries(String caseId) async {
     setState(() {
