@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'package:Dharma/providers/police_auth_provider.dart';
 
@@ -36,7 +37,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Police login successful')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.policeLoginSuccessful)),
       );
 
       // ✅ Navigate to police dashboard
@@ -102,9 +103,9 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    const Text(
-                      'Police Login',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.policeLogin,
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
                       ),
@@ -116,9 +117,9 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration:
-                          _inputDecoration('Email', Icons.email),
+                          _inputDecoration(AppLocalizations.of(context)!.email, Icons.email),
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Enter email' : null,
+                          v == null || v.isEmpty ? AppLocalizations.of(context)!.pleaseEnterEmail : null,
                     ),
 
                     const SizedBox(height: 20),
@@ -128,7 +129,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                       controller: _passwordController,
                       obscureText: _obscureText,
                       decoration: _inputDecoration(
-                              'Password', Icons.lock)
+                              AppLocalizations.of(context)!.password, Icons.lock)
                           .copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(_obscureText
@@ -139,7 +140,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                         ),
                       ),
                       validator: (v) =>
-                          v == null || v.isEmpty ? 'Enter password' : null,
+                          v == null || v.isEmpty ? AppLocalizations.of(context)!.passwordEmpty : null,
                     ),
 
                     const SizedBox(height: 30),
@@ -160,9 +161,9 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                         child: _isLoading
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
-                            : const Text(
-                                'Login',
-                                style: TextStyle(
+                            : Text(
+                                AppLocalizations.of(context)!.login,
+                                style: const TextStyle(
                                   fontSize: 22,
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -177,13 +178,13 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Don't have a police account? "),
+                        Text(AppLocalizations.of(context)!.dontHavePoliceAccount),
                         GestureDetector(
                           onTap: () =>
                               context.go('/signup/police'),
-                          child: const Text(
-                            'Register',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.register,
+                            style: const TextStyle(
                               color: orange,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,

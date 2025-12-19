@@ -196,7 +196,9 @@ class DashboardBody extends StatelessWidget {
       child: Card(
         elevation: 2,
         child: InkWell(
-          onTap: () => ctx.go(route),
+          // onTap: () => ctx.go(route),
+          onTap: () => GoRouter.of(ctx).go(route),
+
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -238,26 +240,23 @@ class DashboardBody extends StatelessWidget {
   List<Widget> _policeActions(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
     return [
-       _quickActionCard(ctx, localizations.allCases,
-          Icons.file_copy_rounded, '/cases', Colors.blueGrey),
-           _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions',
-          Colors.red.shade800),
-      _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document,
-          '/document-drafting', Colors.green),
-      _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present,
-          '/chargesheet-generation', Colors.teal),
-      _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check,
-          '/chargesheet-vetting', Colors.indigo),
-      _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search,
-          '/media-analysis', Colors.cyan.shade700),
-      _quickActionCard(ctx, localizations.caseJournal, Icons.book,
-          '/case-journal', Colors.deepOrange),
-      // New quick action: All Cases (Case Management)
-     
-      _quickActionCard(ctx, localizations.complaints, Icons.archive,
-          '/complaints', Colors.orange.shade700),
-     
-    ];
+        _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document, '/document-drafting', Colors.green),
+        _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present, '/chargesheet-generation', Colors.teal),
+        _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check, '/chargesheet-vetting', Colors.indigo),
+        _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search, '/media-analysis', Colors.cyan.shade700),
+        _quickActionCard(ctx, localizations.caseJournal, Icons.book, '/case-journal', Colors.deepOrange),
+        _quickActionCard(
+  ctx,
+  localizations.aiInvestigationGuidelines,
+  Icons.rule,
+  '/ai-investigation-guidelines',
+  Colors.deepPurple,
+),
+
+        _quickActionCard(ctx, localizations.complaints, Icons.archive, '/complaints', Colors.orange.shade700),
+        _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions', Colors.red.shade800),
+
+      ];
   }
 
   // ── RECENT ACTIVITY ──

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:Dharma/utils/validators.dart';
@@ -114,10 +115,10 @@ class _PoliceRegistrationScreenState
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Search...',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!.searchHint,
+                        prefixIcon: const Icon(Icons.search),
+                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (value) {
                         setModalState(() {
@@ -173,7 +174,7 @@ class _PoliceRegistrationScreenState
         _selectedStation == null ||
         _selectedRank == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select all dropdown fields')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.pleaseSelectAllDropdownFields)),
       );
       return;
     }
@@ -193,7 +194,7 @@ class _PoliceRegistrationScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Police registered successfully')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.policeRegisteredSuccessfully)),
       );
 
       context.go('/police-login');
@@ -258,9 +259,9 @@ class _PoliceRegistrationScreenState
                       key: _formKey,
                       child: Column(
                         children: [
-                          const Text(
-                            'Police Registration',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.policeRegistration,
+                            style: const TextStyle(
                               fontSize: 30,
                               fontWeight: FontWeight.bold,
                             ),
@@ -270,47 +271,47 @@ class _PoliceRegistrationScreenState
 
                           _textField(
                             _nameController,
-                            'Full Name',
+                            AppLocalizations.of(context)!.fullName,
                             Icons.person,
                             (v) =>
                                 Validators.isValidName(v ?? '')
                                     ? null
-                                    : 'Invalid name',
+                                    : AppLocalizations.of(context)!.invalidName,
                           ),
 
                           const SizedBox(height: 20),
 
                           _textField(
                             _emailController,
-                            'Email',
+                            AppLocalizations.of(context)!.email,
                             Icons.email,
                             (v) =>
                                 Validators.isValidEmail(v ?? '')
                                     ? null
-                                    : 'Invalid email',
+                                    : AppLocalizations.of(context)!.invalidEmailShort,
                           ),
 
                           const SizedBox(height: 20),
 
                           _textField(
                             _passwordController,
-                            'Password',
+                            AppLocalizations.of(context)!.password,
                             Icons.lock,
                             (v) =>
                                 Validators.isValidPassword(v ?? '')
                                     ? null
-                                    : 'Min 8 chars, 1 number',
+                                    : AppLocalizations.of(context)!.passwordMinRequirement,
                             obscure: true,
                           ),
 
                           const SizedBox(height: 20),
 
                           _picker(
-                            label: 'District',
+                            label: AppLocalizations.of(context)!.district,
                             value: _selectedDistrict,
                             onTap: () {
                               _openSearchableDropdown(
-                                title: 'Select District',
+                                title: AppLocalizations.of(context)!.selectDistrict,
                                 items: _districtStations.keys.toList(),
                                 selectedValue: _selectedDistrict,
                                 onSelected: (v) {
@@ -326,13 +327,13 @@ class _PoliceRegistrationScreenState
                           const SizedBox(height: 20),
 
                           _picker(
-                            label: 'Police Station',
+                            label: AppLocalizations.of(context)!.policeStation,
                             value: _selectedStation,
                             onTap: _selectedDistrict == null
                                 ? null
                                 : () {
                                     _openSearchableDropdown(
-                                      title: 'Select Police Station',
+                                      title: AppLocalizations.of(context)!.selectPoliceStationText,
                                       items: _districtStations[
                                           _selectedDistrict!]!,
                                       selectedValue: _selectedStation,
@@ -347,11 +348,11 @@ class _PoliceRegistrationScreenState
                           const SizedBox(height: 20),
 
                           _picker(
-                            label: 'Rank',
+                            label: AppLocalizations.of(context)!.rank,
                             value: _selectedRank,
                             onTap: () {
                               _openSearchableDropdown(
-                                title: 'Select Rank',
+                                title: AppLocalizations.of(context)!.selectRank,
                                 items: _ranks,
                                 selectedValue: _selectedRank,
                                 onSelected: (v) {
@@ -379,9 +380,9 @@ class _PoliceRegistrationScreenState
                               child: _loading
                                   ? const CircularProgressIndicator(
                                       color: Colors.white)
-                                  : const Text(
-                                      'Register',
-                                      style: TextStyle(
+                                  : Text(
+                                      AppLocalizations.of(context)!.register,
+                                      style: const TextStyle(
                                         fontSize: 20,
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,

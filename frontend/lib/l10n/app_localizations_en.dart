@@ -1417,5 +1417,68 @@ String get loginFailed => 'Login Failed';
 @override
 String get googleLoginSuccessful => 'Google Login Successful';
 
+// Police Login & Registration
+@override
+String get policeLogin => 'Police Login';
+
+@override
+String get policeRegistration => 'Police Registration';
+
+@override
+String get policeLoginSuccessful => 'Police login successful';
+
+@override
+String get policeRegisteredSuccessfully => 'Police registered successfully';
+
+@override
+String get dontHavePoliceAccount => "Don't have a police account? ";
+
+@override
+String get invalidName => 'Invalid name';
+
+@override
+String get invalidEmailShort => 'Invalid email';
+
+@override
+String get passwordMinRequirement => 'Min 8 chars, 1 number';
+
+@override
+String get rank => 'Rank';
+
+@override
+String get selectRank => 'Select Rank';
+
+@override
+String get selectDistrict => 'Select District';
+
+@override
+String get selectPoliceStationText => 'Select Police Station';
+
+@override
+String get pleaseSelectAllDropdownFields => 'Please select all dropdown fields';
+
+@override
+String get searchHint => 'Search...';
+
+@override
+String selectLabel(String label) {
+  return 'Select $label';
+}
+
+@override
+String get aiInvestigationGuidelines => 'AI Investigation Guidelines';
+
+@override
+String get enterFirNumber => 'Enter FIR Number (Case ID)';
+
+@override
+String get startInvestigation => 'Start Investigation';
+
+@override
+String get enterOfficerResponse => 'Enter officer response...';
+
+@override
+String get errorContactingInvestigationAI => 'Error contacting investigation AI';
+
 
 }

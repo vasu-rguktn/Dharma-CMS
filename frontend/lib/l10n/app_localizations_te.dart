@@ -1408,5 +1408,67 @@ String get loginFailed => 'లాగిన్ విఫలమైంది!';
 
 @override
 String get googleLoginSuccessful => 'గూగుల్ లాగిన్ విజయవంతం!';
+// Police Login & Registration
+@override
+String get policeLogin => 'పోలీస్ లాగిన్';
+
+@override
+String get policeRegistration => 'పోలీస్ రిజిస్ట్రేషన్';
+
+@override
+String get policeLoginSuccessful => 'పోలీస్ లాగిన్ విజయవంతమైంది';
+
+@override
+String get policeRegisteredSuccessfully => 'పోలీస్ విజయవంతంగా నమోదు చేయబడింది';
+
+@override
+String get dontHavePoliceAccount => 'పోలీస్ ఖాతా లేదా? ';
+
+@override
+String get invalidName => 'చెల్లని పేరు';
+
+@override
+String get invalidEmailShort => 'చెల్లని ఇమెయిల్';
+
+@override
+String get passwordMinRequirement => 'కనీసం 8 అక్షరాలు, 1 సంఖ్య';
+
+@override
+String get rank => 'హోదా';
+
+@override
+String get selectRank => 'హోదాను ఎంచుకోండి';
+
+@override
+String get selectDistrict => 'జిల్లాను ఎంచుకోండి';
+
+@override
+String get selectPoliceStationText => 'పోలీస్ స్టేషన్‌ను ఎంచుకోండి';
+
+@override
+String get pleaseSelectAllDropdownFields => 'దయచేసి అన్ని డ్రాప్‌డౌన్ ఫీల్డ్‌లను ఎంచుకోండి';
+
+@override
+String get searchHint => 'శోధించండి...';
+
+@override
+String selectLabel(String label) {
+  return '$label ఎంచుకోండి';
+}
+
+@override
+String get aiInvestigationGuidelines => 'AI దర్యాప్తు మార్గదర్శకాలు';
+
+@override
+String get enterFirNumber => 'FIR నంబర్ నమోదు చేయండి (కేసు ID)';
+
+@override
+String get startInvestigation => 'దర్యాప్తు ప్రారంభించండి';
+
+@override
+String get enterOfficerResponse => 'అధికారి ప్రతిస్పందన నమోదు చేయండి...';
+
+@override
+String get errorContactingInvestigationAI => 'దర్యాప్తు AI ని సంప్రదించడంలో లోపం';
 
 }
