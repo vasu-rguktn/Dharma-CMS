@@ -246,13 +246,13 @@ class DashboardBody extends StatelessWidget {
         _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search, '/media-analysis', Colors.cyan.shade700),
         _quickActionCard(ctx, localizations.caseJournal, Icons.book, '/case-journal', Colors.deepOrange),
         _quickActionCard(
-  ctx,
-  localizations.aiInvestigationGuidelines,
-  Icons.rule,
-  '/ai-investigation-guidelines',
-  Colors.deepPurple,
-),
-
+          ctx,
+          localizations.aiInvestigationGuidelines,
+          Icons.rule,
+          '/ai-investigation-guidelines',
+          Colors.deepPurple,
+        ),
+        _quickActionCard(ctx, localizations.allCases, Icons.file_copy_rounded, '/cases', Colors.blue.shade700),
         _quickActionCard(ctx, localizations.complaints, Icons.archive, '/complaints', Colors.orange.shade700),
         _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions', Colors.red.shade800),
 
