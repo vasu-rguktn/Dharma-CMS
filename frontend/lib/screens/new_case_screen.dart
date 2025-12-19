@@ -107,7 +107,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   
   // Location fields
   final _cityDistrictController = TextEditingController();
-  final _stateController = TextEditingController();
+  final _stateController = TextEditingController(text: 'Andhra Pradesh');
   final _pinController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
@@ -133,7 +133,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _complainantStreetController = TextEditingController();
   final _complainantAreaController = TextEditingController();
   final _complainantCityController = TextEditingController();
-  final _complainantStateController = TextEditingController();
+  final _complainantStateController = TextEditingController(text: 'Andhra Pradesh');
   final _complainantPinController = TextEditingController();
   // Complainant passport (optional)
   final _complainantPassportNumberController = TextEditingController();
@@ -166,7 +166,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _victimStreetController = TextEditingController();
   final _victimAreaController = TextEditingController();
   final _victimCityController = TextEditingController();
-  final _victimStateController = TextEditingController();
+  final _victimStateController = TextEditingController(text: 'Andhra Pradesh');
   final _victimPinController = TextEditingController();
   
   // Action taken / dispatch to court (final step)
@@ -255,6 +255,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     super.initState();
     // Start with one accused by default
     _accusedList.add(_AccusedFormData());
+    // Auto-fill FIR registration date to today
+    _firRegistrationDate = DateTime.now();
     // Load police stations when district is selected
     _loadPoliceStationsForDistrict();
   }
@@ -1272,7 +1274,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _occurrenceDayController,
               decoration: InputDecoration(
-                labelText: 'Day of Occurrence',
+                labelText: localizations.dayOfOccurrence,
                 hintText: 'E.g., Monday',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.calendar_today),
@@ -1284,7 +1286,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               onTap: _selectOccurrenceDateTimeFrom,
               child: InputDecorator(
                 decoration: InputDecoration(
-                  labelText: 'Date/Time From',
+                  labelText: localizations.dateTimeFrom,
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.access_time),
                   suffixIcon: const Icon(Icons.arrow_drop_down),
@@ -1292,7 +1294,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 child: Text(
                   _occurrenceDateTimeFrom != null
                       ? DateFormat('dd-MM-yyyy HH:mm').format(_occurrenceDateTimeFrom!)
-                      : 'Select date and time',
+                      : localizations.selectDateAndTime,
                   style: TextStyle(
                     color: _occurrenceDateTimeFrom != null
                         ? Theme.of(context).textTheme.bodyLarge?.color
@@ -1307,7 +1309,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               onTap: _selectOccurrenceDateTimeTo,
               child: InputDecorator(
                 decoration: InputDecoration(
-                  labelText: 'Date/Time To',
+                  labelText: localizations.dateTimeTo,
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.access_time),
                   suffixIcon: const Icon(Icons.arrow_drop_down),
@@ -1315,7 +1317,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 child: Text(
                   _occurrenceDateTimeTo != null
                       ? DateFormat('dd-MM-yyyy HH:mm').format(_occurrenceDateTimeTo!)
-                      : 'Select date and time',
+                      : localizations.selectDateAndTime,
                   style: TextStyle(
                     color: _occurrenceDateTimeTo != null
                         ? Theme.of(context).textTheme.bodyLarge?.color
@@ -1329,7 +1331,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _timePeriodController,
               decoration: InputDecoration(
-                labelText: 'Time Period',
+                labelText: localizations.timePeriod,
                 hintText: 'E.g., 19:15-21:30',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.schedule),
@@ -1340,7 +1342,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _priorToDateTimeDetailsController,
               decoration: InputDecoration(
-                labelText: 'Prior to Date/Time (Details)',
+                labelText: localizations.priorToDateTimeDetails,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.description),
                 alignLabelWithHint: true,
@@ -1352,7 +1354,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _beatNumberController,
               decoration: InputDecoration(
-                labelText: 'Beat Number',
+                labelText: localizations.beatNumber,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.numbers),
               ),
@@ -1360,7 +1362,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             const SizedBox(height: 24),
             // Place of Occurrence sub-heading
             Text(
-              'Place of Occurrence',
+              localizations.placeOfOccurrence,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -1370,7 +1372,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _streetVillageController,
               decoration: InputDecoration(
-                labelText: 'Street/Village',
+                labelText: localizations.streetVillage,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.location_on),
               ),
@@ -1380,7 +1382,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _areaMandalController,
               decoration: InputDecoration(
-                labelText: 'Area/Mandal',
+                labelText: localizations.areaMandal,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.map),
               ),
@@ -1390,7 +1392,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _cityDistrictController,
               decoration: InputDecoration(
-                labelText: 'City/District',
+                labelText: localizations.cityDistrict,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.location_city),
               ),
@@ -1400,7 +1402,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _stateController,
               decoration: InputDecoration(
-                labelText: 'State',
+                labelText: localizations.state,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.public),
               ),
@@ -1411,7 +1413,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               controller: _pinController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'PIN',
+                labelText: localizations.pin,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.pin),
               ),
@@ -1422,7 +1424,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               controller: _latitudeController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Latitude',
+                labelText: localizations.latitude,
                 hintText: 'e.g., 16.5062',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.my_location),
@@ -1434,7 +1436,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               controller: _longitudeController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Longitude',
+                labelText: localizations.longitude,
                 hintText: 'e.g., 80.6480',
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.my_location),

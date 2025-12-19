@@ -1475,6 +1475,39 @@ String get errorContactingInvestigationAI => 'దర్యాప్తు AI న
 @override
 String get districtAndFirDetails => 'జిల్లా మరియు FIR వివరాలు';
 
+@override
 String get occurenceOfOffence => 'దర్యాప్తు అవతరణ';
+@override
+String get dayOfOccurrence => 'సంభవించిన రోజు';
+@override
+String get dateTimeFrom => 'తేదీ/సమయం నుండి';
+@override
+String get dateTimeTo => 'తేదీ/సమయం వరకు';
+@override
+String get selectDateAndTime => 'తేదీ మరియు సమయాన్ని ఎంచుకోండి';
+@override
+String get timePeriod => 'సమయ వ్యవధి';
+@override
+String get priorToDateTimeDetails => 'తేదీ/సమయానికి ముందు (వివరాలు)';
+@override
+String get beatNumber => 'బీట్ సంఖ్య';
+@override
+String get placeOfOccurrence => 'సంభవించిన స్థలం';
+@override
+String get streetVillage => 'వీధి/గ్రామం';
+@override
+String get areaMandal => 'ప్రాంతం/మండలం';
+@override
+String get cityDistrict => 'నగరం/జిల్లా';
+@override
+String get pin => 'పిన్';
+@override
+String get latitude => 'అక్షాంశం';
+@override
+String get longitude => 'దూరం';
+@override
+String get map => 'మాప్';
+@override
+String get viewMap => 'మాప్ చూడండి';
 
 }

@@ -1483,6 +1483,54 @@ String get errorContactingInvestigationAI => 'Error contacting investigation AI'
 @override
 String get districtAndFirDetails => 'District and FIR Details';
 
+@override
 String get occurenceOfOffence => 'Occurence of Offence';
 
+@override
+String get dayOfOccurrence => 'Day of Occurrence';
+
+@override
+String get dateTimeFrom => 'Date/Time From';
+
+@override
+String get dateTimeTo => 'Date/Time To';
+
+@override
+String get selectDateAndTime => 'Select date and time';
+
+@override
+String get timePeriod => 'Time Period';
+
+@override
+String get priorToDateTimeDetails => 'Prior to Date/Time (Details)';
+
+@override
+String get beatNumber => 'Beat Number';
+
+@override
+String get placeOfOccurrence => 'Place of Occurrence';
+
+@override
+String get streetVillage => 'Street/Village';
+
+@override
+String get areaMandal => 'Area/Mandal';
+
+@override
+String get cityDistrict => 'City/District';
+
+@override
+String get pin => 'PIN';
+
+@override
+String get latitude => 'Latitude';
+
+@override
+String get longitude => 'Longitude';
+
+@override
+String get map => 'Map';
+
+@override
+String get viewMap => 'View Map'; 
 }
