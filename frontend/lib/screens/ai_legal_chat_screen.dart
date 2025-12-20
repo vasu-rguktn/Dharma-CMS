@@ -398,6 +398,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
   bool _isRestarting = false; // Track if restart is in progress to prevent BUSY errors
   DateTime? _lastSpeechDetected; // Track when speech was last detected
+  DateTime? _lastDoneStatus; // Track when "done" status was last received
   int _busyRetryCount = 0; // Track BUSY error retries
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   String? _currentSttLang; // Store current STT language for restarting
@@ -714,17 +715,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
       await _speech.stop();
       await _speech.cancel();
       
-      // Finalize the current transcript when user sends
+      // USER EXPLICITLY SENT MESSAGE - Finalize all accumulated text
+      // This is the ONLY place where we finalize on send (not on pauses)
       setState(() {
-        _finalizedTranscript = _currentTranscript; // Lock the current transcript
+        // Finalize: append current transcript to finalized (accumulate all text)
+        if (_currentTranscript.isNotEmpty) {
+          if (_finalizedTranscript.isNotEmpty) {
+            _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
+          } else {
+            _finalizedTranscript = _currentTranscript;
+          }
+        }
+        _controller.text = _finalizedTranscript; // Update controller with finalized text
+        _currentTranscript = ''; // Clear current
         _isRecording = false;
         _recordingStartTime = null;
         _lastRestartAttempt = null;
         _isRestarting = false;
       });
-      
-      // Ensure controller has the finalized text
-      _controller.text = _finalizedTranscript;
       
       // Small delay to ensure transcript is finalized
       await Future.delayed(const Duration(milliseconds: 100));
@@ -993,16 +1001,26 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
         return;
       }
       
-      // Always cancel any existing session first to ensure clean state
-      // This is critical - even if isListening is false, the session might be in a "done" state
-      print('Canceling any existing session before restart (isListening: ${_speech.isListening})...');
+      // For continuous listening: Cancel existing session to restart fresh
+      // When "done" status is reported, the SDK has stopped - we need to restart
+      // IMPORTANT: Don't cancel if already stopped - just restart listening
+      print('Preparing to restart listening (isListening: ${_speech.isListening})...');
       try {
-        await _speech.stop();
-        await _speech.cancel();
-        // Minimal delay for clean state - reduced for faster continuous listening
-        await Future.delayed(const Duration(milliseconds: 150));
+        // Only stop/cancel if actually listening - if already stopped, skip
+        if (_speech.isListening) {
+          await _speech.stop();
+          await _speech.cancel();
+          // Short delay for clean state - fast restart for continuous listening
+          await Future.delayed(const Duration(milliseconds: 150));
+        } else {
+          print('Session already stopped, skipping cancel - restarting directly...');
+          // Even if stopped, give a tiny delay for SDK to be ready
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
       } catch (e) {
-        print('Error canceling session: $e');
+        print('Error canceling session: $e - continuing anyway');
+        // Continue anyway - might already be stopped
+        await Future.delayed(const Duration(milliseconds: 100));
       }
       
       // Final check before starting
@@ -1011,38 +1029,49 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
         return;
       }
       
-      print('Starting new listening session after restart...');
+      // Clear current transcript for new session, but preserve finalized text
+      setState(() {
+        _currentTranscript = ''; // Clear for new session
+        // _finalizedTranscript is preserved - contains previous recognized text
+      });
+      
+      print('Starting new listening session after restart (preserving accumulated text: "${_finalizedTranscript.substring(0, _finalizedTranscript.length.clamp(0, 50))}...")...');
       await _speech.listen(
         localeId: sttLang,
         listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
-        pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
+        pauseFor: const Duration(seconds: 30), // Allow 30 second pauses - native SDK may still stop, we'll restart
         partialResults: true,
         cancelOnError: false,
-        onResult: (result) {
-          if (mounted && _isRecording) {
-            setState(() {
-              final newWords = result.recognizedWords.trim();
-              
-              // STREAMING MODE: Always replace with latest recognized text
-              if (newWords.isNotEmpty) {
-                print('onResult (restart, streaming): newWords="$newWords"');
-                _lastSpeechDetected = DateTime.now();
-                
-                // Check if user manually cleared the text - if so, start fresh
-                // If controller is empty, user cleared it manually, so start fresh
-                if (_controller.text.isEmpty && _currentTranscript.isNotEmpty) {
-                  print('Controller was manually cleared - starting fresh with new speech');
-                  _currentTranscript = ''; // Clear old transcript
-                }
-                
-                // Always replace - don't accumulate
-                // Intermediate results are temporary - only finalized when user stops/sends
-                _currentTranscript = newWords;
-                _controller.text = _currentTranscript;
+            onResult: (result) {
+              if (mounted && _isRecording) {
+                setState(() {
+                  final newWords = result.recognizedWords.trim();
+                  
+                  // CONTINUOUS MODE: Append new words to finalized text, not replace
+                  if (newWords.isNotEmpty) {
+                    print('onResult (restart, continuous): newWords="$newWords"');
+                    _lastSpeechDetected = DateTime.now();
+                    
+                    // Check if user manually cleared the text - if so, start fresh
+                    if (_controller.text.isEmpty && _finalizedTranscript.isNotEmpty) {
+                      print('Controller was manually cleared - starting fresh');
+                      _finalizedTranscript = '';
+                      _currentTranscript = '';
+                    }
+                    
+                    // For restarted sessions: newWords contains only NEW speech
+                    // Append to finalized text (preserve previous text)
+                    _currentTranscript = newWords;
+                    // Display: finalized text + new current transcript
+                    if (_finalizedTranscript.isNotEmpty) {
+                      _controller.text = '$_finalizedTranscript $_currentTranscript'.trim();
+                    } else {
+                      _controller.text = _currentTranscript;
+                    }
+                  }
+                });
               }
-            });
-          }
-        },
+            },
       );
       
       _busyRetryCount = 0; // Reset retry count on success
@@ -1106,13 +1135,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
       await _speech.stop();
       await _speech.cancel(); // Cancel to fully reset
       
-      // Finalize the current transcript when user stops
-      // This locks the text - user can edit it or send it
+      // USER EXPLICITLY STOPPED MICROPHONE - Finalize all accumulated text
+      // This is the ONLY place where we finalize on stop (not on pauses)
       setState(() {
+        // Finalize: append current transcript to finalized (accumulate all text)
         if (_currentTranscript.isNotEmpty) {
-          _finalizedTranscript = _currentTranscript; // Lock the current transcript
-          _controller.text = _finalizedTranscript; // Update controller with finalized text
+          if (_finalizedTranscript.isNotEmpty) {
+            _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
+          } else {
+            _finalizedTranscript = _currentTranscript;
+          }
         }
+        _controller.text = _finalizedTranscript; // Update controller with finalized text
+        _currentTranscript = ''; // Clear current
         _isRecording = false;
         _recordingStartTime = null;
         _currentSttLang = null; // Clear language when stopping
@@ -1166,35 +1201,86 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
           }
         },
         onStatus: (val) {
-          // For continuous listening: IGNORE "done", "notListening", "noSpeech", "noMatch" completely
-          // These are just SDK status updates during pauses - we treat them as normal, not completion
-          // We do NOT restart or cancel - we just keep listening
-          if (val == 'done' || val == 'notListening' || val == 'noSpeech' || val == 'noMatch') {
-            // Completely ignore these statuses - they're just pause indicators, not completion
-            // The SDK will continue listening if we don't interfere
-            // Only restart if speech recognition actually stopped (checked separately)
+          // MOBILE CONTINUOUS LISTENING MODE: Handle "done" status carefully
+          // When SDK reports "done" after a pause, it has internally stopped recognizing
+          // We must restart listening, but preserve existing text and avoid aggressive restarts
+          if (val == 'done') {
+            // SDK has stopped recognizing after a pause - restart to continue listening
+            // DO NOT finalize text here - pauses are normal, only finalize when user stops/sends
+            // Throttle restarts to prevent sound spam - only restart if enough time has passed
+            print('STT Status: done - SDK stopped after pause, checking if restart needed...');
+            if (mounted && _isRecording && _currentSttLang != null && !_isRestarting) {
+              final now = DateTime.now();
+              
+              // Throttle restarts: Only restart if:
+              // 1. No restart in last 3 seconds (prevents sound spam)
+              // 2. OR if we've detected speech recently (user is actively speaking)
+              final timeSinceLastRestart = _lastRestartAttempt != null 
+                  ? now.difference(_lastRestartAttempt!).inSeconds 
+                  : 999;
+              final timeSinceLastSpeech = _lastSpeechDetected != null 
+                  ? now.difference(_lastSpeechDetected!).inSeconds 
+                  : 999;
+              
+              // Only restart if:
+              // - At least 3 seconds since last restart (prevents frequent restarts/sounds)
+              // - OR speech was detected in last 5 seconds (user is actively speaking, restart needed)
+              final shouldRestart = timeSinceLastRestart >= 3 || 
+                                   (timeSinceLastSpeech <= 5 && timeSinceLastRestart >= 1);
+              
+              if (shouldRestart) {
+                // Preserve current transcript in finalized text
+                if (_currentTranscript.isNotEmpty) {
+                  setState(() {
+                    // Append current transcript to finalized (preserve all text)
+                    if (_finalizedTranscript.isNotEmpty) {
+                      _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
+                    } else {
+                      _finalizedTranscript = _currentTranscript;
+                    }
+                    // Keep displaying the accumulated text
+                    _controller.text = _finalizedTranscript;
+                    // Clear current for new session (will accumulate new speech)
+                    _currentTranscript = '';
+                  });
+                }
+                
+                // Restart with throttling to prevent sound spam
+                print('Restarting listening (throttled: ${timeSinceLastRestart}s since last restart)...');
+                _lastDoneStatus = now;
+                Future.delayed(const Duration(milliseconds: 200), () {
+                  if (mounted && _isRecording && _currentSttLang != null && !_isRestarting) {
+                    _safeRestartListening(_currentSttLang!);
+                  }
+                });
+              } else {
+                print('Skipping restart - too soon (${timeSinceLastRestart}s since last restart, ${timeSinceLastSpeech}s since last speech) - prevents sound spam');
+              }
+            }
+            return;
+          }
+          
+          // Ignore other pause-related statuses - they're just indicators, SDK continues internally
+          if (val == 'notListening' || val == 'noSpeech' || val == 'noMatch') {
+            // These are pause indicators - SDK may still be listening internally
+            // Don't restart, just log and continue
+            print('STT Status: $val - Pause indicator (continuous listening mode)');
             return;
           }
           
           // Only handle critical statuses
           if (val == 'error' || val == 'aborted') {
-            print('STT Status: $val - Critical error, stopping recording');
-            if (mounted) {
-              setState(() {
-                _isRecording = false;
-                _recordingStartTime = null;
-              });
-            }
+            // Even for errors, don't auto-stop - let user decide
+            print('STT Status: $val - Critical status, but continuing in continuous mode');
+            // DO NOT set _isRecording = false - let user manually stop
           } else if (val == 'listening') {
             // Speech recognition is active - this is good, no action needed
-            print('STT Status: listening - Active and listening');
-          }
-          
-          // Periodically check if we need to restart (only if actually stopped)
-          // Do this check less frequently to avoid interference
-          if (_isRecording && mounted && val == 'listening') {
-            // Reset restart attempt when we confirm we're listening
-            _lastRestartAttempt = null;
+            print('STT Status: listening - Active and listening (continuous mode)');
+            // Reset restart tracking when we confirm active listening
+            if (_isRecording && mounted) {
+              _lastRestartAttempt = null;
+              _busyRetryCount = 0; // Reset BUSY retry count on active listening
+            }
           }
         },
       );
@@ -1218,7 +1304,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
           await _speech.listen(
             localeId: sttLang,
             listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
-            pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
+            pauseFor: const Duration(seconds: 30), // Allow 30 second pauses - native SDK may still stop, we'll restart
             partialResults: true, // Get partial results as user speaks
             cancelOnError: false, // Don't cancel on errors, keep listening
             onResult: (result) {
@@ -1226,24 +1312,28 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
                 setState(() {
                   final newWords = result.recognizedWords.trim();
                   
-                  // STREAMING MODE: Always replace with latest recognized text
-                  // Don't append - treat intermediate results as temporary
+                  // CONTINUOUS MODE: For initial session, newWords contains full transcript
+                  // Replace current transcript (streaming updates), but preserve finalized text
                   if (newWords.isNotEmpty) {
                     print('onResult (streaming): newWords="$newWords"');
                     _lastSpeechDetected = DateTime.now();
                     
                     // Check if user manually cleared the text - if so, start fresh
-                    // If controller is empty, user cleared it manually, so start fresh
-                    if (_controller.text.isEmpty && _currentTranscript.isNotEmpty) {
-                      print('Controller was manually cleared - starting fresh with new speech');
-                      _currentTranscript = ''; // Clear old transcript
+                    if (_controller.text.isEmpty && _finalizedTranscript.isNotEmpty) {
+                      print('Controller was manually cleared - starting fresh');
+                      _finalizedTranscript = '';
+                      _currentTranscript = '';
                     }
                     
-                    // Always replace the current transcript with the latest recognized words
-                    // This gives real-time feedback without accumulation
-                    // Intermediate results are temporary - only finalized when user stops/sends
+                    // For initial session: newWords is the full current transcript
+                    // Update current transcript (streaming), display with finalized text
                     _currentTranscript = newWords;
-                    _controller.text = _currentTranscript;
+                    // Display: finalized text + current transcript (if finalized exists)
+                    if (_finalizedTranscript.isNotEmpty) {
+                      _controller.text = '$_finalizedTranscript $_currentTranscript'.trim();
+                    } else {
+                      _controller.text = _currentTranscript;
+                    }
                   }
                 });
               }
