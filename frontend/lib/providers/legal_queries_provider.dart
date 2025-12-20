@@ -17,7 +17,7 @@ class LegalQueriesProvider with ChangeNotifier {
   /* ---------------- BASE URL ---------------- */
   String get _baseUrl {
     // Local development
-    return 'http://127.0.0.1:8000';
+    return 'https://fastapi-app-335340524683.asia-south1.run.app';
   }
 
   /* ---------------- CREATE NEW SESSION ---------------- */
