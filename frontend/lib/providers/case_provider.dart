@@ -42,7 +42,7 @@ class CaseProvider with ChangeNotifier {
     try {
       final dio = Dio();
       // Replace with your actual backend URL or use a global constant
-      final String baseUrl = 'http://127.0.0.1:8000';
+      final String baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
 
       final response = await dio.post(
         '$baseUrl/api/cases/create',

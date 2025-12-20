@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../models/chat_message.dart';
 
@@ -17,7 +16,7 @@ class LegalQueriesProvider with ChangeNotifier {
   /* ---------------- BASE URL ---------------- */
   String get _baseUrl {
     // Local development
-    return 'http://127.0.0.1:8000';
+    return 'https://fastapi-app-335340524683.asia-south1.run.app';
   }
 
   /* ---------------- CREATE NEW SESSION ---------------- */
@@ -151,6 +150,19 @@ class LegalQueriesProvider with ChangeNotifier {
       // 4️⃣ Update last activity
       await sessionRef.update({
         'lastMessageAt': FieldValue.serverTimestamp(),
+      });
+    } on DioException catch (e) {
+      debugPrint("Legal Chat DioError: ${e.message}");
+      debugPrint("Status: ${e.response?.statusCode}");
+      debugPrint("Response: ${e.response?.data}");
+      // Graceful fallback
+      final errorMsg = e.response?.data?['detail'] ?? 
+                      e.message ?? 
+                      'Unable to get legal response. Please try again.';
+      await sessionRef.collection('messages').add({
+        'sender': 'ai',
+        'text': '⚠️ $errorMsg',
+        'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
       debugPrint("Legal Chat Error: $e");
