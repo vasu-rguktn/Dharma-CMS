@@ -329,6 +329,27 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 
+// Static state holder to preserve chat state across navigation
+class _ChatStateHolder {
+  static final List<_ChatMessage> messages = [];
+  static final Map<String, String> answers = {};
+  static int currentQ = -2;
+  static bool hasStarted = false;
+  static bool allowInput = false;
+  static bool isLoading = false;
+  static bool errored = false;
+  
+  static void reset() {
+    messages.clear();
+    answers.clear();
+    currentQ = -2;
+    hasStarted = false;
+    allowInput = false;
+    isLoading = false;
+    errored = false;
+  }
+}
+
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
 
@@ -336,43 +357,55 @@ class AiLegalChatScreen extends StatefulWidget {
   State<AiLegalChatScreen> createState() => _AiLegalChatScreenState();
 }
 
-class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
+class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  final List<_ChatMessage> _messages = [];
   final Dio _dio = Dio();
   final ImagePicker _imagePicker = ImagePicker();
   List<String> _attachedFiles = []; // Store paths of attached files
 
   List<_ChatQ> _questions = [];
 
-  final Map<String, String> _answers = {};
-  int _currentQ = -2; // -2 = Welcome, -1 = Let us begin, 0+ = questions
-  bool _allowInput = false;
-  bool _isLoading = false;
-  bool _errored = false;
+  // Use static holder for state preservation
+  List<_ChatMessage> get _messages => _ChatStateHolder.messages;
+  Map<String, String> get _answers => _ChatStateHolder.answers;
+  int get _currentQ => _ChatStateHolder.currentQ;
+  bool get _allowInput => _ChatStateHolder.allowInput;
+  bool get _isLoading => _ChatStateHolder.isLoading;
+  bool get _errored => _ChatStateHolder.errored;
+  
+  // Local state
   bool _inputError = false;
+
+  // Setters for state (using methods since Dart doesn't support setter syntax for private fields)
+  void _setCurrentQ(int value) => _ChatStateHolder.currentQ = value;
+  void _setAllowInput(bool value) => _ChatStateHolder.allowInput = value;
+  void _setIsLoading(bool value) => _ChatStateHolder.isLoading = value;
+  void _setErrored(bool value) => _ChatStateHolder.errored = value;
+
+  @override
+  bool get wantKeepAlive => true;
 
   // STT (Speech-to-Text) variables
   // STT (Speech-to-Text) variables
   late final stt.SpeechToText _speech;
   late final FlutterTts _flutterTts;
   bool _isRecording = false;
-  String _currentTranscript = '';
+  String _currentTranscript = ''; // Live/streaming transcript (temporary, gets replaced)
+  String _finalizedTranscript = ''; // Finalized transcript (locked when user stops/sends)
   DateTime? _recordingStartTime;
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
   bool _isRestarting = false; // Track if restart is in progress to prevent BUSY errors
   DateTime? _lastSpeechDetected; // Track when speech was last detected
   int _busyRetryCount = 0; // Track BUSY error retries
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
+  String? _currentSttLang; // Store current STT language for restarting
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Orange color
   static const Color orange = Color(0xFFFC633C);
   static const Color background = Color(0xFFF5F8FE);
-
-  bool _hasStarted = false;
 
   @override
   void initState() {
@@ -381,6 +414,46 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _flutterTts = FlutterTts();
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
+    
+    // Listen to text controller changes to detect manual clearing
+    // When user manually clears text while recording, restart speech recognition to reset SDK buffer
+    _controller.addListener(() {
+      if (_isRecording && _currentSttLang != null) {
+        final controllerText = _controller.text;
+        // If user manually cleared the text (controller is empty but _currentTranscript has text)
+        if (controllerText.isEmpty && _currentTranscript.isNotEmpty) {
+          // User manually cleared the text - restart speech recognition to reset SDK's internal buffer
+          // This ensures we get fresh transcript, not accumulated text
+          print('User manually cleared text - restarting speech recognition to reset SDK buffer');
+          _currentTranscript = '';
+          _finalizedTranscript = '';
+          
+          // Restart speech recognition to get fresh transcript
+          // Use a small delay to avoid rapid restarts
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted && _isRecording && _controller.text.isEmpty && _currentSttLang != null) {
+              _restartSpeechRecognitionOnClear();
+            }
+          });
+        } else if (controllerText.length < _currentTranscript.length) {
+          // User manually deleted some text - sync _currentTranscript to match
+          // This handles partial deletions
+          _currentTranscript = controllerText;
+          print('User manually edited text - synced _currentTranscript to: "$controllerText"');
+        }
+      }
+    });
+    
+    // Restore state from static holder if available
+    if (_ChatStateHolder.messages.isNotEmpty) {
+      // State exists - we're returning to an existing chat
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+          _scrollToEnd();
+        }
+      });
+    }
   }
 
 
@@ -411,9 +484,22 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     // Initialize STT Service block removed
 
     
-    if (!_hasStarted) {
-      _hasStarted = true;
-      _startChatFlow();
+    // Only start chat flow if we haven't started AND have no messages
+    // This preserves state when navigating back to the screen
+    if (!_ChatStateHolder.hasStarted) {
+      if (_messages.isEmpty) {
+        // First time - start the chat flow
+        _ChatStateHolder.hasStarted = true;
+        _startChatFlow();
+      } else {
+        // Returning to existing chat - preserve state
+        _ChatStateHolder.hasStarted = true;
+        // Ensure input is enabled if we're in the middle of questions
+        if (_currentQ >= 0 && _currentQ < _questions.length && !_isLoading && !_errored) {
+          _setAllowInput(true);
+          setState(() {});
+        }
+      }
     }
   }
 
@@ -421,28 +507,28 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     final localizations = AppLocalizations.of(context)!;
 
     setState(() {
-      _messages.clear();
-      _currentQ = -2;
-      _allowInput = false;
-      _errored = false;
+      _ChatStateHolder.messages.clear();
+      _setCurrentQ(-2);
+      _setAllowInput(false);
+      _setErrored(false);
     });
     _addBot(localizations.welcomeToDharma ?? 'Welcome to Dharma');
     await Future.delayed(const Duration(seconds: 1));
     _addBot(localizations.letUsBegin ?? 'Let us begin...');
-    _currentQ = -1;
+    _setCurrentQ(-1);
     setState(() {});
     await Future.delayed(const Duration(seconds: 2));
     _askNextQ();
   }
 
   void _addBot(String content) {
-    _messages.add(_ChatMessage(user: 'AI', content: content, isUser: false));
+    _ChatStateHolder.messages.add(_ChatMessage(user: 'AI', content: content, isUser: false));
     setState(() {});
     _scrollToEnd();
   }
 
   void _addUser(String content) {
-    _messages.add(_ChatMessage(user: 'You', content: content, isUser: true));
+    _ChatStateHolder.messages.add(_ChatMessage(user: 'You', content: content, isUser: true));
     setState(() {});
     _scrollToEnd();
   }
@@ -461,11 +547,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   }
 
   void _askNextQ() {
-    _currentQ++;
+    _setCurrentQ(_currentQ + 1);
     if (_currentQ < _questions.length) {
       _addBot(_questions[_currentQ].question);
       _speak(_questions[_currentQ].question);
-      _allowInput = true;
+      _setAllowInput(true);
       setState(() => _inputError = false);
       Timer(
           const Duration(milliseconds: 600), () => _inputFocus.requestFocus());
@@ -481,8 +567,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     // validate required fields
     final missing = <String>[];
     for (final q in _questions) {
-      if (!(_answers.containsKey(q.key) &&
-          _answers[q.key]!.trim().isNotEmpty)) {
+      if (!(_ChatStateHolder.answers.containsKey(q.key) &&
+          _ChatStateHolder.answers[q.key]!.trim().isNotEmpty)) {
         missing.add(q.key);
       }
     }
@@ -490,15 +576,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       _addBot(localizations.pleaseAnswerAllQuestions(missing as String) ??
           'Please answer all questions before submitting. Missing: ${missing.join(', ')}');
       setState(() {
-        _allowInput = true;
+        _setAllowInput(true);
       });
       return;
     }
 
     setState(() {
-      _isLoading = true;
-      _allowInput = false;
-      _errored = false;
+      _setIsLoading(true);
+      _setAllowInput(false);
+      _setErrored(false);
     });
 
     // Determine base URL robustly
@@ -520,11 +606,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     final localeCode = Localizations.localeOf(context).languageCode;
 
     final payload = {
-      'full_name': _answers['full_name'] ?? '',
-      'address': _answers['address'] ?? '',
-      'phone': _answers['phone'] ?? _answers['phone_number'] ?? '',
-      'complaint_type': _answers['complaint_type'] ?? '',
-      'details': _answers['details'] ?? '',
+      'full_name': _ChatStateHolder.answers['full_name'] ?? '',
+      'address': _ChatStateHolder.answers['address'] ?? '',
+      'phone': _ChatStateHolder.answers['phone'] ?? _ChatStateHolder.answers['phone_number'] ?? '',
+      'complaint_type': _ChatStateHolder.answers['complaint_type'] ?? '',
+      'details': _ChatStateHolder.answers['details'] ?? '',
       'language': localeCode,
     };
 
@@ -551,7 +637,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
               : classification; // Fallback to displayed one if missing
 
       final Map<String, String> localizedAnswers =
-          Map<String, String>.from(_answers);
+          Map<String, String>.from(_ChatStateHolder.answers);
       final localizedFields = (data is Map) ? data['localized_fields'] : null;
       if (localizedFields is Map) {
         localizedFields.forEach((key, value) {
@@ -562,7 +648,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       }
 
       // update stored answers to the localized variant so downstream screens see the selected language
-      _answers
+      _ChatStateHolder.answers
         ..clear()
         ..addAll(localizedAnswers);
 
@@ -571,8 +657,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           'Classification: $classification');
 
       setState(() {
-        _isLoading = false;
-        _allowInput = false;
+        _setIsLoading(false);
+        _setAllowInput(false);
       });
 
       // navigate to details screen after a small delay, ensure still mounted
@@ -581,7 +667,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
         context.go(
           '/ai-chatbot-details',
           extra: {
-            'answers': Map<String, String>.from(_answers),
+            'answers': Map<String, String>.from(_ChatStateHolder.answers),
             'summary': formalSummary,
             'classification': classification,
             'originalClassification': originalClassification, // Pass this!
@@ -606,16 +692,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       }
       _addBot(msg);
       setState(() {
-        _isLoading = false;
-        _allowInput = false;
-        _errored = true;
+        _setIsLoading(false);
+        _setAllowInput(false);
+        _setErrored(true);
       });
     } catch (e) {
       _addBot('Unexpected error: ${e.toString()}');
       setState(() {
-        _isLoading = false;
-        _allowInput = false;
-        _errored = true;
+        _setIsLoading(false);
+        _setAllowInput(false);
+        _setErrored(true);
       });
     }
   }
@@ -623,21 +709,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   void _handleSend() async {
     _flutterTts.stop();
     
-    // If recording is active, stop it first and use the transcript
+    // If recording is active, stop it first and finalize the transcript
     if (_isRecording) {
       await _speech.stop();
       await _speech.cancel();
+      
+      // Finalize the current transcript when user sends
       setState(() {
+        _finalizedTranscript = _currentTranscript; // Lock the current transcript
         _isRecording = false;
         _recordingStartTime = null;
         _lastRestartAttempt = null;
         _isRestarting = false;
       });
-      // Use the current transcript if available
-      if (_currentTranscript.isNotEmpty) {
-        _controller.text = _currentTranscript;
-      }
-      // Small delay to ensure transcript is set
+      
+      // Ensure controller has the finalized text
+      _controller.text = _finalizedTranscript;
+      
+      // Small delay to ensure transcript is finalized
       await Future.delayed(const Duration(milliseconds: 100));
     }
     
@@ -649,15 +738,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       _inputFocus.requestFocus();
       return;
     }
+    
+    // Finalize transcript before sending
+    _finalizedTranscript = text;
+    _currentTranscript = ''; // Clear for next recording session
+    
     setState(() => _inputError = false);
     _controller.clear();
     _addUser(text);
 
     if (_currentQ >= 0 && _currentQ < _questions.length) {
-      _answers[_questions[_currentQ].key] = text;
+      _ChatStateHolder.answers[_questions[_currentQ].key] = text;
     }
 
-    _allowInput = false;
+    _setAllowInput(false);
     setState(() {});
     Future.delayed(const Duration(milliseconds: 600), _askNextQ);
   }
@@ -837,6 +931,42 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     );
   }
 
+  /// Restart speech recognition when user manually clears text
+  /// This resets the SDK's internal buffer to get fresh transcript
+  Future<void> _restartSpeechRecognitionOnClear() async {
+    if (!_isRecording || _currentSttLang == null) return;
+    
+    print('Restarting speech recognition after manual text clear...');
+    
+    try {
+      // Stop and cancel current session to reset SDK buffer
+      await _speech.stop();
+      await _speech.cancel();
+      
+      // Small delay to ensure clean state
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Reset all transcript state
+      setState(() {
+        _currentTranscript = '';
+        _finalizedTranscript = '';
+        _busyRetryCount = 0;
+        _isRestarting = false;
+        _lastRestartAttempt = null;
+        _lastSpeechDetected = null;
+      });
+      
+      // Restart listening with fresh state
+      await _safeRestartListening(_currentSttLang!);
+    } catch (e) {
+      print('Error restarting speech recognition on clear: $e');
+      // If restart fails, try safe restart
+      if (mounted && _isRecording && _currentSttLang != null) {
+        await _safeRestartListening(_currentSttLang!);
+      }
+    }
+  }
+
   /// Safely restart speech recognition with BUSY error handling
   Future<void> _safeRestartListening(String sttLang) async {
     // Prevent multiple simultaneous restart attempts
@@ -889,45 +1019,26 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
         partialResults: true,
         cancelOnError: false,
         onResult: (result) {
-          if (mounted) {
+          if (mounted && _isRecording) {
             setState(() {
-              // Simplified and more permissive transcript accumulation
               final newWords = result.recognizedWords.trim();
+              
+              // STREAMING MODE: Always replace with latest recognized text
               if (newWords.isNotEmpty) {
-                print('onResult (restart): newWords="$newWords", currentTranscript="$_currentTranscript"');
-                // Update last speech detected timestamp
+                print('onResult (restart, streaming): newWords="$newWords"');
                 _lastSpeechDetected = DateTime.now();
                 
-                if (_currentTranscript.isEmpty) {
-                  // First words
-                  _currentTranscript = newWords;
-                } else if (newWords == _currentTranscript) {
-                  // Exact match - no change needed
-                  return;
-                } else if (newWords.startsWith(_currentTranscript.trim())) {
-                  // Partial update - new words contain existing transcript (expanding)
-                  _currentTranscript = newWords;
-                } else if (_currentTranscript.trim().endsWith(newWords)) {
-                  // New words are a suffix of existing - likely a partial update, keep existing
-                  return;
-                } else {
-                  // New words - append them
-                  // Check if we need to add a space
-                  final trimmedCurrent = _currentTranscript.trim();
-                  if (trimmedCurrent.isNotEmpty) {
-                    final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
-                    if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
-                        lastChar != '!' && lastChar != '?' && lastChar != ':') {
-                      _currentTranscript = '$trimmedCurrent $newWords';
-                    } else {
-                      _currentTranscript = '$trimmedCurrent$newWords';
-                    }
-                  } else {
-                    _currentTranscript = newWords;
-                  }
+                // Check if user manually cleared the text - if so, start fresh
+                // If controller is empty, user cleared it manually, so start fresh
+                if (_controller.text.isEmpty && _currentTranscript.isNotEmpty) {
+                  print('Controller was manually cleared - starting fresh with new speech');
+                  _currentTranscript = ''; // Clear old transcript
                 }
+                
+                // Always replace - don't accumulate
+                // Intermediate results are temporary - only finalized when user stops/sends
+                _currentTranscript = newWords;
                 _controller.text = _currentTranscript;
-                print('onResult (restart): updated transcript to "$_currentTranscript"');
               }
             });
           }
@@ -994,10 +1105,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       _listeningMonitorTimer = null;
       await _speech.stop();
       await _speech.cancel(); // Cancel to fully reset
+      
+      // Finalize the current transcript when user stops
+      // This locks the text - user can edit it or send it
       setState(() {
+        if (_currentTranscript.isNotEmpty) {
+          _finalizedTranscript = _currentTranscript; // Lock the current transcript
+          _controller.text = _finalizedTranscript; // Update controller with finalized text
+        }
         _isRecording = false;
         _recordingStartTime = null;
-        // Keep the final transcript in _controller.text
+        _currentSttLang = null; // Clear language when stopping
       });
     } else {
       // Start recording - ensure clean state
@@ -1084,7 +1202,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       if (available) {
         setState(() {
           _isRecording = true;
-          _currentTranscript = '';
+          _currentSttLang = sttLang; // Store language for potential restart on clear
+          // Start fresh - streaming mode will replace with latest recognized text
+          // If user wants to continue, they can type or the finalized text is already in the controller
+          _currentTranscript = ''; // Start fresh for streaming
           _recordingStartTime = DateTime.now();
           _lastRestartAttempt = null; // Reset restart tracker for new session
           _isRestarting = false; // Reset restart flag
@@ -1101,45 +1222,28 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
             partialResults: true, // Get partial results as user speaks
             cancelOnError: false, // Don't cancel on errors, keep listening
             onResult: (result) {
-              if (mounted) {
+              if (mounted && _isRecording) {
                 setState(() {
-                  // Simplified and more permissive transcript accumulation
                   final newWords = result.recognizedWords.trim();
+                  
+                  // STREAMING MODE: Always replace with latest recognized text
+                  // Don't append - treat intermediate results as temporary
                   if (newWords.isNotEmpty) {
-                    print('onResult: newWords="$newWords", currentTranscript="$_currentTranscript"');
-                    // Update last speech detected timestamp
+                    print('onResult (streaming): newWords="$newWords"');
                     _lastSpeechDetected = DateTime.now();
                     
-                    if (_currentTranscript.isEmpty) {
-                      // First words
-                      _currentTranscript = newWords;
-                    } else if (newWords == _currentTranscript) {
-                      // Exact match - no change needed
-                      return;
-                    } else if (newWords.startsWith(_currentTranscript.trim())) {
-                      // Partial update - new words contain existing transcript (expanding)
-                      _currentTranscript = newWords;
-                    } else if (_currentTranscript.trim().endsWith(newWords)) {
-                      // New words are a suffix of existing - likely a partial update, keep existing
-                      return;
-                    } else {
-                      // New words - append them
-                      // Check if we need to add a space
-                      final trimmedCurrent = _currentTranscript.trim();
-                      if (trimmedCurrent.isNotEmpty) {
-                        final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
-                        if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
-                            lastChar != '!' && lastChar != '?' && lastChar != ':') {
-                          _currentTranscript = '$trimmedCurrent $newWords';
-                        } else {
-                          _currentTranscript = '$trimmedCurrent$newWords';
-                        }
-                      } else {
-                        _currentTranscript = newWords;
-                      }
+                    // Check if user manually cleared the text - if so, start fresh
+                    // If controller is empty, user cleared it manually, so start fresh
+                    if (_controller.text.isEmpty && _currentTranscript.isNotEmpty) {
+                      print('Controller was manually cleared - starting fresh with new speech');
+                      _currentTranscript = ''; // Clear old transcript
                     }
+                    
+                    // Always replace the current transcript with the latest recognized words
+                    // This gives real-time feedback without accumulation
+                    // Intermediate results are temporary - only finalized when user stops/sends
+                    _currentTranscript = newWords;
                     _controller.text = _currentTranscript;
-                    print('onResult: updated transcript to "$_currentTranscript"');
                   }
                 });
               }
@@ -1213,6 +1317,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
@@ -1400,7 +1505,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                           child: TextField(
                             controller: _controller,
                             focusNode: _inputFocus,
-                            maxLines: null,
+                            maxLines: 4,
                             minLines: 1,
                             textInputAction: TextInputAction.newline,
                             decoration: InputDecoration(
