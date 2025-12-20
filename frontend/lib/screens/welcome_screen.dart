@@ -195,12 +195,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       title: localizations.loginAs ?? "Login as",
       orangeColor: WelcomeScreen.orange,
       options: [
-        // ✅ Citizen → Citizen Login
+        // ✅ Citizen → Phone Login
         _OptionItem(
           label: localizations.citizen ?? "Citizen",
           onTap: () {
             Navigator.pop(context);
-            context.go('/login'); // ✅ citizen login
+            context.go('/phone-login'); // ✅ citizen phone login
           },
         ),
 

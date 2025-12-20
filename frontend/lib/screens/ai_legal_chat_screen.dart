@@ -317,6 +317,7 @@
 
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -325,6 +326,8 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
@@ -339,6 +342,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<_ChatMessage> _messages = [];
   final Dio _dio = Dio();
+  final ImagePicker _imagePicker = ImagePicker();
+  List<String> _attachedFiles = []; // Store paths of attached files
 
   List<_ChatQ> _questions = [];
 
@@ -355,6 +360,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   late final FlutterTts _flutterTts;
   bool _isRecording = false;
   String _currentTranscript = '';
+  DateTime? _recordingStartTime;
+  DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
+  bool _isRestarting = false; // Track if restart is in progress to prevent BUSY errors
+  DateTime? _lastSpeechDetected; // Track when speech was last detected
+  int _busyRetryCount = 0; // Track BUSY error retries
+  Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Orange color
@@ -371,6 +382,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
   }
+
 
   @override
   void didChangeDependencies() {
@@ -608,10 +620,30 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     }
   }
 
-  void _handleSend() {
+  void _handleSend() async {
     _flutterTts.stop();
+    
+    // If recording is active, stop it first and use the transcript
+    if (_isRecording) {
+      await _speech.stop();
+      await _speech.cancel();
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+        _lastRestartAttempt = null;
+        _isRestarting = false;
+      });
+      // Use the current transcript if available
+      if (_currentTranscript.isNotEmpty) {
+        _controller.text = _currentTranscript;
+      }
+      // Small delay to ensure transcript is set
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    
     final text = _controller.text.trim();
     if (!_allowInput || _isLoading) return;
+    
     if (text.isEmpty) {
       setState(() => _inputError = true);
       _inputFocus.requestFocus();
@@ -628,6 +660,312 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _allowInput = false;
     setState(() {});
     Future.delayed(const Duration(milliseconds: 600), _askNextQ);
+  }
+
+  /// Show attachment options (photos, videos, PDFs, audio)
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Attach File',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              // Photo options
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: orange, size: 24),
+                ),
+                title: const Text('Take Photo'),
+                subtitle: Text('Capture a new photo', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  if (image != null && mounted) {
+                    setState(() {
+                      _attachedFiles.add(image.path);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Photo attached: ${image.path.split('/').last}')),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.photo_library, color: orange, size: 24),
+                ),
+                title: const Text('Choose from Gallery'),
+                subtitle: Text('Select photo or video', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final image = await _imagePicker.pickImage(source: ImageSource.gallery);
+                  if (image != null && mounted) {
+                    setState(() {
+                      _attachedFiles.add(image.path);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Photo attached: ${image.path.split('/').last}')),
+                    );
+                  }
+                },
+              ),
+              // Video option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.videocam, color: orange, size: 24),
+                ),
+                title: const Text('Record Video'),
+                subtitle: Text('Capture a new video', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final video = await _imagePicker.pickVideo(source: ImageSource.camera);
+                  if (video != null && mounted) {
+                    setState(() {
+                      _attachedFiles.add(video.path);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Video attached: ${video.path.split('/').last}')),
+                    );
+                  }
+                },
+              ),
+              // File picker (PDFs, audio, etc.)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.attach_file, color: orange, size: 24),
+                ),
+                title: const Text('Upload File'),
+                subtitle: Text('PDF, Audio, or other files', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.any,
+                    allowMultiple: true,
+                  );
+                  if (result != null && mounted) {
+                    setState(() {
+                      _attachedFiles.addAll(result.files.map((f) => f.path ?? f.name));
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${result.files.length} file(s) attached')),
+                    );
+                  }
+                },
+              ),
+              // Show attached files count if any
+              if (_attachedFiles.isNotEmpty) ...[
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: orange, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${_attachedFiles.length} file(s) attached',
+                          style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _attachedFiles.clear();
+                          });
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Attachments removed')),
+                          );
+                        },
+                        child: const Text('Clear', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Safely restart speech recognition with BUSY error handling
+  Future<void> _safeRestartListening(String sttLang) async {
+    // Prevent multiple simultaneous restart attempts
+    if (_isRestarting) {
+      print('Restart already in progress, skipping...');
+      return;
+    }
+    
+    // Check throttle - reduced from 2000ms to 500ms for faster response
+    final now = DateTime.now();
+    if (_lastRestartAttempt != null && 
+        now.difference(_lastRestartAttempt!).inMilliseconds < 500) {
+      print('Too soon since last restart attempt, skipping...');
+      return;
+    }
+    
+    _isRestarting = true;
+    _lastRestartAttempt = now;
+    
+    try {
+      // Double-check we're still recording
+      if (!mounted || !_isRecording) {
+        _isRestarting = false;
+        return;
+      }
+      
+      // Always cancel any existing session first to ensure clean state
+      // This is critical - even if isListening is false, the session might be in a "done" state
+      print('Canceling any existing session before restart (isListening: ${_speech.isListening})...');
+      try {
+        await _speech.stop();
+        await _speech.cancel();
+        // Minimal delay for clean state - reduced for faster continuous listening
+        await Future.delayed(const Duration(milliseconds: 150));
+      } catch (e) {
+        print('Error canceling session: $e');
+      }
+      
+      // Final check before starting
+      if (!mounted || !_isRecording) {
+        _isRestarting = false;
+        return;
+      }
+      
+      print('Starting new listening session after restart...');
+      await _speech.listen(
+        localeId: sttLang,
+        listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
+        pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
+        partialResults: true,
+        cancelOnError: false,
+        onResult: (result) {
+          if (mounted) {
+            setState(() {
+              // Simplified and more permissive transcript accumulation
+              final newWords = result.recognizedWords.trim();
+              if (newWords.isNotEmpty) {
+                print('onResult (restart): newWords="$newWords", currentTranscript="$_currentTranscript"');
+                // Update last speech detected timestamp
+                _lastSpeechDetected = DateTime.now();
+                
+                if (_currentTranscript.isEmpty) {
+                  // First words
+                  _currentTranscript = newWords;
+                } else if (newWords == _currentTranscript) {
+                  // Exact match - no change needed
+                  return;
+                } else if (newWords.startsWith(_currentTranscript.trim())) {
+                  // Partial update - new words contain existing transcript (expanding)
+                  _currentTranscript = newWords;
+                } else if (_currentTranscript.trim().endsWith(newWords)) {
+                  // New words are a suffix of existing - likely a partial update, keep existing
+                  return;
+                } else {
+                  // New words - append them
+                  // Check if we need to add a space
+                  final trimmedCurrent = _currentTranscript.trim();
+                  if (trimmedCurrent.isNotEmpty) {
+                    final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
+                    if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
+                        lastChar != '!' && lastChar != '?' && lastChar != ':') {
+                      _currentTranscript = '$trimmedCurrent $newWords';
+                    } else {
+                      _currentTranscript = '$trimmedCurrent$newWords';
+                    }
+                  } else {
+                    _currentTranscript = newWords;
+                  }
+                }
+                _controller.text = _currentTranscript;
+                print('onResult (restart): updated transcript to "$_currentTranscript"');
+              }
+            });
+          }
+        },
+      );
+      
+      _busyRetryCount = 0; // Reset retry count on success
+      _isRestarting = false;
+      print('Successfully restarted speech recognition');
+      
+    } catch (e) {
+      _isRestarting = false;
+      final errorStr = e.toString().toLowerCase();
+      
+      // Handle BUSY errors specifically
+      if (errorStr.contains('busy') || errorStr.contains('already')) {
+        _busyRetryCount++;
+        print('BUSY error detected (attempt $_busyRetryCount), will retry...');
+        
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
+        
+        if (_busyRetryCount <= 5 && mounted && _isRecording) {
+          Future.delayed(Duration(milliseconds: delayMs), () {
+            if (mounted && _isRecording && !_speech.isListening) {
+              _safeRestartListening(sttLang);
+            }
+          });
+        } else {
+          print('Max BUSY retries reached, giving up');
+          _busyRetryCount = 0;
+        }
+      } else {
+        // Other errors - log and reset retry count
+        print('Error restarting speech recognition: $e');
+        _busyRetryCount = 0;
+      }
+    }
   }
 
   /// Toggle recording on/off for speech-to-text
@@ -651,42 +989,176 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     String sttLang = langCode == 'te' ? 'te_IN' : 'en_US';
 
     if (_isRecording) {
-      // Stop recording
+      // Stop recording manually
+      _listeningMonitorTimer?.cancel(); // Stop the monitoring timer
+      _listeningMonitorTimer = null;
       await _speech.stop();
+      await _speech.cancel(); // Cancel to fully reset
       setState(() {
         _isRecording = false;
+        _recordingStartTime = null;
         // Keep the final transcript in _controller.text
       });
     } else {
-      // Start recording
+      // Start recording - ensure clean state
       await _flutterTts.stop();
+      await _speech.stop(); // Stop any existing session
+      await _speech.cancel(); // Cancel to fully reset
+      
+      // Small delay to ensure clean state
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       bool available = await _speech.initialize(
         onError: (val) {
-          print('STT Error: $val');
-          setState(() => _isRecording = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${val.errorMsg}')),
-          );
+          print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
+          final errorMsg = val.errorMsg.toLowerCase();
+          
+          // For continuous listening: Treat all errors as non-fatal
+          // Silence and "no match" are normal - just continue listening
+          if (errorMsg.contains('no_match') || errorMsg.contains('no match')) {
+            print('No match error detected - treating as silence/pause, continuing to listen...');
+            // Don't do anything - just let it continue listening
+            // The status handler will restart if needed
+            return;
+          }
+          
+          // For other errors, only stop on truly critical errors
+          // Most errors are temporary and should not stop continuous listening
+          if (val.permanent && (errorMsg.contains('permission') || errorMsg.contains('denied'))) {
+            // Only stop on permission errors - these are truly critical
+            if (mounted) {
+              setState(() {
+                _isRecording = false;
+                _recordingStartTime = null;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: ${val.errorMsg}')),
+              );
+            }
+          } else {
+            // All other errors (temporary or non-critical) - just restart listening
+            print('Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
+            if (mounted && _isRecording) {
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted && _isRecording && !_speech.isListening) {
+                  _safeRestartListening(sttLang);
+                }
+              });
+            }
+          }
         },
         onStatus: (val) {
-          print('STT Status: $val');
-          if (val == 'done' || val == 'notListening') {
-            setState(() => _isRecording = false);
+          // For continuous listening: IGNORE "done", "notListening", "noSpeech", "noMatch" completely
+          // These are just SDK status updates during pauses - we treat them as normal, not completion
+          // We do NOT restart or cancel - we just keep listening
+          if (val == 'done' || val == 'notListening' || val == 'noSpeech' || val == 'noMatch') {
+            // Completely ignore these statuses - they're just pause indicators, not completion
+            // The SDK will continue listening if we don't interfere
+            // Only restart if speech recognition actually stopped (checked separately)
+            return;
+          }
+          
+          // Only handle critical statuses
+          if (val == 'error' || val == 'aborted') {
+            print('STT Status: $val - Critical error, stopping recording');
+            if (mounted) {
+              setState(() {
+                _isRecording = false;
+                _recordingStartTime = null;
+              });
+            }
+          } else if (val == 'listening') {
+            // Speech recognition is active - this is good, no action needed
+            print('STT Status: listening - Active and listening');
+          }
+          
+          // Periodically check if we need to restart (only if actually stopped)
+          // Do this check less frequently to avoid interference
+          if (_isRecording && mounted && val == 'listening') {
+            // Reset restart attempt when we confirm we're listening
+            _lastRestartAttempt = null;
           }
         },
       );
 
       if (available) {
-        setState(() => _isRecording = true);
-        _speech.listen(
-          localeId: sttLang,
-          onResult: (result) {
-            setState(() {
-              _currentTranscript = result.recognizedWords;
-              _controller.text = result.recognizedWords;
+        setState(() {
+          _isRecording = true;
+          _currentTranscript = '';
+          _recordingStartTime = DateTime.now();
+          _lastRestartAttempt = null; // Reset restart tracker for new session
+          _isRestarting = false; // Reset restart flag
+          _busyRetryCount = 0; // Reset BUSY retry count
+          _lastSpeechDetected = null; // Reset last speech timestamp
+        });
+        
+        // Use try-catch for initial listen to handle BUSY errors
+        try {
+          await _speech.listen(
+            localeId: sttLang,
+            listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
+            pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
+            partialResults: true, // Get partial results as user speaks
+            cancelOnError: false, // Don't cancel on errors, keep listening
+            onResult: (result) {
+              if (mounted) {
+                setState(() {
+                  // Simplified and more permissive transcript accumulation
+                  final newWords = result.recognizedWords.trim();
+                  if (newWords.isNotEmpty) {
+                    print('onResult: newWords="$newWords", currentTranscript="$_currentTranscript"');
+                    // Update last speech detected timestamp
+                    _lastSpeechDetected = DateTime.now();
+                    
+                    if (_currentTranscript.isEmpty) {
+                      // First words
+                      _currentTranscript = newWords;
+                    } else if (newWords == _currentTranscript) {
+                      // Exact match - no change needed
+                      return;
+                    } else if (newWords.startsWith(_currentTranscript.trim())) {
+                      // Partial update - new words contain existing transcript (expanding)
+                      _currentTranscript = newWords;
+                    } else if (_currentTranscript.trim().endsWith(newWords)) {
+                      // New words are a suffix of existing - likely a partial update, keep existing
+                      return;
+                    } else {
+                      // New words - append them
+                      // Check if we need to add a space
+                      final trimmedCurrent = _currentTranscript.trim();
+                      if (trimmedCurrent.isNotEmpty) {
+                        final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
+                        if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
+                            lastChar != '!' && lastChar != '?' && lastChar != ':') {
+                          _currentTranscript = '$trimmedCurrent $newWords';
+                        } else {
+                          _currentTranscript = '$trimmedCurrent$newWords';
+                        }
+                      } else {
+                        _currentTranscript = newWords;
+                      }
+                    }
+                    _controller.text = _currentTranscript;
+                    print('onResult: updated transcript to "$_currentTranscript"');
+                  }
+                });
+              }
+            },
+          );
+        } catch (e) {
+          final errorStr = e.toString().toLowerCase();
+          if (errorStr.contains('busy') || errorStr.contains('already')) {
+            // Handle BUSY error on initial listen - use safe restart
+            print('BUSY error on initial listen, using safe restart...');
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && _isRecording) {
+                _safeRestartListening(sttLang);
+              }
             });
-          },
-        );
+          } else {
+            print('Error starting speech recognition: $e');
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -729,6 +1201,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
 
   @override
   void dispose() {
+    _listeningMonitorTimer?.cancel(); // Cancel monitoring timer
+    _listeningMonitorTimer = null;
     _controller.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
@@ -808,36 +1282,69 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   ),
           ),
 
-          // ── RECORDING INDICATOR ──
+          // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
           if (_isRecording)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.red.withOpacity(0.1),
+              decoration: BoxDecoration(
+                color: background,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[300]!, width: 1),
+                ),
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.mic, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _currentTranscript.isEmpty 
-                        ? 'Listening...' 
-                        : _currentTranscript,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  // Recording indicator dot
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  const SizedBox(width: 12),
+                  // Timer
+                  if (_recordingStartTime != null)
+                    StreamBuilder<DateTime>(
+                      stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+                      builder: (context, snapshot) {
+                        final duration = DateTime.now().difference(_recordingStartTime!);
+                        final minutes = duration.inMinutes;
+                        final seconds = duration.inSeconds % 60;
+                        return Text(
+                          '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(width: 12),
+                  // Waveform visualization
+                  Expanded(
+                    child: _WaveformVisualization(
+                      isActive: _currentTranscript.isNotEmpty,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Pause/Stop button
+                  GestureDetector(
+                    onTap: _toggleRecording,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: orange,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.pause,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -847,53 +1354,173 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           // ── INPUT FIELD ──
           if (!_isLoading && !_errored && _allowInput)
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               color: background,
               child: Material(
-                elevation: 6,
-                borderRadius: BorderRadius.circular(30),
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _inputFocus,
-                          decoration: InputDecoration(
-                            hintText:
-                                _currentQ >= 0 && _currentQ < _questions.length
-                                    ? _questions[_currentQ].question
-                                    : localizations.typeMessage ??
-                                        'Type your message...',
-                            border: InputBorder.none,
-                            errorText: _inputError
-                                ? localizations.pleaseEnterYourAnswer ??
-                                    "Please enter your answer"
-                                : null,
-                            errorStyle: const TextStyle(fontSize: 12),
+                      // Attachment button
+                      GestureDetector(
+                        onTap: _showAttachmentOptions,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            shape: BoxShape.circle,
                           ),
-                          onSubmitted: (_) => _handleSend(),
+                          child: Icon(
+                            Icons.attach_file,
+                            color: Colors.grey.shade700,
+                            size: 16,
+                          ),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          _isRecording ? Icons.stop_circle : Icons.mic,
-                          color: _isRecording ? Colors.red : orange,
+                      const SizedBox(width: 4),
+                      // Text input field with rounded corners
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: TextField(
+                            controller: _controller,
+                            focusNode: _inputFocus,
+                            maxLines: null,
+                            minLines: 1,
+                            textInputAction: TextInputAction.newline,
+                            decoration: InputDecoration(
+                              hintText:
+                                  _currentQ >= 0 && _currentQ < _questions.length
+                                      ? _questions[_currentQ].question
+                                      : localizations.typeMessage ??
+                                          'Type your message...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 2,
+                              ),
+                              errorText: _inputError
+                                  ? localizations.pleaseEnterYourAnswer ??
+                                      "Please enter your answer"
+                                  : null,
+                              errorStyle: const TextStyle(fontSize: 10),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
+                            onSubmitted: (_) => _handleSend(),
+                          ),
                         ),
-                        onPressed: _toggleRecording,
-                        tooltip: _isRecording 
-                          ? "Tap to stop recording" 
-                          : (localizations.voiceInputComingSoon ?? "Voice input"),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: orange),
-                        onPressed: _handleSend,
+                      const SizedBox(width: 4),
+                      // WhatsApp-style mic button with animated waves
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            // Animated waves (only when recording) - positioned absolutely
+                            if (_isRecording) ...[
+                              Positioned.fill(
+                                child: _AnimatedWave(
+                                  delay: 0,
+                                  color: Colors.red.withOpacity(0.3),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: _AnimatedWave(
+                                  delay: 200,
+                                  color: Colors.red.withOpacity(0.2),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: _AnimatedWave(
+                                  delay: 400,
+                                  color: Colors.red.withOpacity(0.1),
+                                ),
+                              ),
+                            ],
+                            // Microphone button
+                            GestureDetector(
+                              onTap: _toggleRecording,
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: _isRecording ? Colors.red : orange,
+                                  shape: BoxShape.circle,
+                                  boxShadow: _isRecording
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withOpacity(0.4),
+                                            blurRadius: 5,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : [
+                                          BoxShadow(
+                                            color: orange.withOpacity(0.3),
+                                            blurRadius: 2,
+                                            spreadRadius: 0.5,
+                                          ),
+                                        ],
+                                ),
+                                child: Icon(
+                                  _isRecording ? Icons.stop : Icons.mic,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Send button
+                      GestureDetector(
+                        onTap: _handleSend,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: orange,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: orange.withOpacity(0.3),
+                                blurRadius: 2,
+                                spreadRadius: 0.5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.send,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -926,4 +1553,170 @@ class _ChatMessage {
   final bool isUser;
   _ChatMessage(
       {required this.user, required this.content, required this.isUser});
+}
+
+// Animated wave widget for microphone button
+class _AnimatedWave extends StatefulWidget {
+  final int delay;
+  final Color color;
+
+  const _AnimatedWave({
+    required this.delay,
+    required this.color,
+  });
+
+  @override
+  State<_AnimatedWave> createState() => _AnimatedWaveState();
+}
+
+class _AnimatedWaveState extends State<_AnimatedWave>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    // Start animation after delay
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) {
+        _controller.repeat();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        // Calculate size based on animation - expand outward from center
+        final baseSize = 40.0;
+        final maxExpansion = 35.0;
+        final currentSize = baseSize + (_animation.value * maxExpansion);
+        final opacity = 1.0 - _animation.value;
+        
+        return Center(
+          child: Container(
+            width: currentSize,
+            height: currentSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: widget.color.withOpacity(opacity),
+                width: 2,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Waveform visualization widget
+class _WaveformVisualization extends StatefulWidget {
+  final bool isActive;
+
+  const _WaveformVisualization({
+    required this.isActive,
+  });
+
+  @override
+  State<_WaveformVisualization> createState() => _WaveformVisualizationState();
+}
+
+class _WaveformVisualizationState extends State<_WaveformVisualization>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<double> _barHeights = [0.3, 0.6, 0.4, 0.8, 0.5, 0.7, 0.4, 0.6, 0.5, 0.7, 0.4, 0.8, 0.5, 0.6, 0.4, 0.7];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        const orange = Color(0xFFFC633C);
+        
+        if (!widget.isActive) {
+          // Show minimal static bars when not actively speaking
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(16, (index) {
+              return Container(
+                width: 2.5,
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: BoxDecoration(
+                  color: orange.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              );
+            }),
+          );
+        }
+
+        // Animated bars when actively speaking
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(16, (index) {
+            // Vary the height based on animation and index for wave effect
+            final baseHeight = _barHeights[index];
+            final phase = (index % 4) * 0.5;
+            final animatedHeight = baseHeight + 
+                (0.2 * (0.5 + 0.5 * math.sin(_controller.value * 2 * math.pi + phase)));
+            final height = (animatedHeight * 20).clamp(4.0, 20.0);
+            
+            return Container(
+              width: 2.5,
+              height: height,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: orange,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
 }

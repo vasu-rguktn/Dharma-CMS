@@ -9,6 +9,7 @@ class CaseDoc {
   final Timestamp lastUpdated;
   final String title;
   final String? userId;
+  final String? caseId; // Case ID
   
   // District Details
   final String? district;
@@ -110,6 +111,7 @@ class CaseDoc {
     required this.lastUpdated,
     required this.title,
     this.userId,
+    this.caseId,
     this.district,
     this.policeStation,
     this.year,
@@ -192,6 +194,7 @@ class CaseDoc {
       lastUpdated: data['lastUpdated'] as Timestamp,
       title: data['title'] ?? '',
       userId: data['userId'],
+      caseId: data['caseId'],
       district: data['district'],
       policeStation: data['policeStation'],
       year: data['year'],
@@ -274,6 +277,7 @@ class CaseDoc {
       'lastUpdated': lastUpdated,
       'title': title,
       'userId': userId,
+      'caseId': caseId,
       'district': district,
       'policeStation': policeStation,
       'year': year,

@@ -331,7 +331,9 @@ class AppRouter {
 
           GoRoute(
             path: '/cases/new',
-            builder: (context, state) => const NewCaseScreen(),
+            builder: (context, state) => NewCaseScreen(
+              initialData: state.extra as Map<String, dynamic>?,
+            ),
           ),
 
           GoRoute(

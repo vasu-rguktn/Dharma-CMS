@@ -2595,6 +2595,26 @@ String get enterFirNumber;
 String get startInvestigation;
 String get enterOfficerResponse;
 String get errorContactingInvestigationAI;
+String get districtAndFirDetails;
+String get occurenceOfOffence;
+String get dayOfOccurrence;
+String get dateTimeFrom;
+String get dateTimeTo;
+String get selectDateAndTime;
+String get timePeriod;
+String get priorToDateTimeDetails;
+String get beatNumber;
+String get placeOfOccurrence;
+String get streetVillage;
+String get areaMandal;
+String get cityDistrict;
+String get pin;
+String get latitude;
+String get longitude;
+String get map;
+String get viewMap;
+String get listening;
+String get tapToStopRecording;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

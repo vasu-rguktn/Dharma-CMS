@@ -36,7 +36,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get dontHaveAccount => 'ఖాతా లేదా?';
 
   @override
-  String get register => 'నమోదు';
+  String get register => ' నమోదు చేసుకోండి';
 
   @override
   String get fullName => 'పూర్తి పేరు';
@@ -419,7 +419,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get aiDocumentDrafter => 'AI డాక్యుమెంట్ డ్రాఫ్టర్';
 
   @override
-  String get caseData => 'కేసు డేటా';
+  String get caseData => 'కేసు వివరాలు';
 
   @override
   String get recipientType => 'గ్రహీత రకం';
@@ -789,7 +789,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get selectRecipientType => 'గ్రహీత రకాన్ని ఎంచుకోండి';
 
   @override
-  String get additionalInstructionsOptional => 'అదనపు సూచనలు (ఐచ్ఛికం)';
+  String get additionalInstructionsOptional => 'అదనపు సూచనలు (కావాలంటే ఇవ్వొచ్చు)';
 
   @override
   String get additionalInstructionsHint => 'ఉదా., \'గాయాలపై దృష్టి పెట్టండి\', \'DNA విశ్లేషణ కోసం నిర్దిష్ట పరీక్షలను అభ్యర్థించండి\', \'స్వరాన్ని అధికారికంగా మరియు అత్యవసరంగా ఉంచండి\'...';
@@ -820,6 +820,9 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get copyDraft => 'చిత్తుప్రతి కాపీ చేయండి';
+
+  @override
+  String get aiInvestigationGuidelines => 'ఏఐ దర్యాప్తు మార్గదర్శకాలు';
 
   @override
   String filesAdded(int count) {
@@ -1262,40 +1265,40 @@ String get loginWithPhone => 'ఫోన్ ద్వారా లాగిన్
 String get mobileNumber => 'మొబైల్ నంబర్';
 
 @override
-String get sendOtp => 'OTP పంపండి';
+String get sendOtp => 'ఓటీపీ పంపండి';
 
 @override
-String get verifyOtp => 'OTP నిర్ధారించండి';
+String get verifyOtp => 'ఓటీపీ నిర్ధారించండి';
 
 @override
-String get otpSent => 'OTP పంపబడింది!';
+String get otpSent => 'ఓటీపీ పంపబడింది!';
 
 @override
-String get otpResent => 'OTP మళ్లీ పంపబడింది!';
+String get otpResent => 'ఓటీపీ మళ్లీ పంపబడింది!';
 
 @override
 String get enterValidNumber => 'గుర్తుపట్టే 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి';
 
 @override
-String get enterOtp => '6 అంకెల OTP నమోదు చేయండి';
+String get enterOtp => '6 అంకెల ఓటీపీ నమోదు చేయండి';
 
 @override
 String resendIn(int seconds) => '$seconds సెకండ్లలో మళ్లీ పంపండి';
 
 @override
-String get resendOtp => 'OTP మళ్లీ పంపండి';
+String get resendOtp => 'ఓటీపీ మళ్లీ పంపండి';
 
 @override
 String get loginSuccessful => 'లాగిన్ విజయవంతం!';
 
 @override
-String get wrongOtp => 'తప్పు OTP';
+String get wrongOtp => 'తప్పు ఓటీపీ';
 
 @override
-String get otpExpired => 'OTP గడువు ముగిసింది';
+String get otpExpired => 'ఓటీపీ గడువు ముగిసింది';
 
 @override
-String get invalidOtp => 'చెల్లని OTP';
+String get invalidOtp => 'చెల్లని ఓటీపీ';
 
 @override
 String get backToEmailLogin => 'ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి';
@@ -1456,8 +1459,6 @@ String selectLabel(String label) {
   return '$label ఎంచుకోండి';
 }
 
-@override
-String get aiInvestigationGuidelines => 'AI దర్యాప్తు మార్గదర్శకాలు';
 
 @override
 String get enterFirNumber => 'FIR నంబర్ నమోదు చేయండి (కేసు ID)';
@@ -1471,4 +1472,48 @@ String get enterOfficerResponse => 'అధికారి ప్రతిస్�
 @override
 String get errorContactingInvestigationAI => 'దర్యాప్తు AI ని సంప్రదించడంలో లోపం';
 
+@override
+String get districtAndFirDetails => 'జిల్లా మరియు FIR వివరాలు';
+
+@override
+String get occurenceOfOffence => 'దర్యాప్తు అవతరణ';
+@override
+String get dayOfOccurrence => 'సంభవించిన రోజు';
+@override
+String get dateTimeFrom => 'తేదీ/సమయం నుండి';
+@override
+String get dateTimeTo => 'తేదీ/సమయం వరకు';
+@override
+String get selectDateAndTime => 'తేదీ మరియు సమయాన్ని ఎంచుకోండి';
+@override
+String get timePeriod => 'సమయ వ్యవధి';
+@override
+String get priorToDateTimeDetails => 'తేదీ/సమయానికి ముందు (వివరాలు)';
+@override
+String get beatNumber => 'బీట్ సంఖ్య';
+@override
+String get placeOfOccurrence => 'సంభవించిన స్థలం';
+@override
+String get streetVillage => 'వీధి/గ్రామం';
+@override
+String get areaMandal => 'ప్రాంతం/మండలం';
+@override
+String get cityDistrict => 'నగరం/జిల్లా';
+@override
+String get pin => 'పిన్';
+@override
+String get latitude => 'అక్షాంశం';
+@override
+String get longitude => 'దూరం';
+@override
+String get map => 'మాప్';
+@override
+String get viewMap => 'మాప్ చూడండి';
+
+
+@override
+String get listening => 'వింటుంది';
+
+@override
+String get tapToStopRecording => 'రికార్డింగ్ ఆపడానికి మైక్రోఫోన్ చిహ్నంపై టాప్ చేయండి';
 }
