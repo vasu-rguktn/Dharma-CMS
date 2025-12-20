@@ -13,6 +13,25 @@ from routers.ai_investigation import router as ai_investigation_router
 from routers.legal_chat import router as legal_chat_router
 from routers.investigation_report import router as investigation_report_router
 from routers.document_drafting import router as document_drafting_router
+import firebase_admin
+from firebase_admin import credentials
+
+# Initialize Firebase Admin SDK
+try:
+    # Check for service account key file
+    cred_filename = "dharma-cms-5cc89-b74e10595572.json"
+    cred_path = Path(__file__).parent / cred_filename
+    
+    if cred_path.exists():
+        cred = credentials.Certificate(str(cred_path))
+        firebase_admin.initialize_app(cred)
+        print(f"Firebase Admin initialized with {cred_filename}")
+    else:
+        # Fallback to default (env var) if file not found locally
+        firebase_admin.initialize_app()
+        print("Firebase Admin initialized with default credentials")
+except ValueError:
+    pass # Likely already initialized
 
 app = FastAPI(
     title="Police Complaint Chatbot API",
@@ -45,7 +64,11 @@ app.include_router(ocr_router)
 app.include_router(ai_investigation_router)
 app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
+app.include_router(investigation_report_router)
 app.include_router(document_drafting_router)
+
+from routers.cases import router as cases_router
+app.include_router(cases_router)
 
 
 @app.get("/")
