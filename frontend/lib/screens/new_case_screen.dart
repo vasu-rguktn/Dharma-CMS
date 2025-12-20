@@ -3,6 +3,7 @@ import '../l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/settings_provider.dart'; // Add SettingsProvider
 import 'package:Dharma/models/case_doc.dart';
 import 'package:Dharma/models/case_status.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -91,10 +92,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _firNumberController = TextEditingController();
-  final _yearController = TextEditingController(text: DateTime.now().year.toString());
+  final _yearController =
+      TextEditingController(text: DateTime.now().year.toString());
   final _complainantNameController = TextEditingController();
   final _incidentDetailsController = TextEditingController();
-  
+
   // Occurrence fields (Step 2)
   final _occurrenceDayController = TextEditingController();
   final _timePeriodController = TextEditingController();
@@ -102,7 +104,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _beatNumberController = TextEditingController();
   final _streetVillageController = TextEditingController();
   final _areaMandalController = TextEditingController();
-  
+
   // Location fields
   final _cityDistrictController = TextEditingController();
   final _stateController = TextEditingController();
@@ -111,12 +113,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _longitudeController = TextEditingController();
   final _distanceFromPSController = TextEditingController();
   final _directionFromPSController = TextEditingController();
-  
+
   // Information received (Step 3)
   DateTime? _informationReceivedAtPs;
   final _generalDiaryEntryNumberController = TextEditingController();
   String? _selectedInformationType;
-  
+
   // Complainant / Informant extra details (Step 4)
   final _fatherHusbandNameController = TextEditingController();
   String? _selectedComplainantGender;
@@ -137,16 +139,16 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _complainantPassportNumberController = TextEditingController();
   final _complainantPassportPlaceController = TextEditingController();
   DateTime? _complainantPassportDateOfIssue;
-  
+
   // Accused details (Step 5 - dynamic list)
   final List<_AccusedFormData> _accusedList = [];
-  
+
   // Properties / delay / inquest (Step 6)
   final _propertiesDetailsController = TextEditingController();
   final _propertiesTotalValueController = TextEditingController();
   bool _isDelayInReporting = false;
   final _inquestReportCaseNoController = TextEditingController();
-  
+
   // Acts & sections + victim/complaint (next step)
   final _actsAndSectionsController = TextEditingController();
   final _complaintNarrativeController = TextEditingController();
@@ -166,7 +168,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _victimCityController = TextEditingController();
   final _victimStateController = TextEditingController();
   final _victimPinController = TextEditingController();
-  
+
   // Action taken / dispatch to court (final step)
   final _actionTakenDetailsController = TextEditingController();
   final _ioNameController = TextEditingController();
@@ -175,29 +177,29 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   DateTime? _dispatchDateTime;
   final _dispatchOfficerNameController = TextEditingController();
   final _dispatchOfficerRankController = TextEditingController();
-  
+
   // Confirmation (last step)
   bool? _isFirReadOverAndAdmittedCorrect = true;
   bool? _isFirCopyGivenFreeOfCost = true;
   bool? _isRoacRecorded = true;
   final _complainantSignatureNoteController = TextEditingController();
-  
+
   bool _isOutsideJurisdiction = false;
-  
+
   DateTime? _occurrenceDateTimeFrom;
   DateTime? _occurrenceDateTimeTo;
-  
+
   // Dropdown values
   String? _selectedDistrict;
   String? _selectedSubDivision;
   String? _selectedCircle;
   String? _selectedPoliceStation;
   DateTime? _firRegistrationDate;
-  
+
   bool _isLoading = false;
   int _currentStep = 0;
   final int _totalSteps = 9;
-  
+
   // District list
   final List<String> _apDistricts = [
     'Alluri Sitharama Raju',
@@ -226,7 +228,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     'Vizianagaram',
     'West Godavari',
   ]..sort();
-  
+
   // Sub-Division list (example - you may need to populate based on selected district)
   final List<String> _subDivisions = [
     'Nuzvid SDPO',
@@ -235,7 +237,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     'Vijayawada SDPO',
     // Add more as needed
   ];
-  
+
   // Circle list (example - you may need to populate based on selected sub-division)
   final List<String> _circles = [
     '-',
@@ -244,7 +246,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     'Circle 3',
     // Add more as needed
   ];
-  
+
   // Police Station list (example - you may need to populate based on selected circle)
   final List<String> _policeStations = [
     'Nuzvid Town',
@@ -326,7 +328,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _complainantSignatureNoteController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _selectFirRegistrationDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -340,7 +342,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
     }
   }
-  
+
   Future<void> _selectInformationReceivedAtPs() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -366,7 +368,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectOccurrenceDateTimeFrom() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -392,11 +394,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectOccurrenceDateTimeTo() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _occurrenceDateTimeTo ?? (_occurrenceDateTimeFrom ?? DateTime.now()),
+      initialDate:
+          _occurrenceDateTimeTo ?? (_occurrenceDateTimeFrom ?? DateTime.now()),
       firstDate: _occurrenceDateTimeFrom ?? DateTime(2000),
       lastDate: DateTime.now(),
     );
@@ -418,11 +421,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectComplainantDob() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _complainantDob ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+      initialDate: _complainantDob ??
+          DateTime.now().subtract(const Duration(days: 365 * 25)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -444,7 +448,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   Future<void> _selectVictimDob() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _victimDob ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+      initialDate:
+          _victimDob ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -487,12 +492,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectComplainantPassportDateOfIssue() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate:
-          _complainantPassportDateOfIssue ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
+      initialDate: _complainantPassportDateOfIssue ??
+          DateTime.now().subtract(const Duration(days: 365 * 5)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -532,7 +537,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         district: _selectedDistrict,
         policeStation: _selectedPoliceStation,
         year: _yearController.text.isNotEmpty ? _yearController.text : null,
-        date: _firRegistrationDate != null 
+        date: _firRegistrationDate != null
             ? DateFormat('yyyy-MM-dd').format(_firRegistrationDate!)
             : null,
         firFiledTimestamp: _firRegistrationDate != null
@@ -541,9 +546,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         complainantName: _complainantNameController.text.isNotEmpty
             ? _complainantNameController.text
             : null,
-        complainantFatherHusbandName: _fatherHusbandNameController.text.isNotEmpty
-            ? _fatherHusbandNameController.text
-            : null,
+        complainantFatherHusbandName:
+            _fatherHusbandNameController.text.isNotEmpty
+                ? _fatherHusbandNameController.text
+                : null,
         complainantGender: _selectedComplainantGender,
         complainantMobileNumber: _mobileNumberController.text.isNotEmpty
             ? _mobileNumberController.text
@@ -551,18 +557,16 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         complainantNationality: _nationalityController.text.isNotEmpty
             ? _nationalityController.text
             : null,
-        complainantCaste: _casteController.text.isNotEmpty
-            ? _casteController.text
-            : null,
+        complainantCaste:
+            _casteController.text.isNotEmpty ? _casteController.text : null,
         complainantOccupation: _occupationController.text.isNotEmpty
             ? _occupationController.text
             : null,
         complainantDob: _complainantDob != null
             ? DateFormat('yyyy-MM-dd').format(_complainantDob!)
             : null,
-        complainantAge: _ageController.text.isNotEmpty
-            ? _ageController.text
-            : null,
+        complainantAge:
+            _ageController.text.isNotEmpty ? _ageController.text : null,
         complainantAddress: [
           _complainantHouseNoController.text,
           _complainantStreetController.text,
@@ -570,9 +574,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           _complainantCityController.text,
           _complainantStateController.text,
           _complainantPinController.text,
-        ]
-            .where((part) => part.trim().isNotEmpty)
-            .join(', '),
+        ].where((part) => part.trim().isNotEmpty).join(', '),
         complainantPassportNumber:
             _complainantPassportNumberController.text.isNotEmpty
                 ? _complainantPassportNumberController.text
@@ -581,10 +583,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             _complainantPassportPlaceController.text.isNotEmpty
                 ? _complainantPassportPlaceController.text
                 : null,
-        complainantPassportDateOfIssue:
-            _complainantPassportDateOfIssue != null
-                ? DateFormat('yyyy-MM-dd').format(_complainantPassportDateOfIssue!)
-                : null,
+        complainantPassportDateOfIssue: _complainantPassportDateOfIssue != null
+            ? DateFormat('yyyy-MM-dd').format(_complainantPassportDateOfIssue!)
+            : null,
         accusedPersons: _accusedList.map((a) => a.toMap()).toList(),
         incidentDetails: _incidentDetailsController.text.isNotEmpty
             ? _incidentDetailsController.text
@@ -601,9 +602,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         timePeriod: _timePeriodController.text.isNotEmpty
             ? _timePeriodController.text
             : null,
-        priorToDateTimeDetails: _priorToDateTimeDetailsController.text.isNotEmpty
-            ? _priorToDateTimeDetailsController.text
-            : null,
+        priorToDateTimeDetails:
+            _priorToDateTimeDetailsController.text.isNotEmpty
+                ? _priorToDateTimeDetailsController.text
+                : null,
         beatNumber: _beatNumberController.text.isNotEmpty
             ? _beatNumberController.text
             : null,
@@ -616,12 +618,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         placeOfOccurrenceCity: _cityDistrictController.text.isNotEmpty
             ? _cityDistrictController.text
             : null,
-        placeOfOccurrenceState: _stateController.text.isNotEmpty
-            ? _stateController.text
-            : null,
-        placeOfOccurrencePin: _pinController.text.isNotEmpty
-            ? _pinController.text
-            : null,
+        placeOfOccurrenceState:
+            _stateController.text.isNotEmpty ? _stateController.text : null,
+        placeOfOccurrencePin:
+            _pinController.text.isNotEmpty ? _pinController.text : null,
         placeOfOccurrenceLatitude: _latitudeController.text.isNotEmpty
             ? _latitudeController.text
             : null,
@@ -637,9 +637,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         informationReceivedDateTime: _informationReceivedAtPs != null
             ? DateFormat('yyyy-MM-dd HH:mm').format(_informationReceivedAtPs!)
             : null,
-        generalDiaryEntryNumber: _generalDiaryEntryNumberController.text.isNotEmpty
-            ? _generalDiaryEntryNumberController.text
-            : null,
+        generalDiaryEntryNumber:
+            _generalDiaryEntryNumberController.text.isNotEmpty
+                ? _generalDiaryEntryNumberController.text
+                : null,
         informationType: _selectedInformationType,
         propertiesDetails: _propertiesDetailsController.text.isNotEmpty
             ? _propertiesDetailsController.text
@@ -689,19 +690,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           _victimCityController.text,
           _victimStateController.text,
           _victimPinController.text,
-        ]
-            .where((p) => p.trim().isNotEmpty)
-            .join(', '),
+        ].where((p) => p.trim().isNotEmpty).join(', '),
         isComplainantAlsoVictim: _isComplainantAlsoVictim,
         actionTakenDetails: _actionTakenDetailsController.text.isNotEmpty
             ? _actionTakenDetailsController.text
             : null,
-        investigatingOfficerName: _ioNameController.text.isNotEmpty
-            ? _ioNameController.text
-            : null,
-        investigatingOfficerRank: _ioRankController.text.isNotEmpty
-            ? _ioRankController.text
-            : null,
+        investigatingOfficerName:
+            _ioNameController.text.isNotEmpty ? _ioNameController.text : null,
+        investigatingOfficerRank:
+            _ioRankController.text.isNotEmpty ? _ioRankController.text : null,
         investigatingOfficerDistrict: _ioDistrictController.text.isNotEmpty
             ? _ioDistrictController.text
             : null,
@@ -729,18 +726,26 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         userId: authProvider.userProfile?.uid,
       );
 
-      await caseProvider.addCase(newCase);
+      final settingsProvider =
+          Provider.of<SettingsProvider>(context, listen: false);
+      final String currentLocale =
+          settingsProvider.locale?.languageCode ?? 'en';
+
+      await caseProvider.addCase(newCase, locale: currentLocale); // Pass locale
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
         );
         context.go('/cases');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.errorCreatingCase(e.toString()))),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .errorCreatingCase(e.toString()))),
         );
       }
     } finally {
@@ -787,11 +792,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         }
         if (_selectedSubDivision == null || _selectedSubDivision!.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select a Sub-Division (SDPO)')),
+            const SnackBar(
+                content: Text('Please select a Sub-Division (SDPO)')),
           );
           return false;
         }
-        if (_selectedCircle == null || _selectedCircle!.isEmpty || _selectedCircle == '-') {
+        if (_selectedCircle == null ||
+            _selectedCircle!.isEmpty ||
+            _selectedCircle == '-') {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please select a Circle')),
           );
@@ -819,7 +827,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         }
         if (_firRegistrationDate == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please select FIR Registration Date')),
+            const SnackBar(
+                content: Text('Please select FIR Registration Date')),
           );
           return false;
         }
@@ -836,7 +845,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         children: List.generate(_totalSteps, (index) {
           final isActive = index == _currentStep;
           final isCompleted = index < _currentStep;
-          
+
           return Expanded(
             child: Row(
               children: [
@@ -851,8 +860,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     ),
                   ),
                 ),
-                if (index < _totalSteps - 1)
-                  const SizedBox(width: 8),
+                if (index < _totalSteps - 1) const SizedBox(width: 8),
               ],
             ),
           );
@@ -863,7 +871,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   Widget _buildStepContent() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     switch (_currentStep) {
       case 0:
         return _buildBasicInformationStep(localizations);
@@ -898,9 +906,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               '1. District & FIR Details',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
             ),
             const SizedBox(height: 24),
             // Case Title
@@ -1052,7 +1060,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   return 'Please enter the year';
                 }
                 final year = int.tryParse(value);
-                if (year == null || year < 2000 || year > DateTime.now().year + 1) {
+                if (year == null ||
+                    year < 2000 ||
+                    year > DateTime.now().year + 1) {
                   return 'Please enter a valid year';
                 }
                 return null;
@@ -1114,9 +1124,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               '2. Occurrence of Offence',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
             ),
             const SizedBox(height: 24),
             // Day of Occurrence
@@ -1142,7 +1152,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _occurrenceDateTimeFrom != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_occurrenceDateTimeFrom!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_occurrenceDateTimeFrom!)
                       : 'Select date and time',
                   style: TextStyle(
                     color: _occurrenceDateTimeFrom != null
@@ -1165,7 +1176,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _occurrenceDateTimeTo != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_occurrenceDateTimeTo!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_occurrenceDateTimeTo!)
                       : 'Select date and time',
                   style: TextStyle(
                     color: _occurrenceDateTimeTo != null
@@ -1213,8 +1225,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               'Place of Occurrence',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             // Street/Village
@@ -1271,7 +1283,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             // Latitude
             TextFormField(
               controller: _latitudeController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Latitude',
                 hintText: 'e.g., 16.5062',
@@ -1283,7 +1296,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             // Longitude
             TextFormField(
               controller: _longitudeController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Longitude',
                 hintText: 'e.g., 80.6480',
@@ -1300,7 +1314,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   // TODO: Implement map picker functionality
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Map picker functionality will be implemented'),
+                      content:
+                          Text('Map picker functionality will be implemented'),
                     ),
                   );
                 },
@@ -1316,8 +1331,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               'Distance & Direction from PS:',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             // Distance from PS
@@ -1345,8 +1360,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               'Outside Jurisdiction:',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
@@ -1392,7 +1407,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _informationReceivedAtPs != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_informationReceivedAtPs!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_informationReceivedAtPs!)
                       : 'Select date and time',
                   style: TextStyle(
                     color: _informationReceivedAtPs != null
@@ -1478,7 +1494,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           final serialNo = index + 1;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -1489,9 +1506,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                       children: [
                         Text(
                           'Accused $serialNo',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const Spacer(),
                         if (_accusedList.length > 1)
@@ -1540,7 +1558,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                       ),
                       items: const [
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(value: 'Female', child: Text('Female')),
+                        DropdownMenuItem(
+                            value: 'Female', child: Text('Female')),
                         DropdownMenuItem(value: 'Other', child: Text('Other')),
                       ],
                       onChanged: (value) {
@@ -1837,7 +1856,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             TextFormField(
               controller: _complaintNarrativeController,
               decoration: const InputDecoration(
-                hintText: 'AI Suggestion: Draft complaint based on the original conversation.',
+                hintText:
+                    'AI Suggestion: Draft complaint based on the original conversation.',
                 border: OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
@@ -2107,7 +2127,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _dispatchDateTime != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_dispatchDateTime!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_dispatchDateTime!)
                       : 'Select date and time',
                   style: TextStyle(
                     color: _dispatchDateTime != null
@@ -2210,8 +2231,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               '5. Complainant / Informant Details',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 24),
             // Name
@@ -2419,7 +2440,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _complainantPassportDateOfIssue != null
-                      ? DateFormat('dd-MM-yyyy').format(_complainantPassportDateOfIssue!)
+                      ? DateFormat('dd-MM-yyyy')
+                          .format(_complainantPassportDateOfIssue!)
                       : 'Select date',
                   style: TextStyle(
                     color: _complainantPassportDateOfIssue != null
@@ -2445,8 +2467,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               'Review Case Details',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 24),
             _buildReviewItem(
@@ -2670,9 +2692,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _victimCityController.text,
                   _victimStateController.text,
                   _victimPinController.text,
-                ]
-                    .where((p) => p.trim().isNotEmpty)
-                    .join(', '),
+                ].where((p) => p.trim().isNotEmpty).join(', '),
                 Icons.home,
                 isMultiline: true,
               ),
@@ -2756,9 +2776,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _complainantCityController.text,
                   _complainantStateController.text,
                   _complainantPinController.text,
-                ]
-                    .where((part) => part.trim().isNotEmpty)
-                    .join(', '),
+                ].where((part) => part.trim().isNotEmpty).join(', '),
                 Icons.home,
                 isMultiline: true,
               ),
@@ -2783,7 +2801,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               const Divider(),
               _buildReviewItem(
                 'Passport Date of Issue',
-                DateFormat('dd-MM-yyyy').format(_complainantPassportDateOfIssue!),
+                DateFormat('dd-MM-yyyy')
+                    .format(_complainantPassportDateOfIssue!),
                 Icons.event,
               ),
             ],
@@ -2844,7 +2863,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               const Divider(),
               _buildReviewItem(
                 'Date/Time Received at PS',
-                DateFormat('dd-MM-yyyy HH:mm').format(_informationReceivedAtPs!),
+                DateFormat('dd-MM-yyyy HH:mm')
+                    .format(_informationReceivedAtPs!),
                 Icons.access_time,
               ),
             ],
@@ -3001,10 +3021,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                       children: [
                         Text(
                           'Outside Jurisdiction',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -3042,7 +3063,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   physicalLines.add('Complexion: ${data.complexion.text}');
                 }
                 if (data.deformities.text.trim().isNotEmpty) {
-                  physicalLines.add('Deformities/Peculiarities: ${data.deformities.text}');
+                  physicalLines.add(
+                      'Deformities/Peculiarities: ${data.deformities.text}');
                 }
 
                 return <Widget>[
@@ -3128,7 +3150,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     );
   }
 
-  Widget _buildReviewItem(String label, String value, IconData icon, {bool isMultiline = false}) {
+  Widget _buildReviewItem(String label, String value, IconData icon,
+      {bool isMultiline = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -3143,9 +3166,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -3163,7 +3186,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -3225,7 +3248,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
                                     ),
                                   )
                                 : Text(
