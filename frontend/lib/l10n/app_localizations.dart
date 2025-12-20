@@ -2613,6 +2613,8 @@ String get latitude;
 String get longitude;
 String get map;
 String get viewMap;
+String get listening;
+String get tapToStopRecording;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

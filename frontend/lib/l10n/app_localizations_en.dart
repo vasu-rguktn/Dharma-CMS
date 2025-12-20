@@ -1533,4 +1533,10 @@ String get map => 'Map';
 
 @override
 String get viewMap => 'View Map'; 
+
+@override
+String get listening => 'Listening...';
+
+@override
+String get tapToStopRecording => 'Tap the microphone icon to stop recording';
 }

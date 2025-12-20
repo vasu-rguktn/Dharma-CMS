@@ -677,8 +677,17 @@
   },
   "voiceInputComingSoon": "Voice input (coming soon)",
   "@voiceInputComingSoon": {
-    "description": "Tooltip for voice input button"
+    "description": "Voice input tooltip text"
   },
+  "listening": "Listening...",
+  "@listening": {
+    "description": "Text shown when speech recognition is active"
+  },
+  "tapToStopRecording": "Tap the microphone icon to stop recording",
+  "@tapToStopRecording": {
+    "description": "Hint text for stopping voice recording"
+  },
+   
   "welcomeToDharma": "Welcome to Dharma",
   "@welcomeToDharma": {
     "description": "Welcome message in AI legal chat"

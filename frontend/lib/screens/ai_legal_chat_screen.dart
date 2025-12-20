@@ -317,6 +317,7 @@
 
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -355,6 +356,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   late final FlutterTts _flutterTts;
   bool _isRecording = false;
   String _currentTranscript = '';
+  DateTime? _recordingStartTime;
+  DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
+  bool _isRestarting = false; // Track if restart is in progress to prevent BUSY errors
+  int _busyRetryCount = 0; // Track BUSY error retries
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Orange color
@@ -630,6 +635,103 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     Future.delayed(const Duration(milliseconds: 600), _askNextQ);
   }
 
+  /// Safely restart speech recognition with BUSY error handling
+  Future<void> _safeRestartListening(String sttLang) async {
+    // Prevent multiple simultaneous restart attempts
+    if (_isRestarting) {
+      print('Restart already in progress, skipping...');
+      return;
+    }
+    
+    // Check if already listening
+    if (_speech.isListening) {
+      print('Speech recognition already listening, skipping restart...');
+      return;
+    }
+    
+    // Check throttle
+    final now = DateTime.now();
+    if (_lastRestartAttempt != null && 
+        now.difference(_lastRestartAttempt!).inMilliseconds < 2000) {
+      print('Too soon since last restart attempt, skipping...');
+      return;
+    }
+    
+    _isRestarting = true;
+    _lastRestartAttempt = now;
+    
+    try {
+      // Small delay to ensure clean state
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Double-check we're still recording and not already listening
+      if (!mounted || !_isRecording || _speech.isListening) {
+        _isRestarting = false;
+        return;
+      }
+      
+      await _speech.listen(
+        localeId: sttLang,
+        listenFor: const Duration(minutes: 10),
+        pauseFor: const Duration(minutes: 5),
+        partialResults: true,
+        cancelOnError: false,
+        onResult: (result) {
+          if (mounted) {
+            setState(() {
+              final newWords = result.recognizedWords.trim();
+              if (newWords.isNotEmpty) {
+                if (_currentTranscript.isNotEmpty && 
+                    !_currentTranscript.endsWith(newWords)) {
+                  if (!newWords.startsWith(_currentTranscript)) {
+                    _currentTranscript = '$_currentTranscript $newWords';
+                  } else {
+                    _currentTranscript = newWords;
+                  }
+                } else {
+                  _currentTranscript = newWords;
+                }
+                _controller.text = _currentTranscript;
+              }
+            });
+          }
+        },
+      );
+      
+      _busyRetryCount = 0; // Reset retry count on success
+      _isRestarting = false;
+      print('Successfully restarted speech recognition');
+      
+    } catch (e) {
+      _isRestarting = false;
+      final errorStr = e.toString().toLowerCase();
+      
+      // Handle BUSY errors specifically
+      if (errorStr.contains('busy') || errorStr.contains('already')) {
+        _busyRetryCount++;
+        print('BUSY error detected (attempt $_busyRetryCount), will retry...');
+        
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
+        
+        if (_busyRetryCount <= 5 && mounted && _isRecording) {
+          Future.delayed(Duration(milliseconds: delayMs), () {
+            if (mounted && _isRecording && !_speech.isListening) {
+              _safeRestartListening(sttLang);
+            }
+          });
+        } else {
+          print('Max BUSY retries reached, giving up');
+          _busyRetryCount = 0;
+        }
+      } else {
+        // Other errors - log and reset retry count
+        print('Error restarting speech recognition: $e');
+        _busyRetryCount = 0;
+      }
+    }
+  }
+
   /// Toggle recording on/off for speech-to-text
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
@@ -651,42 +753,186 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     String sttLang = langCode == 'te' ? 'te_IN' : 'en_US';
 
     if (_isRecording) {
-      // Stop recording
+      // Stop recording manually
       await _speech.stop();
+      await _speech.cancel(); // Cancel to fully reset
       setState(() {
         _isRecording = false;
+        _recordingStartTime = null;
         // Keep the final transcript in _controller.text
       });
     } else {
-      // Start recording
+      // Start recording - ensure clean state
       await _flutterTts.stop();
+      await _speech.stop(); // Stop any existing session
+      await _speech.cancel(); // Cancel to fully reset
+      
+      // Small delay to ensure clean state
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       bool available = await _speech.initialize(
         onError: (val) {
-          print('STT Error: $val');
-          setState(() => _isRecording = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${val.errorMsg}')),
-          );
+          print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
+          final errorMsg = val.errorMsg.toLowerCase();
+          
+          // "No match" errors should NEVER stop recording, even if marked permanent
+          // This is a normal part of speech recognition when there's silence
+          if (errorMsg.contains('no_match') || errorMsg.contains('no match')) {
+            print('No match error detected - ignoring and continuing to listen...');
+            // Don't stop recording, just restart listening after a delay
+            if (mounted && _isRecording) {
+              // Prevent rapid cycling
+              final now = DateTime.now();
+              if (_lastRestartAttempt != null && 
+                  now.difference(_lastRestartAttempt!).inMilliseconds < 3000) {
+                print('Skipping no match error restart - too soon since last attempt');
+                return;
+              }
+              
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted && _isRecording) {
+                  _safeRestartListening(sttLang);
+                }
+              });
+            }
+            return; // Don't process further, just restart
+          }
+          
+          // Only stop on actual permanent errors (not "no match")
+          if (val.permanent) {
+            if (mounted) {
+              setState(() {
+                _isRecording = false;
+                _recordingStartTime = null;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: ${val.errorMsg}')),
+              );
+            }
+          } else {
+            // Temporary error - try to restart listening
+            print('Temporary error, attempting to restart...');
+            if (mounted && _isRecording) {
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted && _isRecording) {
+                  _safeRestartListening(sttLang);
+                }
+              });
+            }
+          }
         },
         onStatus: (val) {
           print('STT Status: $val');
-          if (val == 'done' || val == 'notListening') {
-            setState(() => _isRecording = false);
+          // Only stop on actual critical errors (not "no match" which is normal)
+          if (val == 'error' || val == 'aborted') {
+            if (mounted) {
+              setState(() {
+                _isRecording = false;
+                _recordingStartTime = null;
+              });
+            }
+          }
+          // Handle various statuses that indicate speech recognition stopped
+          // but we want to continue listening
+          // Note: Don't restart on 'noMatch' immediately - it's just a temporary state
+          if ((val == 'done' || val == 'notListening' || val == 'noSpeech') && 
+              _isRecording && mounted) {
+            // Prevent rapid cycling - only restart if enough time has passed since last attempt
+            final now = DateTime.now();
+            if (_lastRestartAttempt != null && 
+                now.difference(_lastRestartAttempt!).inMilliseconds < 2000) {
+              print('Skipping restart - too soon since last attempt');
+              return;
+            }
+            
+            // Restart listening after a delay to avoid BUSY errors
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (mounted && _isRecording) {
+                _safeRestartListening(sttLang);
+              }
+            });
+          }
+          // Handle 'noMatch' separately - wait longer before restarting
+          // 'noMatch' is a temporary state that doesn't necessarily mean listening stopped
+          if (val == 'noMatch' && _isRecording && mounted) {
+            print('No match detected, waiting before checking if restart needed...');
+            // Prevent rapid cycling
+            final now = DateTime.now();
+            if (_lastRestartAttempt != null && 
+                now.difference(_lastRestartAttempt!).inMilliseconds < 3000) {
+              print('Skipping noMatch restart - too soon since last attempt');
+              return;
+            }
+            
+            // Wait longer (8 seconds) before checking if we need to restart
+            // This gives the speech recognition time to continue naturally
+            Future.delayed(const Duration(seconds: 8), () {
+              if (mounted && _isRecording) {
+                _safeRestartListening(sttLang);
+              }
+            });
           }
         },
       );
 
       if (available) {
-        setState(() => _isRecording = true);
-        _speech.listen(
-          localeId: sttLang,
-          onResult: (result) {
-            setState(() {
-              _currentTranscript = result.recognizedWords;
-              _controller.text = result.recognizedWords;
+        setState(() {
+          _isRecording = true;
+          _currentTranscript = '';
+          _recordingStartTime = DateTime.now();
+          _lastRestartAttempt = null; // Reset restart tracker for new session
+          _isRestarting = false; // Reset restart flag
+          _busyRetryCount = 0; // Reset BUSY retry count
+        });
+        
+        // Use try-catch for initial listen to handle BUSY errors
+        try {
+          await _speech.listen(
+            localeId: sttLang,
+            listenFor: const Duration(minutes: 10), // Listen for up to 10 minutes
+            pauseFor: const Duration(minutes: 5), // Allow up to 5 minutes of silence/pause
+            partialResults: true, // Get partial results as user speaks
+            cancelOnError: false, // Don't cancel on errors, keep listening
+            onResult: (result) {
+              if (mounted) {
+                setState(() {
+                  // Accumulate transcript - append new words to existing
+                  final newWords = result.recognizedWords.trim();
+                  if (newWords.isNotEmpty) {
+                    if (_currentTranscript.isNotEmpty && 
+                        !_currentTranscript.endsWith(newWords)) {
+                      // Only append if it's new content (not just a partial update)
+                      if (!newWords.startsWith(_currentTranscript)) {
+                        // New words - append them
+                        _currentTranscript = '$_currentTranscript $newWords';
+                      } else {
+                        // It's an update to existing words - replace
+                        _currentTranscript = newWords;
+                      }
+                    } else {
+                      // First words or empty transcript
+                      _currentTranscript = newWords;
+                    }
+                    _controller.text = _currentTranscript;
+                  }
+                });
+              }
+            },
+          );
+        } catch (e) {
+          final errorStr = e.toString().toLowerCase();
+          if (errorStr.contains('busy') || errorStr.contains('already')) {
+            // Handle BUSY error on initial listen - use safe restart
+            print('BUSY error on initial listen, using safe restart...');
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && _isRecording) {
+                _safeRestartListening(sttLang);
+              }
             });
-          },
-        );
+          } else {
+            print('Error starting speech recognition: $e');
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -808,36 +1054,69 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   ),
           ),
 
-          // ── RECORDING INDICATOR ──
+          // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
           if (_isRecording)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.red.withOpacity(0.1),
+              decoration: BoxDecoration(
+                color: background,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[300]!, width: 1),
+                ),
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.mic, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _currentTranscript.isEmpty 
-                        ? 'Listening...' 
-                        : _currentTranscript,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  // Recording indicator dot
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  const SizedBox(width: 12),
+                  // Timer
+                  if (_recordingStartTime != null)
+                    StreamBuilder<DateTime>(
+                      stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+                      builder: (context, snapshot) {
+                        final duration = DateTime.now().difference(_recordingStartTime!);
+                        final minutes = duration.inMinutes;
+                        final seconds = duration.inSeconds % 60;
+                        return Text(
+                          '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(width: 12),
+                  // Waveform visualization
+                  Expanded(
+                    child: _WaveformVisualization(
+                      isActive: _currentTranscript.isNotEmpty,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Pause/Stop button
+                  GestureDetector(
+                    onTap: _toggleRecording,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: orange,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.pause,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -881,15 +1160,63 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                           onSubmitted: (_) => _handleSend(),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          _isRecording ? Icons.stop_circle : Icons.mic,
-                          color: _isRecording ? Colors.red : orange,
+                      // WhatsApp-style mic button with animated waves
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.center,
+                          children: [
+                            // Animated waves (only when recording) - positioned absolutely
+                            if (_isRecording) ...[
+                              Positioned.fill(
+                                child: _AnimatedWave(
+                                  delay: 0,
+                                  color: Colors.red.withOpacity(0.3),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: _AnimatedWave(
+                                  delay: 200,
+                                  color: Colors.red.withOpacity(0.2),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: _AnimatedWave(
+                                  delay: 400,
+                                  color: Colors.red.withOpacity(0.1),
+                                ),
+                              ),
+                            ],
+                            // Microphone button
+                            GestureDetector(
+                              onTap: _toggleRecording,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _isRecording ? Colors.red : orange,
+                                  shape: BoxShape.circle,
+                                  boxShadow: _isRecording
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withOpacity(0.4),
+                                            blurRadius: 8,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  _isRecording ? Icons.stop : Icons.mic,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        onPressed: _toggleRecording,
-                        tooltip: _isRecording 
-                          ? "Tap to stop recording" 
-                          : (localizations.voiceInputComingSoon ?? "Voice input"),
                       ),
                       IconButton(
                         icon: const Icon(Icons.send, color: orange),
@@ -926,4 +1253,170 @@ class _ChatMessage {
   final bool isUser;
   _ChatMessage(
       {required this.user, required this.content, required this.isUser});
+}
+
+// Animated wave widget for microphone button
+class _AnimatedWave extends StatefulWidget {
+  final int delay;
+  final Color color;
+
+  const _AnimatedWave({
+    required this.delay,
+    required this.color,
+  });
+
+  @override
+  State<_AnimatedWave> createState() => _AnimatedWaveState();
+}
+
+class _AnimatedWaveState extends State<_AnimatedWave>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    // Start animation after delay
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) {
+        _controller.repeat();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        // Calculate size based on animation - expand outward from center
+        final baseSize = 40.0;
+        final maxExpansion = 35.0;
+        final currentSize = baseSize + (_animation.value * maxExpansion);
+        final opacity = 1.0 - _animation.value;
+        
+        return Center(
+          child: Container(
+            width: currentSize,
+            height: currentSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: widget.color.withOpacity(opacity),
+                width: 2,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Waveform visualization widget
+class _WaveformVisualization extends StatefulWidget {
+  final bool isActive;
+
+  const _WaveformVisualization({
+    required this.isActive,
+  });
+
+  @override
+  State<_WaveformVisualization> createState() => _WaveformVisualizationState();
+}
+
+class _WaveformVisualizationState extends State<_WaveformVisualization>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<double> _barHeights = [0.3, 0.6, 0.4, 0.8, 0.5, 0.7, 0.4, 0.6, 0.5, 0.7, 0.4, 0.8, 0.5, 0.6, 0.4, 0.7];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        const orange = Color(0xFFFC633C);
+        
+        if (!widget.isActive) {
+          // Show minimal static bars when not actively speaking
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(16, (index) {
+              return Container(
+                width: 2.5,
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: BoxDecoration(
+                  color: orange.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              );
+            }),
+          );
+        }
+
+        // Animated bars when actively speaking
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(16, (index) {
+            // Vary the height based on animation and index for wave effect
+            final baseHeight = _barHeights[index];
+            final phase = (index % 4) * 0.5;
+            final animatedHeight = baseHeight + 
+                (0.2 * (0.5 + 0.5 * math.sin(_controller.value * 2 * math.pi + phase)));
+            final height = (animatedHeight * 20).clamp(4.0, 20.0);
+            
+            return Container(
+              width: 2.5,
+              height: height,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: orange,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
 }

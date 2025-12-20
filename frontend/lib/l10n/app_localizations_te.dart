@@ -1510,4 +1510,10 @@ String get map => 'మాప్';
 @override
 String get viewMap => 'మాప్ చూడండి';
 
+
+@override
+String get listening => 'వింటుంది';
+
+@override
+String get tapToStopRecording => 'రికార్డింగ్ ఆపడానికి మైక్రోఫోన్ చిహ్నంపై టాప్ చేయండి';
 }

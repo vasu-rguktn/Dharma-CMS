@@ -35,65 +35,112 @@ class _AppScaffoldState extends State<AppScaffold> {
             _scaffoldKey.currentState?.openDrawer();
           },
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/police_logo.png',
-              height: 32,
-              width: 32,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(Icons.balance, color: Theme.of(context).primaryColor);
-              },
-            ),
-            const SizedBox(width: 8),
-            Text(localizations.dharma ?? 'Dharma'),
-          ],
+        title: Builder(
+          builder: (context) {
+            // On mobile (narrow screens), adjust spacing
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isMobile = screenWidth < 600;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Image.asset(
+                  'assets/police_logo.png',
+                  height: isMobile ? 28 : 32,
+                  width: isMobile ? 28 : 32,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.balance,
+                      size: isMobile ? 28 : 32,
+                      color: Theme.of(context).primaryColor,
+                    );
+                  },
+                ),
+                SizedBox(width: isMobile ? 6 : 8),
+                Flexible(
+                  child: Text(
+                    localizations.dharma ?? 'Dharma',
+                    style: TextStyle(
+                      fontSize: isMobile ? 16 : 18,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         actions: [
-          PopupMenuButton<String>(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    child: Text(
-                      (authProvider.displayNameOrUsername.isNotEmpty
-                              ? authProvider.displayNameOrUsername[0]
-                              : 'U')
-                          .toUpperCase(),
+          Builder(
+            builder: (context) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isMobile = screenWidth < 600;
+              return PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 4.0 : 8.0,
+                    vertical: 8.0,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: isMobile ? 16 : 18,
+                        child: Text(
+                          (authProvider.displayNameOrUsername.isNotEmpty
+                                  ? authProvider.displayNameOrUsername[0]
+                                  : 'U')
+                              .toUpperCase(),
+                          style: TextStyle(
+                            fontSize: isMobile ? 12 : 14,
+                          ),
+                        ),
+                      ),
+                      if (!isMobile) ...[
+                        const SizedBox(width: 8),
+                        authProvider.isProfileLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Flexible(
+                                child: Text(
+                                  authProvider.displayNameOrUsername,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_drop_down, size: 20),
+                      ] else ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_drop_down, size: 18),
+                      ],
+                    ],
+                  ),
+                ),
+                onSelected: (value) {
+                  if (value == 'signout') {
+                    authProvider.signOut();
+                    context.go('/login');
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'signout',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.logout),
+                        const SizedBox(width: 8),
+                        Text(localizations.signOut),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  authProvider.isProfileLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(authProvider.displayNameOrUsername),
-                  const Icon(Icons.arrow_drop_down),
                 ],
-              ),
-            ),
-            onSelected: (value) {
-              if (value == 'signout') {
-                authProvider.signOut();
-                context.go('/login');
-              }
+              );
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'signout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout),
-                    const SizedBox(width: 8),
-                    Text(localizations.signOut),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),

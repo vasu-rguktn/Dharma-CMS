@@ -715,8 +715,17 @@
     },
     "voiceInputComingSoon": "వాయిస్ ఇన్‌పుట్ (త్వరలో వస్తోంది)",
     "@voiceInputComingSoon": {
-        "description": "Tooltip for voice input button"
+      "description": "వాయిస్ ఇన్‌పుట్ టూల్‌టిప్ టెక్స్ట్"
     },
+    "listening": "వింటుంది...",
+    "@listening": {
+      "description": "స్పీచ్ రికగ్నిషన్ సక్రియంగా ఉన్నప్పుడు చూపించే టెక్స్ట్"
+    },
+    "tapToStopRecording": "రికార్డింగ్ ఆపడానికి మైక్రోఫోన్ చిహ్నంపై టాప్ చేయండి",
+    "@tapToStopRecording": {
+      "description": "వాయిస్ రికార్డింగ్ ఆపడానికి హింట్ టెక్స్ట్"
+    },
+    
     "welcomeToDharma": "ధర్మ పోర్టల్ స్వాగతం",
     "@welcomeToDharma": {
         "description": "Welcome message in AI legal chat"
