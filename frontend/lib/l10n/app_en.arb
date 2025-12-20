@@ -687,6 +687,10 @@
   "@tapToStopRecording": {
     "description": "Hint text for stopping voice recording"
   },
+  "pleaseStopListening": "Please stop listening and recording before sending",
+  "@pleaseStopListening": {
+    "description": "Message shown when user tries to send while recording"
+  },
    
   "welcomeToDharma": "Welcome to Dharma",
   "@welcomeToDharma": {

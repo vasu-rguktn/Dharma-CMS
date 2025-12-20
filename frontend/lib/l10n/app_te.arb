@@ -725,6 +725,10 @@
     "@tapToStopRecording": {
       "description": "వాయిస్ రికార్డింగ్ ఆపడానికి హింట్ టెక్స్ట్"
     },
+    "pleaseStopListening": "దయచేసి పంపే ముందు వినడం మరియు రికార్డింగ్ ఆపండి",
+    "@pleaseStopListening": {
+      "description": "రికార్డింగ్ చేస్తున్నప్పుడు పంపడానికి ప్రయత్నించినప్పుడు చూపించే సందేశం"
+    },
     
     "welcomeToDharma": "ధర్మ పోర్టల్ స్వాగతం",
     "@welcomeToDharma": {
@@ -990,9 +994,9 @@
   "description": "Message shown when login attempt fails"
 }
 
-  "aiInvestigationGuidelines": "ఏఐ ఆధారిత దర్యాప్తు మార్గదర్శకాలు",
-  "@aiInvestigationGuidelines": {
-    "description": "ఏఐ ఆధారిత దర్యాప్తు మార్గదర్శకాల కోసం చూపించే శీర్షిక"
+"aiInvestigationGuidelines": "ఏఐ ఆధారిత దర్యాప్తు మార్గదర్శకాలు",
+"@aiInvestigationGuidelines": {
+  "description": "ఏఐ ఆధారిత దర్యాప్తు మార్గదర్శకాల కోసం చూపించే శీర్షిక"
   },
   "createNewCase": "కొత్త కేసు సృష్టించండి",
   "@createNewCase": {

@@ -326,6 +326,8 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 class AiLegalChatScreen extends StatefulWidget {
   const AiLegalChatScreen({super.key});
@@ -340,6 +342,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<_ChatMessage> _messages = [];
   final Dio _dio = Dio();
+  final ImagePicker _imagePicker = ImagePicker();
+  List<String> _attachedFiles = []; // Store paths of attached files
 
   List<_ChatQ> _questions = [];
 
@@ -359,7 +363,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   DateTime? _recordingStartTime;
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
   bool _isRestarting = false; // Track if restart is in progress to prevent BUSY errors
+  DateTime? _lastSpeechDetected; // Track when speech was last detected
   int _busyRetryCount = 0; // Track BUSY error retries
+  Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Orange color
@@ -376,6 +382,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
   }
+
 
   @override
   void didChangeDependencies() {
@@ -613,10 +620,30 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     }
   }
 
-  void _handleSend() {
+  void _handleSend() async {
     _flutterTts.stop();
+    
+    // If recording is active, stop it first and use the transcript
+    if (_isRecording) {
+      await _speech.stop();
+      await _speech.cancel();
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+        _lastRestartAttempt = null;
+        _isRestarting = false;
+      });
+      // Use the current transcript if available
+      if (_currentTranscript.isNotEmpty) {
+        _controller.text = _currentTranscript;
+      }
+      // Small delay to ensure transcript is set
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    
     final text = _controller.text.trim();
     if (!_allowInput || _isLoading) return;
+    
     if (text.isEmpty) {
       setState(() => _inputError = true);
       _inputFocus.requestFocus();
@@ -635,6 +662,181 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     Future.delayed(const Duration(milliseconds: 600), _askNextQ);
   }
 
+  /// Show attachment options (photos, videos, PDFs, audio)
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Attach File',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              // Photo options
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: orange, size: 24),
+                ),
+                title: const Text('Take Photo'),
+                subtitle: Text('Capture a new photo', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  if (image != null && mounted) {
+                    setState(() {
+                      _attachedFiles.add(image.path);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Photo attached: ${image.path.split('/').last}')),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.photo_library, color: orange, size: 24),
+                ),
+                title: const Text('Choose from Gallery'),
+                subtitle: Text('Select photo or video', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final image = await _imagePicker.pickImage(source: ImageSource.gallery);
+                  if (image != null && mounted) {
+                    setState(() {
+                      _attachedFiles.add(image.path);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Photo attached: ${image.path.split('/').last}')),
+                    );
+                  }
+                },
+              ),
+              // Video option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.videocam, color: orange, size: 24),
+                ),
+                title: const Text('Record Video'),
+                subtitle: Text('Capture a new video', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final video = await _imagePicker.pickVideo(source: ImageSource.camera);
+                  if (video != null && mounted) {
+                    setState(() {
+                      _attachedFiles.add(video.path);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Video attached: ${video.path.split('/').last}')),
+                    );
+                  }
+                },
+              ),
+              // File picker (PDFs, audio, etc.)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.attach_file, color: orange, size: 24),
+                ),
+                title: const Text('Upload File'),
+                subtitle: Text('PDF, Audio, or other files', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.any,
+                    allowMultiple: true,
+                  );
+                  if (result != null && mounted) {
+                    setState(() {
+                      _attachedFiles.addAll(result.files.map((f) => f.path ?? f.name));
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${result.files.length} file(s) attached')),
+                    );
+                  }
+                },
+              ),
+              // Show attached files count if any
+              if (_attachedFiles.isNotEmpty) ...[
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: orange, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${_attachedFiles.length} file(s) attached',
+                          style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _attachedFiles.clear();
+                          });
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Attachments removed')),
+                          );
+                        },
+                        child: const Text('Clear', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// Safely restart speech recognition with BUSY error handling
   Future<void> _safeRestartListening(String sttLang) async {
     // Prevent multiple simultaneous restart attempts
@@ -643,16 +845,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       return;
     }
     
-    // Check if already listening
-    if (_speech.isListening) {
-      print('Speech recognition already listening, skipping restart...');
-      return;
-    }
-    
-    // Check throttle
+    // Check throttle - reduced from 2000ms to 500ms for faster response
     final now = DateTime.now();
     if (_lastRestartAttempt != null && 
-        now.difference(_lastRestartAttempt!).inMilliseconds < 2000) {
+        now.difference(_lastRestartAttempt!).inMilliseconds < 500) {
       print('Too soon since last restart attempt, skipping...');
       return;
     }
@@ -661,37 +857,77 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _lastRestartAttempt = now;
     
     try {
-      // Small delay to ensure clean state
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // Double-check we're still recording and not already listening
-      if (!mounted || !_isRecording || _speech.isListening) {
+      // Double-check we're still recording
+      if (!mounted || !_isRecording) {
         _isRestarting = false;
         return;
       }
       
+      // Always cancel any existing session first to ensure clean state
+      // This is critical - even if isListening is false, the session might be in a "done" state
+      print('Canceling any existing session before restart (isListening: ${_speech.isListening})...');
+      try {
+        await _speech.stop();
+        await _speech.cancel();
+        // Minimal delay for clean state - reduced for faster continuous listening
+        await Future.delayed(const Duration(milliseconds: 150));
+      } catch (e) {
+        print('Error canceling session: $e');
+      }
+      
+      // Final check before starting
+      if (!mounted || !_isRecording) {
+        _isRestarting = false;
+        return;
+      }
+      
+      print('Starting new listening session after restart...');
       await _speech.listen(
         localeId: sttLang,
-        listenFor: const Duration(minutes: 10),
-        pauseFor: const Duration(minutes: 5),
+        listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
+        pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
         partialResults: true,
         cancelOnError: false,
         onResult: (result) {
           if (mounted) {
             setState(() {
+              // Simplified and more permissive transcript accumulation
               final newWords = result.recognizedWords.trim();
               if (newWords.isNotEmpty) {
-                if (_currentTranscript.isNotEmpty && 
-                    !_currentTranscript.endsWith(newWords)) {
-                  if (!newWords.startsWith(_currentTranscript)) {
-                    _currentTranscript = '$_currentTranscript $newWords';
+                print('onResult (restart): newWords="$newWords", currentTranscript="$_currentTranscript"');
+                // Update last speech detected timestamp
+                _lastSpeechDetected = DateTime.now();
+                
+                if (_currentTranscript.isEmpty) {
+                  // First words
+                  _currentTranscript = newWords;
+                } else if (newWords == _currentTranscript) {
+                  // Exact match - no change needed
+                  return;
+                } else if (newWords.startsWith(_currentTranscript.trim())) {
+                  // Partial update - new words contain existing transcript (expanding)
+                  _currentTranscript = newWords;
+                } else if (_currentTranscript.trim().endsWith(newWords)) {
+                  // New words are a suffix of existing - likely a partial update, keep existing
+                  return;
+                } else {
+                  // New words - append them
+                  // Check if we need to add a space
+                  final trimmedCurrent = _currentTranscript.trim();
+                  if (trimmedCurrent.isNotEmpty) {
+                    final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
+                    if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
+                        lastChar != '!' && lastChar != '?' && lastChar != ':') {
+                      _currentTranscript = '$trimmedCurrent $newWords';
+                    } else {
+                      _currentTranscript = '$trimmedCurrent$newWords';
+                    }
                   } else {
                     _currentTranscript = newWords;
                   }
-                } else {
-                  _currentTranscript = newWords;
                 }
                 _controller.text = _currentTranscript;
+                print('onResult (restart): updated transcript to "$_currentTranscript"');
               }
             });
           }
@@ -754,6 +990,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
 
     if (_isRecording) {
       // Stop recording manually
+      _listeningMonitorTimer?.cancel(); // Stop the monitoring timer
+      _listeningMonitorTimer = null;
       await _speech.stop();
       await _speech.cancel(); // Cancel to fully reset
       setState(() {
@@ -775,31 +1013,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
           final errorMsg = val.errorMsg.toLowerCase();
           
-          // "No match" errors should NEVER stop recording, even if marked permanent
-          // This is a normal part of speech recognition when there's silence
+          // For continuous listening: Treat all errors as non-fatal
+          // Silence and "no match" are normal - just continue listening
           if (errorMsg.contains('no_match') || errorMsg.contains('no match')) {
-            print('No match error detected - ignoring and continuing to listen...');
-            // Don't stop recording, just restart listening after a delay
-            if (mounted && _isRecording) {
-              // Prevent rapid cycling
-              final now = DateTime.now();
-              if (_lastRestartAttempt != null && 
-                  now.difference(_lastRestartAttempt!).inMilliseconds < 3000) {
-                print('Skipping no match error restart - too soon since last attempt');
-                return;
-              }
-              
-              Future.delayed(const Duration(seconds: 2), () {
-                if (mounted && _isRecording) {
-                  _safeRestartListening(sttLang);
-                }
-              });
-            }
-            return; // Don't process further, just restart
+            print('No match error detected - treating as silence/pause, continuing to listen...');
+            // Don't do anything - just let it continue listening
+            // The status handler will restart if needed
+            return;
           }
           
-          // Only stop on actual permanent errors (not "no match")
-          if (val.permanent) {
+          // For other errors, only stop on truly critical errors
+          // Most errors are temporary and should not stop continuous listening
+          if (val.permanent && (errorMsg.contains('permission') || errorMsg.contains('denied'))) {
+            // Only stop on permission errors - these are truly critical
             if (mounted) {
               setState(() {
                 _isRecording = false;
@@ -810,11 +1036,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
               );
             }
           } else {
-            // Temporary error - try to restart listening
-            print('Temporary error, attempting to restart...');
+            // All other errors (temporary or non-critical) - just restart listening
+            print('Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
             if (mounted && _isRecording) {
               Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted && _isRecording) {
+                if (mounted && _isRecording && !_speech.isListening) {
                   _safeRestartListening(sttLang);
                 }
               });
@@ -822,55 +1048,35 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           }
         },
         onStatus: (val) {
-          print('STT Status: $val');
-          // Only stop on actual critical errors (not "no match" which is normal)
+          // For continuous listening: IGNORE "done", "notListening", "noSpeech", "noMatch" completely
+          // These are just SDK status updates during pauses - we treat them as normal, not completion
+          // We do NOT restart or cancel - we just keep listening
+          if (val == 'done' || val == 'notListening' || val == 'noSpeech' || val == 'noMatch') {
+            // Completely ignore these statuses - they're just pause indicators, not completion
+            // The SDK will continue listening if we don't interfere
+            // Only restart if speech recognition actually stopped (checked separately)
+            return;
+          }
+          
+          // Only handle critical statuses
           if (val == 'error' || val == 'aborted') {
+            print('STT Status: $val - Critical error, stopping recording');
             if (mounted) {
               setState(() {
                 _isRecording = false;
                 _recordingStartTime = null;
               });
             }
+          } else if (val == 'listening') {
+            // Speech recognition is active - this is good, no action needed
+            print('STT Status: listening - Active and listening');
           }
-          // Handle various statuses that indicate speech recognition stopped
-          // but we want to continue listening
-          // Note: Don't restart on 'noMatch' immediately - it's just a temporary state
-          if ((val == 'done' || val == 'notListening' || val == 'noSpeech') && 
-              _isRecording && mounted) {
-            // Prevent rapid cycling - only restart if enough time has passed since last attempt
-            final now = DateTime.now();
-            if (_lastRestartAttempt != null && 
-                now.difference(_lastRestartAttempt!).inMilliseconds < 2000) {
-              print('Skipping restart - too soon since last attempt');
-              return;
-            }
-            
-            // Restart listening after a delay to avoid BUSY errors
-            Future.delayed(const Duration(milliseconds: 1500), () {
-              if (mounted && _isRecording) {
-                _safeRestartListening(sttLang);
-              }
-            });
-          }
-          // Handle 'noMatch' separately - wait longer before restarting
-          // 'noMatch' is a temporary state that doesn't necessarily mean listening stopped
-          if (val == 'noMatch' && _isRecording && mounted) {
-            print('No match detected, waiting before checking if restart needed...');
-            // Prevent rapid cycling
-            final now = DateTime.now();
-            if (_lastRestartAttempt != null && 
-                now.difference(_lastRestartAttempt!).inMilliseconds < 3000) {
-              print('Skipping noMatch restart - too soon since last attempt');
-              return;
-            }
-            
-            // Wait longer (8 seconds) before checking if we need to restart
-            // This gives the speech recognition time to continue naturally
-            Future.delayed(const Duration(seconds: 8), () {
-              if (mounted && _isRecording) {
-                _safeRestartListening(sttLang);
-              }
-            });
+          
+          // Periodically check if we need to restart (only if actually stopped)
+          // Do this check less frequently to avoid interference
+          if (_isRecording && mounted && val == 'listening') {
+            // Reset restart attempt when we confirm we're listening
+            _lastRestartAttempt = null;
           }
         },
       );
@@ -883,37 +1089,57 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           _lastRestartAttempt = null; // Reset restart tracker for new session
           _isRestarting = false; // Reset restart flag
           _busyRetryCount = 0; // Reset BUSY retry count
+          _lastSpeechDetected = null; // Reset last speech timestamp
         });
         
         // Use try-catch for initial listen to handle BUSY errors
         try {
           await _speech.listen(
             localeId: sttLang,
-            listenFor: const Duration(minutes: 10), // Listen for up to 10 minutes
-            pauseFor: const Duration(minutes: 5), // Allow up to 5 minutes of silence/pause
+            listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
+            pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
             partialResults: true, // Get partial results as user speaks
             cancelOnError: false, // Don't cancel on errors, keep listening
             onResult: (result) {
               if (mounted) {
                 setState(() {
-                  // Accumulate transcript - append new words to existing
+                  // Simplified and more permissive transcript accumulation
                   final newWords = result.recognizedWords.trim();
                   if (newWords.isNotEmpty) {
-                    if (_currentTranscript.isNotEmpty && 
-                        !_currentTranscript.endsWith(newWords)) {
-                      // Only append if it's new content (not just a partial update)
-                      if (!newWords.startsWith(_currentTranscript)) {
-                        // New words - append them
-                        _currentTranscript = '$_currentTranscript $newWords';
+                    print('onResult: newWords="$newWords", currentTranscript="$_currentTranscript"');
+                    // Update last speech detected timestamp
+                    _lastSpeechDetected = DateTime.now();
+                    
+                    if (_currentTranscript.isEmpty) {
+                      // First words
+                      _currentTranscript = newWords;
+                    } else if (newWords == _currentTranscript) {
+                      // Exact match - no change needed
+                      return;
+                    } else if (newWords.startsWith(_currentTranscript.trim())) {
+                      // Partial update - new words contain existing transcript (expanding)
+                      _currentTranscript = newWords;
+                    } else if (_currentTranscript.trim().endsWith(newWords)) {
+                      // New words are a suffix of existing - likely a partial update, keep existing
+                      return;
+                    } else {
+                      // New words - append them
+                      // Check if we need to add a space
+                      final trimmedCurrent = _currentTranscript.trim();
+                      if (trimmedCurrent.isNotEmpty) {
+                        final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
+                        if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
+                            lastChar != '!' && lastChar != '?' && lastChar != ':') {
+                          _currentTranscript = '$trimmedCurrent $newWords';
+                        } else {
+                          _currentTranscript = '$trimmedCurrent$newWords';
+                        }
                       } else {
-                        // It's an update to existing words - replace
                         _currentTranscript = newWords;
                       }
-                    } else {
-                      // First words or empty transcript
-                      _currentTranscript = newWords;
                     }
                     _controller.text = _currentTranscript;
+                    print('onResult: updated transcript to "$_currentTranscript"');
                   }
                 });
               }
@@ -975,6 +1201,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
 
   @override
   void dispose() {
+    _listeningMonitorTimer?.cancel(); // Cancel monitoring timer
+    _listeningMonitorTimer = null;
     _controller.dispose();
     _inputFocus.dispose();
     _scrollController.dispose();
@@ -1126,44 +1354,89 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           // ── INPUT FIELD ──
           if (!_isLoading && !_errored && _allowInput)
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               color: background,
               child: Material(
-                elevation: 6,
-                borderRadius: BorderRadius.circular(30),
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _inputFocus,
-                          decoration: InputDecoration(
-                            hintText:
-                                _currentQ >= 0 && _currentQ < _questions.length
-                                    ? _questions[_currentQ].question
-                                    : localizations.typeMessage ??
-                                        'Type your message...',
-                            border: InputBorder.none,
-                            errorText: _inputError
-                                ? localizations.pleaseEnterYourAnswer ??
-                                    "Please enter your answer"
-                                : null,
-                            errorStyle: const TextStyle(fontSize: 12),
+                      // Attachment button
+                      GestureDetector(
+                        onTap: _showAttachmentOptions,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            shape: BoxShape.circle,
                           ),
-                          onSubmitted: (_) => _handleSend(),
+                          child: Icon(
+                            Icons.attach_file,
+                            color: Colors.grey.shade700,
+                            size: 16,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 4),
+                      // Text input field with rounded corners
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: TextField(
+                            controller: _controller,
+                            focusNode: _inputFocus,
+                            maxLines: null,
+                            minLines: 1,
+                            textInputAction: TextInputAction.newline,
+                            decoration: InputDecoration(
+                              hintText:
+                                  _currentQ >= 0 && _currentQ < _questions.length
+                                      ? _questions[_currentQ].question
+                                      : localizations.typeMessage ??
+                                          'Type your message...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 2,
+                              ),
+                              errorText: _inputError
+                                  ? localizations.pleaseEnterYourAnswer ??
+                                      "Please enter your answer"
+                                  : null,
+                              errorStyle: const TextStyle(fontSize: 10),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
+                            onSubmitted: (_) => _handleSend(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       // WhatsApp-style mic button with animated waves
                       SizedBox(
-                        width: 40,
-                        height: 40,
+                        width: 28,
+                        height: 28,
                         child: Stack(
                           clipBehavior: Clip.none,
                           alignment: Alignment.center,
@@ -1193,8 +1466,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                             GestureDetector(
                               onTap: _toggleRecording,
                               child: Container(
-                                width: 40,
-                                height: 40,
+                                width: 28,
+                                height: 28,
                                 decoration: BoxDecoration(
                                   color: _isRecording ? Colors.red : orange,
                                   shape: BoxShape.circle,
@@ -1202,25 +1475,52 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                                       ? [
                                           BoxShadow(
                                             color: Colors.red.withOpacity(0.4),
-                                            blurRadius: 8,
-                                            spreadRadius: 2,
+                                            blurRadius: 5,
+                                            spreadRadius: 1,
                                           ),
                                         ]
-                                      : null,
+                                      : [
+                                          BoxShadow(
+                                            color: orange.withOpacity(0.3),
+                                            blurRadius: 2,
+                                            spreadRadius: 0.5,
+                                          ),
+                                        ],
                                 ),
                                 child: Icon(
                                   _isRecording ? Icons.stop : Icons.mic,
                                   color: Colors.white,
-                                  size: 20,
+                                  size: 14,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: orange),
-                        onPressed: _handleSend,
+                      const SizedBox(width: 4),
+                      // Send button
+                      GestureDetector(
+                        onTap: _handleSend,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: orange,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: orange.withOpacity(0.3),
+                                blurRadius: 2,
+                                spreadRadius: 0.5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.send,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
                       ),
                     ],
                   ),
