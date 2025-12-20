@@ -9,3 +9,13 @@ aiofiles
 google-cloud-speech
 google-cloud-storage
 reportlab
+numpy
+opencv-python-headless
+Pillow
+ultralytics==8.2.28
+easyocr
+filterpy
+scipy
+torch
+torchvision
+
