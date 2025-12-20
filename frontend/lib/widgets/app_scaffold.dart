@@ -123,8 +123,9 @@ class _AppScaffoldState extends State<AppScaffold> {
                 ),
                 onSelected: (value) {
                   if (value == 'signout') {
+                    final isPolice = authProvider.role == 'police';
                     authProvider.signOut();
-                    context.go('/login');
+                    context.go(isPolice ? '/police-login' : '/phone-login');
                   }
                 },
                 itemBuilder: (context) => [
