@@ -19,6 +19,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   String? _stationName;
 
   /// 🔎 FILTER STATE
+  String? _searchQuery = '';
   String? _selectedPoliceStatus;
   String? _selectedType;
   DateTime? _fromDate;
@@ -44,16 +45,35 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   /* ---------------- FILTER LOGIC ---------------- */
   List<Petition> _applyFilters(List<Petition> petitions) {
     debugPrint(
-        '🔎 Filters → status=$_selectedPoliceStatus type=$_selectedType fromDate=$_fromDate toDate=$_toDate');
+        '🔎 Filters → search=$_searchQuery status=$_selectedPoliceStatus type=$_selectedType fromDate=$_fromDate toDate=$_toDate');
     return petitions.where((p) {
+      // Search query filter
+      if (_searchQuery != null && _searchQuery!.isNotEmpty) {
+        final query = _searchQuery!.toLowerCase();
+        final haystack = [
+          p.title,
+          p.petitionerName,
+          p.phoneNumber,
+          p.type.displayName,
+          p.policeStatus,
+        ]
+            .whereType<String>()
+            .join(' ')
+            .toLowerCase();
+        if (!haystack.contains(query)) return false;
+      }
+
       // Filter by police status
       if (_selectedPoliceStatus != null &&
+          _selectedPoliceStatus!.isNotEmpty &&
           p.policeStatus != _selectedPoliceStatus) {
         return false;
       }
       
       // Filter by type - compare display names
-      if (_selectedType != null && p.type.displayName != _selectedType) {
+      if (_selectedType != null &&
+          _selectedType!.isNotEmpty &&
+          p.type.displayName != _selectedType) {
         return false;
       }
       
@@ -98,6 +118,106 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     return '${d.day}/${d.month}/${d.year}';
   }
 
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip<T>({
+    required String label,
+    required T? value,
+    required List<T> options,
+    required void Function(T?) onSelected,
+  }) {
+    return PopupMenuButton<T>(
+      tooltip: label,
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        PopupMenuItem<T>(
+          value: null,
+          child: Text('All $label'),
+        ),
+        ...options.toSet().map(
+          (opt) => PopupMenuItem<T>(
+            value: opt,
+            child: Text(opt.toString()),
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value == null ? label : '$label: $value',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const Icon(Icons.arrow_drop_down, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterChip({
+    required String label,
+    required DateTime? value,
+    required VoidCallback onSelected,
+  }) {
+    return GestureDetector(
+      onTap: onSelected,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value == null
+                  ? label
+                  : '$label: ${_formatTimestamp(Timestamp.fromDate(value))}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const Icon(Icons.arrow_drop_down, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
   /* ---------------- PETITION DETAIL (UNCHANGED) ---------------- */
   void _showPetitionDetails(BuildContext context, Petition petition) {
     showModalBottomSheet(
@@ -138,8 +258,109 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
                     const Divider(),
 
-                    Text('Petitioner: ${petition.petitionerName}'),
-                    Text('Phone: ${petition.phoneNumber ?? "-"}'),
+                    // Petition Details Section
+                    const Text(
+                      'Petition Details',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildDetailRow('Petition ID', petition.id ?? '-'),
+                    _buildDetailRow('Petition Type', petition.type.displayName),
+                    _buildDetailRow('Status', petition.status.displayName),
+                    _buildDetailRow('Petitioner Name', petition.petitionerName),
+                    _buildDetailRow('Phone Number', petition.phoneNumber ?? '-'),
+                    if (petition.address != null && petition.address!.isNotEmpty)
+                      _buildDetailRow('Address', petition.address!),
+                    if (petition.district != null && petition.district!.isNotEmpty)
+                      _buildDetailRow('District', petition.district!),
+                    if (petition.stationName != null && petition.stationName!.isNotEmpty)
+                      _buildDetailRow('Police Station', petition.stationName!),
+                    if (petition.incidentAddress != null && petition.incidentAddress!.isNotEmpty)
+                      _buildDetailRow('Incident Address', petition.incidentAddress!),
+                    if (petition.incidentDate != null)
+                      _buildDetailRow('Incident Date', _formatTimestamp(petition.incidentDate!)),
+                    if (petition.caseId != null && petition.caseId!.isNotEmpty)
+                      _buildDetailRow('Related Case ID', petition.caseId!),
+                    if (petition.firNumber != null && petition.firNumber!.isNotEmpty)
+                      _buildDetailRow('FIR Number', petition.firNumber!),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Grounds Section
+                    if (petition.grounds.isNotEmpty) ...[
+                      const Text(
+                        'Grounds',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          petition.grounds,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Prayer/Relief Section
+                    if (petition.prayerRelief != null && petition.prayerRelief!.isNotEmpty) ...[
+                      const Text(
+                        'Prayer/Relief Sought',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          petition.prayerRelief!,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Dates Section
+                    const Text(
+                      'Important Dates',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow('Created At', _formatTimestamp(petition.createdAt)),
+                    _buildDetailRow('Last Updated', _formatTimestamp(petition.updatedAt)),
+                    if (petition.filingDate != null && petition.filingDate!.isNotEmpty)
+                      _buildDetailRow('Filing Date', petition.filingDate!),
+                    if (petition.nextHearingDate != null && petition.nextHearingDate!.isNotEmpty)
+                      _buildDetailRow('Next Hearing Date', petition.nextHearingDate!),
+                    if (petition.orderDate != null && petition.orderDate!.isNotEmpty)
+                      _buildDetailRow('Order Date', petition.orderDate!),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Police Status Section
+                    const Text(
+                      'Police Status',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    if (petition.policeStatus != null)
+                      _buildDetailRow('Status', petition.policeStatus!),
+                    if (petition.policeSubStatus != null)
+                      _buildDetailRow('Sub Status', petition.policeSubStatus!),
+                    
                     const SizedBox(height: 16),
 
                     const Text(
@@ -197,6 +418,100 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     ],
 
                     const SizedBox(height: 24),
+
+                    // Register FIR Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context); // Close the modal first
+                          
+                          // Prepare data for navigation - convert Timestamp to Map for serialization
+                          final Map<String, dynamic> petitionData = {};
+                          
+                          // Use case_id from petition (not petition.id)
+                          if (petition.caseId != null && petition.caseId!.isNotEmpty) {
+                            petitionData['caseId'] = petition.caseId;
+                            debugPrint('✅ Using petition.caseId: ${petition.caseId}');
+                          } else if (petition.id != null && petition.id!.isNotEmpty) {
+                            // Fallback to petition.id if caseId is not available
+                            petitionData['caseId'] = petition.id;
+                            debugPrint('⚠️ Using petition.id as fallback: ${petition.id}');
+                          }
+                          
+                          // Map petition fields to FIR form fields
+                          if (petition.title.isNotEmpty) {
+                            petitionData['title'] = petition.title;
+                          }
+                          if (petition.petitionerName.isNotEmpty) {
+                            petitionData['petitionerName'] = petition.petitionerName;
+                          }
+                          if (petition.phoneNumber != null && petition.phoneNumber!.isNotEmpty) {
+                            petitionData['phoneNumber'] = petition.phoneNumber;
+                          }
+                          // grounds maps to complaint narrative in FIR
+                          if (petition.grounds.isNotEmpty) {
+                            petitionData['grounds'] = petition.grounds;
+                          }
+                          if (petition.district != null && petition.district!.isNotEmpty) {
+                            petitionData['district'] = petition.district;
+                          }
+                          if (petition.stationName != null && petition.stationName!.isNotEmpty) {
+                            petitionData['stationName'] = petition.stationName;
+                          }
+                          if (petition.incidentAddress != null && petition.incidentAddress!.isNotEmpty) {
+                            petitionData['incidentAddress'] = petition.incidentAddress;
+                          }
+                          if (petition.address != null && petition.address!.isNotEmpty) {
+                            petitionData['address'] = petition.address;
+                          }
+                          
+                          // Convert Timestamp to serializable format
+                          if (petition.incidentDate != null) {
+                            petitionData['incidentDate'] = {
+                              'seconds': petition.incidentDate!.seconds,
+                              'nanoseconds': petition.incidentDate!.nanoseconds,
+                            };
+                          }
+                          
+                          debugPrint('🚀 Navigating to new case screen');
+                          debugPrint('📦 Petition data being passed: $petitionData');
+                          debugPrint('📦 Data keys: ${petitionData.keys.toList()}');
+                          for (var key in petitionData.keys) {
+                            final value = petitionData[key];
+                            if (value is Map) {
+                              debugPrint('   $key: Map with keys ${value.keys.toList()}');
+                            } else {
+                              debugPrint('   $key: $value (${value.runtimeType})');
+                            }
+                          }
+                          
+                          // Navigate to new case screen with petition data
+                          context.go(
+                            '/cases/new',
+                            extra: petitionData,
+                          );
+                        },
+                        icon: const Icon(Icons.gavel, size: 20),
+                        label: const Text(
+                          'Register FIR',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
 
                     SizedBox(
                       width: double.infinity,
@@ -277,259 +592,356 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
           return Column(
             children: [
-
-              /// 🔎 FILTER BAR
+              // SEARCH & FILTERS
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Row 1: Status and Type dropdowns
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        DropdownButton<String>(
-                          hint: const Text('Police Status'),
-                          value: _selectedPoliceStatus,
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'Pending', child: Text('Pending')),
-                            DropdownMenuItem(
-                                value: 'Received', child: Text('Received')),
-                            DropdownMenuItem(
-                                value: 'In Progress',
-                                child: Text('In Progress')),
-                            DropdownMenuItem(
-                                value: 'Closed', child: Text('Closed')),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => _selectedPoliceStatus = v),
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search by title, petitioner name, phone...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
-                        DropdownButton<String>(
-                          hint: const Text('Petition Type'),
-                          value: _selectedType,
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'Bail Application', 
-                                child: Text('Bail Application')),
-                            DropdownMenuItem(
-                                value: 'Anticipatory Bail',
-                                child: Text('Anticipatory Bail')),
-                            DropdownMenuItem(
-                                value: 'Revision Petition', 
-                                child: Text('Revision Petition')),
-                            DropdownMenuItem(
-                                value: 'Appeal', 
-                                child: Text('Appeal')),
-                            DropdownMenuItem(
-                                value: 'Writ Petition', 
-                                child: Text('Writ Petition')),
-                            DropdownMenuItem(
-                                value: 'Quashing Petition', 
-                                child: Text('Quashing Petition')),
-                            DropdownMenuItem(
-                                value: 'Other', 
-                                child: Text('Other')),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => _selectedType = v),
-                        ),
-                      ],
+                        isDense: true,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value.trim().toLowerCase();
+                        });
+                      },
                     ),
                     const SizedBox(height: 8),
-                    // Row 2: Date filters
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.start,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _fromDate ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now(),
-                            );
-                            if (picked != null) {
-                              setState(() => _fromDate = picked);
-                            }
-                          },
-                          icon: const Icon(Icons.calendar_today, size: 18),
-                          label: Text(
-                            _fromDate == null
-                                ? 'From Date'
-                                : 'From: ${_formatTimestamp(Timestamp.fromDate(_fromDate!))}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.filter_list, size: 18, color: Colors.grey),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Filters:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildFilterChip<String>(
+                              label: 'Status',
+                              value: _selectedPoliceStatus,
+                              options: const [
+                                'Pending',
+                                'Received',
+                                'In Progress',
+                                'Closed',
+                              ],
+                              onSelected: (value) {
+                                setState(() => _selectedPoliceStatus = value);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildFilterChip<String>(
+                              label: 'Type',
+                              value: _selectedType,
+                              options: const [
+                                'Bail Application',
+                                'Anticipatory Bail',
+                                'Revision Petition',
+                                'Appeal',
+                                'Writ Petition',
+                                'Quashing Petition',
+                                'Other',
+                              ],
+                              onSelected: (value) {
+                                setState(() => _selectedType = value);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildDateFilterChip(
+                              label: 'From Date',
+                              value: _fromDate,
+                              onSelected: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _fromDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() => _fromDate = picked);
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildDateFilterChip(
+                              label: 'To Date',
+                              value: _toDate,
+                              onSelected: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _toDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() => _toDate = picked);
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            if (_selectedPoliceStatus != null ||
+                                _selectedType != null ||
+                                _fromDate != null ||
+                                _toDate != null ||
+                                (_searchQuery != null && _searchQuery!.isNotEmpty))
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedPoliceStatus = null;
+                                    _selectedType = null;
+                                    _fromDate = null;
+                                    _toDate = null;
+                                    _searchQuery = '';
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.red.shade300),
+                                    color: Colors.red.shade50,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.clear, size: 16, color: Colors.red.shade700),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Clear All',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _toDate ?? DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime.now(),
-                            );
-                            if (picked != null) {
-                              setState(() => _toDate = picked);
-                            }
-                          },
-                          icon: const Icon(Icons.calendar_today, size: 18),
-                          label: Text(
-                            _toDate == null
-                                ? 'To Date'
-                                : 'To: ${_formatTimestamp(Timestamp.fromDate(_toDate!))}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _selectedPoliceStatus = null;
-                              _selectedType = null;
-                              _fromDate = null;
-                              _toDate = null;
-                            });
-                          },
-                          icon: const Icon(Icons.clear, size: 18),
-                          label: const Text('Clear All Filters'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[700],
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
 
+              const SizedBox(height: 8),
+
               /// 📋 LIST OR EMPTY STATE
               Expanded(
-                child: petitions.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.filter_list_off,
-                              size: 64,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No matching petitions',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: petitions.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.filter_list_off,
+                                size: 80,
+                                color: Colors.grey[400],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              allPetitions.isEmpty
-                                  ? 'No petitions registered yet'
-                                  : 'Try adjusting the filters above',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade500,
+                              const SizedBox(height: 16),
+                              Text(
+                                'No matching petitions',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[700],
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: petitions.length,
-                        itemBuilder: (_, i) {
-                          final p = petitions[i];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: InkWell(
-                              onTap: () => _showPetitionDetails(context, p),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            p.title,
-                                            style: const TextStyle(
-                                                fontWeight:
-                                                    FontWeight.bold),
-                                          ),
-                                        ),
-                                        if (p.policeStatus != null)
-                                          Container(
-                                            padding:
-                                                const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: _getPoliceStatusColor(
-                                                  p.policeStatus!),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Text(
-                                              p.policeStatus!,
-                                              style: const TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                          )
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(p.petitionerName,
-                                        style: TextStyle(
-                                            color:
-                                                Colors.grey.shade600)),
-                                    Text(
-                                      'Created: ${_formatTimestamp(p.createdAt)}',
-                                      style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 11),
-                                    ),
-                                    // AI Investigation Button
-                                    if (p.caseId != null && p.caseId!.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: OutlinedButton.icon(
-                                          onPressed: () {
-                                            context.go(
-                                              '/ai-investigation-guidelines?caseId=${p.caseId}',
-                                            );
-                                          },
-                                          icon: const Icon(
-                                            Icons.psychology,
-                                            size: 16,
-                                          ),
-                                          label: const Text(
-                                            'AI Investigation Guidelines',
-                                            style: TextStyle(fontSize: 12),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
+                              const SizedBox(height: 8),
+                              Text(
+                                allPetitions.isEmpty
+                                    ? 'No petitions registered yet'
+                                    : 'Try adjusting the filters above',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: petitions.length,
+                          itemBuilder: (_, i) {
+                            final p = petitions[i];
+                            return Card(
+                              elevation: 2,
+                              color: Colors.white,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(18),
+                                onTap: () => _showPetitionDetails(context, p),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 18,
+                                            backgroundColor: Colors.indigo,
+                                            child: const Icon(
+                                              Icons.gavel,
+                                              color: Colors.white,
+                                              size: 18,
                                             ),
                                           ),
-                                        ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        p.title,
+                                                        style: const TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    if (p.policeStatus != null)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 4,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: _getPoliceStatusColor(
+                                                                  p.policeStatus!)
+                                                              .withOpacity(0.12),
+                                                          borderRadius: BorderRadius.circular(20),
+                                                        ),
+                                                        child: Text(
+                                                          p.policeStatus!,
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: _getPoliceStatusColor(
+                                                                p.policeStatus!),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  p.petitionerName,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today,
+                                            size: 14,
+                                            color: Colors.grey[500],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Created: ${_formatTimestamp(p.createdAt)}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Icon(
+                                            Icons.category,
+                                            size: 14,
+                                            color: Colors.grey[500],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            p.type.displayName,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      // AI Investigation Button
+                                      if (p.caseId != null && p.caseId!.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: OutlinedButton.icon(
+                                            onPressed: () {
+                                              context.go(
+                                                '/ai-investigation-guidelines?caseId=${p.caseId}',
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.psychology,
+                                              size: 16,
+                                            ),
+                                            label: const Text(
+                                              'AI Investigation Guidelines',
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
+                ),
               ),
             ],
           );

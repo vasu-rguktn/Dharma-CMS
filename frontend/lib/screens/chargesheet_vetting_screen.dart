@@ -198,7 +198,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                             ),
                             const SizedBox(height: 24),
 
-                            Text("Upload Chargesheet", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.uploadChargesheet, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             Row(
                               children: [
@@ -225,7 +225,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
 
                             const SizedBox(height: 24),
 
-                            Text("Or Paste Chargesheet", style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.orPasteChargesheet, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             TextField(
                               controller: _chargesheetContentController,

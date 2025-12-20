@@ -74,18 +74,18 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
   }
 
   void _showImageSourceDialog() {
-    final l = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(l.selectImageSource),
+        title: Text(localizations.selectImageSource),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_rounded),
-              title: Text(l.gallery),
+              title: Text(localizations.gallery),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -93,7 +93,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt_rounded),
-              title: Text(l.camera),
+              title: Text(localizations.camera),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -161,7 +161,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -192,7 +192,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      l.aiCrimeSceneInvestigator,
+                      localizations.aiCrimeSceneInvestigator,
                       style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                   ),
@@ -202,7 +202,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
 
             Padding(
               padding: const EdgeInsets.fromLTRB(56, 0, 24, 24),
-              child: Text(l.mediaAnalysisDesc, style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.4)),
+              child: Text(localizations.mediaAnalysisDesc, style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.4)),
             ),
 
             Expanded(
@@ -223,12 +223,12 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                               children: [
                                 Icon(Icons.image_search_rounded, color: orange, size: 28),
                                 const SizedBox(width: 12),
-                                Text(l.aiCrimeSceneInvestigator, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                Text(localizations.aiCrimeSceneInvestigator, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                               ],
                             ),
                             const SizedBox(height: 28),
 
-                            const Text("Upload Image", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.uploadImage, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
 
                             Row(
@@ -236,7 +236,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                                 OutlinedButton.icon(
                                   onPressed: _showImageSourceDialog,
                                   icon: const Icon(Icons.add_photo_alternate_rounded),
-                                  label: Text(l.chooseImage),
+                                  label: Text(localizations.chooseImage),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: orange,
                                     side: BorderSide(color: orange),
@@ -266,13 +266,13 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                             ],
 
                             const SizedBox(height: 24),
-                            const Text("Additional Context (Optional)", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.additionalInstructionsOptional, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             TextField(
                               controller: _userContextController,
                               maxLines: 4,
                               decoration: InputDecoration(
-                                hintText: l.contextInstructionsHint,
+                                hintText: localizations.contextInstructionsHint,
                                 hintStyle: TextStyle(color: Colors.grey[500]),
                                 filled: true,
                                 fillColor: Colors.grey[50],
@@ -289,7 +289,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                                 icon: _isLoading
                                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                     : const Icon(Icons.search_rounded),
-                                label: Text(_isLoading ? l.analyzing : l.analyzeImage),
+                                label: Text(_isLoading ? localizations.analyzing : localizations.analyzeImage),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: orange,
                                   foregroundColor: Colors.white,
@@ -336,16 +336,16 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                                 children: [
                                   Icon(Icons.description_rounded, color: orange, size: 30),
                                   const SizedBox(width: 12),
-                                  Text(l.crimeSceneAnalysisReport, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                                  Text(localizations.crimeSceneAnalysisReport, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text('${l.date}: ${DateTime.now().toString().split(' ')[0]}', style: TextStyle(color: Colors.grey[600])),
+                              Text('${localizations.date}: ${DateTime.now().toString().split(' ')[0]}', style: TextStyle(color: Colors.grey[600])),
                               const SizedBox(height: 28),
 
-                              _buildSection(icon: Icons.check_circle_rounded, color: Colors.blue[700]!, title: l.identifiedElements, child: _buildElementsList(l)),
+                              _buildSection(icon: Icons.check_circle_rounded, color: Colors.blue[700]!, title: localizations.identifiedElements, child: _buildElementsList(localizations)),
                               const SizedBox(height: 28),
-                              _buildSection(icon: Icons.description_rounded, color: Colors.purple[700]!, title: l.sceneNarrativeEditable, child: TextField(
+                              _buildSection(icon: Icons.description_rounded, color: Colors.purple[700]!, title: localizations.sceneNarrativeEditable, child: TextField(
                                 controller: TextEditingController(text: _editableSceneNarrative)
                                   ..selection = TextSelection.fromPosition(TextPosition(offset: _editableSceneNarrative?.length ?? 0)),
                                 onChanged: (v) => _editableSceneNarrative = v,
@@ -353,7 +353,7 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                                 decoration: InputDecoration(filled: true, fillColor: Colors.purple[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
                               )),
                               const SizedBox(height: 28),
-                              _buildSection(icon: Icons.lightbulb_rounded, color: Colors.green[700]!, title: l.caseFileSummaryEditable, child: TextField(
+                              _buildSection(icon: Icons.lightbulb_rounded, color: Colors.green[700]!, title: localizations.caseFileSummaryEditable, child: TextField(
                                 controller: TextEditingController(text: _editableCaseFileSummary)
                                   ..selection = TextSelection.fromPosition(TextPosition(offset: _editableCaseFileSummary?.length ?? 0)),
                                 onChanged: (v) => _editableCaseFileSummary = v,
@@ -362,9 +362,9 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
                               )),
                               const SizedBox(height: 32),
                               OutlinedButton.icon(
-                                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.downloadFeatureComingSoon))),
+                                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(localizations.downloadFeatureComingSoon))),
                                 icon: const Icon(Icons.download_rounded),
-                                label: Text(l.download),
+                                label: Text(localizations.download),
                                 style: OutlinedButton.styleFrom(foregroundColor: orange, side: BorderSide(color: orange)),
                               ),
                             ],
@@ -401,12 +401,12 @@ class _MediaAnalysisScreenState extends State<MediaAnalysisScreen> {
 
   Widget _buildElementsList(AppLocalizations l) {
     final elements = _analysisResult!['identifiedElements'] as List<dynamic>? ?? [];
-
+    final localizations = AppLocalizations.of(context)!;
     if (elements.isEmpty || (elements[0] as Map)['name'] == 'Analysis Failed') {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red[200]!)),
-        child: Text(elements.isEmpty ? l.noElementsIdentified : elements[0]['description'], style: TextStyle(color: Colors.red[700])),
+        child: Text(elements.isEmpty ? localizations.noElementsIdentified : elements[0]['description'], style: TextStyle(color: Colors.red[700])),
       );
     }
 

@@ -170,7 +170,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                             ),
                             const SizedBox(height: 28),
 
-                            _buildLabel("Witness Name"),
+                            _buildLabel(localizations.witnessName),
                             const SizedBox(height: 8),
                             TextField(
                               controller: _witnessNameController,
@@ -185,7 +185,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            _buildLabel("Case Details"),
+                            _buildLabel(localizations.caseDetails),
                             const SizedBox(height: 8),
                             TextField(
                               controller: _caseDetailsController,
@@ -201,7 +201,7 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            _buildLabel("Witness Statement"),
+                            _buildLabel(localizations.witnessStatement),
                             const SizedBox(height: 8),
                             TextField(
                               controller: _witnessStatementController,

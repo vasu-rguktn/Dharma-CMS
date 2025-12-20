@@ -677,8 +677,21 @@
   },
   "voiceInputComingSoon": "Voice input (coming soon)",
   "@voiceInputComingSoon": {
-    "description": "Tooltip for voice input button"
+    "description": "Voice input tooltip text"
   },
+  "listening": "Listening...",
+  "@listening": {
+    "description": "Text shown when speech recognition is active"
+  },
+  "tapToStopRecording": "Tap the microphone icon to stop recording",
+  "@tapToStopRecording": {
+    "description": "Hint text for stopping voice recording"
+  },
+  "pleaseStopListening": "Please stop listening and recording before sending",
+  "@pleaseStopListening": {
+    "description": "Message shown when user tries to send while recording"
+  },
+   
   "welcomeToDharma": "Welcome to Dharma",
   "@welcomeToDharma": {
     "description": "Welcome message in AI legal chat"
@@ -933,7 +946,596 @@
     "description": "Success message for Google login"
   },
 
-  
+  "aiInvestigationGuidelines": "AI Investigation Guidelines",
+  "@aiInvestigationGuidelines": {
+    "description": "Title shown for AI-based investigation rules or guidelines"
+  },
+  "createNewCase": "Create New Case",
+  "@createNewCase": {
+    "description": "Title for new case creation screen"
+  },
+  "createCase": "Create Case",
+  "@createCase": {
+    "description": "Button text to create a case"
+  },
+  "caseId": "Case ID",
+  "@caseId": {
+    "description": "Case ID field label"
+  },
+  "caseIdHint": "Enter case ID",
+  "@caseIdHint": {
+    "description": "Hint text for case ID field"
+  },
+  "pleaseEnterCaseId": "Please enter case ID",
+  "@pleaseEnterCaseId": {
+    "description": "Validation message for case ID"
+  },
+  "caseTitleRequired": "Case Title",
+  "@caseTitleRequired": {
+    "description": "Case title field label"
+  },
+  "caseTitleHint": "Enter case title",
+  "@caseTitleHint": {
+    "description": "Hint text for case title field"
+  },
+  "firNumberRequired": "FIR Number",
+  "@firNumberRequired": {
+    "description": "FIR number field label"
+  },
+  "firNumberHint": "Enter FIR number",
+  "@firNumberHint": {
+    "description": "Hint text for FIR number field"
+  },
+  "pleaseEnterCaseTitle": "Please enter case title",
+  "@pleaseEnterCaseTitle": {
+    "description": "Validation message for case title"
+  },
+  "pleaseEnterFirNumber": "Please enter FIR number",
+  "@pleaseEnterFirNumber": {
+    "description": "Validation message for FIR number"
+  },
+  "complainantName": "Complainant Name",
+  "@complainantName": {
+    "description": "Complainant name field label"
+  },
+  "enterComplainantName": "Enter complainant name",
+  "@enterComplainantName": {
+    "description": "Hint text for complainant name field"
+  },
+  "caseCreatedSuccess": "Case created successfully",
+  "@caseCreatedSuccess": {
+    "description": "Success message when case is created"
+  },
+  "errorCreatingCase": "Error creating case: {error}",
+  "@errorCreatingCase": {
+    "description": "Error message when case creation fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseSelectDistrict": "Please select a district",
+  "@pleaseSelectDistrict": {
+    "description": "Validation message for district selection"
+  },
+  "pleaseSelectSubDivision": "Please select a Sub-Division (SDPO)",
+  "@pleaseSelectSubDivision": {
+    "description": "Validation message for sub-division selection"
+  },
+  "pleaseSelectCircle": "Please select a Circle",
+  "@pleaseSelectCircle": {
+    "description": "Validation message for circle selection"
+  },
+  "pleaseSelectPoliceStation": "Please select a Police Station",
+  "@pleaseSelectPoliceStation": {
+    "description": "Validation message for police station selection"
+  },
+  "pleaseEnterYear": "Please enter the year",
+  "@pleaseEnterYear": {
+    "description": "Validation message for year field"
+  },
+  "pleaseEnterValidYear": "Please enter a valid year",
+  "@pleaseEnterValidYear": {
+    "description": "Validation message for invalid year"
+  },
+  "pleaseSelectFirRegistrationDate": "Please select FIR Registration Date",
+  "@pleaseSelectFirRegistrationDate": {
+    "description": "Validation message for FIR registration date"
+  },
+  "districtAndFirDetails": "1. District & FIR Details",
+  "@districtAndFirDetails": {
+    "description": "Step 1 title for district and FIR details"
+  },
+  "subDivisionSdpo": "Sub-Division (SDPO)",
+  "@subDivisionSdpo": {
+    "description": "Sub-division field label"
+  },
+  "circle": "Circle",
+  "@circle": {
+    "description": "Circle field label"
+  },
+  "year": "Year",
+  "@year": {
+    "description": "Year field label"
+  },
+  "yearHint": "E.g., 2025",
+  "@yearHint": {
+    "description": "Hint text for year field"
+  },
+  "firRegistrationDate": "FIR Registration Date",
+  "@firRegistrationDate": {
+    "description": "FIR registration date field label"
+  },
+  "selectDate": "Select date",
+  "@selectDate": {
+    "description": "Placeholder text for date picker"
+  },
+  "occurrenceOfOffence": "2. Occurrence of Offence",
+  "@occurrenceOfOffence": {
+    "description": "Step 2 title for occurrence of offence"
+  },
+  "dayOfOccurrence": "Day of Occurrence",
+  "@dayOfOccurrence": {
+    "description": "Day of occurrence field label"
+  },
+  "dayOfOccurrenceHint": "E.g., Monday",
+  "@dayOfOccurrenceHint": {
+    "description": "Hint text for day of occurrence"
+  },
+  "dateTimeFrom": "Date/Time From",
+  "@dateTimeFrom": {
+    "description": "Date/time from field label"
+  },
+  "dateTimeTo": "Date/Time To",
+  "@dateTimeTo": {
+    "description": "Date/time to field label"
+  },
+  "selectDateAndTime": "Select date and time",
+  "@selectDateAndTime": {
+    "description": "Placeholder text for date/time picker"
+  },
+  "timePeriod": "Time Period",
+  "@timePeriod": {
+    "description": "Time period field label"
+  },
+  "timePeriodHint": "E.g., 19:15-21:30",
+  "@timePeriodHint": {
+    "description": "Hint text for time period"
+  },
+  "priorToDateTimeDetails": "Prior to Date/Time (Details)",
+  "@priorToDateTimeDetails": {
+    "description": "Prior to date/time details field label"
+  },
+  "beatNumber": "Beat Number",
+  "@beatNumber": {
+    "description": "Beat number field label"
+  },
+  "placeOfOccurrence": "Place of Occurrence",
+  "@placeOfOccurrence": {
+    "description": "Place of occurrence section title"
+  },
+  "streetVillage": "Street/Village",
+  "@streetVillage": {
+    "description": "Street/village field label"
+  },
+  "areaMandal": "Area/Mandal",
+  "@areaMandal": {
+    "description": "Area/mandal field label"
+  },
+  "cityDistrict": "City/District",
+  "@cityDistrict": {
+    "description": "City/district field label"
+  },
+  "pin": "PIN",
+  "@pin": {
+    "description": "PIN field label"
+  },
+  "latitude": "Latitude",
+  "@latitude": {
+    "description": "Latitude field label"
+  },
+  "latitudeHint": "e.g., 16.5062",
+  "@latitudeHint": {
+    "description": "Hint text for latitude"
+  },
+  "longitude": "Longitude",
+  "@longitude": {
+    "description": "Longitude field label"
+  },
+  "longitudeHint": "e.g., 80.6480",
+  "@longitudeHint": {
+    "description": "Hint text for longitude"
+  },
+  "mapPickerPlaceholder": "Map picker functionality will be implemented",
+  "@mapPickerPlaceholder": {
+    "description": "Message for map picker placeholder"
+  },
+  "pickOnMap": "Pick on Map (Placeholder)",
+  "@pickOnMap": {
+    "description": "Button text for map picker"
+  },
+  "distanceAndDirectionFromPs": "Distance & Direction from PS:",
+  "@distanceAndDirectionFromPs": {
+    "description": "Distance and direction section title"
+  },
+  "distanceFromPs": "Distance from PS",
+  "@distanceFromPs": {
+    "description": "Distance from PS field label"
+  },
+  "distanceFromPsHint": "E.g., 1km",
+  "@distanceFromPsHint": {
+    "description": "Hint text for distance from PS"
+  },
+  "directionFromPs": "Direction from PS",
+  "@directionFromPs": {
+    "description": "Direction from PS field label"
+  },
+  "outsideJurisdiction": "Outside Jurisdiction:",
+  "@outsideJurisdiction": {
+    "description": "Outside jurisdiction section title"
+  },
+  "isOutsideJurisdiction": "Is Outside Jurisdiction?",
+  "@isOutsideJurisdiction": {
+    "description": "Outside jurisdiction checkbox label"
+  },
+  "informationReceived": "3. Information Received",
+  "@informationReceived": {
+    "description": "Step 3 title for information received"
+  },
+  "dateTimeReceivedAtPs": "Date/Time Received at PS",
+  "@dateTimeReceivedAtPs": {
+    "description": "Date/time received at PS field label"
+  },
+  "generalDiaryEntryNumber": "General Diary Entry No.",
+  "@generalDiaryEntryNumber": {
+    "description": "General diary entry number field label"
+  },
+  "generalDiaryEntryNumberHint": "E.g., 40",
+  "@generalDiaryEntryNumberHint": {
+    "description": "Hint text for general diary entry number"
+  },
+  "typeOfInformation": "4. Type of Information",
+  "@typeOfInformation": {
+    "description": "Step 4 title for type of information"
+  },
+  "type": "Type",
+  "@type": {
+    "description": "Type field label"
+  },
+  "oral": "Oral",
+  "@oral": {
+    "description": "Oral information type option"
+  },
+  "written": "Written",
+  "@written": {
+    "description": "Written information type option"
+  },
+  "phone": "Phone",
+  "@phone": {
+    "description": "Phone information type option"
+  },
+  "accusedDetails": "6. Accused Details",
+  "@accusedDetails": {
+    "description": "Step 6 title for accused details"
+  },
+  "addAccused": "Add Accused",
+  "@addAccused": {
+    "description": "Button text to add accused"
+  },
+  "accused": "Accused",
+  "@accused": {
+    "description": "Accused label"
+  },
+  "deleteAccused": "Delete Accused",
+  "@deleteAccused": {
+    "description": "Tooltip for delete accused button"
+  },
+  "serialNo": "Serial No.",
+  "@serialNo": {
+    "description": "Serial number field label"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Name field label"
+  },
+  "fatherHusbandName": "Father's/Husband's Name",
+  "@fatherHusbandName": {
+    "description": "Father's/husband's name field label"
+  },
+  "age": "Age",
+  "@age": {
+    "description": "Age field label"
+  },
+  "nationality": "Nationality",
+  "@nationality": {
+    "description": "Nationality field label"
+  },
+  "caste": "Caste",
+  "@caste": {
+    "description": "Caste field label"
+  },
+  "occupation": "Occupation",
+  "@occupation": {
+    "description": "Occupation field label"
+  },
+  "cellNo": "Cell No.",
+  "@cellNo": {
+    "description": "Cell number field label"
+  },
+  "accusedAddress": "Accused Address:",
+  "@accusedAddress": {
+    "description": "Accused address section title"
+  },
+  "houseNo": "House No.",
+  "@houseNo": {
+    "description": "House number field label"
+  },
+  "physicalFeatures": "Physical Features:",
+  "@physicalFeatures": {
+    "description": "Physical features section title"
+  },
+  "build": "Build",
+  "@build": {
+    "description": "Build field label"
+  },
+  "heightCms": "Height (cms)",
+  "@heightCms": {
+    "description": "Height in centimeters field label"
+  },
+  "complexion": "Complexion",
+  "@complexion": {
+    "description": "Complexion field label"
+  },
+  "deformitiesPeculiarities": "Deformities/Peculiarities",
+  "@deformitiesPeculiarities": {
+    "description": "Deformities/peculiarities field label"
+  },
+  "propertiesInvolved": "7. Properties Involved",
+  "@propertiesInvolved": {
+    "description": "Step 7 title for properties involved"
+  },
+  "detailsOfPropertiesStolenInvolved": "Details of Properties Stolen/Involved",
+  "@detailsOfPropertiesStolenInvolved": {
+    "description": "Properties details field label"
+  },
+  "totalValueOfPropertiesStolenInr": "Total Value of Properties Stolen (INR)",
+  "@totalValueOfPropertiesStolenInr": {
+    "description": "Total value of properties field label"
+  },
+  "delayInReporting": "8. Delay in Reporting (if any)",
+  "@delayInReporting": {
+    "description": "Step 8 title for delay in reporting"
+  },
+  "wasThereDelayInReporting": "Was there a delay in reporting?",
+  "@wasThereDelayInReporting": {
+    "description": "Delay in reporting checkbox label"
+  },
+  "inquestReportUdCaseNo": "9. Inquest Report / U.D. Case No. (if any)",
+  "@inquestReportUdCaseNo": {
+    "description": "Step 9 title for inquest report"
+  },
+  "inquestReportUdCaseNoLabel": "Inquest Report / U.D. Case No.",
+  "@inquestReportUdCaseNoLabel": {
+    "description": "Inquest report case number field label"
+  },
+  "actsAndSectionsInvolved": "Acts & Sections Involved",
+  "@actsAndSectionsInvolved": {
+    "description": "Acts and sections section title"
+  },
+  "actsAndSectionsHint": "E.g., IPC 379, BNS 101",
+  "@actsAndSectionsHint": {
+    "description": "Hint text for acts and sections"
+  },
+  "complaintStatementOfComplainantInformant": "10. Complaint / Statement of Complainant/Informant *",
+  "@complaintStatementOfComplainantInformant": {
+    "description": "Step 10 title for complaint statement"
+  },
+  "detailedNarrative": "Detailed Narrative",
+  "@detailedNarrative": {
+    "description": "Detailed narrative field label"
+  },
+  "aiSuggestionDraftComplaint": "AI Suggestion: Draft complaint based on the original conversation.",
+  "@aiSuggestionDraftComplaint": {
+    "description": "Hint text for complaint narrative with AI suggestion"
+  },
+  "victimDetails": "Victim Details",
+  "@victimDetails": {
+    "description": "Victim details section title"
+  },
+  "complainantIsAlsoVictim": "Complainant is also the Victim",
+  "@complainantIsAlsoVictim": {
+    "description": "Checkbox label for complainant also being victim"
+  },
+  "victimName": "Victim Name",
+  "@victimName": {
+    "description": "Victim name field label"
+  },
+  "victimDob": "Victim DOB",
+  "@victimDob": {
+    "description": "Victim date of birth field label"
+  },
+  "victimAgeAutoCalculated": "Victim Age (auto-calculated)",
+  "@victimAgeAutoCalculated": {
+    "description": "Victim age field label (auto-calculated)"
+  },
+  "victimGender": "Victim Gender",
+  "@victimGender": {
+    "description": "Victim gender field label"
+  },
+  "victimFatherHusbandName": "Victim Father's/Husband's Name",
+  "@victimFatherHusbandName": {
+    "description": "Victim father's/husband's name field label"
+  },
+  "victimNationality": "Victim Nationality",
+  "@victimNationality": {
+    "description": "Victim nationality field label"
+  },
+  "victimReligion": "Victim Religion",
+  "@victimReligion": {
+    "description": "Victim religion field label"
+  },
+  "victimCaste": "Victim Caste",
+  "@victimCaste": {
+    "description": "Victim caste field label"
+  },
+  "victimOccupation": "Victim Occupation",
+  "@victimOccupation": {
+    "description": "Victim occupation field label"
+  },
+  "victimAddress": "Victim Address:",
+  "@victimAddress": {
+    "description": "Victim address section title"
+  },
+  "actionTaken": "11. Action Taken",
+  "@actionTaken": {
+    "description": "Step 11 title for action taken"
+  },
+  "actionTakenDetails": "Action Taken (Details)",
+  "@actionTakenDetails": {
+    "description": "Action taken details field label"
+  },
+  "investigatingOfficerName": "Investigating Officer Name",
+  "@investigatingOfficerName": {
+    "description": "Investigating officer name field label"
+  },
+  "officerRank": "Officer Rank",
+  "@officerRank": {
+    "description": "Officer rank field label"
+  },
+  "districtOfOfficer": "District (of officer)",
+  "@districtOfOfficer": {
+    "description": "District of officer field label"
+  },
+  "dispatchToCourt": "12. Dispatch to Court",
+  "@dispatchToCourt": {
+    "description": "Step 12 title for dispatch to court"
+  },
+  "dateTimeOfDispatch": "Date/Time of Dispatch",
+  "@dateTimeOfDispatch": {
+    "description": "Date/time of dispatch field label"
+  },
+  "nameOfOfficer": "Name of Officer",
+  "@nameOfOfficer": {
+    "description": "Name of officer field label"
+  },
+  "rankOfOfficer": "Rank of Officer",
+  "@rankOfOfficer": {
+    "description": "Rank of officer field label"
+  },
+  "confirmation": "13. Confirmation",
+  "@confirmation": {
+    "description": "Step 13 title for confirmation"
+  },
+  "firReadOverAndAdmittedCorrect": "FIR read over and admitted correct by Complainant/Informant",
+  "@firReadOverAndAdmittedCorrect": {
+    "description": "FIR read over confirmation checkbox label"
+  },
+  "firCopyGivenFreeOfCost": "Copy of FIR given to Complainant/Informant free of cost",
+  "@firCopyGivenFreeOfCost": {
+    "description": "FIR copy given confirmation checkbox label"
+  },
+  "roacRecorded": "ROAC (Recorded Over & Admitted Correct)",
+  "@roacRecorded": {
+    "description": "ROAC recorded confirmation checkbox label"
+  },
+  "signatureThumbImpression": "Signature/Thumb Impression of Complainant/Informant (Enter 'Digitally Signed' or path if applicable)",
+  "@signatureThumbImpression": {
+    "description": "Signature/thumb impression field label"
+  },
+  "complainantInformantDetails": "5. Complainant / Informant Details",
+  "@complainantInformantDetails": {
+    "description": "Step 5 title for complainant/informant details"
+  },
+  "dateOfBirth": "Date of Birth",
+  "@dateOfBirth": {
+    "description": "Date of birth field label"
+  },
+  "ageAutoCalculated": "Age (auto-calculated)",
+  "@ageAutoCalculated": {
+    "description": "Age field label (auto-calculated)"
+  },
+  "mobileNumber": "Mobile Number",
+  "@mobileNumber": {
+    "description": "Mobile number field label"
+  },
+  "mobileNumberHint": "10 digits",
+  "@mobileNumberHint": {
+    "description": "Hint text for mobile number"
+  },
+  "complainantAddress": "Complainant Address:",
+  "@complainantAddress": {
+    "description": "Complainant address section title"
+  },
+  "complainantPassportOptional": "Complainant Passport (Optional):",
+  "@complainantPassportOptional": {
+    "description": "Complainant passport section title"
+  },
+  "passportNo": "Passport No.",
+  "@passportNo": {
+    "description": "Passport number field label"
+  },
+  "placeOfIssue": "Place of Issue",
+  "@placeOfIssue": {
+    "description": "Place of issue field label"
+  },
+  "dateOfIssue": "Date of Issue",
+  "@dateOfIssue": {
+    "description": "Date of issue field label"
+  },
+  "reviewCaseDetails": "Review Case Details",
+  "@reviewCaseDetails": {
+    "description": "Review step title"
+  },
+  "actsAndSections": "Acts & Sections (comma-separated or detailed)",
+  "@actsAndSections": {
+    "description": "Acts and sections field label"
+  },
+  "subDivisionSdpoLabel": "Sub-Division (SDPO)",
+  "@subDivisionSdpoLabel": {
+    "description": "Sub-division field label"
+  },
+  "circleLabel": "Circle",
+  "@circleLabel": {
+    "description": "Circle field label"
+  },
+  "circle1": "Circle 1",
+  "@circle1": {
+    "description": "Circle 1 option"
+  },
+  "circle2": "Circle 2",
+  "@circle2": {
+    "description": "Circle 2 option"
+  },
+  "circle3": "Circle 3",
+  "@circle3": {
+    "description": "Circle 3 option"
+  },
+  "firRegistrationDateLabel": "FIR Registration Date",
+  "@firRegistrationDateLabel": {
+    "description": "FIR registration date field label"
+  },
+  "selectDatePlaceholder": "Select date",
+  "@selectDatePlaceholder": {
+    "description": "Date picker placeholder text"
+  },
+  "nuzvidSdpo": "Nuzvid SDPO",
+  "@nuzvidSdpo": {
+    "description": "Nuzvid SDPO sub-division"
+  },
+  "gudivadaSdpo": "Gudivada SDPO",
+  "@gudivadaSdpo": {
+    "description": "Gudivada SDPO sub-division"
+  },
+  "machilipatnamSdpo": "Machilipatnam SDPO",
+  "@machilipatnamSdpo": {
+    "description": "Machilipatnam SDPO sub-division"
+  },
+  "vijayawadaSdpo": "Vijayawada SDPO",
+  "@vijayawadaSdpo": {
+    "description": "Vijayawada SDPO sub-division"
+  }
 
   
+
 }
