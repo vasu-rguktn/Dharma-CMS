@@ -525,6 +525,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
                     height: headerHeight,
                     width: double.infinity,
                   ),
+                  // Add back button
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: SafeArea(
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () {
+                          // Navigate back to Welcome screen
+                          context.go('/');
+                        },
+                        tooltip: 'Back',
+                      ),
+                    ),
+                  ),
                   Positioned(
                     left: 0,
                     right: 0,
