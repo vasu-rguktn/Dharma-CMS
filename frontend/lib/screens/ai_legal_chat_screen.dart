@@ -320,6 +320,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -403,6 +404,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   String? _currentSttLang; // Store current STT language for restarting
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
+
+  // Platform channel for muting system sounds during ASR
+  static const MethodChannel _soundChannel = MethodChannel('com.dharma.sound_control');
 
   // Orange color
   static const Color orange = Color(0xFFFC633C);
@@ -939,6 +943,30 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
     );
   }
 
+  /// Mute system sounds to prevent ASR start/stop/restart sounds
+  Future<void> _muteSystemSounds() async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+        await _soundChannel.invokeMethod('muteSystemSounds');
+      }
+    } catch (e) {
+      // Silently fail - sound muting is optional
+      print('Could not mute system sounds: $e');
+    }
+  }
+
+  /// Unmute system sounds
+  Future<void> _unmuteSystemSounds() async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+        await _soundChannel.invokeMethod('unmuteSystemSounds');
+      }
+    } catch (e) {
+      // Silently fail - sound unmuting is optional
+      print('Could not unmute system sounds: $e');
+    }
+  }
+
   /// Restart speech recognition when user manually clears text
   /// This resets the SDK's internal buffer to get fresh transcript
   Future<void> _restartSpeechRecognitionOnClear() async {
@@ -1001,6 +1029,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
         return;
       }
       
+      // Mute system sounds before restarting to prevent restart sound
+      await _muteSystemSounds();
+      
       // For continuous listening: Cancel existing session to restart fresh
       // When "done" status is reported, the SDK has stopped - we need to restart
       // IMPORTANT: Don't cancel if already stopped - just restart listening
@@ -1026,6 +1057,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
       // Final check before starting
       if (!mounted || !_isRecording) {
         _isRestarting = false;
+        await _unmuteSystemSounds(); // Unmute if we're not restarting
         return;
       }
       
@@ -1135,18 +1167,31 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
       await _speech.stop();
       await _speech.cancel(); // Cancel to fully reset
       
+      // Unmute system sounds after stopping
+      await _unmuteSystemSounds();
+      
       // USER EXPLICITLY STOPPED MICROPHONE - Finalize all accumulated text
       // This is the ONLY place where we finalize on stop (not on pauses)
+      // BUT: If user manually cleared the input box, respect that and keep it empty
+      final wasManuallyCleared = _controller.text.isEmpty;
+      
       setState(() {
-        // Finalize: append current transcript to finalized (accumulate all text)
-        if (_currentTranscript.isNotEmpty) {
-          if (_finalizedTranscript.isNotEmpty) {
-            _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
-          } else {
-            _finalizedTranscript = _currentTranscript;
+        if (!wasManuallyCleared) {
+          // Only finalize if user didn't manually clear the text
+          // Finalize: append current transcript to finalized (accumulate all text)
+          if (_currentTranscript.isNotEmpty) {
+            if (_finalizedTranscript.isNotEmpty) {
+              _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
+            } else {
+              _finalizedTranscript = _currentTranscript;
+            }
           }
+          _controller.text = _finalizedTranscript; // Update controller with finalized text
+        } else {
+          // User manually cleared the text - respect that and keep it empty
+          _finalizedTranscript = '';
+          _controller.text = '';
         }
-        _controller.text = _finalizedTranscript; // Update controller with finalized text
         _currentTranscript = ''; // Clear current
         _isRecording = false;
         _recordingStartTime = null;
@@ -1157,6 +1202,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
       await _flutterTts.stop();
       await _speech.stop(); // Stop any existing session
       await _speech.cancel(); // Cancel to fully reset
+      
+      // Mute system sounds before starting to prevent start sound
+      await _muteSystemSounds();
       
       // Small delay to ensure clean state
       await Future.delayed(const Duration(milliseconds: 100));
@@ -1351,9 +1399,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
             });
           } else {
             print('Error starting speech recognition: $e');
+            // Unmute on error
+            await _unmuteSystemSounds();
           }
         }
       } else {
+        await _unmuteSystemSounds(); // Unmute if not available
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -1402,6 +1453,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
     _scrollController.dispose();
     _speech.stop();
     _flutterTts.stop();
+    // Ensure system sounds are unmuted when disposing
+    _unmuteSystemSounds();
     super.dispose();
   }
 

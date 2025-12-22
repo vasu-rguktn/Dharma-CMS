@@ -348,7 +348,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                                   fontSize: 14, color: Colors.black),
                             ),
                             GestureDetector(
-                              onTap: () => context.go('/signup'),
+                              onTap: () => context.go('/signup/citizen'),
                               child: Text(
                                 localizations?.register ?? 'Register',
                                 style: const TextStyle(
