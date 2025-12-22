@@ -1172,16 +1172,26 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> with AutomaticKee
       
       // USER EXPLICITLY STOPPED MICROPHONE - Finalize all accumulated text
       // This is the ONLY place where we finalize on stop (not on pauses)
+      // BUT: If user manually cleared the input box, respect that and keep it empty
+      final wasManuallyCleared = _controller.text.isEmpty;
+      
       setState(() {
-        // Finalize: append current transcript to finalized (accumulate all text)
-        if (_currentTranscript.isNotEmpty) {
-          if (_finalizedTranscript.isNotEmpty) {
-            _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
-          } else {
-            _finalizedTranscript = _currentTranscript;
+        if (!wasManuallyCleared) {
+          // Only finalize if user didn't manually clear the text
+          // Finalize: append current transcript to finalized (accumulate all text)
+          if (_currentTranscript.isNotEmpty) {
+            if (_finalizedTranscript.isNotEmpty) {
+              _finalizedTranscript = '$_finalizedTranscript $_currentTranscript'.trim();
+            } else {
+              _finalizedTranscript = _currentTranscript;
+            }
           }
+          _controller.text = _finalizedTranscript; // Update controller with finalized text
+        } else {
+          // User manually cleared the text - respect that and keep it empty
+          _finalizedTranscript = '';
+          _controller.text = '';
         }
-        _controller.text = _finalizedTranscript; // Update controller with finalized text
         _currentTranscript = ''; // Clear current
         _isRecording = false;
         _recordingStartTime = null;
