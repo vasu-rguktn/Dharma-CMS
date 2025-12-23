@@ -6,6 +6,9 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'video_enhancement_tab.dart';
+import 'anpr_detection_tab.dart';
+import 'sketch_generation_tab.dart';
 
 class ImageLabScreen extends StatefulWidget {
   const ImageLabScreen({super.key});
@@ -100,7 +103,7 @@ class _ImageLabScreenState extends State<ImageLabScreen>
         child: TabBarView(
           controller: _tabController,
           children: const [
-            SuspectGenerationTab(),
+            SketchGenerationTab(),
             ImageEnhancementTab(),
             VideoEnhancementTab(),
             AnprDetectionTab(),
@@ -114,135 +117,7 @@ class _ImageLabScreenState extends State<ImageLabScreen>
 
 // ───────────────── TABS ─────────────────
 
-// 1. Suspect Generation
-class SuspectGenerationTab extends StatefulWidget {
-  const SuspectGenerationTab({super.key});
 
-  @override
-  State<SuspectGenerationTab> createState() => _SuspectGenerationTabState();
-}
-
-class _SuspectGenerationTabState extends State<SuspectGenerationTab> {
-  bool _beard = false;
-  bool _glasses = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 0, // Flat card as per image
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Suspect Generation',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Generate a suspect sketch based on a textual description using AI.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-              const Text('Description',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              TextField(
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText:
-                      'e.g., Male, mid-30s, short black hair, wearing glasses, prominent scar on left cheek...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!)),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Age Shift (Years)',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'e.g., -5 or 10',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!)),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Case Reference (FIR No.)',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Optional case reference',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!)),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[300]!)),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Disguise Options',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Switch(
-                      value: _beard,
-                      onChanged: (v) => setState(() => _beard = v),
-                      activeColor: Colors.deepPurple),
-                  const Text('Beard'),
-                  const SizedBox(width: 20),
-                  Switch(
-                      value: _glasses,
-                      onChanged: (v) => setState(() => _glasses = v),
-                      activeColor: Colors.deepPurple),
-                  const Text('Glasses'),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(
-                      0xFF7C83FD), // Periwinkle/Purple color from image
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Generate Image'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // 2. Image Enhancement
 class ImageEnhancementTab extends StatefulWidget {
@@ -283,31 +158,15 @@ class _ImageEnhancementTabState extends State<ImageEnhancementTab> {
   Future<void> _initBackend() async {
     if (_isInitialized) return;
 
-    final List<String> candidates = <String>[];
-
-    if (kIsWeb) {
-      final uri = Uri.base;
-      final scheme = uri.scheme.isNotEmpty ? uri.scheme : 'http';
-      final host = uri.host.isNotEmpty ? uri.host : 'localhost';
-
-      candidates.add('$scheme://$host:8000');
-      candidates.add('$scheme://$host');
-      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    }
+    // Prefer local FastAPI backend on port 8000.
+    final List<String> candidates = <String>['http://localhost:8000'];
 
     final isAndroid =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
       // For Android emulator, use 10.0.2.2 to access host machine's localhost
-      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
       candidates.add('http://10.0.2.2:8000');
-      candidates.add('http://10.0.2.2');
     }
-
-    // Add deployed URL as fallback
-    candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    candidates.add('http://localhost:8000');
-    candidates.add('http://localhost');
 
     // Try to find a healthy backend
     String? resolved;
@@ -318,19 +177,18 @@ class _ImageEnhancementTabState extends State<ImageEnhancementTab> {
       }
     }
 
-    // Use first candidate as fallback if none are healthy
-    resolved ??= candidates.first;
+    // Fallback to localhost:8000 if none are healthy
+    resolved ??= 'http://localhost:8000';
 
     _baseUrl = resolved;
     _isInitialized = true;
   }
 
   Future<bool> _isBackendHealthy(String base) async {
+    // Only treat a backend as healthy if API health endpoints respond.
     final paths = [
       '/api/image-enhancement/health',
       '/api/health',
-      '/',
-      '/Root'
     ];
     for (final p in paths) {
       try {
@@ -839,194 +697,9 @@ class _ImageEnhancementTabState extends State<ImageEnhancementTab> {
   }
 }
 
-// 3. Video Enhancement
-class VideoEnhancementTab extends StatefulWidget {
-  const VideoEnhancementTab({super.key});
+// 3. Video Enhancement - Now imported from video_enhancement_tab.dart
 
-  @override
-  State<VideoEnhancementTab> createState() => _VideoEnhancementTabState();
-}
-
-class _VideoEnhancementTabState extends State<VideoEnhancementTab> {
-  // Toggles
-  bool _deblur = false;
-  bool _denoise = false;
-  bool _lowLight = false;
-  bool _colorize = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Video Enhancement',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Improve the quality of a video file and generate storyboard thumbnails.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-              const Text('Upload Video',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Center(
-                  child: TextButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.cloud_upload_outlined,
-                        color: Colors.black54),
-                    label: const Text('Select Video',
-                        style: TextStyle(color: Colors.black87)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text('Enhancement Options',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _buildToggle('Deblur', _deblur,
-                            (v) => setState(() => _deblur = v)),
-                        _buildToggle('Low-light Boost', _lowLight,
-                            (v) => setState(() => _lowLight = v)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _buildToggle('Denoise', _denoise,
-                            (v) => setState(() => _denoise = v)),
-                        _buildToggle('Colorize', _colorize,
-                            (v) => setState(() => _colorize = v)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9096F6),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Run Enhancement'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggle(String label, bool value, Function(bool) onChanged) {
-    return Row(
-      children: [
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Colors.deepPurple,
-        ),
-        Text(label, style: const TextStyle(fontSize: 13)),
-      ],
-    );
-  }
-}
-
-// 4. ANPR Detection
-class AnprDetectionTab extends StatelessWidget {
-  const AnprDetectionTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'ANPR Detection',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Detect and read vehicle number plates from an image or video.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-              const Text('Upload Image or Video',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Center(
-                  child: TextButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.cloud_upload_outlined,
-                        color: Colors.black54),
-                    label: const Text('Select File',
-                        style: TextStyle(color: Colors.black87)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9096F6),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Detect Number Plates'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// 4. ANPR Detection - Now imported from anpr_detection_tab.dart
 
 // 5. Face Capture
 class FaceCaptureTab extends StatefulWidget {

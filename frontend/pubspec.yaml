@@ -39,6 +39,10 @@ dependencies:
   pin_code_fields: ^8.0.1
   url_launcher: ^6.3.2
   
+  # Video Player
+  video_player: ^2.8.2
+  chewie: ^1.7.5
+  
   # Charts
   fl_chart: ^0.66.0
   

@@ -12,10 +12,13 @@ reportlab
 numpy
 opencv-python-headless
 Pillow
-ultralytics==8.2.28
+ultralytics==8.3.240
 easyocr
 filterpy
 scipy
 torch
 torchvision
 
+
+imageio
+imageio-ffmpeg

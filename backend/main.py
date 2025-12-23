@@ -13,6 +13,9 @@ from routers.ai_investigation import router as ai_investigation_router
 from routers.legal_chat import router as legal_chat_router
 from routers.investigation_report import router as investigation_report_router
 from routers.document_drafting import router as document_drafting_router
+from routers.image_enhancement import router as image_enhancement_router
+from routers.anpr import router as anpr_router
+
 
 app = FastAPI(
     title="Police Complaint Chatbot API",
@@ -37,6 +40,15 @@ app.mount(
     name="investigation_reports",
 )
 
+# Serve ANPR processed videos
+videos_dir = Path("temp_videos")
+videos_dir.mkdir(exist_ok=True)
+app.mount(
+    "/static/anpr_videos",
+    StaticFiles(directory=str(videos_dir)),
+    name="anpr_videos",
+)
+
 app.include_router(complaint_router)
 app.include_router(ocr_router)
 # STT router is currently disabled to avoid NameError in production.
@@ -46,6 +58,9 @@ app.include_router(ai_investigation_router)
 app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
 app.include_router(document_drafting_router)
+app.include_router(image_enhancement_router)
+app.include_router(anpr_router)
+
 
 
 @app.get("/")
@@ -72,3 +87,7 @@ def ocr_health_alias():
 @app.post("/extract-case/")
 async def legacy_extract_case(file: UploadFile = File(...)):
     return await _ocr_extract_case(file)
+
+
+
+#app.include_router(anpr_router)
