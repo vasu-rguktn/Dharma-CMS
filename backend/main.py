@@ -15,6 +15,7 @@ from routers.investigation_report import router as investigation_report_router
 from routers.document_drafting import router as document_drafting_router
 import firebase_admin
 from firebase_admin import credentials
+from routers.legal_suggestions import router as legal_suggester_router
 
 # Initialize Firebase Admin SDK
 try:
@@ -37,14 +38,17 @@ app = FastAPI(
     title="Police Complaint Chatbot API",
     description="Dynamic chat → formal police summary + legal classification + investigation reports",
     version="1.1.0",
+    redirect_slashes=False,  # Disable trailing slash redirects to prevent CORS preflight issues
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Ensure static directory for generated reports exists and is mounted
@@ -66,6 +70,7 @@ app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
 app.include_router(investigation_report_router)
 app.include_router(document_drafting_router)
+app.include_router(legal_suggester_router)
 
 from routers.cases import router as cases_router
 app.include_router(cases_router)

@@ -5,17 +5,18 @@ import re
 import base64
 import io
 from dotenv import load_dotenv
-from openai import OpenAI
+import google.generativeai as genai
 from pypdf import PdfReader
 
 # ---------------- LOAD ENV ----------------
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY_Legal_queries")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
 
-if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY_Legal_queries not set")
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not set")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ---------------- ROUTER ----------------
 router = APIRouter(
@@ -71,20 +72,20 @@ def encode_image(file_bytes: bytes) -> str:
 def generate_chat_title(query: str) -> str:
     """Generate a SHORT (max 6 words) chat title"""
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Generate a short title (max 6 words) for this legal query. No quotes."},
-                {"role": "user", "content": query[:200]} # Limit context for title
-            ],
-            max_tokens=20
-        )
-        return response.choices[0].message.content.strip() or "Legal Query"
-    except:
+        title_model = genai.GenerativeModel("models/gemini-2.5-flash")
+        prompt = f"Generate a short title (max 6 words) for this legal query. No quotes.\n\nQuery: {query[:200]}"
+        response = title_model.generate_content(prompt)
+        title = response.text.strip() if response.text else "Legal Query"
+        # Limit to 6 words
+        words = title.split()[:6]
+        return " ".join(words) or "Legal Query"
+    except Exception as e:
+        print(f"Title generation error: {e}")
         return "Legal Query"
 
 
-# ---------------- ENDPOINT ----------------
+# ---------------- ENDPOINT ---------------- 
+# Using "/" with redirect_slashes=False in main.py prevents redirects
 @router.post("/", response_model=LegalChatResponse)
 async def legal_chat(
     sessionId: str = Form(...),
@@ -96,8 +97,8 @@ async def legal_chat(
     """
     clean_query = sanitize_input(message)
     file_context = ""
-    # OpenAI Vision supports multiple images in content list
-    user_content = []
+    # Gemini supports multiple images in content list
+    gemini_content = []
     
     # 1️⃣ Process Query
     final_text_prompt = f"User Query: {clean_query}"
@@ -124,45 +125,39 @@ async def legal_chat(
             elif file.content_type.startswith("image/"):
                 b64 = encode_image(file_bytes)
                 print(f"DEBUG: Encoded image. Length: {len(b64)}")
-                # Add image directly to content list
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{b64}"
+                # Determine MIME type
+                mime_type = file.content_type or "image/jpeg"
+                # Add image using Gemini's inline_data format
+                gemini_content.append({
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": b64
                     }
                 })
         
         if file_context:
             final_text_prompt += file_context
 
-    # 2️⃣ Construct Messages
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT + f"\n{files_info}"},
-    ]
-
-    # Prepend text prompt to user content
-    # Ensure text is clean
-    final_text_prompt = final_text_prompt.strip()
+    # 3️⃣ Construct Gemini Content
+    # Gemini uses a simpler format: system prompt + user content (text + images)
+    full_prompt = SYSTEM_PROMPT + f"\n{files_info}\n\n{final_text_prompt}".strip()
     
-    if user_content:
-        # If we have images, we use the list format. Text must be FIRST.
-        user_content.insert(0, {"type": "text", "text": final_text_prompt})
-        messages.append({"role": "user", "content": user_content})
+    # Build content: if images exist, use list format; otherwise just the prompt string
+    if gemini_content:
+        # Images present: text first, then images
+        gemini_content.insert(0, full_prompt)
+        content_to_send = gemini_content
     else:
-        # Text only
-        messages.append({"role": "user", "content": final_text_prompt})
+        # Text only: just send the prompt string
+        content_to_send = full_prompt
     
-    print(f"DEBUG: Sending to OpenAI. Messages count: {len(messages)}")
+    print(f"DEBUG: Sending to Gemini. Content type: {type(content_to_send).__name__}")
 
     try:
-        # 3️⃣ Generate Answer
-        answer_response = client.chat.completions.create(
-            model="gpt-4o-mini", 
-            messages=messages,
-            max_tokens=1500
-        )
+        # 4️⃣ Generate Answer with Gemini
+        answer_response = model.generate_content(content_to_send)
 
-        reply = answer_response.choices[0].message.content
+        reply = answer_response.text.strip() if answer_response.text else "I apologize, but I couldn't generate a response. Please try again."
 
         # 4️⃣ Generate Title
         title = generate_chat_title(clean_query)

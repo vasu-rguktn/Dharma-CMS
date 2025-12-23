@@ -20,7 +20,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   final _draftController =
       TextEditingController(); // NEW: Controller for editable draft
   // Use 10.0.2.2 for Android emulator, localhost for web/iOS
-  final _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8000'));
+  final _dio = Dio(BaseOptions(baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app'));
 
   String? _recipientType;
   bool _isLoading = false;

@@ -131,7 +131,8 @@ class DraftingResponse(BaseModel):
     draft: str
 
 # ───────────────── ENDPOINT ─────────────────
-@router.post("/", response_model=DraftingResponse)
+# Use empty string to avoid trailing slash redirect (which breaks CORS preflight)
+@router.post("", response_model=DraftingResponse)
 async def generate_document_draft(req: DraftingRequest):
     try:
         print(f"DEBUG: Processing Document Draft Request for recipient: {req.recipientType}")

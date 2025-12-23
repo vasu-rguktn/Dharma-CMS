@@ -6,9 +6,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:Dharma/models/user_profile.dart';
 import 'package:Dharma/utils/validators.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _sessionTimestampKey = 'auth_session_timestamp';
+  static const String _lastActivityKey = 'auth_last_activity';
+  static const Duration _sessionDuration = Duration(hours: 3);
 
   User? _user;
   UserProfile? _userProfile;
@@ -46,7 +51,103 @@ class AuthProvider with ChangeNotifier {
   }
 
   AuthProvider() {
+    _initializeSession();
     _auth.authStateChanges().listen(_onAuthStateChanged);
+  }
+
+  // ── SESSION MANAGEMENT ───────────────────────────────────────────────
+  
+  /// Initialize session: check if existing session is still valid
+  /// Note: This is called before Firebase Auth restores the user, so we only check
+  /// if there's an expired session. The actual session validation happens in _onAuthStateChanged
+  Future<void> _initializeSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastActivityStr = prefs.getString(_lastActivityKey);
+      
+      if (lastActivityStr != null) {
+        final lastActivity = DateTime.parse(lastActivityStr);
+        final now = DateTime.now();
+        final timeSinceLastActivity = now.difference(lastActivity);
+        
+        // If session expired (more than 3 hours since last activity), clear it
+        // But don't sign out here - Firebase Auth will restore the user, and we'll handle it in _onAuthStateChanged
+        if (timeSinceLastActivity > _sessionDuration) {
+          debugPrint('AuthProvider: Session expired (${timeSinceLastActivity.inHours} hours). Will clear on auth state change...');
+          // Don't sign out here - let Firebase restore first, then we'll check in _onAuthStateChanged
+        } else {
+          debugPrint('AuthProvider: Session valid (${timeSinceLastActivity.inMinutes} minutes since last activity)');
+        }
+      } else {
+        debugPrint('AuthProvider: No existing session found - will save when Firebase restores user');
+      }
+    } catch (e) {
+      debugPrint('AuthProvider: Error initializing session: $e');
+    }
+  }
+
+  /// Save session timestamp on successful login
+  Future<void> _saveSessionTimestamp() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      await prefs.setString(_sessionTimestampKey, now.toIso8601String());
+      await prefs.setString(_lastActivityKey, now.toIso8601String());
+      debugPrint('AuthProvider: ✅ Session timestamp saved at ${now.toIso8601String()}');
+      
+      // Verify it was saved
+      final saved = prefs.getString(_lastActivityKey);
+      debugPrint('AuthProvider: ✅ Verified session saved: $saved');
+    } catch (e) {
+      debugPrint('AuthProvider: ❌ Error saving session timestamp: $e');
+    }
+  }
+
+  /// Update last activity timestamp (called when user interacts with app)
+  Future<void> _updateLastActivity() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      await prefs.setString(_lastActivityKey, now.toIso8601String());
+    } catch (e) {
+      debugPrint('AuthProvider: Error updating last activity: $e');
+    }
+  }
+
+  /// Clear session data
+  Future<void> _clearSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_sessionTimestampKey);
+      await prefs.remove(_lastActivityKey);
+      debugPrint('AuthProvider: Session cleared');
+    } catch (e) {
+      debugPrint('AuthProvider: Error clearing session: $e');
+    }
+  }
+
+  /// Check if current session is valid
+  Future<bool> isSessionValid() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastActivityStr = prefs.getString(_lastActivityKey);
+      
+      if (lastActivityStr == null) return false;
+      
+      final lastActivity = DateTime.parse(lastActivityStr);
+      final now = DateTime.now();
+      final timeSinceLastActivity = now.difference(lastActivity);
+      
+      return timeSinceLastActivity <= _sessionDuration;
+    } catch (e) {
+      debugPrint('AuthProvider: Error checking session validity: $e');
+      return false;
+    }
+  }
+
+  /// Update last activity (call this periodically or on user interactions)
+  Future<void> updateLastActivity() async {
+    await _updateLastActivity();
   }
 
   // ── AUTH STATE LISTENER ───────────────────────────────────────────
@@ -56,7 +157,44 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     if (firebaseUser != null) {
-      debugPrint('AuthProvider: auth state changed -> user uid=${firebaseUser.uid}');
+      debugPrint('AuthProvider: 🔐 auth state changed -> user uid=${firebaseUser.uid}');
+      
+      // Check if we have a session timestamp - if not, this is a restored session, save it
+      final prefs = await SharedPreferences.getInstance();
+      final lastActivityStr = prefs.getString(_lastActivityKey);
+      
+      debugPrint('AuthProvider: 📋 Checking session - lastActivityStr: ${lastActivityStr != null ? "exists" : "null"}');
+      
+      if (lastActivityStr == null) {
+        // No session timestamp found - this is likely a restored Firebase session
+        // Save the session timestamp to maintain it
+        debugPrint('AuthProvider: 💾 No session timestamp found, saving restored Firebase session...');
+        await _saveSessionTimestamp();
+      } else {
+        // We have a session timestamp - check if it's still valid
+        final lastActivity = DateTime.parse(lastActivityStr);
+        final now = DateTime.now();
+        final timeSinceLastActivity = now.difference(lastActivity);
+        debugPrint('AuthProvider: ⏰ Session check - Last activity: $lastActivity, Now: $now, Duration: ${timeSinceLastActivity.inMinutes} minutes');
+        
+        final sessionValid = await isSessionValid();
+        if (!sessionValid) {
+          debugPrint('AuthProvider: ⏰ Session expired (${timeSinceLastActivity.inHours} hours), signing out...');
+          await _auth.signOut();
+          await _clearSession();
+          _user = null;
+          _userProfile = null;
+          _isLoading = false;
+          _isProfileLoading = false;
+          notifyListeners();
+          return;
+        } else {
+          // Session is valid, update last activity
+          debugPrint('AuthProvider: ✅ Session valid, updating last activity...');
+          await _updateLastActivity();
+        }
+      }
+
       try {
         await _loadUserProfile(firebaseUser.uid);
       } catch (e, st) {
@@ -143,6 +281,8 @@ class AuthProvider with ChangeNotifier {
         email: email,
         password: password,
       );
+      // Save session timestamp on successful login
+      await _saveSessionTimestamp();
       return credential;
     } on FirebaseAuthException catch (e) {
       debugPrint('signInWithEmail error: ${e.message}');
@@ -171,21 +311,25 @@ class AuthProvider with ChangeNotifier {
   // ── GOOGLE SIGN IN ────────────────────────────────────────────────
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      UserCredential? credential;
       if (kIsWeb) {
         final googleProvider = GoogleAuthProvider();
-        return await _auth.signInWithPopup(googleProvider);
+        credential = await _auth.signInWithPopup(googleProvider);
       } else {
         final googleSignIn = GoogleSignIn();
         final googleUser = await googleSignIn.signIn();
         if (googleUser == null) return null;
 
         final googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
+        final authCredential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
-        return await _auth.signInWithCredential(credential);
+        credential = await _auth.signInWithCredential(authCredential);
       }
+      // Save session timestamp on successful login
+      await _saveSessionTimestamp();
+      return credential;
     } on FirebaseAuthException catch (e) {
       debugPrint('signInWithGoogle error: ${e.message}');
       rethrow;
@@ -245,13 +389,17 @@ class AuthProvider with ChangeNotifier {
       verificationId: _verificationId!,
       smsCode: otp,
     );
-    return await _auth.signInWithCredential(credential);
+    final userCredential = await _auth.signInWithCredential(credential);
+    // Save session timestamp on successful login
+    await _saveSessionTimestamp();
+    return userCredential;
   }
 
   // ── SIGN OUT ──────────────────────────────────────────────────────
   Future<void> signOut() async {
     await _auth.signOut();
     if (!kIsWeb) await GoogleSignIn().signOut();
+    await _clearSession(); // Clear session data on logout
     _verificationId = null;
     notifyListeners();
   }
