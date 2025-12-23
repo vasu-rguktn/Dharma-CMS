@@ -15,6 +15,7 @@ from routers.investigation_report import router as investigation_report_router
 from routers.document_drafting import router as document_drafting_router
 import firebase_admin
 from firebase_admin import credentials
+from routers.legal_suggestions import router as legal_suggester_router
 
 # Initialize Firebase Admin SDK
 try:
@@ -69,6 +70,7 @@ app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
 app.include_router(investigation_report_router)
 app.include_router(document_drafting_router)
+app.include_router(legal_suggester_router)
 
 from routers.cases import router as cases_router
 app.include_router(cases_router)
