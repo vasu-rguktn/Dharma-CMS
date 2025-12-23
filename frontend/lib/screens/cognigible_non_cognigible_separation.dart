@@ -119,6 +119,9 @@ class _CognigibleNonCognigibleSeparationScreenState
           widget.complaintData?['summary'] ??
           widget.complaintData?['complaint'] ??
           '',
+      // New Fields for Auto-fill
+      'incident_address': widget.complaintData?['incident_address'] ?? '',
+      'incident_details': widget.complaintData?['incident_details'] ?? '',
     };
 
     return Scaffold(

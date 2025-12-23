@@ -318,7 +318,8 @@
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -353,6 +354,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   bool _isLoading = false;
   bool _errored = false;
   bool _inputError = false;
+  bool _isDynamicMode = false;
+  List<Map<String, String>> _dynamicHistory = [];
 
   // STT (Speech-to-Text) variables
   // STT (Speech-to-Text) variables
@@ -362,7 +365,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
   String _currentTranscript = '';
   DateTime? _recordingStartTime;
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
-  bool _isRestarting = false; // Track if restart is in progress to prevent BUSY errors
+  bool _isRestarting =
+      false; // Track if restart is in progress to prevent BUSY errors
   DateTime? _lastSpeechDetected; // Track when speech was last detected
   int _busyRetryCount = 0; // Track BUSY error retries
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
@@ -383,34 +387,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _flutterTts.setPitch(1.0);
   }
 
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final localizations = AppLocalizations.of(context)!;
-    _questions = [
-      _ChatQ(key: 'full_name', question: localizations.fullNameQuestion),
-      _ChatQ(
-          key: 'address',
-          question: localizations.addressQuestion ??
-              'Where do you live (place / area)?'),
-      _ChatQ(
-          key: 'phone',
-          question:
-              localizations.phoneQuestion ?? 'What is your phone number?'),
-      _ChatQ(
-          key: 'complaint_type',
-          question: localizations.complaintTypeQuestion ??
-              'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)'),
-      _ChatQ(
-          key: 'details',
-          question: localizations.detailsQuestion ??
-              'Please describe your complaint in detail.'),
-    ];
-    
-    // Initialize STT Service block removed
 
-    
+    // Static questions removed.
+
     if (!_hasStarted) {
       _hasStarted = true;
       _startChatFlow();
@@ -422,17 +404,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
 
     setState(() {
       _messages.clear();
-      _currentQ = -2;
+      _dynamicHistory.clear();
+      _answers.clear();
+      _isDynamicMode = true; // Always dynamic logic now
+      _currentQ = 0; // Not used but resetting
       _allowInput = false;
       _errored = false;
     });
-    _addBot(localizations.welcomeToDharma ?? 'Welcome to Dharma');
+    _addBot(localizations.welcomeToDharma);
     await Future.delayed(const Duration(seconds: 1));
-    _addBot(localizations.letUsBegin ?? 'Let us begin...');
-    _currentQ = -1;
-    setState(() {});
-    await Future.delayed(const Duration(seconds: 2));
-    _askNextQ();
+    _addBot(localizations.letUsBegin);
+    await Future.delayed(const Duration(seconds: 1)); // Small delay for flow
+
+    // Explicitly ask for description instead of calling backend immediately
+    String startMsg = localizations.detailsQuestion ??
+        'Please describe your complaint in detail.';
+    _addBot(startMsg);
+    _speak(startMsg);
+
+    setState(() {
+      _allowInput = true; // Wait for user info
+    });
   }
 
   void _addBot(String content) {
@@ -460,40 +452,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     });
   }
 
-  void _askNextQ() {
-    _currentQ++;
-    if (_currentQ < _questions.length) {
-      _addBot(_questions[_currentQ].question);
-      _speak(_questions[_currentQ].question);
-      _allowInput = true;
-      setState(() => _inputError = false);
-      Timer(
-          const Duration(milliseconds: 600), () => _inputFocus.requestFocus());
-    } else {
-      _submitToBackend();
-    }
-  }
-
-  Future<void> _submitToBackend() async {
+  Future<void> _processDynamicStep() async {
     final localizations = AppLocalizations.of(context)!;
-    // prevent double submit
-    if (_isLoading) return;
-    // validate required fields
-    final missing = <String>[];
-    for (final q in _questions) {
-      if (!(_answers.containsKey(q.key) &&
-          _answers[q.key]!.trim().isNotEmpty)) {
-        missing.add(q.key);
-      }
-    }
-    if (missing.isNotEmpty) {
-      _addBot(localizations.pleaseAnswerAllQuestions(missing as String) ??
-          'Please answer all questions before submitting. Missing: ${missing.join(', ')}');
-      setState(() {
-        _allowInput = true;
-      });
-      return;
-    }
 
     setState(() {
       _isLoading = true;
@@ -505,124 +465,149 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     String baseUrl;
     if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
-      // baseUrl = 'https://dharma-backend-x1g4.onrender.com';
-       baseUrl="https://fastapi-app-335340524683.asia-south1.run.app";
+      baseUrl = "http://127.0.0.1:8000";
     } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      // baseUrl = 'http://127.0.0.1:8000';
-       baseUrl="https://fastapi-app-335340524683.asia-south1.run.app";
+      baseUrl = "http://10.0.2.2:8000";
     } else {
       // iOS simulator / other platforms
-      // baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
-       baseUrl="https://fastapi-app-335340524683.asia-south1.run.app";
+      baseUrl = "http://127.0.0.1:8000";
     }
 
     final localeCode = Localizations.localeOf(context).languageCode;
 
+    // Construct Payload
     final payload = {
       'full_name': _answers['full_name'] ?? '',
       'address': _answers['address'] ?? '',
       'phone': _answers['phone'] ?? _answers['phone_number'] ?? '',
       'complaint_type': _answers['complaint_type'] ?? '',
-      'details': _answers['details'] ?? '',
+      'initial_details': _answers['details'] ??
+          '', // This was the answer to the last static question
       'language': localeCode,
+      'chat_history': _dynamicHistory,
     };
 
     try {
-      final resp = await _dio.post(
-        '$baseUrl/complaint/summarize',
-        data: payload,
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
-      );
+      final resp = await _dio
+          .post(
+            '$baseUrl/complaint/chat-step',
+            data: payload,
+            options: Options(headers: {'Content-Type': 'application/json'}),
+          )
+          .timeout(const Duration(seconds: 30));
 
-      final data = resp.data ?? {};
-      _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
-      final formalSummary = (data is Map && data['formal_summary'] != null)
-          ? data['formal_summary'].toString()
-          : '(no summary)';
-      final classification = (data is Map && data['classification'] != null)
-          ? data['classification'].toString()
-          : '(none)';
-      final originalClassification =
-          (data is Map && data['original_classification'] != null)
-              ? data['original_classification'].toString()
-              : classification; // Fallback to displayed one if missing
+      final data = resp.data;
+      print("Backend Response: $data"); // DEBUG LOG
 
-      final Map<String, String> localizedAnswers =
-          Map<String, String>.from(_answers);
-      final localizedFields = (data is Map) ? data['localized_fields'] : null;
-      if (localizedFields is Map) {
-        localizedFields.forEach((key, value) {
-          if (key is String && value != null) {
-            localizedAnswers[key] = value.toString();
-          }
+      if (data['status'] == 'question') {
+        String question = data['message'] ?? '';
+        if (question.trim().isEmpty) {
+          question = "Could you please provide more details?";
+        }
+        _addBot(question);
+        _speak(question);
+
+        // Add AI's question to history so LLM knows what it asked
+        _dynamicHistory.add({'role': 'assistant', 'content': question});
+
+        setState(() {
+          _isLoading = false;
+          _allowInput = true;
+          _inputError = false;
         });
+        Timer(const Duration(milliseconds: 600),
+            () => _inputFocus.requestFocus());
+      } else if (data['status'] == 'done') {
+        // FINISHED
+        final finalResp = data['final_response'];
+        _handleFinalResponse(finalResp);
       }
-
-      // update stored answers to the localized variant so downstream screens see the selected language
-      _answers
-        ..clear()
-        ..addAll(localizedAnswers);
-
-      _addBot(formalSummary);
-      _addBot(localizations.classification(classification as String) ??
-          'Classification: $classification');
-
-      setState(() {
-        _isLoading = false;
-        _allowInput = false;
-      });
-
-      // navigate to details screen after a small delay, ensure still mounted
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!mounted) return;
-        context.go(
-          '/ai-chatbot-details',
-          extra: {
-            'answers': Map<String, String>.from(_answers),
-            'summary': formalSummary,
-            'classification': classification,
-            'originalClassification': originalClassification, // Pass this!
-          },
-        );
-      });
-    } on DioError catch (e) {
+    } catch (e) {
       String msg = localizations.somethingWentWrong ??
           'Sorry, something went wrong. Please try again later.';
-      if (e.response != null && e.response?.data != null) {
-        // try to show server-provided message if present
-        try {
-          final d = e.response!.data;
-          if (d is Map && d['detail'] != null)
-            msg = d['detail'].toString();
-          else if (d is Map && d['message'] != null)
-            msg = d['message'].toString();
-          else if (d is String) msg = d;
-        } catch (_) {}
-      } else if (e.error != null) {
-        msg = e.error.toString();
+      if (e is DioError) {
+        if (e.response != null && e.response?.data != null) {
+          // try to show server-provided message if present
+          try {
+            final d = e.response!.data;
+            if (d is Map && d['detail'] != null)
+              msg = d['detail'].toString();
+            else if (d is Map && d['message'] != null)
+              msg = d['message'].toString();
+            else if (d is String) msg = d;
+          } catch (_) {}
+        }
       }
       _addBot(msg);
       setState(() {
         _isLoading = false;
-        _allowInput = false;
-        _errored = true;
-      });
-    } catch (e) {
-      _addBot('Unexpected error: ${e.toString()}');
-      setState(() {
-        _isLoading = false;
-        _allowInput = false;
+        _allowInput = true; // Allow retry?
         _errored = true;
       });
     }
   }
 
+  void _handleFinalResponse(dynamic data) {
+    final localizations = AppLocalizations.of(context)!;
+
+    _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
+    final formalSummary = (data is Map && data['formal_summary'] != null)
+        ? data['formal_summary'].toString()
+        : '(no summary)';
+    final classification = (data is Map && data['classification'] != null)
+        ? data['classification'].toString()
+        : '(none)';
+    final originalClassification =
+        (data is Map && data['original_classification'] != null)
+            ? data['original_classification'].toString()
+            : classification;
+
+    final Map<String, String> localizedAnswers =
+        Map<String, String>.from(_answers);
+    final localizedFields = (data is Map) ? data['localized_fields'] : null;
+    if (localizedFields is Map) {
+      localizedFields.forEach((key, value) {
+        if (key is String && value != null) {
+          localizedAnswers[key] = value.toString();
+        }
+      });
+    }
+
+    // update stored answers
+    _answers
+      ..clear()
+      ..addAll(localizedAnswers);
+
+    _addBot(formalSummary);
+    _addBot(localizations.classification(classification as String) ??
+        'Classification: $classification');
+
+    setState(() {
+      _isLoading = false;
+      _allowInput = false;
+    });
+
+    // navigate to details screen
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+      context.go(
+        '/ai-chatbot-details',
+        extra: {
+          'answers': Map<String, String>.from(_answers),
+          'summary': formalSummary,
+          'classification': classification,
+          'originalClassification': originalClassification,
+        },
+      );
+    });
+  }
+
   void _handleSend() async {
-    _flutterTts.stop();
-    
+    try {
+      await _flutterTts.stop();
+    } catch (_) {}
+
     // If recording is active, stop it first and use the transcript
     if (_isRecording) {
       await _speech.stop();
@@ -640,10 +625,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       // Small delay to ensure transcript is set
       await Future.delayed(const Duration(milliseconds: 100));
     }
-    
+
     final text = _controller.text.trim();
     if (!_allowInput || _isLoading) return;
-    
+
     if (text.isEmpty) {
       setState(() => _inputError = true);
       _inputFocus.requestFocus();
@@ -653,13 +638,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     _controller.clear();
     _addUser(text);
 
-    if (_currentQ >= 0 && _currentQ < _questions.length) {
-      _answers[_questions[_currentQ].key] = text;
+    // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
+    // AND we do NOT add it to history (because backend uses initial_details as context).
+    // Subsequent messages are added to history.
+    if (_answers['details'] == null || _answers['details']!.isEmpty) {
+      _answers['details'] = text;
+    } else {
+      _dynamicHistory.add({'role': 'user', 'content': text});
     }
 
     _allowInput = false;
     setState(() {});
-    Future.delayed(const Duration(milliseconds: 600), _askNextQ);
+
+    // Explicitly call backend step
+    _processDynamicStep();
   }
 
   /// Show attachment options (photos, videos, PDFs, audio)
@@ -685,7 +677,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   'Attach File',
                   style: TextStyle(
@@ -707,16 +700,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   child: const Icon(Icons.camera_alt, color: orange, size: 24),
                 ),
                 title: const Text('Take Photo'),
-                subtitle: Text('Capture a new photo', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                subtitle: Text('Capture a new photo',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  final image =
+                      await _imagePicker.pickImage(source: ImageSource.camera);
                   if (image != null && mounted) {
                     setState(() {
                       _attachedFiles.add(image.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Photo attached: ${image.path.split('/').last}')),
+                      SnackBar(
+                          content: Text(
+                              'Photo attached: ${image.path.split('/').last}')),
                     );
                   }
                 },
@@ -728,19 +726,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                     color: orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.photo_library, color: orange, size: 24),
+                  child:
+                      const Icon(Icons.photo_library, color: orange, size: 24),
                 ),
                 title: const Text('Choose from Gallery'),
-                subtitle: Text('Select photo or video', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                subtitle: Text('Select photo or video',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final image = await _imagePicker.pickImage(source: ImageSource.gallery);
+                  final image =
+                      await _imagePicker.pickImage(source: ImageSource.gallery);
                   if (image != null && mounted) {
                     setState(() {
                       _attachedFiles.add(image.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Photo attached: ${image.path.split('/').last}')),
+                      SnackBar(
+                          content: Text(
+                              'Photo attached: ${image.path.split('/').last}')),
                     );
                   }
                 },
@@ -756,16 +760,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   child: const Icon(Icons.videocam, color: orange, size: 24),
                 ),
                 title: const Text('Record Video'),
-                subtitle: Text('Capture a new video', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                subtitle: Text('Capture a new video',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final video = await _imagePicker.pickVideo(source: ImageSource.camera);
+                  final video =
+                      await _imagePicker.pickVideo(source: ImageSource.camera);
                   if (video != null && mounted) {
                     setState(() {
                       _attachedFiles.add(video.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Video attached: ${video.path.split('/').last}')),
+                      SnackBar(
+                          content: Text(
+                              'Video attached: ${video.path.split('/').last}')),
                     );
                   }
                 },
@@ -781,7 +790,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   child: const Icon(Icons.attach_file, color: orange, size: 24),
                 ),
                 title: const Text('Upload File'),
-                subtitle: Text('PDF, Audio, or other files', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                subtitle: Text('PDF, Audio, or other files',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
                   final result = await FilePicker.platform.pickFiles(
@@ -790,10 +801,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   );
                   if (result != null && mounted) {
                     setState(() {
-                      _attachedFiles.addAll(result.files.map((f) => f.path ?? f.name));
+                      _attachedFiles
+                          .addAll(result.files.map((f) => f.path ?? f.name));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${result.files.length} file(s) attached')),
+                      SnackBar(
+                          content:
+                              Text('${result.files.length} file(s) attached')),
                     );
                   }
                 },
@@ -810,7 +824,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                       Expanded(
                         child: Text(
                           '${_attachedFiles.length} file(s) attached',
-                          style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                          style: TextStyle(
+                              color: Colors.grey.shade700, fontSize: 14),
                         ),
                       ),
                       TextButton(
@@ -820,10 +835,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                           });
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Attachments removed')),
+                            const SnackBar(
+                                content: Text('Attachments removed')),
                           );
                         },
-                        child: const Text('Clear', style: TextStyle(color: Colors.red)),
+                        child: const Text('Clear',
+                            style: TextStyle(color: Colors.red)),
                       ),
                     ],
                   ),
@@ -844,28 +861,29 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       print('Restart already in progress, skipping...');
       return;
     }
-    
+
     // Check throttle - reduced from 2000ms to 500ms for faster response
     final now = DateTime.now();
-    if (_lastRestartAttempt != null && 
+    if (_lastRestartAttempt != null &&
         now.difference(_lastRestartAttempt!).inMilliseconds < 500) {
       print('Too soon since last restart attempt, skipping...');
       return;
     }
-    
+
     _isRestarting = true;
     _lastRestartAttempt = now;
-    
+
     try {
       // Double-check we're still recording
       if (!mounted || !_isRecording) {
         _isRestarting = false;
         return;
       }
-      
+
       // Always cancel any existing session first to ensure clean state
       // This is critical - even if isListening is false, the session might be in a "done" state
-      print('Canceling any existing session before restart (isListening: ${_speech.isListening})...');
+      print(
+          'Canceling any existing session before restart (isListening: ${_speech.isListening})...');
       try {
         await _speech.stop();
         await _speech.cancel();
@@ -874,18 +892,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       } catch (e) {
         print('Error canceling session: $e');
       }
-      
+
       // Final check before starting
       if (!mounted || !_isRecording) {
         _isRestarting = false;
         return;
       }
-      
+
       print('Starting new listening session after restart...');
       await _speech.listen(
         localeId: sttLang,
-        listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
-        pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
+        listenFor: const Duration(
+            hours: 1), // Listen for up to 1 hour - continuous listening
+        pauseFor: const Duration(
+            hours:
+                1), // Allow very long pauses - treat silence as thinking time
         partialResults: true,
         cancelOnError: false,
         onResult: (result) {
@@ -894,10 +915,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
               // Simplified and more permissive transcript accumulation
               final newWords = result.recognizedWords.trim();
               if (newWords.isNotEmpty) {
-                print('onResult (restart): newWords="$newWords", currentTranscript="$_currentTranscript"');
+                print(
+                    'onResult (restart): newWords="$newWords", currentTranscript="$_currentTranscript"');
                 // Update last speech detected timestamp
                 _lastSpeechDetected = DateTime.now();
-                
+
                 if (_currentTranscript.isEmpty) {
                   // First words
                   _currentTranscript = newWords;
@@ -916,8 +938,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   final trimmedCurrent = _currentTranscript.trim();
                   if (trimmedCurrent.isNotEmpty) {
                     final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
-                    if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
-                        lastChar != '!' && lastChar != '?' && lastChar != ':') {
+                    if (lastChar != ' ' &&
+                        lastChar != '.' &&
+                        lastChar != ',' &&
+                        lastChar != '!' &&
+                        lastChar != '?' &&
+                        lastChar != ':') {
                       _currentTranscript = '$trimmedCurrent $newWords';
                     } else {
                       _currentTranscript = '$trimmedCurrent$newWords';
@@ -927,29 +953,29 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   }
                 }
                 _controller.text = _currentTranscript;
-                print('onResult (restart): updated transcript to "$_currentTranscript"');
+                print(
+                    'onResult (restart): updated transcript to "$_currentTranscript"');
               }
             });
           }
         },
       );
-      
+
       _busyRetryCount = 0; // Reset retry count on success
       _isRestarting = false;
       print('Successfully restarted speech recognition');
-      
     } catch (e) {
       _isRestarting = false;
       final errorStr = e.toString().toLowerCase();
-      
+
       // Handle BUSY errors specifically
       if (errorStr.contains('busy') || errorStr.contains('already')) {
         _busyRetryCount++;
         print('BUSY error detected (attempt $_busyRetryCount), will retry...');
-        
+
         // Exponential backoff: 1s, 2s, 4s, 8s...
         final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
-        
+
         if (_busyRetryCount <= 5 && mounted && _isRecording) {
           Future.delayed(Duration(milliseconds: delayMs), () {
             if (mounted && _isRecording && !_speech.isListening) {
@@ -1004,27 +1030,30 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       await _flutterTts.stop();
       await _speech.stop(); // Stop any existing session
       await _speech.cancel(); // Cancel to fully reset
-      
+
       // Small delay to ensure clean state
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       bool available = await _speech.initialize(
         onError: (val) {
           print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
           final errorMsg = val.errorMsg.toLowerCase();
-          
+
           // For continuous listening: Treat all errors as non-fatal
           // Silence and "no match" are normal - just continue listening
           if (errorMsg.contains('no_match') || errorMsg.contains('no match')) {
-            print('No match error detected - treating as silence/pause, continuing to listen...');
+            print(
+                'No match error detected - treating as silence/pause, continuing to listen...');
             // Don't do anything - just let it continue listening
             // The status handler will restart if needed
             return;
           }
-          
+
           // For other errors, only stop on truly critical errors
           // Most errors are temporary and should not stop continuous listening
-          if (val.permanent && (errorMsg.contains('permission') || errorMsg.contains('denied'))) {
+          if (val.permanent &&
+              (errorMsg.contains('permission') ||
+                  errorMsg.contains('denied'))) {
             // Only stop on permission errors - these are truly critical
             if (mounted) {
               setState(() {
@@ -1037,7 +1066,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
             }
           } else {
             // All other errors (temporary or non-critical) - just restart listening
-            print('Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
+            print(
+                'Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
             if (mounted && _isRecording) {
               Future.delayed(const Duration(milliseconds: 500), () {
                 if (mounted && _isRecording && !_speech.isListening) {
@@ -1051,13 +1081,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           // For continuous listening: IGNORE "done", "notListening", "noSpeech", "noMatch" completely
           // These are just SDK status updates during pauses - we treat them as normal, not completion
           // We do NOT restart or cancel - we just keep listening
-          if (val == 'done' || val == 'notListening' || val == 'noSpeech' || val == 'noMatch') {
+          if (val == 'done' ||
+              val == 'notListening' ||
+              val == 'noSpeech' ||
+              val == 'noMatch') {
             // Completely ignore these statuses - they're just pause indicators, not completion
             // The SDK will continue listening if we don't interfere
             // Only restart if speech recognition actually stopped (checked separately)
             return;
           }
-          
+
           // Only handle critical statuses
           if (val == 'error' || val == 'aborted') {
             print('STT Status: $val - Critical error, stopping recording');
@@ -1071,7 +1104,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
             // Speech recognition is active - this is good, no action needed
             print('STT Status: listening - Active and listening');
           }
-          
+
           // Periodically check if we need to restart (only if actually stopped)
           // Do this check less frequently to avoid interference
           if (_isRecording && mounted && val == 'listening') {
@@ -1091,13 +1124,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
           _busyRetryCount = 0; // Reset BUSY retry count
           _lastSpeechDetected = null; // Reset last speech timestamp
         });
-        
+
         // Use try-catch for initial listen to handle BUSY errors
         try {
           await _speech.listen(
             localeId: sttLang,
-            listenFor: const Duration(hours: 1), // Listen for up to 1 hour - continuous listening
-            pauseFor: const Duration(hours: 1), // Allow very long pauses - treat silence as thinking time
+            listenFor: const Duration(
+                hours: 1), // Listen for up to 1 hour - continuous listening
+            pauseFor: const Duration(
+                hours:
+                    1), // Allow very long pauses - treat silence as thinking time
             partialResults: true, // Get partial results as user speaks
             cancelOnError: false, // Don't cancel on errors, keep listening
             onResult: (result) {
@@ -1106,10 +1142,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   // Simplified and more permissive transcript accumulation
                   final newWords = result.recognizedWords.trim();
                   if (newWords.isNotEmpty) {
-                    print('onResult: newWords="$newWords", currentTranscript="$_currentTranscript"');
+                    print(
+                        'onResult: newWords="$newWords", currentTranscript="$_currentTranscript"');
                     // Update last speech detected timestamp
                     _lastSpeechDetected = DateTime.now();
-                    
+
                     if (_currentTranscript.isEmpty) {
                       // First words
                       _currentTranscript = newWords;
@@ -1127,9 +1164,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                       // Check if we need to add a space
                       final trimmedCurrent = _currentTranscript.trim();
                       if (trimmedCurrent.isNotEmpty) {
-                        final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
-                        if (lastChar != ' ' && lastChar != '.' && lastChar != ',' && 
-                            lastChar != '!' && lastChar != '?' && lastChar != ':') {
+                        final lastChar =
+                            trimmedCurrent[trimmedCurrent.length - 1];
+                        if (lastChar != ' ' &&
+                            lastChar != '.' &&
+                            lastChar != ',' &&
+                            lastChar != '!' &&
+                            lastChar != '?' &&
+                            lastChar != ':') {
                           _currentTranscript = '$trimmedCurrent $newWords';
                         } else {
                           _currentTranscript = '$trimmedCurrent$newWords';
@@ -1139,7 +1181,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                       }
                     }
                     _controller.text = _currentTranscript;
-                    print('onResult: updated transcript to "$_currentTranscript"');
+                    print(
+                        'onResult: updated transcript to "$_currentTranscript"');
                   }
                 });
               }
@@ -1182,7 +1225,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
     final langCode = Localizations.localeOf(context).languageCode;
     String ttsLang = langCode == 'te' ? 'te-IN' : 'en-US';
     if (_textContainsTelugu(text)) ttsLang = 'te-IN';
-    
+
     try {
       await _flutterTts.setLanguage(ttsLang);
       await _flutterTts.speak(text);
@@ -1197,7 +1240,6 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
       }
     }
   }
-
 
   @override
   void dispose() {
@@ -1307,9 +1349,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                   // Timer
                   if (_recordingStartTime != null)
                     StreamBuilder<DateTime>(
-                      stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+                      stream: Stream.periodic(
+                          const Duration(seconds: 1), (_) => DateTime.now()),
                       builder: (context, snapshot) {
-                        final duration = DateTime.now().difference(_recordingStartTime!);
+                        final duration =
+                            DateTime.now().difference(_recordingStartTime!);
                         final minutes = duration.inMinutes;
                         final seconds = duration.inSeconds % 60;
                         return Text(
@@ -1361,7 +1405,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                 shadowColor: Colors.black.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -1400,15 +1445,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
                           child: TextField(
                             controller: _controller,
                             focusNode: _inputFocus,
-                            maxLines: null,
+                            maxLines: 1,
                             minLines: 1,
-                            textInputAction: TextInputAction.newline,
+                            textInputAction: TextInputAction.send,
                             decoration: InputDecoration(
-                              hintText:
-                                  _currentQ >= 0 && _currentQ < _questions.length
-                                      ? _questions[_currentQ].question
-                                      : localizations.typeMessage ??
-                                          'Type your message...',
+                              hintText: _currentQ >= 0 &&
+                                      _currentQ < _questions.length
+                                  ? _questions[_currentQ].question
+                                  : localizations.typeMessage ??
+                                      'Type your message...',
                               hintStyle: TextStyle(
                                 color: Colors.grey.shade500,
                                 fontSize: 13,
@@ -1616,7 +1661,7 @@ class _AnimatedWaveState extends State<_AnimatedWave>
         final maxExpansion = 35.0;
         final currentSize = baseSize + (_animation.value * maxExpansion);
         final opacity = 1.0 - _animation.value;
-        
+
         return Center(
           child: Container(
             width: currentSize,
@@ -1650,7 +1695,24 @@ class _WaveformVisualization extends StatefulWidget {
 class _WaveformVisualizationState extends State<_WaveformVisualization>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final List<double> _barHeights = [0.3, 0.6, 0.4, 0.8, 0.5, 0.7, 0.4, 0.6, 0.5, 0.7, 0.4, 0.8, 0.5, 0.6, 0.4, 0.7];
+  final List<double> _barHeights = [
+    0.3,
+    0.6,
+    0.4,
+    0.8,
+    0.5,
+    0.7,
+    0.4,
+    0.6,
+    0.5,
+    0.7,
+    0.4,
+    0.8,
+    0.5,
+    0.6,
+    0.4,
+    0.7
+  ];
 
   @override
   void initState() {
@@ -1673,7 +1735,7 @@ class _WaveformVisualizationState extends State<_WaveformVisualization>
       animation: _controller,
       builder: (context, child) {
         const orange = Color(0xFFFC633C);
-        
+
         if (!widget.isActive) {
           // Show minimal static bars when not actively speaking
           return Row(
@@ -1701,10 +1763,13 @@ class _WaveformVisualizationState extends State<_WaveformVisualization>
             // Vary the height based on animation and index for wave effect
             final baseHeight = _barHeights[index];
             final phase = (index % 4) * 0.5;
-            final animatedHeight = baseHeight + 
-                (0.2 * (0.5 + 0.5 * math.sin(_controller.value * 2 * math.pi + phase)));
+            final animatedHeight = baseHeight +
+                (0.2 *
+                    (0.5 +
+                        0.5 *
+                            math.sin(_controller.value * 2 * math.pi + phase)));
             final height = (animatedHeight * 20).clamp(4.0, 20.0);
-            
+
             return Container(
               width: 2.5,
               height: height,
