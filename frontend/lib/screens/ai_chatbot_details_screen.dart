@@ -27,6 +27,33 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildSummaryRow(String label, String? value) {
+    if (value == null || value.trim().isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label:',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold, // Bold Label
+            fontSize: 14,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 15,
+            color: Colors.black87,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -44,40 +71,63 @@ class AiChatbotDetailsScreen extends StatelessWidget {
         child: ListView(
           children: [
             const SizedBox(height: 16),
-            Text(localizations.citizenDetails,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            ...answers.entries
-                .map((e) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${_labelForKey(e.key, localizations)}:',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                              child: Text(e.value,
-                                  style: const TextStyle(fontSize: 15))),
-                        ],
-                      ),
-                    ))
-                .toList(),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
+            // Citizen Details section removed as per user request
+
             Text(localizations.formalComplaintSummary,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[200]!, width: 1.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: Text(summary, style: const TextStyle(fontSize: 15)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  const Text(
+                    'FORMAL COMPLAINT SUMMARY',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const Divider(height: 24, thickness: 1),
+
+                  // Fields
+                  _buildSummaryRow('Full Name', answers['full_name']),
+                  const SizedBox(height: 12),
+                  _buildSummaryRow('Address',
+                      answers['address']), // Maps to Resident Address
+                  const SizedBox(height: 12),
+                  _buildSummaryRow('Phone Number', answers['phone']),
+                  const SizedBox(height: 12),
+                  _buildSummaryRow('Complaint Type', answers['complaint_type']),
+                  const SizedBox(height: 12),
+                  _buildSummaryRow('Incident Details',
+                      answers['incident_address']), // Short summary
+                  const SizedBox(height: 12),
+                  _buildSummaryRow(
+                      'Details', answers['incident_details']), // Full narrative
+                  const SizedBox(height: 12),
+                  _buildSummaryRow(
+                      'Date of Complaint', answers['date_of_complaint']),
+                ],
+              ),
             ),
             const SizedBox(height: 22),
             Text('=== ${localizations.offenceClassification} ===',
@@ -122,22 +172,5 @@ class AiChatbotDetailsScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-String _labelForKey(String key, AppLocalizations localizations) {
-  switch (key) {
-    case 'full_name':
-      return localizations.fullName;
-    case 'address':
-      return localizations.address;
-    case 'phone':
-      return localizations.phoneNumber;
-    case 'complaint_type':
-      return localizations.complaintType;
-    case 'details':
-      return localizations.details;
-    default:
-      return key;
   }
 }
