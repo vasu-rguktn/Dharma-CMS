@@ -1222,6 +1222,7 @@ async def chat_step(payload: ChatStepRequest):
             " Ask ONLY ONE question at a time.\n"
             "- The citizen has already submitted a complaint.\n"
             "- Do NOT ask them to repeat the complaint.\n"
+            "- Do not consider the incidnet location as the address of the citizen.\n"
 
 
             "FLOW RULES:\n"
@@ -1272,7 +1273,7 @@ async def chat_step(payload: ChatStepRequest):
                 model=LLM_MODEL,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=150,
+                max_tokens=250,
             )
             reply = completion.choices[0].message.content.strip()
 
@@ -1320,7 +1321,7 @@ END RULE:\n
 TASKS:
 1. Identify the complaint type automatically.
 2. Extract date, time, and place from the conversation if mentioned.
-3. write/describe  ONLY the incident location :where the incident happened in 1–2 lines, include the date&time if mentioned .
+3. Describe  ONLY the incident location :where the incident happened in 1–2 lines, include the date&time if mentioned .
 4. Write a clear narrative description of the incident in plain English (no FIR format). Do NOT include FIR number, signatures, or headings.
 5. Do NOT invent dates, places, or items not explicitly mentioned by the user.
 6. Extract name, address, number from the conversation.
@@ -1335,7 +1336,7 @@ OUTPUT FORMAT (STRICT JSON ONLY):
     "initial_details": "",
   "details": "",
   
-    "short_incident_summary": "Short 1-2 line summary of WHERE and WHEN the incident happened (e.g. 'Bike theft at Sri Laxmi Apt, Nuzvid on 26th July around 9 PM')."
+    "short_incident_summary": "Short 1-2 line summary of WHERE and WHEN the incident happened (e.g. 'Incident happened  at [Place] on [Date] around [Time]')."
 }}
 
 INFORMATION:
@@ -1368,6 +1369,7 @@ INFORMATION:
             narrative = n_data.get("details", "")
             final_complaint_type = n_data.get("complaint_type", payload.complaint_type)
             initial_details_summary = n_data.get("initial_details", "")
+            short_incident = n_data.get("short_incident_summary", "")
             
             # Extract collected identity if missing in payload
             extracted_name = n_data.get("full_name")
@@ -1421,6 +1423,7 @@ INFORMATION:
                     complaint_type=final_complaint_type,
                     details=payload.initial_details, 
                     incident_details=narrative,
+                    incident_address=short_incident,
                     language=payload.language
                 )
             except Exception as validation_error:
@@ -1433,6 +1436,7 @@ INFORMATION:
             # Override "details" in localized fields with the narrative/summary
             localized_fields["details"] = initial_details_summary
             localized_fields['incident_details'] = narrative
+            localized_fields['incident_address'] = short_incident
             
             # Classification
             classification_context = _build_classification_context(
