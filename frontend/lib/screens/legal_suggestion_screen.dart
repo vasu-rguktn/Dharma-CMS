@@ -17,7 +17,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
 
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: "http://127.0.0.1:8000",
+      baseUrl: "https://fastapi-app-335340524683.asia-south1.run.app",
       headers: {"Content-Type": "application/json"},
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
