@@ -262,6 +262,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                   width: double.infinity,
                   height: screenHeight * 0.4,
                 ),
+                // Add back button
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () {
+                        // Navigate back to Welcome screen
+                        context.go('/');
+                      },
+                      tooltip: 'Back',
+                    ),
+                  ),
+                ),
                 Center(
                   child: Image.asset(
                     'assets/police_logo.png',

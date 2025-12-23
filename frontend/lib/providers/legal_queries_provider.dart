@@ -1,9 +1,8 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 
 import '../models/chat_message.dart';
 
@@ -16,15 +15,8 @@ class LegalQueriesProvider with ChangeNotifier {
 
   /* ---------------- BASE URL ---------------- */
   String get _baseUrl {
-    // Use deployed Cloud Run backend URL
+    // Local development
     return 'https://fastapi-app-335340524683.asia-south1.run.app';
-    
-    // Uncomment below for local development
-    // if (kIsWeb) {
-    //   return 'http://localhost:8000';
-    // } else {
-    //   return 'http://10.0.2.2:8000';
-    // }
   }
 
   /* ---------------- CREATE NEW SESSION ---------------- */
@@ -56,7 +48,7 @@ class LegalQueriesProvider with ChangeNotifier {
         .collection('legal_queries_chats')
         .doc(_currentSessionId)
         .collection('messages')
-        .orderBy('timestamp')
+        .orderBy('timestamp', descending: true) // Reverse order for Chat UI
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) {
               final data = doc.data();
@@ -69,9 +61,10 @@ class LegalQueriesProvider with ChangeNotifier {
   }
 
   /* ---------------- SEND MESSAGE ---------------- */
-  Future<void> sendMessage(String message) async {
+  Future<void> sendMessage(String message,
+      {List<Map<String, dynamic>>? attachments}) async {
     final trimmed = message.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty && (attachments == null || attachments.isEmpty)) return;
 
     if (_currentSessionId == null) {
       await createNewSession();
@@ -80,38 +73,62 @@ class LegalQueriesProvider with ChangeNotifier {
     final sessionRef =
         _firestore.collection('legal_queries_chats').doc(_currentSessionId);
 
+    // Generate attachment text
+    String attachText = "";
+    if (attachments != null && attachments.isNotEmpty) {
+      final names = attachments.map((a) => a['name']).join(', ');
+      attachText = " [Attached: $names]";
+    }
+
     // 1️⃣ Save USER message
     await sessionRef.collection('messages').add({
       'sender': 'user',
-      'text': trimmed,
+      'text': trimmed + attachText,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
     try {
       final token = await _auth.currentUser!.getIdToken();
+      final dio = Dio();
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/api/legal-chat/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'sessionId': _currentSessionId,
-          'message': trimmed,
-        }),
+      // FormData construction
+      final formData = FormData.fromMap({
+        'sessionId': _currentSessionId,
+        'message': trimmed,
+      });
+
+      if (attachments != null) {
+        debugPrint("DEBUG: Preparing ${attachments.length} attachments...");
+        for (var file in attachments) {
+          final bytes = file['bytes'] as Uint8List;
+          final name = file['name'] as String;
+
+          formData.files.add(MapEntry(
+            'files', // Backend expects 'files' list
+            MultipartFile.fromBytes(bytes, filename: name),
+          ));
+        }
+      }
+
+      final response = await dio.post(
+        '$_baseUrl/api/legal-chat/',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+        data: formData,
       );
 
       if (response.statusCode != 200) {
         throw Exception('Backend error ${response.statusCode}');
       }
 
-      final data = jsonDecode(response.body);
+      final data = response.data;
       final reply = data['reply'] as String;
       final rawTitle = data['title'] as String;
 
-      final title =
-          rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+      final title = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
 
       // 2️⃣ Save AI reply
       await sessionRef.collection('messages').add({
@@ -134,7 +151,21 @@ class LegalQueriesProvider with ChangeNotifier {
       await sessionRef.update({
         'lastMessageAt': FieldValue.serverTimestamp(),
       });
+    } on DioException catch (e) {
+      debugPrint("Legal Chat DioError: ${e.message}");
+      debugPrint("Status: ${e.response?.statusCode}");
+      debugPrint("Response: ${e.response?.data}");
+      // Graceful fallback
+      final errorMsg = e.response?.data?['detail'] ?? 
+                      e.message ?? 
+                      'Unable to get legal response. Please try again.';
+      await sessionRef.collection('messages').add({
+        'sender': 'ai',
+        'text': '⚠️ $errorMsg',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
+      debugPrint("Legal Chat Error: $e");
       // Graceful fallback
       await sessionRef.collection('messages').add({
         'sender': 'ai',

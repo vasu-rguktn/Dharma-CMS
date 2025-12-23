@@ -254,8 +254,9 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
+                          final isPolice = authProvider.role == 'police';
                           authProvider.signOut();
-                          context.go('/login');
+                          context.go(isPolice ? '/police-login' : '/phone-login');
                         },
                         child: Text(
                           localizations.signOut,

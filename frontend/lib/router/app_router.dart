@@ -114,9 +114,10 @@ class AppRouter {
       }
 
       // Logged-in users should not see welcome again
-      if (auth.isAuthenticated && path == '/') {
-        return auth.role == 'police' ? '/police-dashboard' : '/ai-legal-guider';
-      }
+      // UNLESS they explicitly navigated to it (e.g., via back button from login screens)
+      // We allow '/' to be shown to authenticated users to fix cross-role navigation issues
+      // The Welcome screen itself will handle showing appropriate options
+      // Note: Direct navigation to '/' is allowed, auto-redirect removed to fix back button issues
 
       // Redirect unauthenticated users to login
       if (!auth.isAuthenticated &&
@@ -331,7 +332,9 @@ class AppRouter {
 
           GoRoute(
             path: '/cases/new',
-            builder: (context, state) => const NewCaseScreen(),
+            builder: (context, state) => NewCaseScreen(
+              initialData: state.extra as Map<String, dynamic>?,
+            ),
           ),
 
           GoRoute(

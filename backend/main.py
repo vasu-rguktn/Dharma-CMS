@@ -16,19 +16,42 @@ from routers.document_drafting import router as document_drafting_router
 from routers.image_enhancement import router as image_enhancement_router
 from routers.anpr import router as anpr_router
 
+import firebase_admin
+from firebase_admin import credentials
+from routers.legal_suggestions import router as legal_suggester_router
+
+# Initialize Firebase Admin SDK
+try:
+    # Check for service account key file
+    cred_filename = "dharma-cms-5cc89-b74e10595572.json"
+    cred_path = Path(__file__).parent / cred_filename
+    
+    if cred_path.exists():
+        cred = credentials.Certificate(str(cred_path))
+        firebase_admin.initialize_app(cred)
+        print(f"Firebase Admin initialized with {cred_filename}")
+    else:
+        # Fallback to default (env var) if file not found locally
+        firebase_admin.initialize_app()
+        print("Firebase Admin initialized with default credentials")
+except ValueError:
+    pass # Likely already initialized
 
 app = FastAPI(
     title="Police Complaint Chatbot API",
     description="Dynamic chat → formal police summary + legal classification + investigation reports",
     version="1.1.0",
+    redirect_slashes=False,  # Disable trailing slash redirects to prevent CORS preflight issues
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Ensure static directory for generated reports exists and is mounted
@@ -57,10 +80,15 @@ app.include_router(ocr_router)
 app.include_router(ai_investigation_router)
 app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
+app.include_router(investigation_report_router)
 app.include_router(document_drafting_router)
 app.include_router(image_enhancement_router)
 app.include_router(anpr_router)
 
+app.include_router(legal_suggester_router)
+
+from routers.cases import router as cases_router
+app.include_router(cases_router)
 
 
 @app.get("/")

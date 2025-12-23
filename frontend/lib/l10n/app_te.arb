@@ -36,7 +36,7 @@
     "@dontHaveAccount": {
         "description": "Text shown before register link"
     },
-    "register": "నమోదు",
+    "register": " నమోదు చేసుకోండి",
     "@register": {
         "description": "Register link text"
     },
@@ -537,7 +537,7 @@
     "@aiDocumentDrafter": {
         "description": "Document drafter title"
     },
-    "caseData": "కేసు డేటా",
+    "caseData": "కేసు వివరాలు",
     "@caseData": {
         "description": "Case data label"
     },
@@ -715,8 +715,21 @@
     },
     "voiceInputComingSoon": "వాయిస్ ఇన్‌పుట్ (త్వరలో వస్తోంది)",
     "@voiceInputComingSoon": {
-        "description": "Tooltip for voice input button"
+      "description": "వాయిస్ ఇన్‌పుట్ టూల్‌టిప్ టెక్స్ట్"
     },
+    "listening": "వింటుంది...",
+    "@listening": {
+      "description": "స్పీచ్ రికగ్నిషన్ సక్రియంగా ఉన్నప్పుడు చూపించే టెక్స్ట్"
+    },
+    "tapToStopRecording": "రికార్డింగ్ ఆపడానికి మైక్రోఫోన్ చిహ్నంపై టాప్ చేయండి",
+    "@tapToStopRecording": {
+      "description": "వాయిస్ రికార్డింగ్ ఆపడానికి హింట్ టెక్స్ట్"
+    },
+    "pleaseStopListening": "దయచేసి పంపే ముందు వినడం మరియు రికార్డింగ్ ఆపండి",
+    "@pleaseStopListening": {
+      "description": "రికార్డింగ్ చేస్తున్నప్పుడు పంపడానికి ప్రయత్నించినప్పుడు చూపించే సందేశం"
+    },
+    
     "welcomeToDharma": "ధర్మ పోర్టల్ స్వాగతం",
     "@welcomeToDharma": {
         "description": "Welcome message in AI legal chat"
@@ -767,22 +780,22 @@
   "mobileNumber": "మొబైల్ నంబర్",
   "@mobileNumber": { "description": "Label for mobile number input field" },
 
-  "sendOtp": "OTP పంపండి",
+  "sendOtp": "ఓటీపీ పంపండి",
   "@sendOtp": { "description": "Button text to send OTP" },
 
-  "verifyOtp": "OTP నిర్ధారించండి",
+  "verifyOtp": "ఓటీపీ నిర్ధారించండి",
   "@verifyOtp": { "description": "Button text to verify OTP" },
 
-  "otpSent": "OTP పంపబడింది!",
+  "otpSent": "ఓటీపీ పంపబడింది!",
   "@otpSent": { "description": "Message shown when OTP is sent" },
 
-  "otpResent": "OTP మళ్లీ పంపబడింది!",
+  "otpResent": "ఓటీపీ మళ్లీ పంపబడింది!",
   "@otpResent": { "description": "Message shown when OTP is resent" },
 
   "enterValidNumber": "గుర్తుపట్టే 10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి",
   "@enterValidNumber": { "description": "Validation message for phone number" },
 
-  "enterOtp": "6 అంకెల OTP నమోదు చేయండి",
+  "enterOtp": "6 అంకెల ఓటీపీ  నమోదు చేయండి",
   "@enterOtp": { "description": "Validation message for OTP input" },
 
   "resendIn": "{seconds} సెకండ్లలో మళ్లీ పంపండి",
@@ -793,22 +806,22 @@
     }
   },
 
-  "resendOtp": "OTP మళ్లీ పంపండి",
+  "resendOtp": "ఓటీపీ మళ్లీ పంపండి",
   "@resendOtp": { "description": "Button to resend OTP" },
 
   "loginSuccessful": "లాగిన్ విజయవంతం!",
   "@loginSuccessful": { "description": "Message shown after successful login" },
 
-  "wrongOtp": "తప్పు OTP",
+  "wrongOtp": "తప్పు ఓటీపీ ",
   "@wrongOtp": { "description": "Error message for wrong OTP" },
 
-  "otpExpired": "OTP గడువు ముగిసింది",
+  "otpExpired": "ఓటీపీ గడువు ముగిసింది",
   "@otpExpired": { "description": "Error message for expired OTP" },
 
-  "invalidOtp": "చెల్లని OTP",
+  "invalidOtp": "చెల్లని ఓటీపీ ",
   "@invalidOtp": { "description": "Generic invalid OTP message" },
 
-  "backToEmailLogin": "ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి",
+  "backToEmailLogin": "ఇమెయిల్ తో లాగిన్ అవ్వండి",
   "@backToEmailLogin": { "description": "Navigation link text to email login" },
  
 "emergencyHelplines": "అత్యవసర హెల్ప్‌లైన్లు",
@@ -981,6 +994,594 @@
   "description": "Message shown when login attempt fails"
 }
 
-
-
+"aiInvestigationGuidelines": "ఏఐ ఆధారిత దర్యాప్తు మార్గదర్శకాలు",
+"@aiInvestigationGuidelines": {
+  "description": "ఏఐ ఆధారిత దర్యాప్తు మార్గదర్శకాల కోసం చూపించే శీర్షిక"
+  },
+  "createNewCase": "కొత్త కేసు సృష్టించండి",
+  "@createNewCase": {
+    "description": "కొత్త కేసు సృష్టించే స్క్రీన్ కోసం శీర్షిక"
+  },
+  "createCase": "కేసు సృష్టించండి",
+  "@createCase": {
+    "description": "కేసు సృష్టించడానికి బటన్ టెక్స్ట్"
+  },
+  "caseId": "కేసు ID",
+  "@caseId": {
+    "description": "కేసు ID ఫీల్డ్ లేబుల్"
+  },
+  "caseIdHint": "కేసు ID ను నమోదు చేయండి",
+  "@caseIdHint": {
+    "description": "కేసు ID ఫీల్డ్ కోసం హింట్ టెక్స్ట్"
+  },
+  "pleaseEnterCaseId": "దయచేసి కేసు ID ను నమోదు చేయండి",
+  "@pleaseEnterCaseId": {
+    "description": "కేసు ID కోసం ధ్రువీకరణ సందేశం"
+  },
+  "caseTitleRequired": "కేసు శీర్షిక",
+  "@caseTitleRequired": {
+    "description": "కేసు శీర్షిక ఫీల్డ్ లేబుల్"
+  },
+  "caseTitleHint": "కేసు శీర్షికను నమోదు చేయండి",
+  "@caseTitleHint": {
+    "description": "కేసు శీర్షిక ఫీల్డ్ కోసం హింట్ టెక్స్ట్"
+  },
+  "firNumberRequired": "FIR సంఖ్య",
+  "@firNumberRequired": {
+    "description": "FIR సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "firNumberHint": "FIR సంఖ్యను నమోదు చేయండి",
+  "@firNumberHint": {
+    "description": "FIR సంఖ్య ఫీల్డ్ కోసం హింట్ టెక్స్ట్"
+  },
+  "pleaseEnterCaseTitle": "దయచేసి కేసు శీర్షికను నమోదు చేయండి",
+  "@pleaseEnterCaseTitle": {
+    "description": "కేసు శీర్షిక కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseEnterFirNumber": "దయచేసి FIR సంఖ్యను నమోదు చేయండి",
+  "@pleaseEnterFirNumber": {
+    "description": "FIR సంఖ్య కోసం ధ్రువీకరణ సందేశం"
+  },
+  "complainantName": "ఫిర్యాదుదారు పేరు",
+  "@complainantName": {
+    "description": "ఫిర్యాదుదారు పేరు ఫీల్డ్ లేబుల్"
+  },
+  "enterComplainantName": "ఫిర్యాదుదారు పేరును నమోదు చేయండి",
+  "@enterComplainantName": {
+    "description": "ఫిర్యాదుదారు పేరు ఫీల్డ్ కోసం హింట్ టెక్స్ట్"
+  },
+  "caseCreatedSuccess": "కేసు విజయవంతంగా సృష్టించబడింది",
+  "@caseCreatedSuccess": {
+    "description": "కేసు సృష్టించబడినప్పుడు విజయ సందేశం"
+  },
+  "errorCreatingCase": "కేసు సృష్టించడంలో లోపం: {error}",
+  "@errorCreatingCase": {
+    "description": "కేసు సృష్టించడం విఫలమైనప్పుడు లోపం సందేశం",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseSelectDistrict": "దయచేసి జిల్లాను ఎంచుకోండి",
+  "@pleaseSelectDistrict": {
+    "description": "జిల్లా ఎంపిక కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseSelectSubDivision": "దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి",
+  "@pleaseSelectSubDivision": {
+    "description": "ఉప-విభాగం ఎంపిక కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseSelectCircle": "దయచేసి సర్కిల్ ను ఎంచుకోండి",
+  "@pleaseSelectCircle": {
+    "description": "సర్కిల్ ఎంపిక కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseSelectPoliceStation": "దయచేసి పోలీస్ స్టేషన్ ను ఎంచుకోండి",
+  "@pleaseSelectPoliceStation": {
+    "description": "పోలీస్ స్టేషన్ ఎంపిక కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseEnterYear": "దయచేసి సంవత్సరాన్ని నమోదు చేయండి",
+  "@pleaseEnterYear": {
+    "description": "సంవత్సరం ఫీల్డ్ కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseEnterValidYear": "దయచేసి చెల్లుబాటు అయ్యే సంవత్సరాన్ని నమోదు చేయండి",
+  "@pleaseEnterValidYear": {
+    "description": "చెల్లని సంవత్సరం కోసం ధ్రువీకరణ సందేశం"
+  },
+  "pleaseSelectFirRegistrationDate": "దయచేసి FIR నమోదు తేదీని ఎంచుకోండి",
+  "@pleaseSelectFirRegistrationDate": {
+    "description": "FIR నమోదు తేదీ కోసం ధ్రువీకరణ సందేశం"
+  },
+  "districtAndFirDetails": "1. జిల్లా & FIR వివరాలు",
+  "@districtAndFirDetails": {
+    "description": "జిల్లా మరియు FIR వివరాల కోసం స్టెప్ 1 శీర్షిక"
+  },
+  "subDivisionSdpo": "ఉప-విభాగం (SDPO)",
+  "@subDivisionSdpo": {
+    "description": "ఉప-విభాగం ఫీల్డ్ లేబుల్"
+  },
+  "circle": "సర్కిల్",
+  "@circle": {
+    "description": "సర్కిల్ ఫీల్డ్ లేబుల్"
+  },
+  "year": "సంవత్సరం",
+  "@year": {
+    "description": "సంవత్సరం ఫీల్డ్ లేబుల్"
+  },
+  "yearHint": "ఉదా., 2025",
+  "@yearHint": {
+    "description": "సంవత్సరం ఫీల్డ్ కోసం హింట్ టెక్స్ట్"
+  },
+  "firRegistrationDate": "FIR నమోదు తేదీ",
+  "@firRegistrationDate": {
+    "description": "FIR నమోదు తేదీ ఫీల్డ్ లేబుల్"
+  },
+  "selectDate": "తేదీని ఎంచుకోండి",
+  "@selectDate": {
+    "description": "తేదీ పికర్ కోసం ప్లేస్‌హోల్డర్ టెక్స్ట్"
+  },
+  "occurrenceOfOffence": "2. నేరం సంభవించిన సమయం",
+  "@occurrenceOfOffence": {
+    "description": "నేరం సంభవించిన సమయం కోసం స్టెప్ 2 శీర్షిక"
+  },
+  "dayOfOccurrence": "సంభవించిన రోజు",
+  "@dayOfOccurrence": {
+    "description": "సంభవించిన రోజు ఫీల్డ్ లేబుల్"
+  },
+  "dayOfOccurrenceHint": "ఉదా., సోమవారం",
+  "@dayOfOccurrenceHint": {
+    "description": "సంభవించిన రోజు కోసం హింట్ టెక్స్ట్"
+  },
+  "dateTimeFrom": "తేదీ/సమయం నుండి",
+  "@dateTimeFrom": {
+    "description": "తేదీ/సమయం నుండి ఫీల్డ్ లేబుల్"
+  },
+  "dateTimeTo": "తేదీ/సమయం వరకు",
+  "@dateTimeTo": {
+    "description": "తేదీ/సమయం వరకు ఫీల్డ్ లేబుల్"
+  },
+  "selectDateAndTime": "తేదీ మరియు సమయాన్ని ఎంచుకోండి",
+  "@selectDateAndTime": {
+    "description": "తేదీ/సమయం పికర్ కోసం ప్లేస్‌హోల్డర్ టెక్స్ట్"
+  },
+  "timePeriod": "సమయ వ్యవధి",
+  "@timePeriod": {
+    "description": "సమయ వ్యవధి ఫీల్డ్ లేబుల్"
+  },
+  "timePeriodHint": "ఉదా., 19:15-21:30",
+  "@timePeriodHint": {
+    "description": "సమయ వ్యవధి కోసం హింట్ టెక్స్ట్"
+  },
+  "priorToDateTimeDetails": "తేదీ/సమయానికి ముందు (వివరాలు)",
+  "@priorToDateTimeDetails": {
+    "description": "తేదీ/సమయానికి ముందు వివరాలు ఫీల్డ్ లేబుల్"
+  },
+  "beatNumber": "బీట్ సంఖ్య",
+  "@beatNumber": {
+    "description": "బీట్ సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "placeOfOccurrence": "సంభవించిన స్థలం",
+  "@placeOfOccurrence": {
+    "description": "సంభవించిన స్థలం విభాగ శీర్షిక"
+  },
+  "streetVillage": "వీధి/గ్రామం",
+  "@streetVillage": {
+    "description": "వీధి/గ్రామం ఫీల్డ్ లేబుల్"
+  },
+  "areaMandal": "ప్రాంతం/మండలం",
+  "@areaMandal": {
+    "description": "ప్రాంతం/మండలం ఫీల్డ్ లేబుల్"
+  },
+  "cityDistrict": "నగరం/జిల్లా",
+  "@cityDistrict": {
+    "description": "నగరం/జిల్లా ఫీల్డ్ లేబుల్"
+  },
+  "pin": "PIN",
+  "@pin": {
+    "description": "PIN ఫీల్డ్ లేబుల్"
+  },
+  "latitude": "అక్షాంశం",
+  "@latitude": {
+    "description": "అక్షాంశం ఫీల్డ్ లేబుల్"
+  },
+  "latitudeHint": "ఉదా., 16.5062",
+  "@latitudeHint": {
+    "description": "అక్షాంశం కోసం హింట్ టెక్స్ట్"
+  },
+  "longitude": "రేఖాంశం",
+  "@longitude": {
+    "description": "రేఖాంశం ఫీల్డ్ లేబుల్"
+  },
+  "longitudeHint": "ఉదా., 80.6480",
+  "@longitudeHint": {
+    "description": "రేఖాంశం కోసం హింట్ టెక్స్ట్"
+  },
+  "mapPickerPlaceholder": "మ్యాప్ పికర్ ఫంక్షనాలిటీ అమలు చేయబడుతుంది",
+  "@mapPickerPlaceholder": {
+    "description": "మ్యాప్ పికర్ ప్లేస్‌హోల్డర్ కోసం సందేశం"
+  },
+  "pickOnMap": "మ్యాప్‌లో ఎంచుకోండి (ప్లేస్‌హోల్డర్)",
+  "@pickOnMap": {
+    "description": "మ్యాప్ పికర్ కోసం బటన్ టెక్స్ట్"
+  },
+  "distanceAndDirectionFromPs": "PS నుండి దూరం & దిశ:",
+  "@distanceAndDirectionFromPs": {
+    "description": "దూరం మరియు దిశ విభాగ శీర్షిక"
+  },
+  "distanceFromPs": "PS నుండి దూరం",
+  "@distanceFromPs": {
+    "description": "PS నుండి దూరం ఫీల్డ్ లేబుల్"
+  },
+  "distanceFromPsHint": "ఉదా., 1km",
+  "@distanceFromPsHint": {
+    "description": "PS నుండి దూరం కోసం హింట్ టెక్స్ట్"
+  },
+  "directionFromPs": "PS నుండి దిశ",
+  "@directionFromPs": {
+    "description": "PS నుండి దిశ ఫీల్డ్ లేబుల్"
+  },
+  "outsideJurisdiction": "అధికార పరిధి వెలుపల:",
+  "@outsideJurisdiction": {
+    "description": "అధికార పరిధి వెలుపల విభాగ శీర్షిక"
+  },
+  "isOutsideJurisdiction": "అధికార పరిధి వెలుపల ఉందా?",
+  "@isOutsideJurisdiction": {
+    "description": "అధికార పరిధి వెలుపల చెక్‌బాక్స్ లేబుల్"
+  },
+  "informationReceived": "3. సమాచారం అందింది",
+  "@informationReceived": {
+    "description": "సమాచారం అందిన కోసం స్టెప్ 3 శీర్షిక"
+  },
+  "dateTimeReceivedAtPs": "PS వద్ద అందిన తేదీ/సమయం",
+  "@dateTimeReceivedAtPs": {
+    "description": "PS వద్ద అందిన తేదీ/సమయం ఫీల్డ్ లేబుల్"
+  },
+  "generalDiaryEntryNumber": "సాధారణ డైరీ ఎంట్రీ నం.",
+  "@generalDiaryEntryNumber": {
+    "description": "సాధారణ డైరీ ఎంట్రీ సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "generalDiaryEntryNumberHint": "ఉదా., 40",
+  "@generalDiaryEntryNumberHint": {
+    "description": "సాధారణ డైరీ ఎంట్రీ సంఖ్య కోసం హింట్ టెక్స్ట్"
+  },
+  "typeOfInformation": "4. సమాచారం రకం",
+  "@typeOfInformation": {
+    "description": "సమాచారం రకం కోసం స్టెప్ 4 శీర్షిక"
+  },
+  "type": "రకం",
+  "@type": {
+    "description": "రకం ఫీల్డ్ లేబుల్"
+  },
+  "oral": "మౌఖిక",
+  "@oral": {
+    "description": "మౌఖిక సమాచారం రకం ఎంపిక"
+  },
+  "written": "లిఖిత",
+  "@written": {
+    "description": "లిఖిత సమాచారం రకం ఎంపిక"
+  },
+  "phone": "ఫోన్",
+  "@phone": {
+    "description": "ఫోన్ సమాచారం రకం ఎంపిక"
+  },
+  "accusedDetails": "6. నిందితుడు వివరాలు",
+  "@accusedDetails": {
+    "description": "నిందితుడు వివరాల కోసం స్టెప్ 6 శీర్షిక"
+  },
+  "addAccused": "నిందితుడిని జోడించండి",
+  "@addAccused": {
+    "description": "నిందితుడిని జోడించడానికి బటన్ టెక్స్ట్"
+  },
+  "accused": "నిందితుడు",
+  "@accused": {
+    "description": "నిందితుడు లేబుల్"
+  },
+  "deleteAccused": "నిందితుడిని తొలగించండి",
+  "@deleteAccused": {
+    "description": "నిందితుడిని తొలగించడానికి బటన్ కోసం టూల్‌టిప్"
+  },
+  "serialNo": "సీరియల్ నం.",
+  "@serialNo": {
+    "description": "సీరియల్ సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "name": "పేరు",
+  "@name": {
+    "description": "పేరు ఫీల్డ్ లేబుల్"
+  },
+  "fatherHusbandName": "తండ్రి/భర్త పేరు",
+  "@fatherHusbandName": {
+    "description": "తండ్రి/భర్త పేరు ఫీల్డ్ లేబుల్"
+  },
+  "age": "వయస్సు",
+  "@age": {
+    "description": "వయస్సు ఫీల్డ్ లేబుల్"
+  },
+  "nationality": "జాతీయత",
+  "@nationality": {
+    "description": "జాతీయత ఫీల్డ్ లేబుల్"
+  },
+  "caste": "కులం",
+  "@caste": {
+    "description": "కులం ఫీల్డ్ లేబుల్"
+  },
+  "occupation": "వృత్తి",
+  "@occupation": {
+    "description": "వృత్తి ఫీల్డ్ లేబుల్"
+  },
+  "cellNo": "సెల్ నం.",
+  "@cellNo": {
+    "description": "సెల్ సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "accusedAddress": "నిందితుడు చిరునామా:",
+  "@accusedAddress": {
+    "description": "నిందితుడు చిరునామా విభాగ శీర్షిక"
+  },
+  "houseNo": "ఇంటి నం.",
+  "@houseNo": {
+    "description": "ఇంటి సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "physicalFeatures": "శారీరక లక్షణాలు:",
+  "@physicalFeatures": {
+    "description": "శారీరక లక్షణాలు విభాగ శీర్షిక"
+  },
+  "build": "నిర్మాణం",
+  "@build": {
+    "description": "నిర్మాణం ఫీల్డ్ లేబుల్"
+  },
+  "heightCms": "ఎత్తు (సెం.మీ)",
+  "@heightCms": {
+    "description": "సెంటీమీటర్లలో ఎత్తు ఫీల్డ్ లేబుల్"
+  },
+  "complexion": "రంగు",
+  "@complexion": {
+    "description": "రంగు ఫీల్డ్ లేబుల్"
+  },
+  "deformitiesPeculiarities": "వైకల్యాలు/ప్రత్యేకతలు",
+  "@deformitiesPeculiarities": {
+    "description": "వైకల్యాలు/ప్రత్యేకతలు ఫీల్డ్ లేబుల్"
+  },
+  "propertiesInvolved": "7. ప్రమేయం ఉన్న ఆస్తులు",
+  "@propertiesInvolved": {
+    "description": "ప్రమేయం ఉన్న ఆస్తుల కోసం స్టెప్ 7 శీర్షిక"
+  },
+  "detailsOfPropertiesStolenInvolved": "దొంగిలించబడిన/ప్రమేయం ఉన్న ఆస్తుల వివరాలు",
+  "@detailsOfPropertiesStolenInvolved": {
+    "description": "ఆస్తుల వివరాలు ఫీల్డ్ లేబుల్"
+  },
+  "totalValueOfPropertiesStolenInr": "దొంగిలించబడిన ఆస్తుల మొత్తం విలువ (INR)",
+  "@totalValueOfPropertiesStolenInr": {
+    "description": "ఆస్తుల మొత్తం విలువ ఫీల్డ్ లేబుల్"
+  },
+  "delayInReporting": "8. నివేదించడంలో ఆలస్యం (ఏదైనా ఉంటే)",
+  "@delayInReporting": {
+    "description": "నివేదించడంలో ఆలస్యం కోసం స్టెప్ 8 శీర్షిక"
+  },
+  "wasThereDelayInReporting": "నివేదించడంలో ఆలస్యం ఉందా?",
+  "@wasThereDelayInReporting": {
+    "description": "నివేదించడంలో ఆలస్యం చెక్‌బాక్స్ లేబుల్"
+  },
+  "inquestReportUdCaseNo": "9. విచారణ నివేదిక / U.D. కేసు నం. (ఏదైనా ఉంటే)",
+  "@inquestReportUdCaseNo": {
+    "description": "విచారణ నివేదిక కోసం స్టెప్ 9 శీర్షిక"
+  },
+  "inquestReportUdCaseNoLabel": "విచారణ నివేదిక / U.D. కేసు నం.",
+  "@inquestReportUdCaseNoLabel": {
+    "description": "విచారణ నివేదిక కేసు సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "actsAndSectionsInvolved": "ప్రమేయం ఉన్న చట్టాలు & సెక్షన్లు",
+  "@actsAndSectionsInvolved": {
+    "description": "చట్టాలు మరియు సెక్షన్లు విభాగ శీర్షిక"
+  },
+  "actsAndSectionsHint": "ఉదా., IPC 379, BNS 101",
+  "@actsAndSectionsHint": {
+    "description": "చట్టాలు మరియు సెక్షన్లు కోసం హింట్ టెక్స్ట్"
+  },
+  "complaintStatementOfComplainantInformant": "10. ఫిర్యాదు / ఫిర్యాదుదారు/సమాచారదాత ప్రకటన *",
+  "@complaintStatementOfComplainantInformant": {
+    "description": "ఫిర్యాదు ప్రకటన కోసం స్టెప్ 10 శీర్షిక"
+  },
+  "detailedNarrative": "వివరణాత్మక కథనం",
+  "@detailedNarrative": {
+    "description": "వివరణాత్మక కథనం ఫీల్డ్ లేబుల్"
+  },
+  "aiSuggestionDraftComplaint": "ఏఐ సూచన: అసలు సంభాషణ ఆధారంగా ఫిర్యాదును రూపొందించండి.",
+  "@aiSuggestionDraftComplaint": {
+    "description": "ఏఐ సూచనతో ఫిర్యాదు కథనం కోసం హింట్ టెక్స్ట్"
+  },
+  "victimDetails": "బాధితుడు వివరాలు",
+  "@victimDetails": {
+    "description": "బాధితుడు వివరాలు విభాగ శీర్షిక"
+  },
+  "complainantIsAlsoVictim": "ఫిర్యాదుదారు కూడా బాధితుడు",
+  "@complainantIsAlsoVictim": {
+    "description": "ఫిర్యాదుదారు కూడా బాధితుడు అనే చెక్‌బాక్స్ లేబుల్"
+  },
+  "victimName": "బాధితుడు పేరు",
+  "@victimName": {
+    "description": "బాధితుడు పేరు ఫీల్డ్ లేబుల్"
+  },
+  "victimDob": "బాధితుడు జనన తేదీ",
+  "@victimDob": {
+    "description": "బాధితుడు జనన తేదీ ఫీల్డ్ లేబుల్"
+  },
+  "victimAgeAutoCalculated": "బాధితుడు వయస్సు (స్వయంచాలకంగా లెక్కించబడింది)",
+  "@victimAgeAutoCalculated": {
+    "description": "బాధితుడు వయస్సు ఫీల్డ్ లేబుల్ (స్వయంచాలకంగా లెక్కించబడింది)"
+  },
+  "victimGender": "బాధితుడు లింగం",
+  "@victimGender": {
+    "description": "బాధితుడు లింగం ఫీల్డ్ లేబుల్"
+  },
+  "victimFatherHusbandName": "బాధితుడు తండ్రి/భర్త పేరు",
+  "@victimFatherHusbandName": {
+    "description": "బాధితుడు తండ్రి/భర్త పేరు ఫీల్డ్ లేబుల్"
+  },
+  "victimNationality": "బాధితుడు జాతీయత",
+  "@victimNationality": {
+    "description": "బాధితుడు జాతీయత ఫీల్డ్ లేబుల్"
+  },
+  "victimReligion": "బాధితుడు మతం",
+  "@victimReligion": {
+    "description": "బాధితుడు మతం ఫీల్డ్ లేబుల్"
+  },
+  "victimCaste": "బాధితుడు కులం",
+  "@victimCaste": {
+    "description": "బాధితుడు కులం ఫీల్డ్ లేబుల్"
+  },
+  "victimOccupation": "బాధితుడు వృత్తి",
+  "@victimOccupation": {
+    "description": "బాధితుడు వృత్తి ఫీల్డ్ లేబుల్"
+  },
+  "victimAddress": "బాధితుడు చిరునామా:",
+  "@victimAddress": {
+    "description": "బాధితుడు చిరునామా విభాగ శీర్షిక"
+  },
+  "actionTaken": "11. తీసుకున్న చర్య",
+  "@actionTaken": {
+    "description": "తీసుకున్న చర్య కోసం స్టెప్ 11 శీర్షిక"
+  },
+  "actionTakenDetails": "తీసుకున్న చర్య (వివరాలు)",
+  "@actionTakenDetails": {
+    "description": "తీసుకున్న చర్య వివరాలు ఫీల్డ్ లేబుల్"
+  },
+  "investigatingOfficerName": "దర్యాప్తు అధికారి పేరు",
+  "@investigatingOfficerName": {
+    "description": "దర్యాప్తు అధికారి పేరు ఫీల్డ్ లేబుల్"
+  },
+  "officerRank": "అధికారి ర్యాంక్",
+  "@officerRank": {
+    "description": "అధికారి ర్యాంక్ ఫీల్డ్ లేబుల్"
+  },
+  "districtOfOfficer": "జిల్లా (అధికారి)",
+  "@districtOfOfficer": {
+    "description": "అధికారి జిల్లా ఫీల్డ్ లేబుల్"
+  },
+  "dispatchToCourt": "12. కోర్టుకు పంపడం",
+  "@dispatchToCourt": {
+    "description": "కోర్టుకు పంపడం కోసం స్టెప్ 12 శీర్షిక"
+  },
+  "dateTimeOfDispatch": "పంపిన తేదీ/సమయం",
+  "@dateTimeOfDispatch": {
+    "description": "పంపిన తేదీ/సమయం ఫీల్డ్ లేబుల్"
+  },
+  "nameOfOfficer": "అధికారి పేరు",
+  "@nameOfOfficer": {
+    "description": "అధికారి పేరు ఫీల్డ్ లేబుల్"
+  },
+  "rankOfOfficer": "అధికారి ర్యాంక్",
+  "@rankOfOfficer": {
+    "description": "అధికారి ర్యాంక్ ఫీల్డ్ లేబుల్"
+  },
+  "confirmation": "13. నిర్ధారణ",
+  "@confirmation": {
+    "description": "నిర్ధారణ కోసం స్టెప్ 13 శీర్షిక"
+  },
+  "firReadOverAndAdmittedCorrect": "FIR ను ఫిర్యాదుదారు/సమాచారదాత చదివి సరిగా అంగీకరించారు",
+  "@firReadOverAndAdmittedCorrect": {
+    "description": "FIR చదవడం నిర్ధారణ చెక్‌బాక్స్ లేబుల్"
+  },
+  "firCopyGivenFreeOfCost": "FIR కాపీని ఫిర్యాదుదారు/సమాచారదాతకు ఉచితంగా ఇవ్వబడింది",
+  "@firCopyGivenFreeOfCost": {
+    "description": "FIR కాపీ ఇవ్వడం నిర్ధారణ చెక్‌బాక్స్ లేబుల్"
+  },
+  "roacRecorded": "ROAC (రికార్డ్ చేయబడింది & అంగీకరించబడింది)",
+  "@roacRecorded": {
+    "description": "ROAC రికార్డ్ నిర్ధారణ చెక్‌బాక్స్ లేబుల్"
+  },
+  "signatureThumbImpression": "ఫిర్యాదుదారు/సమాచారదాత సంతకం/బొటనవేలు ముద్ర (అన్వయమైతే 'డిజిటల్‌గా సంతకం చేయబడింది' లేదా మార్గాన్ని నమోదు చేయండి)",
+  "@signatureThumbImpression": {
+    "description": "సంతకం/బొటనవేలు ముద్ర ఫీల్డ్ లేబుల్"
+  },
+  "complainantInformantDetails": "5. ఫిర్యాదుదారు / సమాచారదాత వివరాలు",
+  "@complainantInformantDetails": {
+    "description": "ఫిర్యాదుదారు/సమాచారదాత వివరాల కోసం స్టెప్ 5 శీర్షిక"
+  },
+  "dateOfBirth": "జనన తేదీ",
+  "@dateOfBirth": {
+    "description": "జనన తేదీ ఫీల్డ్ లేబుల్"
+  },
+  "ageAutoCalculated": "వయస్సు (స్వయంచాలకంగా లెక్కించబడింది)",
+  "@ageAutoCalculated": {
+    "description": "వయస్సు ఫీల్డ్ లేబుల్ (స్వయంచాలకంగా లెక్కించబడింది)"
+  },
+  "mobileNumber": "మొబైల్ నంబర్",
+  "@mobileNumber": {
+    "description": "మొబైల్ నంబర్ ఫీల్డ్ లేబుల్"
+  },
+  "mobileNumberHint": "10 అంకెలు",
+  "@mobileNumberHint": {
+    "description": "మొబైల్ నంబర్ కోసం హింట్ టెక్స్ట్"
+  },
+  "complainantAddress": "ఫిర్యాదుదారు చిరునామా:",
+  "@complainantAddress": {
+    "description": "ఫిర్యాదుదారు చిరునామా విభాగ శీర్షిక"
+  },
+  "complainantPassportOptional": "ఫిర్యాదుదారు పాస్‌పోర్ట్ (ఐచ్ఛికం):",
+  "@complainantPassportOptional": {
+    "description": "ఫిర్యాదుదారు పాస్‌పోర్ట్ విభాగ శీర్షిక"
+  },
+  "passportNo": "పాస్‌పోర్ట్ నం.",
+  "@passportNo": {
+    "description": "పాస్‌పోర్ట్ సంఖ్య ఫీల్డ్ లేబుల్"
+  },
+  "placeOfIssue": "ఇవ్వబడిన స్థలం",
+  "@placeOfIssue": {
+    "description": "ఇవ్వబడిన స్థలం ఫీల్డ్ లేబుల్"
+  },
+  "dateOfIssue": "ఇవ్వబడిన తేదీ",
+  "@dateOfIssue": {
+    "description": "ఇవ్వబడిన తేదీ ఫీల్డ్ లేబుల్"
+  },
+  "reviewCaseDetails": "కేసు వివరాలను సమీక్షించండి",
+  "@reviewCaseDetails": {
+    "description": "సమీక్ష స్టెప్ శీర్షిక"
+  },
+  "actsAndSections": "చట్టాలు & సెక్షన్లు (కామా-విభజించబడిన లేదా వివరణాత్మకం)",
+  "@actsAndSections": {
+    "description": "చట్టాలు మరియు సెక్షన్లు ఫీల్డ్ లేబుల్"
+  },
+  "subDivisionSdpoLabel": "ఉప-విభాగం (SDPO)",
+  "@subDivisionSdpoLabel": {
+    "description": "ఉప-విభాగం ఫీల్డ్ లేబుల్"
+  },
+  "circleLabel": "సర్కిల్",
+  "@circleLabel": {
+    "description": "సర్కిల్ ఫీల్డ్ లేబుల్"
+  },
+  "circle1": "సర్కిల్ 1",
+  "@circle1": {
+    "description": "సర్కిల్ 1 ఎంపిక"
+  },
+  "circle2": "సర్కిల్ 2",
+  "@circle2": {
+    "description": "సర్కిల్ 2 ఎంపిక"
+  },
+  "circle3": "సర్కిల్ 3",
+  "@circle3": {
+    "description": "సర్కిల్ 3 ఎంపిక"
+  },
+  "firRegistrationDateLabel": "FIR నమోదు తేదీ",
+  "@firRegistrationDateLabel": {
+    "description": "FIR నమోదు తేదీ ఫీల్డ్ లేబుల్"
+  },
+  "selectDatePlaceholder": "తేదీని ఎంచుకోండి",
+  "@selectDatePlaceholder": {
+    "description": "తేదీ పికర్ ప్లేస్‌హోల్డర్ టెక్స్ట్"
+  },
+  "nuzvidSdpo": "నూజివీడు SDPO",
+  "@nuzvidSdpo": {
+    "description": "నూజివీడు SDPO ఉప-విభాగం"
+  },
+  "gudivadaSdpo": "గుడివాడ SDPO",
+  "@gudivadaSdpo": {
+    "description": "గుడివాడ SDPO ఉప-విభాగం"
+  },
+  "machilipatnamSdpo": "మచిలీపట్నం SDPO",
+  "@machilipatnamSdpo": {
+    "description": "మచిలీపట్నం SDPO ఉప-విభాగం"
+  },
+  "vijayawadaSdpo": "విజయవాడ SDPO",
+  "@vijayawadaSdpo": {
+    "description": "విజయవాడ SDPO ఉప-విభాగం"
+  }
+  
 }

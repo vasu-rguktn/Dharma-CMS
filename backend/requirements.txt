@@ -1,5 +1,5 @@
-fastapi
-uvicorn
+﻿fastapi
+uvicorn[standard]
 google-generativeai
 python-dotenv
 python-multipart
@@ -22,3 +22,6 @@ torchvision
 
 imageio
 imageio-ffmpeg
+pypdf
+firebase-admin
+pydantic

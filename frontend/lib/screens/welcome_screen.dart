@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/providers/settings_provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/widgets/language_selection_dialog.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -39,6 +40,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final localizations = AppLocalizations.of(context);
     final size = MediaQuery.of(context).size;
     final double topImageHeight = size.height * 0.4;
+    final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -122,39 +124,79 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 style: const TextStyle(fontSize: 17, color: Colors.black87, height: 1.5),
                               ),
                               const SizedBox(height: 48),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () => _showLoginBottomSheet(context),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: WelcomeScreen.orange,
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    elevation: 8,
-                                  ),
-                                  child: Text(
-                                    localizations?.login ?? "Login",
-                                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    localizations?.dontHaveAccount ?? "Don't have an account? ",
-                                    style: const TextStyle(fontSize: 18, color: Colors.black),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => _showRegisterBottomSheet(context),
+                              
+                              // Show different buttons based on authentication state
+                              if (authProvider.isAuthenticated) ...[
+                                // User is logged in - show "Go to Dashboard" button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      final route = authProvider.role == 'police' 
+                                          ? '/police-dashboard' 
+                                          : '/ai-legal-guider';
+                                      context.go(route);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: WelcomeScreen.orange,
+                                      padding: const EdgeInsets.symmetric(vertical: 18),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      elevation: 8,
+                                    ),
                                     child: Text(
-                                      localizations?.register ?? "Register",
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: WelcomeScreen.orange),
+                                      localizations?.goToDashboard ?? "Go to Dashboard",
+                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 20),
+                                // Show logout option
+                                TextButton(
+                                  onPressed: () async {
+                                    await authProvider.signOut();
+                                    // Stay on welcome screen after logout
+                                  },
+                                  child: Text(
+                                    localizations?.signOut ?? "Sign Out",
+                                    style: const TextStyle(fontSize: 18, color: WelcomeScreen.orange, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ] else ...[
+                                // User is not logged in - show login/register options
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () => _showLoginBottomSheet(context),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: WelcomeScreen.orange,
+                                      padding: const EdgeInsets.symmetric(vertical: 18),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      elevation: 8,
+                                    ),
+                                    child: Text(
+                                      localizations?.login ?? "Login",
+                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      localizations?.dontHaveAccount ?? "Don't have an account? ",
+                                      style: const TextStyle(fontSize: 18, color: Colors.black),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => _showRegisterBottomSheet(context),
+                                      child: Text(
+                                        localizations?.register ?? "Register",
+                                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: WelcomeScreen.orange),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 20),
                               TextButton.icon(
                                 onPressed: () {
@@ -167,7 +209,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 ),
                               ),
                             ],
-
 
                             
                           ),
@@ -195,12 +236,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       title: localizations.loginAs ?? "Login as",
       orangeColor: WelcomeScreen.orange,
       options: [
-        // ✅ Citizen → Citizen Login
+        // ✅ Citizen → Phone Login
         _OptionItem(
           label: localizations.citizen ?? "Citizen",
           onTap: () {
             Navigator.pop(context);
-            context.go('/login'); // ✅ citizen login
+            context.go('/phone-login'); // ✅ citizen phone login
           },
         ),
 

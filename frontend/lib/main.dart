@@ -17,6 +17,7 @@ import 'package:Dharma/services/firestore_service.dart';
 import 'firebase_options.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:Dharma/widgets/session_lifecycle_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,6 +97,11 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
+            builder: (context, child) {
+              return SessionLifecycleObserver(
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           );
         },
       ),

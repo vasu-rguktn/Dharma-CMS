@@ -1,9 +1,6 @@
-import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
+
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 
 class DocumentDraftingScreen extends StatefulWidget {
-  const DocumentDraftingScreen({super.key});
+  const DocumentDraftingScreen({super.key});  
 
   @override
   State<DocumentDraftingScreen> createState() => _DocumentDraftingScreenState();
@@ -23,7 +20,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   final _draftController =
       TextEditingController(); // NEW: Controller for editable draft
   // Use 10.0.2.2 for Android emulator, localhost for web/iOS
-  final _dio = Dio(BaseOptions(baseUrl: 'http://localhost:8000'));
+  final _dio = Dio(BaseOptions(baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app'));
 
   String? _recipientType;
   bool _isLoading = false;
@@ -97,126 +94,6 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
       setState(() {
         _isLoading = false;
       });
-    }
-  }
-
-  // ───────────────── PDF GENERATION ─────────────────
-  Future<void> _generateAndDownloadPdf() async {
-    final text = _draftController.text.trim();
-    if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Draft is empty!")),
-      );
-      return;
-    }
-
-    try {
-      final pdf = pw.Document();
-
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (pw.Context context) {
-            return [
-              // Header
-              pw.Header(
-                level: 0,
-                child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Official Police Document',
-                        style: pw.TextStyle(
-                            fontSize: 18, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('Generated via Dharma App',
-                        style: const pw.TextStyle(
-                            fontSize: 10, color: PdfColors.grey)),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
-
-              // Body
-              pw.Paragraph(
-                text: text,
-                style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
-              ),
-
-              pw.SizedBox(height: 40),
-
-              // Footer / Signature Area
-              pw.Divider(),
-              pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                              'Date: ${DateTime.now().toString().split(' ')[0]}'),
-                        ]),
-                    pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text('Signature: __________________________'),
-                          pw.SizedBox(height: 5),
-                          pw.Text('Rank/Badge No: ______________________'),
-                        ]),
-                  ])
-            ];
-          },
-        ),
-      );
-
-      // Just save directly to Downloads or Documents folder on Windows/Android
-      // For simplicity in a cross-platform context, usually path_provider or file_picker 'save' is used.
-      // Here we will try to save to Application Documents and show a success message with path,
-      // OR use FilePicker to let user choose location.
-
-      String? outputFile;
-
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        outputFile = await FilePicker.platform.saveFile(
-          dialogTitle: 'Save Draft PDF',
-          fileName:
-              'draft_document_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        );
-      } else {
-        // Android/iOS: Save to app docs and maybe share or open
-        // For now, let's just save to docs dir
-        final Directory? dir = await getExternalStorageDirectory(); // Android
-        // on iOS use getApplicationDocumentsDirectory()
-        final path =
-            dir?.path ?? (await getApplicationDocumentsDirectory()).path;
-        final file =
-            File('$path/draft_${DateTime.now().millisecondsSinceEpoch}.pdf');
-        await file.writeAsBytes(await pdf.save());
-        outputFile = file.path;
-      }
-
-      if (outputFile != null) {
-        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-          final file = File(outputFile);
-          await file.writeAsBytes(await pdf.save());
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text("PDF Saved: $outputFile"),
-                backgroundColor: Colors.green),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint("PDF Error: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text("Failed to save PDF: $e"),
-              backgroundColor: Colors.red),
-        );
-      }
     }
   }
 
@@ -324,7 +201,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               ],
                             ),
                             const SizedBox(height: 24),
-                            Text("Case Data",
+                            Text(localizations.caseData,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
@@ -344,7 +221,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            Text("Recipient Type",
+                            Text(localizations.recipientType,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
@@ -372,7 +249,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                   setState(() => _recipientType = value),
                             ),
                             const SizedBox(height: 20),
-                            Text("Additional Instructions (Optional)",
+                            Text(localizations.additionalInstructionsOptional,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
@@ -500,7 +377,8 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                   // COPY BUTTON
                                   OutlinedButton.icon(
                                     onPressed: () {
-                                      // TODO: Implement clipboard copy
+                                      Clipboard.setData(ClipboardData(
+                                          text: _draftController.text));
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
@@ -513,19 +391,6 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: orange,
                                       side: BorderSide(color: orange),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-
-                                  // DOWNLOAD PDF BUTTON
-                                  ElevatedButton.icon(
-                                    onPressed: _generateAndDownloadPdf,
-                                    icon: const Icon(Icons.picture_as_pdf,
-                                        size: 18),
-                                    label: const Text('Download PDF'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: orange,
-                                      foregroundColor: Colors.white,
                                     ),
                                   ),
                                 ],

@@ -10,6 +10,7 @@ import 'package:Dharma/models/petition.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 
 class CaseDetailScreen extends StatefulWidget {
   final String caseId;

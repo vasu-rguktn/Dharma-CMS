@@ -194,16 +194,9 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                   child: SafeArea(
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () async {
-                        // Try to pop the Navigator stack first. If there's nothing to pop
-                        // (for example this page was reached with a replacement navigation),
-                        // fall back to navigating to a safe default route ('/').
-                        final popped = await Navigator.of(context).maybePop();
-                        if (!popped) {
-                          // Use GoRouter to navigate to a fallback route.
-                          // Adjust '/' to another route if you prefer a different fallback.
-                          if (mounted) context.go('/');
-                        }
+                      onPressed: () {
+                        // Always navigate to Welcome screen to avoid cross-role redirections
+                        context.go('/');
                       },
                       tooltip: 'Back',
                     ),
@@ -348,7 +341,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                                   fontSize: 14, color: Colors.black),
                             ),
                             GestureDetector(
-                              onTap: () => context.go('/signup'),
+                              onTap: () => context.go('/signup/citizen'),
                               child: Text(
                                 localizations?.register ?? 'Register',
                                 style: const TextStyle(

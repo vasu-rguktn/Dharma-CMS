@@ -1,137 +1,155 @@
+# ===================== IMPORTS =====================
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any
 import os
 import re
-from dotenv import load_dotenv
+import json
 import google.generativeai as genai
 
-# ───────────────── LOAD ENV ─────────────────
-load_dotenv()
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
-
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not set")
-
-genai.configure(api_key=GEMINI_API_KEY)
-
-# ✅ IMPORTANT: Supported model
-# model = genai.GenerativeModel("gemini-pro")
-# ✅ MUST USE FULL MODEL NAME
-model = genai.GenerativeModel("gemini-2.5-flash")
-
-# ───────────────── ROUTER ─────────────────
+# ===================== ROUTER =====================
 router = APIRouter(
     prefix="/api/ai-investigation",
     tags=["AI Investigation"]
 )
 
-# ───────────────── SYSTEM PROMPT ─────────────────
-SYSTEM_PROMPT = """
-You are NyayaSahayak, an AI guide for Crime Scene Investigation in India.
+# ===================== API KEY =====================
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not set")
 
-Rules:
-- Act like a senior investigating officer.
-- Guide the investigation step-by-step.
-- Ask ONLY ONE clear question at a time.
-- Follow this strict order:
-  1. Arrival & Initial Observations
-  2. Scene Description
-  3. Crime Specifics
-  4. Physical Evidence
-  5. Victims / Suspects
-  6. Witnesses
-  7. Sketch / Measurements
-  8. Other Observations
-- Do NOT jump steps.
-- Use simple professional police language.
-- This is assistance, not a final legal opinion.
-"""
+genai.configure(api_key=GEMINI_API_KEY)
 
-# ───────────────── MODELS ─────────────────
-class InvestigationRequest(BaseModel):
-    fir_number: str
-    message: str
-    chat_history: str = ""
-    language: str = "English"
-    petition_title: str = ""
-    petition_details: str = ""
+# ===================== MODEL =====================
+model = genai.GenerativeModel("gemini-2.5-flash")
 
+# ===================== REQUEST MODEL =====================
+class FIRRequest(BaseModel):
+    fir_id: str = Field(..., example="FIR-2024-ELURU-102")
+    fir_details: str = Field(..., example="Complaint details of the FIR")
 
-class InvestigationResponse(BaseModel):
-    fir_number: str
-    reply: str
+# ===================== RESPONSE SCHEMA (STRICT) =====================
+class InvestigationTask(BaseModel):
+    task: str
+    priority: str
+    status: str
 
+class ApplicableLaw(BaseModel):
+    section: str
+    justification: str
 
-# ───────────────── HELPERS ─────────────────
+class ForensicSuggestion(BaseModel):
+    evidence_type: str
+    protocol: str
+
+class AIInvestigationReport(BaseModel):
+    summary: str
+    case_type_tags: List[str]
+    modus_operandi_tags: List[str]
+    investigation_tasks: List[InvestigationTask]
+    applicable_laws: List[ApplicableLaw]
+    precautions_and_protocols: List[str]
+    anticipated_defence: List[str]
+    prosecution_readiness: List[str]
+    missing_information: List[str]
+    forensic_suggestions: List[ForensicSuggestion]
+
+# ===================== SANITIZER =====================
 def sanitize_input(text: str) -> str:
     text = re.sub(r"<.*?>", "", text)
     text = re.sub(r"[{};$]", "", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
+# ===================== SYSTEM PROMPT =====================
+SYSTEM_PROMPT = """
+You are NyayaSahayak, a senior Indian Police Investigating Officer.
 
-def is_valid_input(text: str) -> bool:
-    if not text or len(text) > 800:
-        return False
-    blocked = ["<script", "eval(", "function(", "alert("]
-    return not any(b in text.lower() for b in blocked)
+ROLE:
+Generate a COMPLETE, PROFESSIONAL, COURT-READY investigation guideline.
 
+STRICT RULES:
+- DO NOT ask questions
+- DO NOT chat
+- DO NOT explain yourself
+- DO NOT add markdown
+- OUTPUT VALID JSON ONLY
+- FOLLOW Indian police investigation procedure
+- Assume this output will be parsed by software
 
-# ───────────────── ENDPOINT ─────────────────
-@router.post("/", response_model=InvestigationResponse)
-def ai_investigation(req: InvestigationRequest):
+OUTPUT FORMAT (JSON ONLY):
 
-    if not req.fir_number:
-        raise HTTPException(status_code=400, detail="FIR number is required")
-
-    if not is_valid_input(req.message):
-        raise HTTPException(status_code=400, detail="Invalid input")
-
-    clean_message = sanitize_input(req.message)
-
-    # Build case context
-    case_context = ""
-    if req.petition_title or req.petition_details:
-        case_context = f"""
-Case Information:
-- Title: {req.petition_title or 'N/A'}
-- Details:
-{req.petition_details or 'N/A'}
+{
+  "summary": "",
+  "case_type_tags": [],
+  "modus_operandi_tags": [],
+  "investigation_tasks": [
+    {
+      "task": "",
+      "priority": "Urgent | Routine",
+      "status": "Pending | Completed"
+    }
+  ],
+  "applicable_laws": [
+    {
+      "section": "",
+      "justification": ""
+    }
+  ],
+  "precautions_and_protocols": [],
+  "anticipated_defence": [],
+  "prosecution_readiness": [],
+  "missing_information": [],
+  "forensic_suggestions": [
+    {
+      "evidence_type": "",
+      "protocol": ""
+    }
+  ]
+}
 """
 
-    full_prompt = f"""
+# ===================== AI CORE FUNCTION =====================
+def generate_investigation_report(fir_details: str) -> Dict[str, Any]:
+    clean_details = sanitize_input(fir_details)
+
+    prompt = f"""
 {SYSTEM_PROMPT}
 
-FIR Number: {req.fir_number}
-Language: {req.language}
-
-{case_context}
-
-Previous Investigation Notes:
-{req.chat_history}
-
-Officer's Latest Input:
-{clean_message}
-
-Ask ONLY the NEXT logical investigation question.
+FIR DETAILS:
+{clean_details}
 """
 
+    response = model.generate_content(prompt)
+
+    if not response or not response.text:
+        raise RuntimeError("AI returned empty response")
+
     try:
-        response = model.generate_content(full_prompt)
+        parsed = json.loads(response.text)
+    except json.JSONDecodeError:
+        raise RuntimeError("AI returned invalid JSON")
 
-        reply = response.text.strip() if response.text else ""
+    # Validate structure using Pydantic
+    validated = AIInvestigationReport(**parsed)
+    return validated.dict()
 
-        if not reply:
-            reply = "Please provide details regarding your arrival at the scene."
+# ===================== API ENDPOINT =====================
+@router.post("/", response_model=Dict[str, Any])
+def ai_investigation(request: FIRRequest):
+    try:
+        report = generate_investigation_report(request.fir_details)
 
-        return InvestigationResponse(
-            fir_number=req.fir_number,
-            reply=reply
-        )
+        return {
+            "fir_id": request.fir_id,
+            "report": report
+        }
 
-    except Exception as e:
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    except Exception:
         raise HTTPException(
             status_code=500,
-            detail=f"AI Investigation failed: {str(e)}"
+            detail="AI Investigation generation failed"
         )
