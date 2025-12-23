@@ -821,7 +821,7 @@
   "invalidOtp": "చెల్లని ఓటీపీ ",
   "@invalidOtp": { "description": "Generic invalid OTP message" },
 
-  "backToEmailLogin": "ఈమెయిల్ లాగిన్‌కి తిరిగి వెళ్ళండి",
+  "backToEmailLogin": "ఇమెయిల్ తో లాగిన్ అవ్వండి",
   "@backToEmailLogin": { "description": "Navigation link text to email login" },
  
 "emergencyHelplines": "అత్యవసర హెల్ప్‌లైన్లు",
