@@ -34,7 +34,7 @@ class _AiInvestigationGuidelinesScreenState
 
   // 🔗 Backend API
   final String _apiUrl =
-      "http://127.0.0.1:8000/api/ai-investigation/";
+      "https://fastapi-app-335340524683.asia-south1.run.app/api/ai-investigation/";
 
   @override
   void initState() {
@@ -536,234 +536,174 @@ ${p.grounds}
             Text(AppLocalizations.of(context)!.aiInvestigationGuidelines),
         backgroundColor: orange,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // CASE ID INPUT
-            if (_petition == null) ...[ 
-              TextField(
-                controller: _caseIdController,
-                decoration: const InputDecoration(
-                  labelText: 'Case ID',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: orange,
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                onPressed:
-                    _fetchingPetition ? null : _fetchPetitionDetails,
-                icon: _fetchingPetition
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.search),
-                label: const Text('Load Petition'),
-              ),
-            ],
+      body: SingleChildScrollView(
+  padding: const EdgeInsets.all(16),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
 
-            // PETITION INFO
-            if (_petition != null) ...[ 
-              Card(
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _petition!.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Divider(),
-                      _infoRow(
-                          'Type', _petition!.type.displayName),
-                      _infoRow(
-                          'Petitioner', _petition!.petitionerName),
-                      _infoRow(
-                          'District', _petition!.district ?? 'N/A'),
-                      _infoRow(
-                          'Station', _petition!.stationName ?? 'N/A'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // GENERATE BUTTON
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: orange,
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                onPressed:
-                    _loadingAI ? null : _generateInvestigation,
-                icon: _loadingAI
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.psychology),
-                label: const Text(
-                    'Generate Investigation Guidelines'),
-              ),
-            ],
-
-            // AI REPORT (STRUCTURED)
-            if (_aiReport != null) ...[ 
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      // 📋 SUMMARY
-                      if (_aiReport!['summary'] != null)
-                        _buildSectionCard(
-                          title: 'Investigation Summary',
-                          icon: Icons.summarize,
-                          backgroundColor: Colors.orange.shade50.withOpacity(0.5),
-                          borderColor: orange.withOpacity(0.3),
-                          content: Text(
-                            _aiReport!['summary'],
-                            style: const TextStyle(
-                              fontSize: 15,
-                              height: 1.6,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-
-                      // 🏷️ CASE TYPE TAGS
-                      if (_aiReport!['case_type_tags'] != null)
-                        _buildSectionCard(
-                          title: 'Case Type Tags',
-                          icon: Icons.label,
-                          backgroundColor: Colors.blue.shade50.withOpacity(0.5),
-                          borderColor: Colors.blue.shade200,
-                          content: _buildTags(_aiReport!['case_type_tags']),
-                        ),
-
-                      // 🔍 MODUS OPERANDI TAGS
-                      if (_aiReport!['modus_operandi_tags'] != null)
-                        _buildSectionCard(
-                          title: 'Modus Operandi Tags',
-                          icon: Icons.visibility,
-                          backgroundColor: Colors.indigo.shade50.withOpacity(0.5),
-                          borderColor: Colors.indigo.shade200,
-                          content: _buildTags(_aiReport!['modus_operandi_tags']),
-                        ),
-
-                      // ✅ INVESTIGATION TASKS
-                      if (_aiReport!['investigation_tasks'] != null)
-                        _buildSectionCard(
-                          title: 'Investigation Tasks',
-                          icon: Icons.task_alt,
-                          backgroundColor: Colors.teal.shade50.withOpacity(0.5),
-                          borderColor: Colors.teal.shade200,
-                          content: _buildInvestigationTasks(
-                            _aiReport!['investigation_tasks'],
-                          ),
-                        ),
-
-                      // ⚖️ APPLICABLE LAWS
-                      if (_aiReport!['applicable_laws'] != null)
-                        _buildSectionCard(
-                          title: 'Applicable Laws',
-                          icon: Icons.gavel,
-                          backgroundColor: Colors.green.shade50.withOpacity(0.5),
-                          borderColor: Colors.green.shade200,
-                          content: _buildApplicableLaws(
-                            _aiReport!['applicable_laws'],
-                          ),
-                        ),
-
-                      // 🛡️ PRECAUTIONS & PROTOCOLS
-                      if (_aiReport!['precautions_and_protocols'] != null)
-                        _buildSectionCard(
-                          title: 'Precautions & Protocols',
-                          icon: Icons.shield,
-                          backgroundColor: Colors.amber.shade50.withOpacity(0.5),
-                          borderColor: Colors.amber.shade200,
-                          content: _buildListItems(
-                            _aiReport!['precautions_and_protocols'],
-                            Colors.amber.shade700,
-                          ),
-                        ),
-
-                      // ⚔️ ANTICIPATED DEFENCE
-                      if (_aiReport!['anticipated_defence'] != null)
-                        _buildSectionCard(
-                          title: 'Anticipated Defence',
-                          icon: Icons.psychology_alt,
-                          backgroundColor: Colors.red.shade50.withOpacity(0.5),
-                          borderColor: Colors.red.shade200,
-                          content: _buildListItems(
-                            _aiReport!['anticipated_defence'],
-                            Colors.red.shade700,
-                          ),
-                        ),
-
-                      // 🎯 PROSECUTION READINESS
-                      if (_aiReport!['prosecution_readiness'] != null)
-                        _buildSectionCard(
-                          title: 'Prosecution Readiness',
-                          icon: Icons.check_circle_outline,
-                          backgroundColor: Colors.cyan.shade50.withOpacity(0.5),
-                          borderColor: Colors.cyan.shade200,
-                          content: _buildListItems(
-                            _aiReport!['prosecution_readiness'],
-                            Colors.cyan.shade700,
-                          ),
-                        ),
-
-                      // ❓ MISSING INFORMATION
-                      if (_aiReport!['missing_information'] != null)
-                        _buildSectionCard(
-                          title: 'Missing Information',
-                          icon: Icons.error_outline,
-                          backgroundColor: Colors.deepOrange.shade50.withOpacity(0.5),
-                          borderColor: Colors.deepOrange.shade200,
-                          content: _buildListItems(
-                            _aiReport!['missing_information'],
-                            Colors.deepOrange.shade700,
-                          ),
-                        ),
-
-                      // 🔬 FORENSIC SUGGESTIONS
-                      if (_aiReport!['forensic_suggestions'] != null)
-                        _buildSectionCard(
-                          title: 'Forensic Suggestions',
-                          icon: Icons.science,
-                          backgroundColor: Colors.purple.shade50.withOpacity(0.5),
-                          borderColor: Colors.purple.shade200,
-                          content: _buildForensicSuggestions(
-                            _aiReport!['forensic_suggestions'],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
+      // 🔹 CASE ID INPUT
+      if (_petition == null) ...[
+        TextField(
+          controller: _caseIdController,
+          decoration: const InputDecoration(
+            labelText: 'Case ID',
+            border: OutlineInputBorder(),
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: orange,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+          onPressed: _fetchingPetition ? null : _fetchPetitionDetails,
+          icon: _fetchingPetition
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.search),
+          label: const Text('Load Petition'),
+        ),
+      ],
+
+      // 🔹 PETITION DETAILS
+      if (_petition != null) ...[
+        const SizedBox(height: 16),
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _petition!.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Divider(),
+                _infoRow('Type', _petition!.type.displayName),
+                _infoRow('Petitioner', _petition!.petitionerName),
+                _infoRow('District', _petition!.district ?? 'N/A'),
+                _infoRow('Station', _petition!.stationName ?? 'N/A'),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: orange,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+          onPressed: _loadingAI ? null : _generateInvestigation,
+          icon: _loadingAI
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.psychology),
+          label: const Text('Generate Investigation Guidelines'),
+        ),
+      ],
+
+      // 🔹 AI REPORT (SCROLLS WITH ABOVE)
+      if (_aiReport != null) ...[
+        const SizedBox(height: 16),
+
+        if (_aiReport!['summary'] != null)
+          _buildSectionCard(
+            title: 'Investigation Summary',
+            icon: Icons.summarize,
+            backgroundColor: Colors.orange.shade50.withOpacity(0.5),
+            borderColor: orange.withOpacity(0.3),
+            content: Text(
+              _aiReport!['summary'],
+              style: const TextStyle(fontSize: 15, height: 1.6),
+            ),
+          ),
+
+        if (_aiReport!['case_type_tags'] != null)
+          _buildSectionCard(
+            title: 'Case Type Tags',
+            icon: Icons.label,
+            backgroundColor: Colors.blue.shade50.withOpacity(0.5),
+            borderColor: Colors.blue.shade200,
+            content: _buildTags(_aiReport!['case_type_tags']),
+          ),
+
+        if (_aiReport!['modus_operandi_tags'] != null)
+          _buildSectionCard(
+            title: 'Modus Operandi Tags',
+            icon: Icons.visibility,
+            backgroundColor: Colors.indigo.shade50.withOpacity(0.5),
+            borderColor: Colors.indigo.shade200,
+            content: _buildTags(_aiReport!['modus_operandi_tags']),
+          ),
+
+        if (_aiReport!['investigation_tasks'] != null)
+          _buildSectionCard(
+            title: 'Investigation Tasks',
+            icon: Icons.task_alt,
+            backgroundColor: Colors.teal.shade50.withOpacity(0.5),
+            borderColor: Colors.teal.shade200,
+            content: _buildInvestigationTasks(
+              _aiReport!['investigation_tasks'],
+            ),
+          ),
+
+        if (_aiReport!['applicable_laws'] != null)
+          _buildSectionCard(
+            title: 'Applicable Laws',
+            icon: Icons.gavel,
+            backgroundColor: Colors.green.shade50.withOpacity(0.5),
+            borderColor: Colors.green.shade200,
+            content: _buildApplicableLaws(
+              _aiReport!['applicable_laws'],
+            ),
+          ),
+
+        if (_aiReport!['precautions_and_protocols'] != null)
+          _buildSectionCard(
+            title: 'Precautions & Protocols',
+            icon: Icons.shield,
+            backgroundColor: Colors.amber.shade50.withOpacity(0.5),
+            borderColor: Colors.amber.shade200,
+            content: _buildListItems(
+              _aiReport!['precautions_and_protocols'],
+              Colors.amber.shade700,
+            ),
+          ),
+
+        if (_aiReport!['forensic_suggestions'] != null)
+          _buildSectionCard(
+            title: 'Forensic Suggestions',
+            icon: Icons.science,
+            backgroundColor: Colors.purple.shade50.withOpacity(0.5),
+            borderColor: Colors.purple.shade200,
+            content: _buildForensicSuggestions(
+              _aiReport!['forensic_suggestions'],
+            ),
+          ),
+      ],
+    ],
+  ),
+),
+
     );
   }
 
