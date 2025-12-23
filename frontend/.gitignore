@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Python cache
+__pycache__/
+
 # IntelliJ related
 *.iml
 *.ipr
