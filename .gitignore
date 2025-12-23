@@ -1,2 +1,6 @@
 .env
 dharma-cms-5cc89-b74e10595572.json
+venv/
+backend/temp_videos/
+
+
