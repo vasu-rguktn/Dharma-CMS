@@ -47,8 +47,9 @@ This guide explains how to run the Dharma backend using Docker.
    ```bash
    docker run -d \
      --name dharma-backend \
-     -p 8000:8000 \
+     -p 8080:8080 \
      -e GEMINI_API_KEY=your_gemini_api_key_here \
+     -e PORT=8080 \
      -v $(pwd)/generated_reports:/app/generated_reports \
      dharma-backend
    ```
@@ -69,9 +70,12 @@ This guide explains how to run the Dharma backend using Docker.
 ### Required
 
 - `GEMINI_API_KEY`: Your Google Gemini API key for AI features
+- `GEMINI_API_KEY_INVESTIGATION`: Investigation-specific Gemini API key (optional, falls back to GEMINI_API_KEY)
+- `GEMINI_API_KEY_LEGAL_SUGGESTIONS`: Legal suggestions Gemini API key (optional, falls back to GEMINI_API_KEY)
 
 ### Optional
 
+- `PORT`: Server port (default: `8080`)
 - `INVESTIGATION_REPORTS_DIR`: Directory for generated reports (default: `generated_reports`)
 
 ## Volumes
@@ -130,7 +134,7 @@ docker logs dharma-backend
 
 Change the port mapping:
 ```bash
-docker run -p 8001:8000 ...
+docker run -p 8081:8080 ...
 ```
 
 ### Permission issues with volumes

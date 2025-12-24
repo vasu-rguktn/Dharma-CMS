@@ -68,7 +68,6 @@ app.include_router(ocr_router)
 app.include_router(ai_investigation_router)
 app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
-app.include_router(investigation_report_router)
 app.include_router(document_drafting_router)
 app.include_router(legal_suggester_router)
 
