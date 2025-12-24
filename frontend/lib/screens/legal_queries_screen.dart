@@ -51,9 +51,10 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return;
 
-    context
-        .read<LegalQueriesProvider>()
-        .sendMessage(text, attachments: List.from(_attachments));
+    final lang = Localizations.localeOf(context).languageCode;
+
+    context.read<LegalQueriesProvider>().sendMessage(text,
+        attachments: List.from(_attachments), language: lang);
 
     _controller.clear();
     setState(() {
