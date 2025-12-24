@@ -7,13 +7,11 @@ class LegalSuggestionScreen extends StatefulWidget {
   const LegalSuggestionScreen({super.key});
 
   @override
-  State<LegalSuggestionScreen> createState() =>
-      _LegalSuggestionScreenState();
+  State<LegalSuggestionScreen> createState() => _LegalSuggestionScreenState();
 }
 
 class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
-  final TextEditingController _incidentController =
-      TextEditingController();
+  final TextEditingController _incidentController = TextEditingController();
 
   final Dio _dio = Dio(
     BaseOptions(
@@ -54,11 +52,22 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
       _reasoning = null;
     });
 
+    final lang = Localizations.localeOf(context).languageCode;
+    String description = _incidentController.text.trim();
+
+    // Prompt injection workaround
+    if (lang == 'te') {
+      description += " (Please reply in Telugu language)";
+    } else if (lang != 'en') {
+      description += " (Please reply in $lang language)";
+    }
+
     try {
       final res = await _dio.post(
         "/api/legal-suggestions/",
         data: {
-          "incident_description": _incidentController.text.trim(),
+          "incident_description": description,
+          "language": lang,
         },
       );
 
@@ -114,133 +123,130 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
 
   // ───────── SECTIONS LIST ─────────
   Widget _buildSectionsTimeline() {
-  if (_sectionsText == null || _sectionsText!.isEmpty) {
+    if (_sectionsText == null || _sectionsText!.isEmpty) {
+      return _cardWrapper(
+        "Suggested Legal Sections",
+        Icons.gavel,
+        const Text(
+          "No applicable sections found.",
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    final sections =
+        _sectionsText!.split('\n').where((s) => s.trim().isNotEmpty).toList();
+
     return _cardWrapper(
       "Suggested Legal Sections",
       Icons.gavel,
-      const Text(
-        "No applicable sections found.",
-        style: TextStyle(color: Colors.grey),
+      Stack(
+        children: [
+          // 🔹 CONTINUOUS VERTICAL LINE
+          Positioned(
+            left: 20,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 2,
+              color: orange,
+            ),
+          ),
+
+          // 🔹 TIMELINE ITEMS
+          Column(
+            children: List.generate(sections.length, (index) {
+              final raw = sections[index];
+
+              String sectionText = raw;
+              String meaningText = "";
+
+              final match =
+                  RegExp(r'^(.*?)(?:\s*\(([^)]+)\))$').firstMatch(raw);
+              if (match != null) {
+                sectionText = match.group(1)!.trim();
+                meaningText = match.group(2)!.trim();
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 🔹 DOT (CENTERED)
+                    Container(
+                      margin: const EdgeInsets.only(left: 13),
+                      width: 14,
+                      height: 14,
+                      decoration: const BoxDecoration(
+                        color: orange,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    // 🔹 CARD
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: orange),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              sectionText,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (meaningText.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                meaningText,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
 
-  final sections = _sectionsText!
-      .split('\n')
-      .where((s) => s.trim().isNotEmpty)
-      .toList();
-
-  return _cardWrapper(
-    "Suggested Legal Sections",
-    Icons.gavel,
-    Stack(
-      children: [
-        // 🔹 CONTINUOUS VERTICAL LINE
-        Positioned(
-          left: 20,
-          top: 0,
-          bottom: 0,
-          child: Container(
-            width: 2,
-            color: orange,
-          ),
-        ),
-
-        // 🔹 TIMELINE ITEMS
-        Column(
-          children: List.generate(sections.length, (index) {
-            final raw = sections[index];
-
-            String sectionText = raw;
-            String meaningText = "";
-
-            final match =
-                RegExp(r'^(.*?)(?:\s*\(([^)]+)\))$').firstMatch(raw);
-            if (match != null) {
-              sectionText = match.group(1)!.trim();
-              meaningText = match.group(2)!.trim();
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 🔹 DOT (CENTERED)
-                  Container(
-                    margin: const EdgeInsets.only(left: 13),
-                    width: 14,
-                    height: 14,
-                    decoration: const BoxDecoration(
-                      color: orange,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // 🔹 CARD
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: orange),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            sectionText,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (meaningText.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              meaningText,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ],
-    ),
-  );
-}
-
 // ───────── REASONING ─────────
-Widget _buildReasoning() {
-  return _cardWrapper(
-    "Reasoning",
-    Icons.lightbulb_outline,
-    Text(
-      _reasoning ?? "Reasoning not available.",
-      style: const TextStyle(fontSize: 15, height: 1.6),
-    ),
-  );
-}
-
+  Widget _buildReasoning() {
+    return _cardWrapper(
+      "Reasoning",
+      Icons.lightbulb_outline,
+      Text(
+        _reasoning ?? "Reasoning not available.",
+        style: const TextStyle(fontSize: 15, height: 1.6),
+      ),
+    );
+  }
 
   // ───────── BUILD ─────────
   @override
@@ -310,9 +316,6 @@ Widget _buildReasoning() {
                 ),
               ),
 
-
-
-
               const SizedBox(height: 24),
 
               // ───── RESULT ─────
@@ -331,8 +334,7 @@ Widget _buildReasoning() {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded,
-                          color: Colors.amber),
+                      Icon(Icons.warning_amber_rounded, color: Colors.amber),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(

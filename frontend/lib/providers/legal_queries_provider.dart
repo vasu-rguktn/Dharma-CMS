@@ -62,7 +62,7 @@ class LegalQueriesProvider with ChangeNotifier {
 
   /* ---------------- SEND MESSAGE ---------------- */
   Future<void> sendMessage(String message,
-      {List<Map<String, dynamic>>? attachments}) async {
+      {List<Map<String, dynamic>>? attachments, String language = 'en'}) async {
     final trimmed = message.trim();
     if (trimmed.isEmpty && (attachments == null || attachments.isEmpty)) return;
 
@@ -92,10 +92,21 @@ class LegalQueriesProvider with ChangeNotifier {
       final dio = Dio();
 
       // FormData construction
+      String backendMessage = trimmed;
+      if (language == 'te') {
+        backendMessage += " (Please reply in Telugu language)";
+      } else if (language != 'en') {
+        backendMessage += " (Please reply in $language language)";
+      }
+
       final formData = FormData.fromMap({
         'sessionId': _currentSessionId,
-        'message': trimmed,
+        'message': backendMessage,
+        'language': language, // Send language to backend
       });
+      debugPrint(
+          "DEBUG: LegalQueriesProvider sending to backend with language: $language");
+      debugPrint("DEBUG: Appended Prompt Message: $backendMessage");
 
       if (attachments != null) {
         debugPrint("DEBUG: Preparing ${attachments.length} attachments...");
@@ -156,9 +167,9 @@ class LegalQueriesProvider with ChangeNotifier {
       debugPrint("Status: ${e.response?.statusCode}");
       debugPrint("Response: ${e.response?.data}");
       // Graceful fallback
-      final errorMsg = e.response?.data?['detail'] ?? 
-                      e.message ?? 
-                      'Unable to get legal response. Please try again.';
+      final errorMsg = e.response?.data?['detail'] ??
+          e.message ??
+          'Unable to get legal response. Please try again.';
       await sessionRef.collection('messages').add({
         'sender': 'ai',
         'text': '⚠️ $errorMsg',

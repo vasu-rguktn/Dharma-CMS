@@ -11,6 +11,14 @@ services:
     environment:
       # Required: Set your Gemini API key
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Optional: Investigation-specific Gemini API key (falls back to GEMINI_API_KEY if not set)
+      - GEMINI_API_KEY_INVESTIGATION=${GEMINI_API_KEY_INVESTIGATION:-}
+      # Optional: Legal suggestions Gemini API key (falls back to GEMINI_API_KEY if not set)
+      - GEMINI_API_KEY_LEGAL_SUGGESTIONS=${GEMINI_API_KEY_LEGAL_SUGGESTIONS:-}
+      # Optional: Sketch generation Gemini API key (falls back to GEMINI_API_KEY_INVESTIGATION if not set)
+      - GEMINI_API_KEY_SKETCH=${GEMINI_API_KEY_SKETCH:-}
+      # Optional: Hugging Face token for complaint processing
+      - HF_TOKEN=${HF_TOKEN:-}
       # Optional: Custom reports directory
       - INVESTIGATION_REPORTS_DIR=${INVESTIGATION_REPORTS_DIR:-generated_reports}
       # Set PORT to match Dockerfile
@@ -18,6 +26,10 @@ services:
     volumes:
       # Mount reports directory to persist generated PDFs
       - ./generated_reports:/app/generated_reports
+      # Mount temp_videos directory for ANPR video processing
+      - ./temp_videos:/app/temp_videos
+      # Mount models directory to persist ML models
+      - ./models:/app/models
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]

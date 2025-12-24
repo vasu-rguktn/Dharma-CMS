@@ -15,6 +15,14 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     curl \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    ffmpeg \
+    libgthread-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
@@ -27,8 +35,9 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Create directory for generated reports
-RUN mkdir -p generated_reports/investigation_reports
+# Create directories for generated reports and temporary videos
+RUN mkdir -p generated_reports/investigation_reports && \
+    mkdir -p temp_videos
 
 # (Optional) Expose Cloud Run port (informational only)
 EXPOSE 8080
