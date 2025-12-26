@@ -18,21 +18,45 @@ class PoliceDashboardScreen extends StatefulWidget {
 class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
   Timer? _refreshTimer;
 
-  @override
-  void initState() {
-    super.initState();
+  // @override
+  // void initState() {
+  //   super.initState();
 
-    // 1. Load the count immediately
-    final petitionProvider =
-        Provider.of<PetitionProvider>(context, listen: false);
-    petitionProvider.fetchPetitionCount();
+  //   // 1. Load the count immediately
+  //   final petitionProvider =
+  //       Provider.of<PetitionProvider>(context, listen: false);
+  //   petitionProvider.fetchPetitionCount();
 
-    // 2. Auto‑refresh every 30 seconds
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => petitionProvider.fetchPetitionCount(),
-    );
-  }
+  //   // 2. Auto‑refresh every 30 seconds
+  //   _refreshTimer = Timer.periodic(
+  //     const Duration(seconds: 30),
+  //     (_) => petitionProvider.fetchPetitionCount(),
+  //   );
+  // }
+@override
+void initState() {
+  super.initState();
+
+  final petitionProvider =
+      Provider.of<PetitionProvider>(context, listen: false);
+  final auth =
+      Provider.of<AuthProvider>(context, listen: false);
+
+  // ✅ Load station-wise stats
+  petitionProvider.fetchPetitionStats(
+    stationName: auth.userProfile!.stationName,
+  );
+
+  // ✅ Auto-refresh every 30 seconds (station-wise)
+  _refreshTimer = Timer.periodic(
+    const Duration(seconds: 30),
+    (_) {
+      petitionProvider.fetchPetitionStats(
+        stationName: auth.userProfile!.stationName,
+      );
+    },
+  );
+}
 
   @override
   void dispose() {

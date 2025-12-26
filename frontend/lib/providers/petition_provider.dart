@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/services/storage_service.dart';
+import 'package:Dharma/utils/petition_filter.dart';
 
 class PetitionProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -133,84 +134,82 @@ class PetitionProvider with ChangeNotifier {
   /// Fetch petition stats (Total, Closed, Received, In Progress)
   /// If [userId] is provided, fetches stats for that specific user (Citizen)
   /// If [userId] is null, fetches global stats (Police)
-  Future<void> fetchPetitionStats({String? userId}) async {
-    try {
-      debugPrint('🔍 fetchPetitionStats called with userId: $userId');
+  Future<void> fetchPetitionStats({
+  String? userId,
+  String? stationName,
+}) async {
+  try {
+    debugPrint(
+        '🔍 fetchPetitionStats called | userId=$userId | stationName=$stationName');
 
-      final collection = _firestore.collection('petitions');
+    Query query = _firestore.collection('petitions');
 
-      // Base query
-      Query query = collection;
-      if (userId != null) {
-        query = query.where('userId', isEqualTo: userId);
-        debugPrint('🔍 Querying petitions where userId == $userId');
-      } else {
-        debugPrint('🔍 Querying ALL petitions (police mode)');
-      }
-
-      // Fetch documents to count manually
-      final snapshot = await query.get();
-      debugPrint('🔍 Found ${snapshot.docs.length} total documents');
-
-      int total = snapshot.docs.length;
-      int closed = 0;
-      int received = 0;
-      int inProgress = 0;
-
-      // Count by status
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final policeStatus = data['policeStatus'] as String?;
-        final docUserId = data['userId'];
-
-        debugPrint(
-            '  📄 Doc ${doc.id}: userId=$docUserId, policeStatus=$policeStatus');
-
-        if (policeStatus != null) {
-          final statusLower = policeStatus.toLowerCase();
-
-          if (statusLower.contains('close') ||
-              statusLower.contains('resolve') ||
-              statusLower.contains('reject')) {
-            closed++;
-          } else if (statusLower.contains('progress') ||
-              statusLower.contains('investigation')) {
-            inProgress++;
-          } else if (statusLower.contains('receive') ||
-              statusLower.contains('pending') ||
-              statusLower.contains('acknowledge')) {
-            received++;
-          } else {
-            received++; // Unknown status -> pending
-          }
-        } else {
-          received++; // No status -> pending
-        }
-      }
-
-      final statsMap = {
-        'total': total,
-        'closed': closed,
-        'received': received,
-        'inProgress': inProgress,
-      };
-
-      debugPrint('🔍 Final stats: $statsMap');
-
-      if (userId != null) {
-        _userStats = statsMap;
-        debugPrint('🔍 Updated _userStats: $_userStats');
-      } else {
-        _globalStats = statsMap;
-        _petitionCount = total;
-        debugPrint('🔍 Updated _globalStats: $_globalStats');
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint("❌ Error fetching petition stats: $e");
+    // 👤 Citizen mode
+    if (userId != null) {
+      query = query.where('userId', isEqualTo: userId);
+      debugPrint('🔍 Filtering stats by userId');
     }
+
+    // 🚓 Police mode (station-wise)
+    else if (stationName != null) {
+      query = query.where('stationName', isEqualTo: stationName);
+      debugPrint('🔍 Filtering stats by stationName');
+    }
+
+    // Fetch documents
+    final snapshot = await query.get();
+    debugPrint('📊 Total documents found: ${snapshot.docs.length}');
+
+    int total = snapshot.docs.length;
+    int closed = 0;
+    int received = 0;
+    int inProgress = 0;
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final policeStatus = data['policeStatus'] as String?;
+
+      if (policeStatus != null) {
+        final status = policeStatus.toLowerCase();
+
+        if (status.contains('close') ||
+            status.contains('resolve') ||
+            status.contains('reject')) {
+          closed++;
+        } else if (status.contains('progress') ||
+            status.contains('investigation')) {
+          inProgress++;
+        } else {
+          received++;
+        }
+      } else {
+        received++;
+      }
+    }
+
+    final statsMap = {
+      'total': total,
+      'closed': closed,
+      'received': received,
+      'inProgress': inProgress,
+    };
+
+    // Save stats correctly
+    if (userId != null) {
+      _userStats = statsMap;
+      debugPrint('✅ Updated USER stats: $_userStats');
+    } else {
+      _globalStats = statsMap;
+      _petitionCount = total;
+      debugPrint('✅ Updated STATION stats: $_globalStats');
+    }
+
+    notifyListeners();
+  } catch (e) {
+    debugPrint('❌ Error fetching petition stats: $e');
   }
+}
+
 
   /// Legacy method kept but redirected
   Future<void> fetchPetitionCount() async {
@@ -372,5 +371,59 @@ class PetitionProvider with ChangeNotifier {
       return false;
     }
   }
-}
 
+  /// Fetch filtered petitions by status
+  Future<void> fetchFilteredPetitions({
+    required bool isPolice,
+    String? userId,
+    String? stationName,
+    required PetitionFilter filter,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      Query query = _firestore.collection('petitions');
+
+      if (isPolice && stationName != null) {
+        query = query.where('stationName', isEqualTo: stationName);
+      } else if (!isPolice && userId != null) {
+        query = query.where('userId', isEqualTo: userId);
+      }
+
+      final snapshot =
+          await query.orderBy('createdAt', descending: true).get();
+
+      final all =
+          snapshot.docs.map((d) => Petition.fromFirestore(d)).toList();
+
+      _petitions = all.where((p) {
+        final status = (p.policeStatus ?? '').toLowerCase();
+
+        switch (filter) {
+          case PetitionFilter.received:
+            return status.contains('pending') ||
+                status.contains('received') ||
+                status.contains('acknowledge');
+
+          case PetitionFilter.inProgress:
+            return status.contains('progress') ||
+                status.contains('investigation');
+
+          case PetitionFilter.closed:
+            return status.contains('closed') ||
+                status.contains('resolved') ||
+                status.contains('rejected');
+
+          case PetitionFilter.all:
+            return true;
+        }
+      }).toList();
+    } catch (e) {
+      _petitions = [];
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+}

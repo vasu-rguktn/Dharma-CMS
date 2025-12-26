@@ -5,13 +5,15 @@ import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/utils/petition_filter.dart';
+import 'package:Dharma/screens/petition/petition_list_screen.dart';
+import 'package:Dharma/screens/petition/police_petition_list_screen.dart';
 
 class DashboardBody extends StatelessWidget {
   final AuthProvider auth;
   final CaseProvider cases;
   final ThemeData theme;
   final bool isPolice;
-
   const DashboardBody({
     required this.auth,
     required this.cases,
@@ -116,6 +118,7 @@ class DashboardBody extends StatelessWidget {
                 '${stats['total']}',
                 Icons.gavel,
                 Colors.deepPurple,
+                PetitionFilter.all,
               ),
             ),
             const SizedBox(width: 12),
@@ -126,6 +129,7 @@ class DashboardBody extends StatelessWidget {
                 '${stats['received']}',
                 Icons.call_received,
                 Colors.blue.shade700,
+                PetitionFilter.received,
               ),
             ),
           ],
@@ -140,6 +144,7 @@ class DashboardBody extends StatelessWidget {
                 '${stats['inProgress']}',
                 Icons.sync,
                 Colors.orange.shade700,
+                PetitionFilter.inProgress,
               ),
             ),
             const SizedBox(width: 12),
@@ -150,6 +155,7 @@ class DashboardBody extends StatelessWidget {
                 '${stats['closed']}',
                 Icons.task_alt,
                 Colors.green.shade700,
+                PetitionFilter.closed,
               ),
             ),
           ],
@@ -158,35 +164,60 @@ class DashboardBody extends StatelessWidget {
     );
   }
 
-  Widget _statCard(BuildContext ctx, String title, String value, IconData icon,
-      Color iconColor) {
+  Widget _statCard(
+    BuildContext ctx,
+    String title,
+    String value,
+    IconData icon,
+    Color iconColor,
+    PetitionFilter filter,
+  ) {
     return Card(
       elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: iconColor, size: 32),
-                Text(
-                  value,
-                  style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: orange,
-                      ),
-                ),
-              ],
+      child: InkWell(
+        onTap: () {
+          // Navigate to the petition list screen
+          Navigator.of(ctx).push(
+            MaterialPageRoute(
+              builder: (context) => isPolice
+                  ? PolicePetitionListScreen(
+                      filter: filter,
+                      title: title,
+                    )
+                  : CitizenPetitionListScreen(
+                      filter: filter,
+                      title: title,
+                    ),
             ),
-            const SizedBox(height: 8),
-            Text(title,
-                style: Theme.of(ctx)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey[600])),
-          ],
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(icon, color: iconColor, size: 32),
+                  Text(
+                    value,
+                    style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: orange,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(title,
+                  style: Theme.of(ctx)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.grey[600])),
+            ],
+          ),
         ),
       ),
     );
