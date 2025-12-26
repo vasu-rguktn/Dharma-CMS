@@ -129,19 +129,198 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
     
-    // Listen to text controller changes to detect manual clearing
+    // Setup TTS-ASR coordination to prevent feedback loop
+    _setupTTSHandlers();
+    
+    // Listen to text controller changes to sync with manual edits
     _controller.addListener(() {
-      // If user manually cleared the text while recording
-      if (_isRecording && _controller.text.isEmpty) {
-        // Reset ASR state to start fresh
-        setState(() {
-          _finalizedTranscript = '';
-          _currentTranscript = '';
-          _lastRecognizedText = '';
-        });
-        print('User cleared text - ASR state reset');
+      if (_isRecording) {
+        final currentText = _controller.text.trim();
+        
+        // If user manually edited the text, sync ASR state
+        final expectedText = _finalizedTranscript.isEmpty
+            ? _currentTranscript
+            : '$_finalizedTranscript $_currentTranscript';
+        
+        if (currentText != expectedText.trim()) {
+          // User manually edited - update state to match
+          print('Manual edit detected: "$currentText"');
+          setState(() {
+            // Treat entire text as finalized (user's manual edit)
+            _finalizedTranscript = currentText;
+            _currentTranscript = '';
+            _lastRecognizedText = '';
+          });
+          print('ASR state synced with manual edit');
+        }
       }
     });
+  }
+  
+  /// Setup TTS handlers to coordinate with ASR (prevent feedback loop)
+  void _setupTTSHandlers() {
+    // When TTS starts speaking, pause ASR to prevent feedback
+    _flutterTts.setStartHandler(() {
+      print('TTS started - pausing ASR');
+      _pauseASRForTTS();
+    });
+    
+    // When TTS finishes, resume ASR automatically
+    _flutterTts.setCompletionHandler(() {
+      print('TTS completed - resuming ASR');
+      _resumeASRAfterTTS();
+    });
+    
+    // Handle TTS errors
+    _flutterTts.setErrorHandler((msg) {
+      print('TTS error: $msg - resuming ASR');
+      _resumeASRAfterTTS();
+    });
+  }
+  
+  /// Pause ASR when TTS is speaking (prevent feedback loop)
+  void _pauseASRForTTS() {
+    if (_isRecording && mounted) {
+      print('Pausing ASR for TTS...');
+      // Stop listening temporarily but keep _isRecording true
+      // This preserves the recording state
+      _speech.stop();
+      // Cancel monitoring timer while TTS is active
+      _listeningMonitorTimer?.cancel();
+    }
+  }
+  
+  /// Resume ASR after TTS finishes
+  void _resumeASRAfterTTS() {
+    if (_isRecording && mounted && !_speech.isListening) {
+      print('Resuming ASR after TTS...');
+      // Small delay to ensure TTS audio has fully stopped
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_isRecording && mounted && !_speech.isListening) {
+          // Seamlessly restart listening
+          _seamlessRestart();
+        }
+      });
+    }
+  }
+  
+  /// Centralized function to reset chat state
+  void _resetChatState({bool clearMessages = true, bool stopASR = false}) {
+    print('Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
+    
+    setState(() {
+      // Reset ASR state
+      _finalizedTranscript = '';
+      _currentTranscript = '';
+      _lastRecognizedText = '';
+      
+      // Clear input
+      _controller.clear();
+      _inputError = false;
+      
+      // Clear chat messages if requested
+      if (clearMessages) {
+        _ChatStateHolder.messages.clear();
+        _ChatStateHolder.answers.clear();
+        _ChatStateHolder.currentQ = 0;
+        _ChatStateHolder.hasStarted = false;
+        _dynamicHistory.clear();
+      }
+      
+      // Stop ASR if requested
+      if (stopASR && _isRecording) {
+        _isRecording = false;
+        _recordingStartTime = null;
+        _listeningMonitorTimer?.cancel();
+      }
+    });
+    
+    // Stop TTS
+    try {
+      _flutterTts.stop();
+    } catch (_) {}
+    
+    // Stop ASR if requested
+    if (stopASR) {
+      try {
+        _speech.stop();
+        _speech.cancel();
+      } catch (_) {}
+    }
+  }
+  
+  /// Handle back button press
+  Future<bool> _onWillPop() async {
+    // If chat is active, show confirmation dialog
+    if (_messages.isNotEmpty || _isRecording) {
+      await _showExitDialog();
+      return false; // Prevent navigation
+    }
+    return true; // Allow navigation
+  }
+  
+  /// Show exit confirmation dialog
+  Future<void> _showExitDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('AI Chat in Progress'),
+          content: const Text('Do you want to stop using the AI chatbot?'),
+          actions: [
+            // CLEAR CHAT button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('clear'),
+              child: const Text(
+                'CLEAR CHAT',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
+            ),
+            
+            // CLOSE CHAT button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('close'),
+              child: const Text(
+                'CLOSE CHAT',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
+            
+            // NO button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('no'),
+              child: const Text('NO'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    // Handle user choice
+    if (result == 'clear') {
+      _clearChat();
+    } else if (result == 'close') {
+      _closeChat();
+    }
+    // If 'no', do nothing (dialog closes, chat continues)
+  }
+  
+  /// Clear chat but stay on screen
+  void _clearChat() {
+    _resetChatState(clearMessages: true, stopASR: false);
+    // Restart chat flow for fresh conversation
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _startChatFlow();
+      }
+    });
+  }
+  
+  /// Close chat and navigate away
+  void _closeChat() {
+    _resetChatState(clearMessages: true, stopASR: true);
+    context.go('/ai-legal-guider'); // Navigate to dashboard
   }
 
   @override
@@ -890,7 +1069,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _listeningMonitorTimer?.cancel();
     
     // Start periodic timer to check if SDK is still listening
-    _listeningMonitorTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    // Increased interval to 5 seconds to reduce restart frequency and sounds
+    _listeningMonitorTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted || !_isRecording) {
         timer.cancel();
         return;
@@ -955,37 +1135,35 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 return;
               }
 
-              print('onResult (restart): newWords="$newWords"');
+              print('onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
               _lastSpeechDetected = DateTime.now();
 
-              // Same logic as main onResult
-              if (_lastRecognizedText.isNotEmpty && 
-                  !newWords.startsWith(_lastRecognizedText.substring(0, 
-                      _lastRecognizedText.length > 10 ? 10 : _lastRecognizedText.length))) {
-                print('New utterance detected (restart) - finalizing previous');
+              // SAME SIMPLIFIED LOGIC as main onResult
+              if (result.finalResult) {
+                // User paused - finalize this utterance
+                print('Final result (restart) - finalizing utterance');
                 
-                if (_currentTranscript.isNotEmpty) {
-                  if (_finalizedTranscript.isEmpty) {
-                    _finalizedTranscript = _currentTranscript;
-                  } else {
-                    _finalizedTranscript = '$_finalizedTranscript $_currentTranscript';
-                  }
-                  print('Finalized (restart): "$_finalizedTranscript"');
+                if (_finalizedTranscript.isEmpty) {
+                  _finalizedTranscript = newWords;
+                } else {
+                  _finalizedTranscript = '$_finalizedTranscript $newWords';
                 }
                 
-                _currentTranscript = newWords;
+                _currentTranscript = '';
+                _lastRecognizedText = '';
+                
+                _controller.text = _finalizedTranscript.trim();
+                print('Finalized (restart): "$_finalizedTranscript"');
               } else {
+                // Partial result - REPLACE current transcript
                 _currentTranscript = newWords;
+                _lastRecognizedText = newWords;
+                
+                final displayText = _finalizedTranscript.isEmpty
+                    ? _currentTranscript
+                    : '$_finalizedTranscript $_currentTranscript';
+                _controller.text = displayText.trim();
               }
-              
-              _lastRecognizedText = newWords;
-              
-              final displayText = _finalizedTranscript.isEmpty
-                  ? _currentTranscript
-                  : '$_finalizedTranscript $_currentTranscript';
-              _controller.text = displayText.trim();
-              
-              print('Display (restart): "$displayText"');
             });
           }
         },
@@ -1155,54 +1333,50 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 setState(() {
                   final newWords = result.recognizedWords.trim();
 
-                  // TRUE CONTINUOUS MODE: Never use finalResult
-                  // Strategy: Compare text to detect new utterances
                   if (newWords.isEmpty) {
-                    // Silence - do nothing, keep listening
                     return;
                   }
 
-                  print('onResult: newWords="$newWords"');
+                  print('onResult: newWords="$newWords", isFinal=${result.finalResult}');
                   _lastSpeechDetected = DateTime.now();
 
-                  // Detect if this is a NEW utterance (doesn't start with last recognized)
-                  // This happens when user pauses and starts a new sentence
-                  if (_lastRecognizedText.isNotEmpty && 
-                      !newWords.startsWith(_lastRecognizedText.substring(0, 
-                          _lastRecognizedText.length > 10 ? 10 : _lastRecognizedText.length))) {
-                    // NEW UTTERANCE DETECTED!
-                    print('New utterance detected - finalizing previous');
+                  // SIMPLIFIED CONTINUOUS MODE:
+                  // - Partial results: Update current transcript (replace, don't append)
+                  // - Final results: Move to finalized, clear current
+                  // - SDK keeps listening (monitoring timer restarts if needed)
+                  
+                  if (result.finalResult) {
+                    // User paused - finalize this utterance
+                    print('Final result - finalizing utterance');
                     
-                    // Finalize the previous utterance
-                    if (_currentTranscript.isNotEmpty) {
-                      if (_finalizedTranscript.isEmpty) {
-                        _finalizedTranscript = _currentTranscript;
-                      } else {
-                        _finalizedTranscript = '$_finalizedTranscript $_currentTranscript';
-                      }
-                      print('Finalized: "$_finalizedTranscript"');
+                    if (_finalizedTranscript.isEmpty) {
+                      _finalizedTranscript = newWords;
+                    } else {
+                      _finalizedTranscript = '$_finalizedTranscript $newWords';
                     }
                     
-                    // Start new utterance
-                    _currentTranscript = newWords;
+                    _currentTranscript = ''; // Clear for next utterance
+                    _lastRecognizedText = ''; // Reset comparison
+                    
+                    // Display finalized text
+                    _controller.text = _finalizedTranscript.trim();
+                    print('Finalized: "$_finalizedTranscript"');
                   } else {
-                    // CONTINUATION of current utterance
+                    // Partial result - user is still speaking
+                    // REPLACE current transcript (don't append!)
                     _currentTranscript = newWords;
+                    _lastRecognizedText = newWords;
+                    
+                    // Display: finalized + current
+                    final displayText = _finalizedTranscript.isEmpty
+                        ? _currentTranscript
+                        : '$_finalizedTranscript $_currentTranscript';
+                    _controller.text = displayText.trim();
                   }
-                  
-                  // Update last recognized for next comparison
-                  _lastRecognizedText = newWords;
-                  
-                  // Display: finalized + current
-                  final displayText = _finalizedTranscript.isEmpty
-                      ? _currentTranscript
-                      : '$_finalizedTranscript $_currentTranscript';
-                  _controller.text = displayText.trim();
-                  
-                  print('Display: "$displayText"');
                 });
               }
             },
+
 
           );
           
@@ -1282,17 +1456,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final localizations = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () =>
-              context.go('/ai-legal-guider'), // Add this navigation
+    
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              // Use same logic as back button
+              final canPop = await _onWillPop();
+              if (canPop) {
+                context.go('/ai-legal-guider');
+              }
+            },
+          ),
+          title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
+          backgroundColor: const Color(0xFFFC633C),
+          foregroundColor: Colors.white,
         ),
-        title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
-        backgroundColor: const Color(0xFFFC633C),
-        foregroundColor: Colors.white,
-      ),
       body: Column(
         children: [
           // ── CHAT MESSAGES ──
@@ -1607,7 +1789,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             ),
         ],
       ),
-    );
+      ), // Close Scaffold
+    ); // Close WillPopScope
   }
 }
 
