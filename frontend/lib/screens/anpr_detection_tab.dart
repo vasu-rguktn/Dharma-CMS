@@ -50,12 +50,12 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     if (_isInitialized) return;
 
     // Prefer local FastAPI backend on port 8000.
-    final List<String> candidates = <String>['http://localhost:8000'];
+    final List<String> candidates = <String>['https://fastapi-app-335340524683.asia-south1.run.app'];
 
     final isAndroid =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
-      candidates.add('http://10.0.2.2:8000');
+      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
     }
 
     // Try to find a healthy backend
@@ -68,7 +68,7 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     }
 
     // Fallback to localhost:8000 if none are healthy
-    resolved ??= 'http://localhost:8000';
+    resolved ??= 'https://fastapi-app-335340524683.asia-south1.run.app';
     _baseUrl = resolved;
     _isInitialized = true;
   }
