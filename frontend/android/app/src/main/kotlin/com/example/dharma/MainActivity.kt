@@ -7,14 +7,18 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.dharma.sound_control"
+    private val SOUND_CHANNEL = "com.dharma.sound_control"
+    private val ASR_CHANNEL = "com.dharma.native_asr"
+    
     private var originalNotificationVolume = 0
     private var wasMuted = false
+    private var nativeSpeechRecognizer: NativeSpeechRecognizer? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        // Sound control channel (existing)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SOUND_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "muteSystemSounds" -> {
                     try {
@@ -49,5 +53,40 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+        
+        // Native ASR channel (new)
+        val asrChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ASR_CHANNEL)
+        nativeSpeechRecognizer = NativeSpeechRecognizer(this, asrChannel)
+        
+        asrChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startListening" -> {
+                    try {
+                        val language = call.argument<String>("language") ?: "te-IN"
+                        nativeSpeechRecognizer?.startListening(language)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("START_ERROR", "Failed to start listening: ${e.message}", null)
+                    }
+                }
+                "stopListening" -> {
+                    try {
+                        nativeSpeechRecognizer?.stopListening()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("STOP_ERROR", "Failed to stop listening: ${e.message}", null)
+                    }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+    }
+    
+    override fun onDestroy() {
+        nativeSpeechRecognizer?.destroy()
+        nativeSpeechRecognizer = null
+        super.onDestroy()
     }
 }

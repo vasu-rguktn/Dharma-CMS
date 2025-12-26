@@ -253,6 +253,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   
   // Police Station list - will be loaded dynamically from JSON
   List<String> _policeStationsEnglish = []; // English names
+  bool _isLoadingPoliceStations = false; // Loading state for police stations
+  String? _policeStationLoadError; // Error message if loading fails
 
   bool _hasPrefilled = false; // Flag to prevent multiple pre-fills
   
@@ -267,8 +269,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _accusedList.add(_AccusedFormData());
     // Auto-fill FIR registration date to today
     _firRegistrationDate = DateTime.now();
-    // Load police stations when district is selected
-    _loadPoliceStationsForDistrict();
+    // Note: Police stations will be loaded when district is selected
   }
 
   @override
@@ -446,14 +447,38 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   Future<void> _loadPoliceStationsForDistrict() async {
     if (_selectedDistrict != null) {
-      final stations = await DistrictTranslations.getPoliceStationsForDistrict(
-        context,
-        _selectedDistrict!,
-      );
-      // Stations are returned in English for storage
       setState(() {
-        _policeStationsEnglish = stations;
+        _isLoadingPoliceStations = true;
+        _policeStationLoadError = null;
+        _policeStationsEnglish = [];
       });
+      
+      try {
+        final stations = await DistrictTranslations.getPoliceStationsForDistrict(
+          context,
+          _selectedDistrict!,
+        );
+        // Stations are returned in English for storage
+        setState(() {
+          _policeStationsEnglish = stations;
+          _isLoadingPoliceStations = false;
+          if (stations.isEmpty) {
+            _policeStationLoadError = _getLocalizedLabel(
+              'No police stations found for this district',
+              'ఈ జిల్లా కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+            );
+          }
+        });
+      } catch (e) {
+        debugPrint('Error loading police stations: $e');
+        setState(() {
+          _isLoadingPoliceStations = false;
+          _policeStationLoadError = _getLocalizedLabel(
+            'Failed to load police stations. Please try again.',
+            'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.',
+          );
+        });
+      }
     }
   }
 
@@ -537,7 +562,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -664,7 +689,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -790,7 +815,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1862,13 +1887,38 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 });
                 // Load police stations for selected district
                 if (value != null) {
-                  final stations = await DistrictTranslations.getPoliceStationsForDistrict(
-                    context,
-                    value,
-                  );
                   setState(() {
-                    _policeStationsEnglish = stations;
+                    _isLoadingPoliceStations = true;
+                    _policeStationLoadError = null;
+                    _policeStationsEnglish = [];
+                    _selectedPoliceStation = null; // Reset selection
                   });
+                  
+                  try {
+                    final stations = await DistrictTranslations.getPoliceStationsForDistrict(
+                      context,
+                      value,
+                    );
+                    setState(() {
+                      _policeStationsEnglish = stations;
+                      _isLoadingPoliceStations = false;
+                      if (stations.isEmpty) {
+                        _policeStationLoadError = _getLocalizedLabel(
+                          'No police stations found for this district',
+                          'ఈ జిల్లా కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+                        );
+                      }
+                    });
+                  } catch (e) {
+                    debugPrint('Error loading police stations: $e');
+                    setState(() {
+                      _isLoadingPoliceStations = false;
+                      _policeStationLoadError = _getLocalizedLabel(
+                        'Failed to load police stations. Please try again.',
+                        'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.',
+                      );
+                    });
+                  }
                 }
               },
               validator: (value) {
@@ -1990,7 +2040,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               },
               emptyMessage: _selectedDistrict == null
                   ? _getLocalizedLabel('Please select a district first', 'దయచేసి ముందు జిల్లాను ఎంచుకోండి')
-                  : localizations.loading,
+                  : _isLoadingPoliceStations
+                      ? localizations.loading
+                      : _policeStationLoadError ?? _getLocalizedLabel(
+                          'No police stations found',
+                          'పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+                        ),
             ),
             const SizedBox(height: 16),
             // Year Field

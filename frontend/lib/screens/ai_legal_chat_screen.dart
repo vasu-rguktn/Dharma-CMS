@@ -24,6 +24,7 @@
 //     _ChatQ(
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -37,6 +38,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:Dharma/services/native_speech_recognizer.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -95,12 +97,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   // STT (Speech-to-Text) variables
   late final stt.SpeechToText _speech;
+  late final NativeSpeechRecognizer _nativeSpeech; // Android native ASR
   late final FlutterTts _flutterTts;
   bool _isRecording = false;
   String _currentTranscript =
       ''; // Live/streaming transcript (temporary, gets replaced)
   String _finalizedTranscript =
       ''; // Finalized transcript (locked when user stops/sends)
+  String _lastRecognizedText = ''; // Last text from SDK (for comparison)
   DateTime? _recordingStartTime;
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
   bool _isRestarting =
@@ -110,6 +114,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   int _busyRetryCount = 0; // Track BUSY error retries
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   String? _currentSttLang; // Store current STT language for restarting
+  bool _ignoreAsrCallbacks = false; // Ignore ASR callbacks after sending
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Platform channel for muting system sounds during ASR
@@ -124,9 +129,333 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _nativeSpeech = NativeSpeechRecognizer();
     _flutterTts = FlutterTts();
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
+    
+    // Setup TTS-ASR coordination to prevent feedback loop
+    _setupTTSHandlers();
+    
+    // Setup native speech recognizer callbacks (Android only)
+    if (Platform.isAndroid) {
+      _setupNativeSpeechCallbacks();
+    }
+    
+    // Listen to text controller changes to sync with manual edits
+    _controller.addListener(() {
+      if (_isRecording) {
+        final currentText = _controller.text.trim();
+        
+        // If user manually edited the text, sync ASR state
+        final expectedText = _finalizedTranscript.isEmpty
+            ? _currentTranscript
+            : '$_finalizedTranscript $_currentTranscript';
+        
+        if (currentText != expectedText.trim()) {
+          // User manually edited - update state to match
+          print('Manual edit detected: "$currentText"');
+          setState(() {
+            // Treat entire text as finalized (user's manual edit)
+            _finalizedTranscript = currentText;
+            _currentTranscript = '';
+            _lastRecognizedText = '';
+          });
+          print('ASR state synced with manual edit');
+        }
+      }
+    });
+  }
+  
+  /// Setup native speech recognizer callbacks (Android only)
+  void _setupNativeSpeechCallbacks() {
+    _nativeSpeech.onPartialResult = (text) {
+      // Ignore if we just sent a message
+      if (_ignoreAsrCallbacks) {
+        print('Ignoring ASR callback (just sent message)');
+        // Ensure controller stays clear
+        if (mounted) {
+          setState(() {
+            _controller.clear();
+          });
+        }
+        return;
+      }
+      
+      if (mounted && _isRecording) {
+        setState(() {
+          // Apply corrections for common misrecognitions
+          text = _correctCommonMistakes(text);
+          
+          // REPLACE current transcript (don't append!)
+          _currentTranscript = text;
+          _lastRecognizedText = text;
+          
+          // Display: finalized + current
+          final displayText = _finalizedTranscript.isEmpty
+              ? _currentTranscript
+              : '$_finalizedTranscript $_currentTranscript';
+          
+          // Only update controller if there's actual content
+          // This prevents repopulating immediately after send
+          if (displayText.trim().isNotEmpty) {
+            _controller.text = displayText.trim();
+          }
+          
+          print('Native partial: "$text"');
+        });
+      }
+    };
+    
+    _nativeSpeech.onFinalResult = (text) {
+      // Ignore if we just sent a message
+      if (_ignoreAsrCallbacks) {
+        print('Ignoring final ASR callback (just sent message)');
+        // Ensure controller stays clear
+        if (mounted) {
+          setState(() {
+            _controller.clear();
+          });
+        }
+        return;
+      }
+      
+      if (mounted && _isRecording) {
+        setState(() {
+          // Apply corrections for common misrecognitions
+          text = _correctCommonMistakes(text);
+          
+          print('Native final: "$text"');
+          
+          // Finalize this utterance
+          if (_finalizedTranscript.isEmpty) {
+            _finalizedTranscript = text;
+          } else {
+            _finalizedTranscript = '$_finalizedTranscript $text';
+          }
+          
+          _currentTranscript = '';
+          _lastRecognizedText = '';
+          
+          // Display finalized text only if not empty
+          if (_finalizedTranscript.trim().isNotEmpty) {
+            _controller.text = _finalizedTranscript.trim();
+          }
+          print('Finalized: "$_finalizedTranscript"');
+        });
+      }
+    };
+    
+    _nativeSpeech.onError = (error, message) {
+      print('Native ASR error: $error - $message');
+      // Errors are handled by auto-restart in native code
+    };
+    
+    _nativeSpeech.onListeningStarted = () {
+      print('Native ASR started');
+    };
+    
+    _nativeSpeech.onListeningStopped = () {
+      print('Native ASR stopped');
+    };
+  }
+  
+  /// Correct common speech recognition mistakes
+  String _correctCommonMistakes(String text) {
+    // Fix common misrecognitions
+    // "triple it news video" → "IIIT Nuzvid"
+    text = text.replaceAll(RegExp(r'triple\s*it\s*news\s*video', caseSensitive: false), 'IIIT Nuzvid');
+    text = text.replaceAll(RegExp(r'triple\s*it', caseSensitive: false), 'IIIT');
+    text = text.replaceAll(RegExp(r'news\s*video', caseSensitive: false), 'Nuzvid');
+    
+    // Add more corrections as you discover them
+    // Example: text = text.replaceAll(RegExp(r'wrong\s*word', caseSensitive: false), 'correct word');
+    
+    return text;
+  }
+  
+  /// Setup TTS handlers to coordinate with ASR (prevent feedback loop)
+  void _setupTTSHandlers() {
+    // When TTS starts speaking, pause ASR to prevent feedback
+    _flutterTts.setStartHandler(() {
+      print('TTS started - pausing ASR');
+      _pauseASRForTTS();
+    });
+    
+    // When TTS finishes, resume ASR automatically
+    _flutterTts.setCompletionHandler(() {
+      print('TTS completed - resuming ASR');
+      _resumeASRAfterTTS();
+    });
+    
+    // Handle TTS errors
+    _flutterTts.setErrorHandler((msg) {
+      print('TTS error: $msg - resuming ASR');
+      _resumeASRAfterTTS();
+    });
+  }
+  
+  /// Pause ASR when TTS is speaking (prevent feedback loop)
+  void _pauseASRForTTS() {
+    if (_isRecording && mounted) {
+      print('Pausing ASR for TTS...');
+      
+      if (Platform.isAndroid) {
+        // Use native recognizer on Android
+        _nativeSpeech.stopListening();
+      } else {
+        // Use speech_to_text on iOS
+        _speech.stop();
+        _listeningMonitorTimer?.cancel();
+      }
+    }
+  }
+  
+  /// Resume ASR after TTS finishes
+  void _resumeASRAfterTTS() {
+    if (_isRecording && mounted) {
+      print('Resuming ASR after TTS...');
+      
+      // Small delay to ensure TTS audio has fully stopped
+      Future.delayed(const Duration(milliseconds: 300), () async {
+        if (_isRecording && mounted) {
+          if (Platform.isAndroid) {
+            // Restart native recognizer
+            if (!_nativeSpeech.isListening && _currentSttLang != null) {
+              await _nativeSpeech.startListening(language: _currentSttLang!);
+            }
+          } else {
+            // Restart speech_to_text
+            if (!_speech.isListening) {
+              _seamlessRestart();
+            }
+          }
+        }
+      });
+    }
+  }
+  
+  /// Centralized function to reset chat state
+  void _resetChatState({bool clearMessages = true, bool stopASR = false}) {
+    print('Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
+    
+    setState(() {
+      // Reset ASR state
+      _finalizedTranscript = '';
+      _currentTranscript = '';
+      _lastRecognizedText = '';
+      
+      // Clear input
+      _controller.clear();
+      _inputError = false;
+      
+      // Clear chat messages if requested
+      if (clearMessages) {
+        _ChatStateHolder.messages.clear();
+        _ChatStateHolder.answers.clear();
+        _ChatStateHolder.currentQ = 0;
+        _ChatStateHolder.hasStarted = false;
+        _dynamicHistory.clear();
+      }
+      
+      // Stop ASR if requested
+      if (stopASR && _isRecording) {
+        _isRecording = false;
+        _recordingStartTime = null;
+        _listeningMonitorTimer?.cancel();
+      }
+    });
+    
+    // Stop TTS
+    try {
+      _flutterTts.stop();
+    } catch (_) {}
+    
+    // Stop ASR if requested
+    if (stopASR) {
+      try {
+        if (Platform.isAndroid) {
+          _nativeSpeech.stopListening();
+        } else {
+          _speech.stop();
+          _speech.cancel();
+        }
+      } catch (_) {}
+    }
+  }
+  
+  /// Handle back button press
+  Future<bool> _onWillPop() async {
+    // If chat is active, show confirmation dialog
+    if (_messages.isNotEmpty || _isRecording) {
+      await _showExitDialog();
+      return false; // Prevent navigation
+    }
+    return true; // Allow navigation
+  }
+  
+  /// Show exit confirmation dialog
+  Future<void> _showExitDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('AI Chat in Progress'),
+          content: const Text('Do you want to stop using the AI chatbot?'),
+          actions: [
+            // CLEAR CHAT button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('clear'),
+              child: const Text(
+                'CLEAR CHAT',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
+            ),
+            
+            // CLOSE CHAT button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('close'),
+              child: const Text(
+                'CLOSE CHAT',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
+            
+            // NO button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('no'),
+              child: const Text('NO'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    // Handle user choice
+    if (result == 'clear') {
+      _clearChat();
+    } else if (result == 'close') {
+      _closeChat();
+    }
+    // If 'no', do nothing (dialog closes, chat continues)
+  }
+  
+  /// Clear chat but stay on screen
+  void _clearChat() {
+    _resetChatState(clearMessages: true, stopASR: false);
+    // Restart chat flow for fresh conversation
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _startChatFlow();
+      }
+    });
+  }
+  
+  /// Close chat and navigate away
+  void _closeChat() {
+    _resetChatState(clearMessages: true, stopASR: true);
+    context.go('/ai-legal-guider'); // Navigate to dashboard
   }
 
   @override
@@ -244,13 +573,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     String baseUrl;
     if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
-      baseUrl = "http://127.0.0.1:8000";
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      baseUrl = "http://10.0.2.2:8000";
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     } else {
       // iOS simulator / other platforms
-      baseUrl = "http://127.0.0.1:8000";
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     }
 
     final localeCode = Localizations.localeOf(context).languageCode;
@@ -267,6 +596,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       'language': localeCode,
       'chat_history': _dynamicHistory,
     };
+    
+    print('🚀 Sending to backend:');
+    print('   History items: ${_dynamicHistory.length}');
+    print('   Payload: $payload');
 
     try {
       final resp = await _dio
@@ -306,7 +639,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     } catch (e) {
       String msg = localizations.somethingWentWrong ??
           'Sorry, something went wrong. Please try again later.';
+      
+      // Enhanced error logging for debugging
+      print('❌ Chat step error: $e');
+      
       if (e is DioException) {
+        print('HTTP Status Code: ${e.response?.statusCode}');
+        print('Response Data: ${e.response?.data}');
+        
         if (e.response != null && e.response?.data != null) {
           // try to show server-provided message if present
           try {
@@ -319,6 +659,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           } catch (_) {}
         }
       }
+      
       _addBot(msg);
       setState(() {
         _setIsLoading(false);
@@ -328,7 +669,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
-  void _handleFinalResponse(dynamic data) {
+  Future<void> _handleFinalResponse(dynamic data) async {
     final localizations = AppLocalizations.of(context)!;
 
     _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
@@ -367,6 +708,22 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _setIsLoading(false);
       _setAllowInput(false);
     });
+    
+    // STOP ASR when chat completes
+    if (_isRecording) {
+      print('Chat completed - stopping ASR');
+      if (Platform.isAndroid) {
+        _nativeSpeech.stopListening();
+      } else {
+        _speech.stop();
+        _speech.cancel();
+        _listeningMonitorTimer?.cancel();
+      }
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+      });
+    }
 
     // navigate to details screen
     Future.delayed(const Duration(seconds: 1), () {
@@ -388,64 +745,74 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       await _flutterTts.stop();
     } catch (_) {}
 
-    // If recording is active, stop it first and use the transcript
+    // Capture the final message to send BEFORE resetting state
+    String finalMessage = '';
+    bool wasRecording = _isRecording;
+    
+    // If recording is active, finalize the current transcript
     if (_isRecording) {
-      await _speech.stop();
-      await _speech.cancel();
-
-      // USER EXPLICITLY SENT MESSAGE - Finalize all accumulated text
-      // This is the ONLY place where we finalize on send (not on pauses)
-      setState(() {
-        // Finalize: append current transcript to finalized (accumulate all text)
-        if (_currentTranscript.isNotEmpty) {
-          if (_finalizedTranscript.isNotEmpty) {
-            _finalizedTranscript =
-                '$_finalizedTranscript $_currentTranscript'.trim();
-          } else {
-            _finalizedTranscript = _currentTranscript;
-          }
+      // Finalize all accumulated text for this message
+      if (_currentTranscript.isNotEmpty) {
+        if (_finalizedTranscript.isNotEmpty) {
+          finalMessage = '$_finalizedTranscript $_currentTranscript'.trim();
+        } else {
+          finalMessage = _currentTranscript.trim();
         }
-        _controller.text =
-            _finalizedTranscript; // Update controller with finalized text
-        _currentTranscript = ''; // Clear current
-        _isRecording = false;
-        _recordingStartTime = null;
-        _lastRestartAttempt = null;
-        _isRestarting = false;
-      });
-
-      // Small delay to ensure transcript is finalized
-      await Future.delayed(const Duration(milliseconds: 100));
+      } else {
+        finalMessage = _finalizedTranscript.trim();
+      }
+      
+      // Update controller with finalized message
+      _controller.text = finalMessage;
+    } else {
+      // Not recording - use whatever is in the text field
+      finalMessage = _controller.text.trim();
     }
 
-    final text = _controller.text.trim();
+    // Validate message
     if (!_allowInput || _isLoading) return;
-
-    if (text.isEmpty) {
-      setState(() => _inputError = true);
+    
+    if (finalMessage.isEmpty) {
+      setState(() => _inputError = false);
       _inputFocus.requestFocus();
       return;
     }
 
-    // Finalize transcript before sending
-    _finalizedTranscript = text;
-    _currentTranscript = ''; // Clear for next recording session
-
-    setState(() => _inputError = false);
+    // CRITICAL: Reset ALL ASR state for fresh start on next message
+    // This prevents concatenation with previous messages
+    setState(() {
+      _finalizedTranscript = '';  // Clear finalized transcript
+      _currentTranscript = '';     // Clear current transcript
+      _lastRecognizedText = '';    // Reset comparison baseline
+      _inputError = false;
+      _ignoreAsrCallbacks = true;  // Ignore ASR callbacks temporarily
+    });
+    
+    // Clear the text field UI
     _controller.clear();
-    _addUser(text);
+    
+    // Add delay to ensure clear is visible and catch all ASR callbacks
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Re-enable ASR callbacks after delay
+    setState(() {
+      _ignoreAsrCallbacks = false;
+    });
+    
+    // Add message to chat
+    _addUser(finalMessage);
 
-    // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
-    // AND we do NOT add it to history (because backend uses initial_details as context).
-    // Subsequent messages are added to history.
     // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
     // AND we do NOT add it to history (because backend uses initial_details as context).
     // Subsequent messages are added to history.
     if (_ChatStateHolder.answers['details'] == null ||
         _ChatStateHolder.answers['details']!.isEmpty) {
-      _ChatStateHolder.answers['details'] = text;
+      _ChatStateHolder.answers['details'] = finalMessage;
+      print('📝 First message set as initial_details: "$finalMessage"');
     } else {
-      _dynamicHistory.add({'role': 'user', 'content': text});
+      _dynamicHistory.add({'role': 'user', 'content': finalMessage});
+      print('📝 Added to history: "$finalMessage"');
+      print('📚 Current history length: ${_dynamicHistory.length}');
     }
 
     _setAllowInput(false);
@@ -453,6 +820,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Explicitly call backend step
     _processDynamicStep();
+    
+    // NOTE: Continuous listening continues automatically
+    // The monitoring timer will restart if SDK stopped
   }
 
   /// Show attachment options (photos, videos, PDFs, audio)
@@ -786,49 +1156,42 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         onResult: (result) {
           if (mounted) {
             setState(() {
-              // Simplified and more permissive transcript accumulation
+              // CONTINUOUS LISTENING WITH PAUSE SUPPORT
               final newWords = result.recognizedWords.trim();
               if (newWords.isNotEmpty) {
                 print(
-                    'onResult (restart): newWords="$newWords", currentTranscript="$_currentTranscript"');
+                    'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
                 // Update last speech detected timestamp
                 _lastSpeechDetected = DateTime.now();
 
-                if (_currentTranscript.isEmpty) {
-                  // First words
-                  _currentTranscript = newWords;
-                } else if (newWords == _currentTranscript) {
-                  // Exact match - no change needed
-                  return;
-                } else if (newWords.startsWith(_currentTranscript.trim())) {
-                  // Partial update - new words contain existing transcript (expanding)
-                  _currentTranscript = newWords;
-                } else if (_currentTranscript.trim().endsWith(newWords)) {
-                  // New words are a suffix of existing - likely a partial update, keep existing
-                  return;
-                } else {
-                  // New words - append them
-                  // Check if we need to add a space
-                  final trimmedCurrent = _currentTranscript.trim();
-                  if (trimmedCurrent.isNotEmpty) {
-                    final lastChar = trimmedCurrent[trimmedCurrent.length - 1];
-                    if (lastChar != ' ' &&
-                        lastChar != '.' &&
-                        lastChar != ',' &&
-                        lastChar != '!' &&
-                        lastChar != '?' &&
-                        lastChar != ':') {
-                      _currentTranscript = '$trimmedCurrent $newWords';
-                    } else {
-                      _currentTranscript = '$trimmedCurrent$newWords';
-                    }
+                if (result.finalResult) {
+                  // FINAL RESULT: User paused - add to finalized transcript
+                  print('Final result detected (restart) - adding to finalized transcript');
+                  
+                  if (_finalizedTranscript.isEmpty) {
+                    _finalizedTranscript = newWords;
                   } else {
-                    _currentTranscript = newWords;
+                    // Add space between utterances
+                    _finalizedTranscript = '$_finalizedTranscript $newWords';
+                  }
+                  
+                  // Clear current transcript for next utterance
+                  _currentTranscript = '';
+                  
+                  // Update text field with accumulated finalized text
+                  _controller.text = _finalizedTranscript;
+                  print('Finalized transcript (restart): "$_finalizedTranscript"');
+                } else {
+                  // PARTIAL RESULT: User is still speaking - update current transcript
+                  _currentTranscript = newWords;
+                  
+                  // Show finalized + current in text field
+                  if (_finalizedTranscript.isEmpty) {
+                    _controller.text = _currentTranscript;
+                  } else {
+                    _controller.text = '$_finalizedTranscript $_currentTranscript';
                   }
                 }
-                _controller.text = _currentTranscript;
-                print(
-                    'onResult (restart): updated transcript to "$_currentTranscript"');
               }
             });
           }
@@ -868,6 +1231,134 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
+  /// Start monitoring timer to detect when SDK stops and trigger restart
+  void _startListeningMonitor() {
+    // Cancel any existing timer
+    _listeningMonitorTimer?.cancel();
+    
+    // Start periodic timer to check if SDK is still listening
+    // Increased interval to 5 seconds to reduce restart frequency and sounds
+    _listeningMonitorTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || !_isRecording) {
+        timer.cancel();
+        return;
+      }
+      
+      // Check if SDK stopped listening
+      if (!_speech.isListening && !_isRestarting) {
+        print('Monitor detected SDK stopped - triggering seamless restart...');
+        _seamlessRestart();
+      }
+    });
+  }
+
+  /// Seamlessly restart speech recognition without losing accumulated text
+  /// Called when SDK stops but user hasn't manually stopped recording
+  Future<void> _seamlessRestart() async {
+    if (!_isRecording || !mounted || _currentSttLang == null) {
+      print('Seamless restart skipped - not recording or no language set');
+      return;
+    }
+
+    // Prevent multiple simultaneous restarts
+    if (_isRestarting) {
+      print('Restart already in progress, skipping...');
+      return;
+    }
+
+    _isRestarting = true;
+    print('=== SEAMLESS RESTART INITIATED ===');
+    print('Preserving state: finalized="$_finalizedTranscript", current="$_currentTranscript"');
+
+    try {
+      // Stop any existing session
+      if (_speech.isListening) {
+        await _speech.stop();
+        await _speech.cancel();
+      }
+
+      // Small delay for clean state
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Double-check we're still recording
+      if (!_isRecording || !mounted) {
+        _isRestarting = false;
+        return;
+      }
+
+      // Restart listening with same configuration
+      print('Restarting speech recognition...');
+      await _speech.listen(
+        localeId: _currentSttLang!,
+        listenFor: const Duration(hours: 1),
+        pauseFor: const Duration(hours: 1),
+        partialResults: true,
+        cancelOnError: false,
+        onResult: (result) {
+          if (mounted && _isRecording) {
+            setState(() {
+              final newWords = result.recognizedWords.trim();
+
+              if (newWords.isEmpty) {
+                return;
+              }
+
+              print('onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
+              _lastSpeechDetected = DateTime.now();
+
+              // SAME SIMPLIFIED LOGIC as main onResult
+              if (result.finalResult) {
+                // User paused - finalize this utterance
+                print('Final result (restart) - finalizing utterance');
+                
+                if (_finalizedTranscript.isEmpty) {
+                  _finalizedTranscript = newWords;
+                } else {
+                  _finalizedTranscript = '$_finalizedTranscript $newWords';
+                }
+                
+                _currentTranscript = '';
+                _lastRecognizedText = '';
+                
+                _controller.text = _finalizedTranscript.trim();
+                print('Finalized (restart): "$_finalizedTranscript"');
+              } else {
+                // Partial result - REPLACE current transcript
+                _currentTranscript = newWords;
+                _lastRecognizedText = newWords;
+                
+                final displayText = _finalizedTranscript.isEmpty
+                    ? _currentTranscript
+                    : '$_finalizedTranscript $_currentTranscript';
+                _controller.text = displayText.trim();
+              }
+            });
+          }
+        },
+      );
+      
+      // Start monitoring timer to detect when SDK stops
+      _startListeningMonitor();
+
+      _busyRetryCount = 0;
+      _isRestarting = false;
+      print('=== SEAMLESS RESTART COMPLETE ===');
+    } catch (e) {
+      _isRestarting = false;
+      print('Error during seamless restart: $e');
+      
+      // Retry once after delay
+      if (_busyRetryCount < 3 && mounted && _isRecording) {
+        _busyRetryCount++;
+        Future.delayed(Duration(milliseconds: 1000 * _busyRetryCount), () {
+          if (mounted && _isRecording && !_speech.isListening) {
+            _seamlessRestart();
+          }
+        });
+      }
+    }
+  }
+
   /// Toggle recording on/off for speech-to-text
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
@@ -885,28 +1376,31 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     final langCode = Localizations.localeOf(context).languageCode;
-    // Map 'te' to 'te_IN', 'en' to 'en_US'
-    String sttLang = langCode == 'te' ? 'te_IN' : 'en_US';
+    // Map 'te' to 'te-IN', 'en' to 'en-US' (Android uses hyphen format)
+    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
 
     if (_isRecording) {
       // Stop recording manually
-      _listeningMonitorTimer?.cancel(); // Stop the monitoring timer
-      _listeningMonitorTimer = null;
-      await _speech.stop();
-      await _speech.cancel(); // Cancel to fully reset
+      if (Platform.isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.stopListening();
+      } else {
+        // Use speech_to_text on iOS
+        _listeningMonitorTimer?.cancel();
+        _listeningMonitorTimer = null;
+        await _speech.stop();
+        await _speech.cancel();
+      }
 
       // Unmute system sounds after stopping
       await _unmuteSystemSounds();
 
       // USER EXPLICITLY STOPPED MICROPHONE - Finalize all accumulated text
-      // This is the ONLY place where we finalize on stop (not on pauses)
-      // BUT: If user manually cleared the input box, respect that and keep it empty
       final wasManuallyCleared = _controller.text.isEmpty;
 
       setState(() {
         if (!wasManuallyCleared) {
-          // Only finalize if user didn't manually clear the text
-          // Finalize: append current transcript to finalized (accumulate all text)
+          // Finalize transcript if not manually cleared
           if (_currentTranscript.isNotEmpty) {
             if (_finalizedTranscript.isNotEmpty) {
               _finalizedTranscript =
@@ -915,28 +1409,56 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               _finalizedTranscript = _currentTranscript;
             }
           }
-          _controller.text =
-              _finalizedTranscript; // Update controller with finalized text
+          _controller.text = _finalizedTranscript;
         } else {
-          // User manually cleared the text - respect that and keep it empty
           _finalizedTranscript = '';
           _controller.text = '';
         }
-        _currentTranscript = ''; // Clear current
+        _currentTranscript = '';
         _isRecording = false;
         _recordingStartTime = null;
-        _currentSttLang = null; // Clear language when stopping
+        _currentSttLang = null;
       });
     } else {
       // Start recording - ensure clean state
       await _flutterTts.stop();
-      await _speech.stop(); // Stop any existing session
-      await _speech.cancel(); // Cancel to fully reset
 
-      // Small delay to ensure clean state
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (Platform.isAndroid) {
+        // Use Android Native SpeechRecognizer
+        print('Starting Android Native SpeechRecognizer...');
+        
+        // Mute system sounds to prevent restart sounds
+        await _muteSystemSounds();
+        
+        setState(() {
+          _isRecording = true;
+          _currentSttLang = sttLang;
+          _currentTranscript = '';
+          _lastRecognizedText = '';
+          _recordingStartTime = DateTime.now();
+        });
 
-      bool available = await _speech.initialize(
+        try {
+          await _nativeSpeech.startListening(language: sttLang);
+          print('Native ASR started successfully');
+        } catch (e) {
+          print('Error starting native ASR: $e');
+          await _unmuteSystemSounds(); // Unmute on error
+          setState(() {
+            _isRecording = false;
+            _recordingStartTime = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error starting speech recognition: $e')),
+          );
+        }
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.stop();
+        await _speech.cancel();
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        bool available = await _speech.initialize(
         onError: (val) {
           print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
           final errorMsg = val.errorMsg.toLowerCase();
@@ -947,12 +1469,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             print(
                 'No match error detected - treating as silence/pause, continuing to listen...');
             // Don't do anything - just let it continue listening
-            // The status handler will restart if needed
             return;
           }
 
           // For other errors, only stop on truly critical errors
-          // Most errors are temporary and should not stop continuous listening
           if (val.permanent &&
               (errorMsg.contains('permission') ||
                   errorMsg.contains('denied'))) {
@@ -973,42 +1493,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             if (mounted && _isRecording) {
               Future.delayed(const Duration(milliseconds: 500), () {
                 if (mounted && _isRecording && !_speech.isListening) {
-                  _safeRestartListening(sttLang);
+                  _seamlessRestart();
                 }
               });
             }
-          }
-        },
-        onStatus: (val) {
-          // For continuous listening: IGNORE "done", "notListening", "noSpeech", "noMatch" completely
-          // These are just SDK status updates during pauses - we treat them as normal, not completion
-          // We do NOT restart or cancel - we just keep listening
-          if (val == 'done' ||
-              val == 'notListening' ||
-              val == 'noSpeech' ||
-              val == 'noMatch') {
-            // Completely ignore these statuses - they're just pause indicators, not completion
-            // The SDK will continue listening if we don't interfere
-            // Only restart if speech recognition actually stopped (checked separately)
-            return;
-          }
-
-          // Only handle critical statuses
-          if (val == 'error' || val == 'aborted') {
-            // Even for errors, don't auto-stop - let user decide
-            print(
-                'STT Status: $val - Critical status, but continuing in continuous mode');
-            // DO NOT set _isRecording = false - let user manually stop
-          } else if (val == 'listening') {
-            // Speech recognition is active - this is good, no action needed
-            print('STT Status: listening - Active and listening');
-          }
-
-          // Periodically check if we need to restart (only if actually stopped)
-          // Do this check less frequently to avoid interference
-          if (_isRecording && mounted && val == 'listening') {
-            // Reset restart attempt when we confirm we're listening
-            _lastRestartAttempt = null;
           }
         },
       );
@@ -1018,9 +1506,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           _isRecording = true;
           _currentSttLang =
               sttLang; // Store language for potential restart on clear
-          // Start fresh - streaming mode will replace with latest recognized text
-          // If user wants to continue, they can type or the finalized text is already in the controller
+          // Start fresh - TRUE continuous mode
           _currentTranscript = ''; // Start fresh for streaming
+          _lastRecognizedText = ''; // Reset for text comparison
           _recordingStartTime = DateTime.now();
           _lastRestartAttempt = null; // Reset restart tracker for new session
           _isRestarting = false; // Reset restart flag
@@ -1044,55 +1532,55 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 setState(() {
                   final newWords = result.recognizedWords.trim();
 
-                  // CONTINUOUS MODE: For initial session, newWords contains full transcript
-                  // Replace current transcript (streaming updates), but preserve finalized text
-                  if (newWords.isNotEmpty) {
-                    print(
-                        'onResult: newWords="$newWords", currentTranscript="$_currentTranscript"');
-                    // Update last speech detected timestamp
-                    _lastSpeechDetected = DateTime.now();
+                  if (newWords.isEmpty) {
+                    return;
+                  }
 
-                    if (_currentTranscript.isEmpty) {
-                      // First words
-                      _currentTranscript = newWords;
-                    } else if (newWords == _currentTranscript) {
-                      // Exact match - no change needed
-                      return;
-                    } else if (newWords.startsWith(_currentTranscript.trim())) {
-                      // Partial update - new words contain existing transcript (expanding)
-                      _currentTranscript = newWords;
-                    } else if (_currentTranscript.trim().endsWith(newWords)) {
-                      // New words are a suffix of existing - likely a partial update, keep existing
-                      return;
+                  print('onResult: newWords="$newWords", isFinal=${result.finalResult}');
+                  _lastSpeechDetected = DateTime.now();
+
+                  // SIMPLIFIED CONTINUOUS MODE:
+                  // - Partial results: Update current transcript (replace, don't append)
+                  // - Final results: Move to finalized, clear current
+                  // - SDK keeps listening (monitoring timer restarts if needed)
+                  
+                  if (result.finalResult) {
+                    // User paused - finalize this utterance
+                    print('Final result - finalizing utterance');
+                    
+                    if (_finalizedTranscript.isEmpty) {
+                      _finalizedTranscript = newWords;
                     } else {
-                      // New words - append them
-                      // Check if we need to add a space
-                      final trimmedCurrent = _currentTranscript.trim();
-                      if (trimmedCurrent.isNotEmpty) {
-                        final lastChar =
-                            trimmedCurrent[trimmedCurrent.length - 1];
-                        if (lastChar != ' ' &&
-                            lastChar != '.' &&
-                            lastChar != ',' &&
-                            lastChar != '!' &&
-                            lastChar != '?' &&
-                            lastChar != ':') {
-                          _currentTranscript = '$trimmedCurrent $newWords';
-                        } else {
-                          _currentTranscript = '$trimmedCurrent$newWords';
-                        }
-                      } else {
-                        _currentTranscript = newWords;
-                      }
+                      _finalizedTranscript = '$_finalizedTranscript $newWords';
                     }
-                    _controller.text = _currentTranscript;
-                    print(
-                        'onResult: updated transcript to "$_currentTranscript"');
+                    
+                    _currentTranscript = ''; // Clear for next utterance
+                    _lastRecognizedText = ''; // Reset comparison
+                    
+                    // Display finalized text
+                    _controller.text = _finalizedTranscript.trim();
+                    print('Finalized: "$_finalizedTranscript"');
+                  } else {
+                    // Partial result - user is still speaking
+                    // REPLACE current transcript (don't append!)
+                    _currentTranscript = newWords;
+                    _lastRecognizedText = newWords;
+                    
+                    // Display: finalized + current
+                    final displayText = _finalizedTranscript.isEmpty
+                        ? _currentTranscript
+                        : '$_finalizedTranscript $_currentTranscript';
+                    _controller.text = displayText.trim();
                   }
                 });
               }
             },
+
+
           );
+          
+          // Start monitoring timer to detect when SDK stops
+          _startListeningMonitor();
         } catch (e) {
           final errorStr = e.toString().toLowerCase();
           if (errorStr.contains('busy') || errorStr.contains('already')) {
@@ -1108,16 +1596,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             // Unmute on error
             await _unmuteSystemSounds();
           }
+          }
+        } else {
+          await _unmuteSystemSounds();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Speech recognition not available. Please check if your device supports it.'),
+            ),
+          );
         }
-      } else {
-        await _unmuteSystemSounds(); // Unmute if not available
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Speech recognition not available. Please check if your device supports it.'),
-          ),
-        );
-      }
+      } // Close iOS else branch
     }
   }
 
@@ -1167,17 +1656,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final localizations = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () =>
-              context.go('/ai-legal-guider'), // Add this navigation
+    
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              // Use same logic as back button
+              final canPop = await _onWillPop();
+              if (canPop) {
+                context.go('/ai-legal-guider');
+              }
+            },
+          ),
+          title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
+          backgroundColor: const Color(0xFFFC633C),
+          foregroundColor: Colors.white,
         ),
-        title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
-        backgroundColor: const Color(0xFFFC633C),
-        foregroundColor: Colors.white,
-      ),
       body: Column(
         children: [
           // ── CHAT MESSAGES ──
@@ -1492,7 +1989,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             ),
         ],
       ),
-    );
+      ), // Close Scaffold
+    ); // Close WillPopScope
   }
 }
 

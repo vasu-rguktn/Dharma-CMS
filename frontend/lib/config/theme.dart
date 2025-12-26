@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Primary Orange Brand Color
-  static const Color primaryOrange = Color(0xFFFC633C);
+  static const Color primaryOrange = Color.fromRGBO(252, 99, 60, 1);
 
   // Light Theme Colors
   static const Color _primaryLight = primaryOrange;

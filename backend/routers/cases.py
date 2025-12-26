@@ -231,8 +231,12 @@ async def create_case(req: CaseCreateRequest):
         
         update_time, doc_ref = db.collection('cases').add(data)
         
-        # 3. Return ID
-        return {"status": "success", "id": doc_ref.id, "message": "Case created successfully"}
+        # 3. Return ID (ensure all values are JSON serializable)
+        return {
+            "status": "success", 
+            "id": str(doc_ref.id),  # Ensure string conversion
+            "message": "Case created successfully"
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

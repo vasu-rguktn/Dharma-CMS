@@ -1,9 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional, Set
+from typing import Optional, Set, Any, Dict
 from loguru import logger
 import traceback
+import numpy as np
 
 from services.anpr_service import detect_plate
 
@@ -32,6 +33,24 @@ class ANPRResponse(BaseModel):
     message: Optional[str] = None
     image: Optional[str] = None
     video_url: Optional[str] = None
+
+
+def _make_json_serializable(obj: Any) -> Any:
+    """Convert numpy types and other non-serializable objects to JSON-compatible types"""
+    if isinstance(obj, (np.integer, np.floating)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: _make_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_make_json_serializable(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        try:
+            return vars(obj)
+        except TypeError:
+            return str(obj)
+    return obj
 
 
 def _guess_mime_type(filename: str) -> str:
@@ -105,6 +124,9 @@ async def anpr_detect(
         
         # Detect plates
         result = detect_plate(file_obj, is_video=is_video, frame_skip=frame_skip)
+        
+        # Ensure all values are JSON serializable (convert numpy types)
+        result = _make_json_serializable(result)
         
         # Add success message
         if is_video:
