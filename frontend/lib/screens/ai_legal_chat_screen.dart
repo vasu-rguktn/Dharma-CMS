@@ -128,6 +128,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _flutterTts = FlutterTts();
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
+    
+    // Listen to text controller changes to detect manual clearing
+    _controller.addListener(() {
+      // If user manually cleared the text while recording
+      if (_isRecording && _controller.text.isEmpty) {
+        // Reset ASR state to start fresh
+        setState(() {
+          _finalizedTranscript = '';
+          _currentTranscript = '';
+          _lastRecognizedText = '';
+        });
+        print('User cleared text - ASR state reset');
+      }
+    });
   }
 
   @override
@@ -397,64 +411,61 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       await _flutterTts.stop();
     } catch (_) {}
 
-    // If recording is active, stop it first and use the transcript
+    // Capture the final message to send BEFORE resetting state
+    String finalMessage = '';
+    
+    // If recording is active, finalize the current transcript
     if (_isRecording) {
-      await _speech.stop();
-      await _speech.cancel();
-
-      // USER EXPLICITLY SENT MESSAGE - Finalize all accumulated text
-      // This is the ONLY place where we finalize on send (not on pauses)
-      setState(() {
-        // Finalize: append current transcript to finalized (accumulate all text)
-        if (_currentTranscript.isNotEmpty) {
-          if (_finalizedTranscript.isNotEmpty) {
-            _finalizedTranscript =
-                '$_finalizedTranscript $_currentTranscript'.trim();
-          } else {
-            _finalizedTranscript = _currentTranscript;
-          }
+      // Finalize all accumulated text for this message
+      if (_currentTranscript.isNotEmpty) {
+        if (_finalizedTranscript.isNotEmpty) {
+          finalMessage = '$_finalizedTranscript $_currentTranscript'.trim();
+        } else {
+          finalMessage = _currentTranscript.trim();
         }
-        _controller.text =
-            _finalizedTranscript; // Update controller with finalized text
-        _currentTranscript = ''; // Clear current
-        _isRecording = false;
-        _recordingStartTime = null;
-        _lastRestartAttempt = null;
-        _isRestarting = false;
-      });
-
-      // Small delay to ensure transcript is finalized
-      await Future.delayed(const Duration(milliseconds: 100));
+      } else {
+        finalMessage = _finalizedTranscript.trim();
+      }
+      
+      // Update controller with finalized message
+      _controller.text = finalMessage;
+    } else {
+      // Not recording - use whatever is in the text field
+      finalMessage = _controller.text.trim();
     }
 
-    final text = _controller.text.trim();
+    // Validate message
     if (!_allowInput || _isLoading) return;
-
-    if (text.isEmpty) {
-      setState(() => _inputError = true);
+    
+    if (finalMessage.isEmpty) {
+      setState(() => _inputError = false);
       _inputFocus.requestFocus();
       return;
     }
 
-    // Finalize transcript before sending
-    _finalizedTranscript = text;
-    _currentTranscript = ''; // Clear for next recording session
-
-    setState(() => _inputError = false);
+    // CRITICAL: Reset ALL ASR state for fresh start on next message
+    // This prevents concatenation with previous messages
+    setState(() {
+      _finalizedTranscript = '';  // Clear finalized transcript
+      _currentTranscript = '';     // Clear current transcript
+      _lastRecognizedText = '';    // Reset comparison baseline
+      _inputError = false;
+    });
+    
+    // Clear the text field UI
     _controller.clear();
-    _addUser(text);
+    
+    // Add message to chat
+    _addUser(finalMessage);
 
-    // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
-    // AND we do NOT add it to history (because backend uses initial_details as context).
-    // Subsequent messages are added to history.
     // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
     // AND we do NOT add it to history (because backend uses initial_details as context).
     // Subsequent messages are added to history.
     if (_ChatStateHolder.answers['details'] == null ||
         _ChatStateHolder.answers['details']!.isEmpty) {
-      _ChatStateHolder.answers['details'] = text;
+      _ChatStateHolder.answers['details'] = finalMessage;
     } else {
-      _dynamicHistory.add({'role': 'user', 'content': text});
+      _dynamicHistory.add({'role': 'user', 'content': finalMessage});
     }
 
     _setAllowInput(false);
@@ -462,6 +473,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Explicitly call backend step
     _processDynamicStep();
+    
+    // NOTE: Continuous listening continues automatically
+    // The monitoring timer will restart if SDK stopped
   }
 
   /// Show attachment options (photos, videos, PDFs, audio)
