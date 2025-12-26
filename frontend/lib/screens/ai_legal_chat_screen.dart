@@ -24,6 +24,7 @@
 //     _ChatQ(
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -37,6 +38,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:Dharma/services/native_speech_recognizer.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -95,6 +97,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   // STT (Speech-to-Text) variables
   late final stt.SpeechToText _speech;
+  late final NativeSpeechRecognizer _nativeSpeech; // Android native ASR
   late final FlutterTts _flutterTts;
   bool _isRecording = false;
   String _currentTranscript =
@@ -111,6 +114,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   int _busyRetryCount = 0; // Track BUSY error retries
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   String? _currentSttLang; // Store current STT language for restarting
+  bool _ignoreAsrCallbacks = false; // Ignore ASR callbacks after sending
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Platform channel for muting system sounds during ASR
@@ -125,12 +129,18 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _nativeSpeech = NativeSpeechRecognizer();
     _flutterTts = FlutterTts();
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
     
     // Setup TTS-ASR coordination to prevent feedback loop
     _setupTTSHandlers();
+    
+    // Setup native speech recognizer callbacks (Android only)
+    if (Platform.isAndroid) {
+      _setupNativeSpeechCallbacks();
+    }
     
     // Listen to text controller changes to sync with manual edits
     _controller.addListener(() {
@@ -155,6 +165,113 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         }
       }
     });
+  }
+  
+  /// Setup native speech recognizer callbacks (Android only)
+  void _setupNativeSpeechCallbacks() {
+    _nativeSpeech.onPartialResult = (text) {
+      // Ignore if we just sent a message
+      if (_ignoreAsrCallbacks) {
+        print('Ignoring ASR callback (just sent message)');
+        // Ensure controller stays clear
+        if (mounted) {
+          setState(() {
+            _controller.clear();
+          });
+        }
+        return;
+      }
+      
+      if (mounted && _isRecording) {
+        setState(() {
+          // Apply corrections for common misrecognitions
+          text = _correctCommonMistakes(text);
+          
+          // REPLACE current transcript (don't append!)
+          _currentTranscript = text;
+          _lastRecognizedText = text;
+          
+          // Display: finalized + current
+          final displayText = _finalizedTranscript.isEmpty
+              ? _currentTranscript
+              : '$_finalizedTranscript $_currentTranscript';
+          
+          // Only update controller if there's actual content
+          // This prevents repopulating immediately after send
+          if (displayText.trim().isNotEmpty) {
+            _controller.text = displayText.trim();
+          }
+          
+          print('Native partial: "$text"');
+        });
+      }
+    };
+    
+    _nativeSpeech.onFinalResult = (text) {
+      // Ignore if we just sent a message
+      if (_ignoreAsrCallbacks) {
+        print('Ignoring final ASR callback (just sent message)');
+        // Ensure controller stays clear
+        if (mounted) {
+          setState(() {
+            _controller.clear();
+          });
+        }
+        return;
+      }
+      
+      if (mounted && _isRecording) {
+        setState(() {
+          // Apply corrections for common misrecognitions
+          text = _correctCommonMistakes(text);
+          
+          print('Native final: "$text"');
+          
+          // Finalize this utterance
+          if (_finalizedTranscript.isEmpty) {
+            _finalizedTranscript = text;
+          } else {
+            _finalizedTranscript = '$_finalizedTranscript $text';
+          }
+          
+          _currentTranscript = '';
+          _lastRecognizedText = '';
+          
+          // Display finalized text only if not empty
+          if (_finalizedTranscript.trim().isNotEmpty) {
+            _controller.text = _finalizedTranscript.trim();
+          }
+          print('Finalized: "$_finalizedTranscript"');
+        });
+      }
+    };
+    
+    _nativeSpeech.onError = (error, message) {
+      print('Native ASR error: $error - $message');
+      // Errors are handled by auto-restart in native code
+    };
+    
+    _nativeSpeech.onListeningStarted = () {
+      print('Native ASR started');
+    };
+    
+    _nativeSpeech.onListeningStopped = () {
+      print('Native ASR stopped');
+    };
+  }
+  
+  /// Correct common speech recognition mistakes
+  String _correctCommonMistakes(String text) {
+    // Fix common misrecognitions
+    // "triple it news video" → "IIIT Nuzvid"
+    text = text.replaceAll(RegExp(r'triple\s*it\s*news\s*video', caseSensitive: false), 'IIIT Nuzvid');
+    text = text.replaceAll(RegExp(r'triple\s*it', caseSensitive: false), 'IIIT');
+    text = text.replaceAll(RegExp(r'news\s*video', caseSensitive: false), 'Nuzvid');
+    
+    // Add more corrections as you discover them
+    // Example: text = text.replaceAll(RegExp(r'wrong\s*word', caseSensitive: false), 'correct word');
+    
+    return text;
   }
   
   /// Setup TTS handlers to coordinate with ASR (prevent feedback loop)
@@ -182,23 +299,37 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void _pauseASRForTTS() {
     if (_isRecording && mounted) {
       print('Pausing ASR for TTS...');
-      // Stop listening temporarily but keep _isRecording true
-      // This preserves the recording state
-      _speech.stop();
-      // Cancel monitoring timer while TTS is active
-      _listeningMonitorTimer?.cancel();
+      
+      if (Platform.isAndroid) {
+        // Use native recognizer on Android
+        _nativeSpeech.stopListening();
+      } else {
+        // Use speech_to_text on iOS
+        _speech.stop();
+        _listeningMonitorTimer?.cancel();
+      }
     }
   }
   
   /// Resume ASR after TTS finishes
   void _resumeASRAfterTTS() {
-    if (_isRecording && mounted && !_speech.isListening) {
+    if (_isRecording && mounted) {
       print('Resuming ASR after TTS...');
+      
       // Small delay to ensure TTS audio has fully stopped
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (_isRecording && mounted && !_speech.isListening) {
-          // Seamlessly restart listening
-          _seamlessRestart();
+      Future.delayed(const Duration(milliseconds: 300), () async {
+        if (_isRecording && mounted) {
+          if (Platform.isAndroid) {
+            // Restart native recognizer
+            if (!_nativeSpeech.isListening && _currentSttLang != null) {
+              await _nativeSpeech.startListening(language: _currentSttLang!);
+            }
+          } else {
+            // Restart speech_to_text
+            if (!_speech.isListening) {
+              _seamlessRestart();
+            }
+          }
         }
       });
     }
@@ -243,8 +374,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Stop ASR if requested
     if (stopASR) {
       try {
-        _speech.stop();
-        _speech.cancel();
+        if (Platform.isAndroid) {
+          _nativeSpeech.stopListening();
+        } else {
+          _speech.stop();
+          _speech.cancel();
+        }
       } catch (_) {}
     }
   }
@@ -461,6 +596,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       'language': localeCode,
       'chat_history': _dynamicHistory,
     };
+    
+    print('🚀 Sending to backend:');
+    print('   History items: ${_dynamicHistory.length}');
+    print('   Payload: $payload');
 
     try {
       final resp = await _dio
@@ -530,7 +669,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
-  void _handleFinalResponse(dynamic data) {
+  Future<void> _handleFinalResponse(dynamic data) async {
     final localizations = AppLocalizations.of(context)!;
 
     _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
@@ -569,6 +708,22 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _setIsLoading(false);
       _setAllowInput(false);
     });
+    
+    // STOP ASR when chat completes
+    if (_isRecording) {
+      print('Chat completed - stopping ASR');
+      if (Platform.isAndroid) {
+        _nativeSpeech.stopListening();
+      } else {
+        _speech.stop();
+        _speech.cancel();
+        _listeningMonitorTimer?.cancel();
+      }
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+      });
+    }
 
     // navigate to details screen
     Future.delayed(const Duration(seconds: 1), () {
@@ -592,6 +747,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Capture the final message to send BEFORE resetting state
     String finalMessage = '';
+    bool wasRecording = _isRecording;
     
     // If recording is active, finalize the current transcript
     if (_isRecording) {
@@ -629,10 +785,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _currentTranscript = '';     // Clear current transcript
       _lastRecognizedText = '';    // Reset comparison baseline
       _inputError = false;
+      _ignoreAsrCallbacks = true;  // Ignore ASR callbacks temporarily
     });
     
     // Clear the text field UI
     _controller.clear();
+    
+    // Add delay to ensure clear is visible and catch all ASR callbacks
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Re-enable ASR callbacks after delay
+    setState(() {
+      _ignoreAsrCallbacks = false;
+    });
     
     // Add message to chat
     _addUser(finalMessage);
@@ -643,8 +808,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (_ChatStateHolder.answers['details'] == null ||
         _ChatStateHolder.answers['details']!.isEmpty) {
       _ChatStateHolder.answers['details'] = finalMessage;
+      print('📝 First message set as initial_details: "$finalMessage"');
     } else {
       _dynamicHistory.add({'role': 'user', 'content': finalMessage});
+      print('📝 Added to history: "$finalMessage"');
+      print('📚 Current history length: ${_dynamicHistory.length}');
     }
 
     _setAllowInput(false);
@@ -1208,28 +1376,31 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     final langCode = Localizations.localeOf(context).languageCode;
-    // Map 'te' to 'te_IN', 'en' to 'en_US'
-    String sttLang = langCode == 'te' ? 'te_IN' : 'en_US';
+    // Map 'te' to 'te-IN', 'en' to 'en-US' (Android uses hyphen format)
+    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
 
     if (_isRecording) {
       // Stop recording manually
-      _listeningMonitorTimer?.cancel(); // Stop the monitoring timer
-      _listeningMonitorTimer = null;
-      await _speech.stop();
-      await _speech.cancel(); // Cancel to fully reset
+      if (Platform.isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.stopListening();
+      } else {
+        // Use speech_to_text on iOS
+        _listeningMonitorTimer?.cancel();
+        _listeningMonitorTimer = null;
+        await _speech.stop();
+        await _speech.cancel();
+      }
 
       // Unmute system sounds after stopping
       await _unmuteSystemSounds();
 
       // USER EXPLICITLY STOPPED MICROPHONE - Finalize all accumulated text
-      // This is the ONLY place where we finalize on stop (not on pauses)
-      // BUT: If user manually cleared the input box, respect that and keep it empty
       final wasManuallyCleared = _controller.text.isEmpty;
 
       setState(() {
         if (!wasManuallyCleared) {
-          // Only finalize if user didn't manually clear the text
-          // Finalize: append current transcript to finalized (accumulate all text)
+          // Finalize transcript if not manually cleared
           if (_currentTranscript.isNotEmpty) {
             if (_finalizedTranscript.isNotEmpty) {
               _finalizedTranscript =
@@ -1238,28 +1409,56 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               _finalizedTranscript = _currentTranscript;
             }
           }
-          _controller.text =
-              _finalizedTranscript; // Update controller with finalized text
+          _controller.text = _finalizedTranscript;
         } else {
-          // User manually cleared the text - respect that and keep it empty
           _finalizedTranscript = '';
           _controller.text = '';
         }
-        _currentTranscript = ''; // Clear current
+        _currentTranscript = '';
         _isRecording = false;
         _recordingStartTime = null;
-        _currentSttLang = null; // Clear language when stopping
+        _currentSttLang = null;
       });
     } else {
       // Start recording - ensure clean state
       await _flutterTts.stop();
-      await _speech.stop(); // Stop any existing session
-      await _speech.cancel(); // Cancel to fully reset
 
-      // Small delay to ensure clean state
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (Platform.isAndroid) {
+        // Use Android Native SpeechRecognizer
+        print('Starting Android Native SpeechRecognizer...');
+        
+        // Mute system sounds to prevent restart sounds
+        await _muteSystemSounds();
+        
+        setState(() {
+          _isRecording = true;
+          _currentSttLang = sttLang;
+          _currentTranscript = '';
+          _lastRecognizedText = '';
+          _recordingStartTime = DateTime.now();
+        });
 
-      bool available = await _speech.initialize(
+        try {
+          await _nativeSpeech.startListening(language: sttLang);
+          print('Native ASR started successfully');
+        } catch (e) {
+          print('Error starting native ASR: $e');
+          await _unmuteSystemSounds(); // Unmute on error
+          setState(() {
+            _isRecording = false;
+            _recordingStartTime = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error starting speech recognition: $e')),
+          );
+        }
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.stop();
+        await _speech.cancel();
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        bool available = await _speech.initialize(
         onError: (val) {
           print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
           final errorMsg = val.errorMsg.toLowerCase();
@@ -1397,16 +1596,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             // Unmute on error
             await _unmuteSystemSounds();
           }
+          }
+        } else {
+          await _unmuteSystemSounds();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Speech recognition not available. Please check if your device supports it.'),
+            ),
+          );
         }
-      } else {
-        await _unmuteSystemSounds(); // Unmute if not available
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Speech recognition not available. Please check if your device supports it.'),
-          ),
-        );
-      }
+      } // Close iOS else branch
     }
   }
 

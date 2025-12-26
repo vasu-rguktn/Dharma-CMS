@@ -1265,7 +1265,7 @@ async def chat_step(payload: ChatStepRequest):
              # Fallback
              return ChatStepResponse(status="done", final_response=None)
 
-        if len(payload.chat_history) > 15:
+        if len(payload.chat_history) > 25:
              logger.info("Chat history too long, forcing DONE.")
              reply = "DONE"
         else:
@@ -1376,6 +1376,16 @@ INFORMATION:
             extracted_address = n_data.get("address")
             extracted_phone = n_data.get("phone")
             
+            # Helper function to check if question was already asked
+            def was_question_asked(chat_history, question_keywords):
+                """Check if a question containing any of the keywords was already asked"""
+                for msg in chat_history:
+                    if msg.role == "assistant":
+                        content_lower = msg.content.lower()
+                        if any(keyword in content_lower for keyword in question_keywords):
+                            return True
+                return False
+            
             final_name = payload.full_name
             # Validate extracted name if payload name is missing
             extracted_name_valid = extracted_name and validate_name(extracted_name)
@@ -1384,11 +1394,18 @@ INFORMATION:
                 if extracted_name_valid:
                     final_name = extracted_name
                 else:
-                    # Valid Name is MISSING. Ask for it.
-                    msg = "What is your full name?"
-                    if language == "te":
-                        msg = "మీ పూర్తి పేరు ఏమిటి?"
-                    return ChatStepResponse(status="question", message=msg)
+                    # Check if we already asked for name
+                    name_keywords = ["పూర్తి పేరు", "full name", "your name", "మీ పేరు"]
+                    if was_question_asked(payload.chat_history, name_keywords):
+                        # Already asked but no valid answer - use placeholder or skip
+                        logger.warning("Name question already asked but no valid answer received")
+                        final_name = "Not Provided"  # Use placeholder instead of asking again
+                    else:
+                        # First time asking - ask for it
+                        msg = "What is your full name?"
+                        if language == "te":
+                            msg = "మీ పూర్తి పేరు ఏమిటి?"
+                        return ChatStepResponse(status="question", message=msg)
                 
             final_address = payload.address
             extracted_address_valid = extracted_address and validate_address(extracted_address)
@@ -1397,22 +1414,34 @@ INFORMATION:
                 if extracted_address_valid:
                     final_address = extracted_address
                 else:
-                    # Valid Address is MISSING. Ask for it.
-                    msg = "Where do you live (place / area)?"
-                    if language == "te":
-                        msg = "మీరు ఎక్కడ నివసిస్తున్నారు (ప్రాంతం / నగరం)?"
-                    return ChatStepResponse(status="question", message=msg)
+                    # Check if we already asked for address
+                    address_keywords = ["నివసిస్తున్నారు", "where do you live", "your address", "మీ చిరునామా"]
+                    if was_question_asked(payload.chat_history, address_keywords):
+                        logger.warning("Address question already asked but no valid answer received")
+                        final_address = "Not Provided"
+                    else:
+                        # First time asking
+                        msg = "Where do you live (place / area)?"
+                        if language == "te":
+                            msg = "మీరు ఎక్కడ నివసిస్తున్నారు (ప్రాంతం / నగరం)?"
+                        return ChatStepResponse(status="question", message=msg)
                 
             final_phone = payload.phone
             if not final_phone or not validate_phone(final_phone):
                  if extracted_phone and validate_phone(extracted_phone):
                      final_phone = extracted_phone
                  else:
-                     # Valid phone is MISSING. Ask for it.
-                     msg = "Enter your phone number (10 digits):"
-                     if language == "te":
-                         msg = "దయచేసి మీ ఫోన్ నంబర్‌ను నమోదు చేయండి (10 అంకెలు):"
-                     return ChatStepResponse(status="question", message=msg)
+                     # Check if we already asked for phone
+                     phone_keywords = ["ఫోన్ నంబర్", "phone number", "contact number", "మీ నంబర్"]
+                     if was_question_asked(payload.chat_history, phone_keywords):
+                         logger.warning("Phone question already asked but no valid answer received")
+                         final_phone = "Not Provided"
+                     else:
+                         # First time asking
+                         msg = "Enter your phone number (10 digits):"
+                         if language == "te":
+                             msg = "దయచేసి మీ ఫోన్ నంబర్‌ను నమోదు చేయండి (10 అంకెలు):"
+                         return ChatStepResponse(status="question", message=msg)
 
             # Create final object (mapping fields)
             try:
