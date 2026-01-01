@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';   // <-- add this
@@ -70,11 +71,22 @@ void initState() {
     final cases = Provider.of<CaseProvider>(context);
     final theme = Theme.of(context);
 
-    return DashboardBody(
-      auth: auth,
-      cases: cases,
-      theme: theme,
-      isPolice: true,
+    return WillPopScope(
+      onWillPop: () async {
+        // Use GoRouter's canPop to check navigation history
+        final router = GoRouter.of(context);
+        if (router.canPop()) {
+          router.pop();
+          return false; // Prevent default exit, we handled navigation
+        }
+        return true; // Allow exit only if truly root
+      },
+      child: DashboardBody(
+        auth: auth,
+        cases: cases,
+        theme: theme,
+        isPolice: true,
+      ),
     );
   }
 }

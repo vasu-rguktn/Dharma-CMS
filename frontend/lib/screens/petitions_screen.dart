@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
@@ -72,7 +73,16 @@ class _PetitionsScreenState extends State<PetitionsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Use GoRouter's canPop to check navigation history
+        if (context.canPop()) {
+          context.pop();
+          return false; // Prevent default exit, we handled navigation
+        }
+        return true; // Allow exit only if truly root
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Petition Management'),
         bottom: TabBar(
@@ -90,6 +100,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
           _buildPetitionsListTab(theme),
           _buildCreatePetitionTab(theme),
         ],
+      ),
       ),
     );
   }

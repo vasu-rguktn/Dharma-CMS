@@ -253,7 +253,16 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Use GoRouter's canPop to check navigation history
+        if (context.canPop()) {
+          context.pop();
+          return false; // Prevent default exit, we handled navigation
+        }
+        return true; // Allow exit only if truly root
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -349,6 +358,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

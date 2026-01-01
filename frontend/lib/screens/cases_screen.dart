@@ -64,7 +64,16 @@ class _CasesScreenState extends State<CasesScreen> {
     final localizations = AppLocalizations.of(context)!;
     const Color orange = Color(0xFFFC633C);
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // Use GoRouter's canPop to check navigation history
+        if (context.canPop()) {
+          context.pop();
+          return false; // Prevent default exit, we handled navigation
+        }
+        return true; // Allow exit only if truly root
+      },
+      child: Scaffold(
       // Slightly darker background so white cards stand out clearly
       backgroundColor: const Color(0xFFF1F3F6),
       body: SafeArea(
@@ -241,6 +250,7 @@ class _CasesScreenState extends State<CasesScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

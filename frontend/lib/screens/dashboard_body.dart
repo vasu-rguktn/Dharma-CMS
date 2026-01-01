@@ -231,8 +231,14 @@ class DashboardBody extends StatelessWidget {
       child: Card(
         elevation: 2,
         child: InkWell(
-          // onTap: () => ctx.go(route),
-          onTap: () => GoRouter.of(ctx).go(route),
+          onTap: () {
+            print('🚀 [NAVIGATION] Pushing route: $route');
+            print('📚 [NAVIGATION] Can pop before push: ${GoRouter.of(ctx).canPop()}');
+            ctx.push(route).then((_) {
+              print('🔙 [NAVIGATION] Returned from: $route');
+              print('📚 [NAVIGATION] Can pop after return: ${GoRouter.of(ctx).canPop()}');
+            });
+          },
 
           borderRadius: BorderRadius.circular(12),
           child: Padding(
