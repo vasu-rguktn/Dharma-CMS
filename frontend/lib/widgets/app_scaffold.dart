@@ -268,11 +268,18 @@ class _AppScaffoldState extends State<AppScaffold> {
       ),
       selected: isActive,
       onTap: () {
+        print('📂 [SIDEBAR] Navigating to: $route');
+        print('📚 [SIDEBAR] Can pop before navigation: ${Navigator.of(context).canPop()}');
+        
         // Safely close the drawer if it's open, then navigate.
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
-        context.go(route);
+        
+        // Use push instead of go to preserve navigation stack
+        context.push(route).then((_) {
+          print('🔙 [SIDEBAR] Returned from: $route');
+        });
       },
     );
   }

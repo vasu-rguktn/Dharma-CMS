@@ -30,6 +30,18 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
   // List of {bytes: Uint8List, name: String}
   final List<Map<String, dynamic>> _attachments = [];
 
+  @override
+  void initState() {
+    super.initState();
+    print('🎬 [LEGAL_QUERIES] Screen initialized (initState)');
+  }
+
+  @override
+  void dispose() {
+    print('🗑️ [LEGAL_QUERIES] Screen disposed (navigating away)');
+    super.dispose();
+  }
+
   /* ---------------- VOICE ---------------- */
   Future<void> _startListening() async {
     final available = await _speech.initialize();
@@ -281,15 +293,38 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<LegalQueriesProvider>();
 
+    // Log navigation stack state when screen is built
+    print('📱 [LEGAL_QUERIES] Screen built');
+    print('📚 [LEGAL_QUERIES] Can pop: ${Navigator.of(context).canPop()}');
+    print('📍 [LEGAL_QUERIES] Current route: ${ModalRoute.of(context)?.settings.name ?? "unnamed"}');
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: orange,
         title: const Text("Legal Assistant"),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+        leading: Row(
+          children: [
+            // Custom back button with logging
+            if (Navigator.of(context).canPop())
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  print('⬅️ [LEGAL_QUERIES] Back button pressed');
+                  print('📚 [LEGAL_QUERIES] Can pop: ${Navigator.of(context).canPop()}');
+                  Navigator.of(context).pop();
+                  print('✅ [LEGAL_QUERIES] Pop executed');
+                },
+              ),
+            // History drawer button
+            Expanded(
+              child: Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.history),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
 

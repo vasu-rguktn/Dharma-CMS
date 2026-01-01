@@ -7,7 +7,6 @@ import 'package:Dharma/models/case_journal_entry.dart';
 import 'package:Dharma/models/crime_details.dart';
 import 'package:Dharma/models/media_analysis.dart';
 import 'package:Dharma/models/petition.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -156,11 +155,17 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
 
     final theme = Theme.of(context);
 
+    print('📱 [CASE_DETAIL] Screen built for case: ${widget.caseId}');
+    print('📚 [CASE_DETAIL] Can pop: ${Navigator.of(context).canPop()}');
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/cases'),
+          onPressed: () {
+            print('⬅️ [CASE_DETAIL] Back button pressed');
+            Navigator.of(context).pop();
+          },
         ),
         title: Text(caseDoc.title),
         bottom: TabBar(

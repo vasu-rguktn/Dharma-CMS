@@ -18,10 +18,19 @@ class AiLegalGuiderScreen extends StatelessWidget {
     final double topImageHeight = size.height * 0.4;
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FE),
-      body: SafeArea(
-        child: Stack(
+    return WillPopScope(
+      onWillPop: () async {
+        // Use GoRouter's canPop to check navigation history
+        if (context.canPop()) {
+          context.pop();
+          return false; // Prevent default exit, we handled navigation
+        }
+        return true; // Allow exit only if truly root
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F8FE),
+        body: SafeArea(
+          child: Stack(
           children: [
             // ── 1. HEADER + SVG + LOGO ──
             Column(
@@ -188,6 +197,7 @@ class AiLegalGuiderScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

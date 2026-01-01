@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 
 class LegalSuggestionScreen extends StatefulWidget {
@@ -253,6 +252,9 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
+    print('📱 [LEGAL_SUGGESTION] Screen built');
+    print('📚 [LEGAL_SUGGESTION] Can pop: ${Navigator.of(context).canPop()}');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
@@ -267,7 +269,10 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   IconButton(
                     icon: const Icon(Icons.arrow_back),
                     color: orange,
-                    onPressed: () => context.go('/dashboard'),
+                    onPressed: () {
+                      print('⬅️ [LEGAL_SUGGESTION] Back button pressed');
+                      Navigator.of(context).pop();
+                    },
                   ),
                   const SizedBox(width: 6),
                   const Text(

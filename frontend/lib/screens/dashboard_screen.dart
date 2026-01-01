@@ -53,40 +53,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FE),
+    return WillPopScope(
+      onWillPop: () async {
+        // Use GoRouter's canPop to check navigation history
+        if (context.canPop()) {
+          context.pop();
+          return false; // Prevent default exit, we handled navigation
+        }
+        return true; // Allow exit only if truly root
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F8FE),
 
-      // === Floating Chatbot Button with Label ===
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/ai-legal-guider'),
-        backgroundColor: const Color(0xFFFC633C),
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50),
-        ),
-        icon: const Icon(
-          Icons.chat_bubble_outline,
-          size: 26,
-          color: Colors.white,
-        ),
-        label: Text(
-          localizations.newCase,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        // === Floating Chatbot Button with Label ===
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.go('/ai-legal-guider'),
+          backgroundColor: const Color(0xFFFC633C),
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(50),
+          ),
+          icon: const Icon(
+            Icons.chat_bubble_outline,
+            size: 26,
             color: Colors.white,
           ),
+          label: Text(
+            localizations.newCase,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
         ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
-      // === Use the modular DashboardBody ===
-      // This ensures we respect the role-based logic defined in DashboardBody
-      body: DashboardBody(
-        auth: authProvider,
-        cases: caseProvider,
-        theme: theme,
-        isPolice: authProvider.role == 'police',
+        // === Use the modular DashboardBody ===
+        // This ensures we respect the role-based logic defined in DashboardBody
+        body: DashboardBody(
+          auth: authProvider,
+          cases: caseProvider,
+          theme: theme,
+          isPolice: authProvider.role == 'police',
+        ),
       ),
     );
   }
