@@ -454,8 +454,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   
   /// Close chat and navigate away
   void _closeChat() {
+    print('🚪 [AI_LEGAL_CHAT] Closing chat and navigating back');
     _resetChatState(clearMessages: true, stopASR: true);
-    context.go('/ai-legal-guider'); // Navigate to dashboard
+    Navigator.of(context).pop(); // Navigate back to previous screen
   }
 
   @override
@@ -1657,24 +1658,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final localizations = AppLocalizations.of(context)!;
     
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () async {
-              // Use same logic as back button
-              final canPop = await _onWillPop();
-              if (canPop) {
-                context.go('/ai-legal-guider');
-              }
-            },
-          ),
-          title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
-          backgroundColor: const Color(0xFFFC633C),
-          foregroundColor: Colors.white,
+    print('📱 [AI_LEGAL_CHAT] Screen built');
+    print('📚 [AI_LEGAL_CHAT] Can pop: ${Navigator.of(context).canPop()}');
+    
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            print('⬅️ [AI_LEGAL_CHAT] Back button pressed');
+            // Use same logic as back button
+            final canPop = await _onWillPop();
+            if (canPop) {
+              print('✅ [AI_LEGAL_CHAT] Navigating back');
+              Navigator.of(context).pop();
+            }
+          },
         ),
+        title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
+        backgroundColor: const Color(0xFFFC633C),
+        foregroundColor: Colors.white,
+      ),
       body: Column(
         children: [
           // ── CHAT MESSAGES ──
@@ -1989,8 +1993,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             ),
         ],
       ),
-      ), // Close Scaffold
-    ); // Close WillPopScope
+    ); // Close Scaffold
   }
 }
 

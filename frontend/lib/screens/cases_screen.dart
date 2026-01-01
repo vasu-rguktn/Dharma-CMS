@@ -64,16 +64,10 @@ class _CasesScreenState extends State<CasesScreen> {
     final localizations = AppLocalizations.of(context)!;
     const Color orange = Color(0xFFFC633C);
 
-    return WillPopScope(
-      onWillPop: () async {
-        // Use GoRouter's canPop to check navigation history
-        if (context.canPop()) {
-          context.pop();
-          return false; // Prevent default exit, we handled navigation
-        }
-        return true; // Allow exit only if truly root
-      },
-      child: Scaffold(
+    print('📱 [CASES_SCREEN] Screen built');
+    print('📚 [CASES_SCREEN] Can pop: ${Navigator.of(context).canPop()}');
+
+    return Scaffold(
       // Slightly darker background so white cards stand out clearly
       backgroundColor: const Color(0xFFF1F3F6),
       body: SafeArea(
@@ -86,7 +80,10 @@ class _CasesScreenState extends State<CasesScreen> {
                 children: [
                   // Pure Orange Back Arrow
                   GestureDetector(
-                    onTap: () => context.go('/dashboard'),
+                    onTap: () {
+                      print('⬅️ [CASES_SCREEN] Back button pressed');
+                      Navigator.of(context).pop();
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Icon(
@@ -117,7 +114,10 @@ class _CasesScreenState extends State<CasesScreen> {
 
                   // New Case Button — same row, right aligned
                   ElevatedButton.icon(
-                    onPressed: () => context.go('/cases/new'),
+                    onPressed: () {
+                      print('🆕 [CASES_SCREEN] New Case button pressed');
+                      context.push('/cases/new');
+                    },
                     icon: const Icon(Icons.add, size: 20),
                     label: Text(localizations.newCase),
                     style: ElevatedButton.styleFrom(
@@ -251,7 +251,6 @@ class _CasesScreenState extends State<CasesScreen> {
           ],
         ),
       ),
-      ),
     );
   }
 
@@ -354,7 +353,10 @@ class _CasesScreenState extends State<CasesScreen> {
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
-            onTap: () => context.go('/cases/${caseItem.id}'),
+            onTap: () {
+              print('📝 [CASES_SCREEN] Case card tapped: ${caseItem.id}');
+              context.push('/cases/${caseItem.id}');
+            },
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -455,7 +457,10 @@ class _CasesScreenState extends State<CasesScreen> {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () => context.go('/cases/${caseItem.id}'),
+                        onPressed: () {
+                          print('🔍 [CASES_SCREEN] View Details button pressed: ${caseItem.id}');
+                          context.push('/cases/${caseItem.id}');
+                        },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
