@@ -10,6 +10,12 @@ import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/screens/geo_camera_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:path_provider/path_provider.dart';
 
 class CaseDetailScreen extends StatefulWidget {
   final String caseId;
@@ -36,6 +42,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     _fetchCaseJournal();
     _fetchMediaAnalyses();
     _fetchCrimeDetails();
+    _fetchCrimeSceneEvidence(); // NEW: Load saved evidence
     // Fetch petitions linked to this case (by FIR number) after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchLinkedPetitions();
@@ -143,6 +150,506 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   String _formatTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  // Fetch saved crime scene evidence from Firestore
+  Future<void> _fetchCrimeSceneEvidence() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('cases')
+          .doc(widget.caseId)
+          .collection('crimeSceneEvidence')
+          .doc('evidence')
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        setState(() {
+          _crimeSceneAttachments = List<String>.from(data['filePaths'] ?? []);
+          _sceneAnalysisResult = data['latestAnalysis'];
+        });
+      }
+    } catch (e) {
+      print('Error fetching crime scene evidence: $e');
+    }
+  }
+
+  // Save crime scene evidence to Firestore
+  Future<void> _saveCrimeSceneEvidence() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('cases')
+          .doc(widget.caseId)
+          .collection('crimeSceneEvidence')
+          .doc('evidence')
+          .set({
+        'filePaths': _crimeSceneAttachments,
+        'latestAnalysis': _sceneAnalysisResult,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error saving crime scene evidence: $e');
+    }
+  }
+
+  // Crime Scene Evidence Handlers
+  Future<void> _captureSceneEvidence(CaptureMode mode) async {
+    final XFile? capturedFile = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GeoCameraScreen(captureMode: mode),
+      ),
+    );
+
+    if (capturedFile != null && mounted) {
+      setState(() {
+        _crimeSceneAttachments.add(capturedFile.path);
+      });
+      
+      // Save to Firestore
+      await _saveCrimeSceneEvidence();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Geo-tagged ${mode == CaptureMode.image ? "photo" : "video"} captured',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _uploadSceneFile() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      
+      // Show options: Image or Video
+      final result = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Upload Evidence'),
+          content: const Text('Choose file type to upload:'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'image'),
+              child: const Text('Image'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'video'),
+              child: const Text('Video'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'file'),
+              child: const Text('Document'),
+            ),
+          ],
+        ),
+      );
+
+      if (result == null) return;
+
+      XFile? file;
+      if (result == 'image') {
+        file = await picker.pickImage(source: ImageSource.gallery);
+      } else if (result == 'video') {
+        file = await picker.pickVideo(source: ImageSource.gallery);
+      } else {
+        // Use file picker for documents
+        final fileResult = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+        );
+        if (fileResult != null && fileResult.files.single.path != null) {
+          setState(() {
+            _crimeSceneAttachments.add(fileResult.files.single.path!);
+          });
+          
+          // Save to Firestore
+          await _saveCrimeSceneEvidence();
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Document uploaded'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (file != null && mounted) {
+        setState(() {
+          _crimeSceneAttachments.add(file!.path);
+        });
+        
+        // Save to Firestore
+        await _saveCrimeSceneEvidence();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${result == "image" ? "Image" : "Video"} uploaded'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _analyzeSceneWithAI() async {
+    if (_crimeSceneAttachments.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please capture or upload evidence first'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isAnalyzingScene = true;
+      _sceneAnalysisResult = null;
+    });
+
+    try {
+      // Initialize Gemini AI
+      const apiKey = 'AIzaSyCOXByDRXteWArP_lnoV8FajWbvXXawZ4Q';
+      
+      final model = GenerativeModel(
+        model: 'gemini-2.5-flash',
+        apiKey: apiKey,
+      );
+
+      // Prepare the prompt
+      final prompt = '''
+Analyze this crime scene evidence image/video and provide a detailed forensic analysis including:
+
+1. **Scene Overview**: Describe what you observe in the scene
+2. **Potential Evidence**: Identify any visible evidence or items of interest
+3. **Environmental Factors**: Note lighting, weather conditions, location type
+4. **Forensic Observations**: Point out any blood stains, weapons, disturbances, or other forensic markers
+5. **Recommendations**: Suggest what additional evidence should be collected or areas to investigate
+
+Provide a professional, detailed analysis suitable for law enforcement documentation.
+''';
+
+      // Get the first image file
+      final imagePath = _crimeSceneAttachments.firstWhere(
+        (path) => path.toLowerCase().endsWith('.jpg') ||
+                  path.toLowerCase().endsWith('.jpeg') ||
+                  path.toLowerCase().endsWith('.png'),
+        orElse: () => _crimeSceneAttachments.first,
+      );
+
+      final imageFile = File(imagePath);
+      final imageBytes = await imageFile.readAsBytes();
+
+      // Generate analysis
+      final content = [
+        Content.multi([
+          TextPart(prompt),
+          DataPart('image/jpeg', imageBytes),
+        ])
+      ];
+
+      final response = await model.generateContent(content);
+      final analysisText = response.text ?? 'No analysis generated';
+
+      setState(() {
+        _sceneAnalysisResult = analysisText;
+        _isAnalyzingScene = false;
+      });
+
+      // Save analysis to Firestore (sceneAnalyses collection)
+      await FirebaseFirestore.instance
+          .collection('cases')
+          .doc(widget.caseId)
+          .collection('sceneAnalyses')
+          .add({
+        'analysisText': analysisText,
+        'evidenceFiles': _crimeSceneAttachments,
+        'createdAt': FieldValue.serverTimestamp(),
+        'analyzedBy': 'Gemini AI',
+      });
+
+      // Also save to crime scene evidence (for persistence)
+      await _saveCrimeSceneEvidence();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scene analysis complete!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isAnalyzingScene = false;
+        _sceneAnalysisResult = 'Error analyzing scene: $e\n\nPlease ensure you have configured your Gemini API key.';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Analysis error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Show options dialog for evidence (Download or Analyze)
+  Future<void> _showEvidenceOptions(String filePath, int index) async {
+    final fileName = filePath.split('/').last;
+    final isVideo = filePath.toLowerCase().endsWith('.mp4') ||
+        filePath.toLowerCase().endsWith('.mov');
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // Title
+                Text(
+                  fileName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                
+                // Download option
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.download, color: Colors.green),
+                  ),
+                  title: const Text('Download Evidence'),
+                  subtitle: const Text('Save to device Downloads folder'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _downloadEvidence(filePath);
+                  },
+                ),
+                
+                // Analyze option (only for images)
+                if (!isVideo)
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.auto_awesome, color: Colors.purple),
+                    ),
+                    title: const Text('Analyze with AI'),
+                    subtitle: const Text('Get forensic analysis'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _analyzeSingleEvidence(filePath);
+                    },
+                  ),
+                
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Download evidence file
+  Future<void> _downloadEvidence(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('File not found');
+      }
+
+      // Get the file name
+      final fileName = filePath.split('/').last;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final evidenceFileName = 'EVIDENCE_${timestamp}_$fileName';
+      
+      // Try to copy to Downloads directory
+      String? downloadsPath;
+      
+      // For Android, try multiple paths
+      final possiblePaths = [
+        '/storage/emulated/0/Download',
+        '/storage/emulated/0/Downloads',
+        '/sdcard/Download',
+        '/sdcard/Downloads',
+      ];
+      
+      for (final path in possiblePaths) {
+        final dir = Directory(path);
+        if (await dir.exists()) {
+          downloadsPath = path;
+          break;
+        }
+      }
+      
+      if (downloadsPath == null) {
+        // Fallback: use app's external storage directory
+        final Directory? externalDir = await getExternalStorageDirectory();
+        if (externalDir != null) {
+          downloadsPath = externalDir.path;
+        } else {
+          throw Exception('Could not find Downloads folder');
+        }
+      }
+      
+      final newPath = '$downloadsPath/$evidenceFileName';
+      await file.copy(newPath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Downloaded to:\n$evidenceFileName'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Download error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  // Analyze single evidence file with AI
+  Future<void> _analyzeSingleEvidence(String filePath) async {
+    setState(() {
+      _isAnalyzingScene = true;
+      _sceneAnalysisResult = null;
+    });
+
+    try {
+      const apiKey = 'AIzaSyCOXByDRXteWArP_lnoV8FajWbvXXawZ4Q';
+      
+      final model = GenerativeModel(
+        model: 'gemini-2.0-flash-exp',
+        apiKey: apiKey,
+      );
+
+      final prompt = '''
+Analyze this crime scene evidence image and provide a detailed forensic analysis including:
+
+1. **Scene Overview**: Describe what you observe
+2. **Potential Evidence**: Identify any visible evidence or items of interest
+3. **Environmental Factors**: Note lighting, weather conditions, location type
+4. **Forensic Observations**: Point out any blood stains, weapons, disturbances, or other forensic markers
+5. **Recommendations**: Suggest what additional evidence should be collected
+
+Provide a professional, detailed analysis suitable for law enforcement documentation.
+''';
+
+      final imageFile = File(filePath);
+      final imageBytes = await imageFile.readAsBytes();
+
+      final content = [
+        Content.multi([
+          TextPart(prompt),
+          DataPart('image/jpeg', imageBytes),
+        ])
+      ];
+
+      final response = await model.generateContent(content);
+      final analysisText = response.text ?? 'No analysis generated';
+
+      setState(() {
+        _sceneAnalysisResult = analysisText;
+        _isAnalyzingScene = false;
+      });
+
+      // Save individual analysis to Firestore
+      await FirebaseFirestore.instance
+          .collection('cases')
+          .doc(widget.caseId)
+          .collection('sceneAnalyses')
+          .add({
+        'analysisText': analysisText,
+        'evidenceFile': filePath,
+        'createdAt': FieldValue.serverTimestamp(),
+        'analyzedBy': 'Gemini AI',
+        'analysisType': 'individual',
+      });
+
+      // Also save to crime scene evidence
+      await _saveCrimeSceneEvidence();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Analysis complete!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isAnalyzingScene = false;
+        _sceneAnalysisResult = 'Error analyzing evidence: $e';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Analysis error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -793,12 +1300,20 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
   }
 
+  // Crime Scene Evidence State
+  List<String> _crimeSceneAttachments = [];
+  bool _isAnalyzingScene = false;
+  String? _sceneAnalysisResult;
+
   Widget _buildCrimeSceneTab(CaseDoc caseDoc, ThemeData theme) {
+    const orange = Color(0xFFFC633C);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Crime Scene Details Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -831,6 +1346,313 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
                           _crimeDetails!.physicalEvidenceDescription!),
                   ] else ...[
                     const Text('No crime scene details available yet.'),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Evidence Capture Section
+          Card(
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.camera_alt, color: orange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Capture Crime Scene Evidence',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Capture Buttons Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _captureSceneEvidence(CaptureMode.image),
+                          icon: const Icon(Icons.camera),
+                          label: const Text('Photo'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _captureSceneEvidence(CaptureMode.video),
+                          icon: const Icon(Icons.videocam),
+                          label: const Text('Video'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _uploadSceneFile,
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Upload'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  // Attachment Preview
+                  if (_crimeSceneAttachments.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${_crimeSceneAttachments.length} Evidence File(s)',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 120,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _crimeSceneAttachments.length,
+                        itemBuilder: (context, index) {
+                          final filePath = _crimeSceneAttachments[index];
+                          final isVideo = filePath.toLowerCase().endsWith('.mp4') ||
+                              filePath.toLowerCase().endsWith('.mov');
+                          
+                          return GestureDetector(
+                            onTap: () => _showEvidenceOptions(filePath, index),
+                            child: Container(
+                              width: 100,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: orange.withOpacity(0.3), width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Image/Video Preview
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: isVideo
+                                        ? Container(
+                                            color: Colors.black87,
+                                            child: const Icon(
+                                              Icons.videocam,
+                                              color: Colors.white,
+                                              size: 40,
+                                            ),
+                                          )
+                                        : Image.file(
+                                            File(filePath),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                color: Colors.grey.shade300,
+                                                child: const Icon(Icons.image, size: 40),
+                                              );
+                                            },
+                                          ),
+                                  ),
+                                  
+                                  // Tap indicator overlay
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.3),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // Tap icon
+                                  Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.9),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.touch_app,
+                                        color: orange,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // Remove button
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        setState(() {
+                                          _crimeSceneAttachments.removeAt(index);
+                                        });
+                                        await _saveCrimeSceneEvidence();
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Evidence removed'),
+                                              duration: Duration(seconds: 1),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // GEO badge
+                                  Positioned(
+                                    bottom: 4,
+                                    left: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: orange.withOpacity(0.95),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            color: Colors.white,
+                                            size: 12,
+                                          ),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            'GEO',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // AI Analysis Button
+                    ElevatedButton.icon(
+                      onPressed: _isAnalyzingScene ? null : _analyzeSceneWithAI,
+                      icon: _isAnalyzingScene
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.auto_awesome),
+                      label: Text(_isAnalyzingScene
+                          ? 'Analyzing...'
+                          : 'Analyze Scene with AI'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        minimumSize: const Size(double.infinity, 48),
+                      ),
+                    ),
+                  ],
+                  
+                  // AI Analysis Result
+                  if (_sceneAnalysisResult != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.purple.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.auto_awesome, color: Colors.purple),
+                              const SizedBox(width: 8),
+                              Text(
+                                'AI Scene Analysis',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple.shade900,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _sceneAnalysisResult!,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),

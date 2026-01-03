@@ -168,7 +168,7 @@ class AppRouter {
         // Prevent citizens from accessing police routes
         if (auth.role == 'citizen' &&
             policeOnlyRoutes.any((route) => path.startsWith(route))) {
-          return '/ai-legal-guider'; // Redirect to citizen dashboard
+          return '/ai-legal-chat'; // Redirect to citizen dashboard
         }
 
         // Prevent police from accessing citizen routes
