@@ -82,7 +82,6 @@ class AppRouter {
         '/police-login',
         '/phone-login',
         '/signup/citizen',
-        '/signup/police',
         '/address',
         '/login_details',
         '/otp_verification',
@@ -113,6 +112,7 @@ class AppRouter {
         '/ai-chatbot-details',
         '/contact-officer',
         '/cognigible-non-cognigible-separation',
+        '/signup/police',
       ];
 
       // During loading, block access to protected routes
@@ -163,6 +163,7 @@ class AppRouter {
           '/cases',
           '/ai-investigation-guidelines',
           '/image-lab',
+          '/signup/police',
         ];
 
         // Citizen-only routes
@@ -222,11 +223,6 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/signup/police',
-        builder: (context, state) => const PoliceRegistrationScreen(),
-      ),
-
-      GoRoute(
         path: '/address',
         builder: (context, state) => const AddressFormScreen(),
       ),
@@ -259,6 +255,12 @@ class AppRouter {
           GoRoute(
             path: '/police-dashboard',
             builder: (context, state) => const PoliceDashboardScreen(),
+          ),
+
+          // ─── POLICE REGISTRATION (Protected, Police-only) ───
+          GoRoute(
+            path: '/signup/police',
+            builder: (context, state) => const PoliceRegistrationScreen(),
           ),
 
           // ─── CITIZEN AI & LEGAL SCREENS (Protected, Citizen-only) ───

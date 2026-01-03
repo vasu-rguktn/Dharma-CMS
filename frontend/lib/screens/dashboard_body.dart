@@ -313,6 +313,8 @@ class DashboardBody extends StatelessWidget {
           Colors.red.shade800),
       _quickActionCard(
           ctx, "Image Lab", Icons.camera_alt, '/image-lab', Colors.deepPurple),
+      _quickActionCard(
+          ctx, "Add Police", Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
     ];
   }
 

@@ -173,26 +173,6 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                     ),
 
                     const SizedBox(height: 30),
-
-                    // Register redirect
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(AppLocalizations.of(context)!.dontHavePoliceAccount),
-                        GestureDetector(
-                          onTap: () =>
-                              context.go('/signup/police'),
-                          child: Text(
-                            AppLocalizations.of(context)!.register,
-                            style: const TextStyle(
-                              color: orange,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
