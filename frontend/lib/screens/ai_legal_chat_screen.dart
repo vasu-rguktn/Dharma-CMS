@@ -39,6 +39,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/native_speech_recognizer.dart';
+import 'package:Dharma/screens/geo_camera_screen.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -138,7 +139,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _setupTTSHandlers();
     
     // Setup native speech recognizer callbacks (Android only)
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       _setupNativeSpeechCallbacks();
     }
     
@@ -300,7 +301,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (_isRecording && mounted) {
       print('Pausing ASR for TTS...');
       
-      if (Platform.isAndroid) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         // Use native recognizer on Android
         _nativeSpeech.stopListening();
       } else {
@@ -319,7 +320,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // Small delay to ensure TTS audio has fully stopped
       Future.delayed(const Duration(milliseconds: 300), () async {
         if (_isRecording && mounted) {
-          if (Platform.isAndroid) {
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
             // Restart native recognizer
             if (!_nativeSpeech.isListening && _currentSttLang != null) {
               await _nativeSpeech.startListening(language: _currentSttLang!);
@@ -374,7 +375,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Stop ASR if requested
     if (stopASR) {
       try {
-        if (Platform.isAndroid) {
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
           _nativeSpeech.stopListening();
         } else {
           _speech.stop();
@@ -713,7 +714,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // STOP ASR when chat completes
     if (_isRecording) {
       print('Chat completed - stopping ASR');
-      if (Platform.isAndroid) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         _nativeSpeech.stopListening();
       } else {
         _speech.stop();
@@ -803,6 +804,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Add message to chat
     _addUser(finalMessage);
 
+    // Store attached files for this message (will be uploaded with the complaint)
+    List<String> currentAttachments = List.from(_attachedFiles);
+    
+    // Clear attachments from UI after capturing them
+    setState(() {
+      _attachedFiles.clear();
+    });
+
     // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
     // AND we do NOT add it to history (because backend uses initial_details as context).
     // Subsequent messages are added to history.
@@ -810,10 +819,23 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         _ChatStateHolder.answers['details']!.isEmpty) {
       _ChatStateHolder.answers['details'] = finalMessage;
       print('📝 First message set as initial_details: "$finalMessage"');
+      
+      // Store attachments if any
+      if (currentAttachments.isNotEmpty) {
+        print('📎 ${currentAttachments.length} file(s) attached to initial message');
+        // You can store these in ChatStateHolder or handle them separately
+        // For now, we'll just log them
+      }
     } else {
       _dynamicHistory.add({'role': 'user', 'content': finalMessage});
       print('📝 Added to history: "$finalMessage"');
       print('📚 Current history length: ${_dynamicHistory.length}');
+      
+      // Store attachments if any
+      if (currentAttachments.isNotEmpty) {
+        print('📎 ${currentAttachments.length} file(s) attached to message');
+        // You can add file paths to the history or handle separately
+      }
     }
 
     _setAllowInput(false);
@@ -877,16 +899,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                         TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final image =
-                      await _imagePicker.pickImage(source: ImageSource.camera);
-                  if (image != null && mounted) {
+                  
+                  // Navigate to Geo-Camera screen for geo-tagged photo
+                  final XFile? geoTaggedImage = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeoCameraScreen(
+                        captureMode: CaptureMode.image,
+                      ),
+                    ),
+                  );
+                  
+                  if (geoTaggedImage != null && mounted) {
                     setState(() {
-                      _attachedFiles.add(image.path);
+                      _attachedFiles.add(geoTaggedImage.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(
-                              'Photo attached: ${image.path.split('/').last}')),
+                        content: Text(
+                          'Geo-tagged photo attached: ${geoTaggedImage.name}',
+                        ),
+                      ),
                     );
                   }
                 },
@@ -937,16 +970,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                         TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final video =
-                      await _imagePicker.pickVideo(source: ImageSource.camera);
-                  if (video != null && mounted) {
+                  
+                  // Navigate to Geo-Camera screen for geo-tagged video
+                  final XFile? geoTaggedVideo = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeoCameraScreen(
+                        captureMode: CaptureMode.video,
+                      ),
+                    ),
+                  );
+                  
+                  if (geoTaggedVideo != null && mounted) {
                     setState(() {
-                      _attachedFiles.add(video.path);
+                      _attachedFiles.add(geoTaggedVideo.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(
-                              'Video attached: ${video.path.split('/').last}')),
+                        content: Text(
+                          'Geo-tagged video attached: ${geoTaggedVideo.name}',
+                        ),
+                      ),
                     );
                   }
                 },
@@ -1382,7 +1426,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     if (_isRecording) {
       // Stop recording manually
-      if (Platform.isAndroid) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         // Use native recognizer on Android
         await _nativeSpeech.stopListening();
       } else {
@@ -1424,7 +1468,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // Start recording - ensure clean state
       await _flutterTts.stop();
 
-      if (Platform.isAndroid) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         // Use Android Native SpeechRecognizer
         print('Starting Android Native SpeechRecognizer...');
         
@@ -1804,6 +1848,125 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     ),
                   ),
                 ],
+              ),
+            ),
+
+          // ── ATTACHMENT PREVIEW ──
+          if (!_isLoading && !_errored && _allowInput && _attachedFiles.isNotEmpty)
+            Container(
+              height: 100,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: background,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _attachedFiles.length,
+                itemBuilder: (context, index) {
+                  final filePath = _attachedFiles[index];
+                  final isVideo = filePath.toLowerCase().endsWith('.mp4') ||
+                      filePath.toLowerCase().endsWith('.mov') ||
+                      filePath.toLowerCase().endsWith('.avi');
+
+                  return Container(
+                    width: 80,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: orange.withOpacity(0.3), width: 2),
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Image/Video Preview
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: isVideo
+                              ? Container(
+                                  color: Colors.black87,
+                                  child: const Icon(
+                                    Icons.videocam,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                )
+                              : Image.file(
+                                  File(filePath),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey.shade300,
+                                      child: const Icon(Icons.image, size: 32),
+                                    );
+                                  },
+                                ),
+                        ),
+                        // Remove button
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _attachedFiles.removeAt(index);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Attachment removed'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Geo-tag indicator
+                        Positioned(
+                          bottom: 2,
+                          left: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: orange.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: Colors.white,
+                                  size: 10,
+                                ),
+                                SizedBox(width: 2),
+                                Text(
+                                  'GEO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
 

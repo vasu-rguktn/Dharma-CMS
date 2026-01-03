@@ -52,6 +52,7 @@ dependencies:
   # Utils
   intl: ^0.20.2
   uuid: ^4.3.3
+  path: ^1.8.3
   path_provider: ^2.1.1
   file_picker: ^8.0.0
   shared_preferences: ^2.2.2
@@ -84,6 +85,12 @@ dependencies:
   # Development Tools
   change_app_package_name: ^1.5.0
   flutter_markdown: ^0.7.7+1
+  
+  # Geo-Camera dependencies
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+  camera: ^0.10.5+9
+  image: ^4.1.7
 
 dev_dependencies:
   flutter_test:

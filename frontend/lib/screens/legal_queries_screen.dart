@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../providers/legal_queries_provider.dart';
 import '../models/chat_message.dart';
+import '../screens/geo_camera_screen.dart';
 
 const Color orange = Color(0xFFFC633C);
 
@@ -77,11 +78,20 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
   /* ---------------- ATTACHMENTS ---------------- */
   void _pickImages(ImageSource source) async {
     if (source == ImageSource.camera) {
-      final picked = await _imagePicker.pickImage(source: source);
-      if (picked != null) {
-        final bytes = await picked.readAsBytes();
+      // Use Geo-Camera for evidence capture
+      final XFile? geoTaggedImage = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const GeoCameraScreen(
+            captureMode: CaptureMode.image,
+          ),
+        ),
+      );
+      
+      if (geoTaggedImage != null) {
+        final bytes = await geoTaggedImage.readAsBytes();
         setState(() {
-          _attachments.add({'bytes': bytes, 'name': picked.name});
+          _attachments.add({'bytes': bytes, 'name': geoTaggedImage.name});
         });
       }
     } else {
