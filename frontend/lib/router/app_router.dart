@@ -59,6 +59,10 @@ import 'package:Dharma/screens/petition/create_petition_form.dart';
 // ───────────────── UI ─────────────────
 import 'package:Dharma/widgets/app_scaffold.dart';
 
+// ───────────────── ONBOARDING ─────────────────
+import 'package:Dharma/screens/onboarding/onboarding_screen.dart';
+import 'package:Dharma/services/onboarding_service.dart';
+
 // ───────────────── ROUTER ─────────────────
 
 class AppRouter {
@@ -82,6 +86,7 @@ class AppRouter {
         '/address',
         '/login_details',
         '/otp_verification',
+        '/onboarding', // Onboarding screen
       ];
 
       // List of routes that require authentication
@@ -136,6 +141,12 @@ class AppRouter {
 
       // ROLE-BASED ROUTE PROTECTION
       if (auth.isAuthenticated) {
+        // Check if citizen needs onboarding (first-time user)
+        if (auth.role == 'citizen' && path != '/onboarding') {
+          // This will be checked asynchronously, so we use a FutureBuilder approach
+          // For now, we'll let the dashboard handle showing onboarding
+        }
+
         // Police should never see the citizen AI guider screen
         if (auth.role == 'police' && path == '/ai-legal-guider') {
           return '/police-dashboard';
@@ -228,6 +239,11 @@ class AppRouter {
       GoRoute(
         path: '/otp_verification',
         builder: (context, state) => const OtpVerificationScreen(),
+      ),
+
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
 
       // ───────────── PROTECTED ROUTES ─────────────

@@ -6,6 +6,7 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/providers/settings_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/widgets/language_selection_dialog.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -132,10 +133,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      final route = authProvider.role == 'police' 
-                                          ? '/police-dashboard' 
-                                          : '/ai-legal-guider';
-                                      context.go(route);
+                                      if (authProvider.role == 'police') {
+                                        context.go('/police-dashboard');
+                                      } else {
+                                        // Go to dashboard first
+                                        context.go('/dashboard');
+                                        
+                                        // Check if onboarding is needed
+                                        // Use Future.microtask or just fire and forget, but here we are in onPressed so we can await
+                                        OnboardingService.shouldShowOnboarding().then((showOnboarding) {
+                                          if (!showOnboarding && context.mounted) {
+                                            // Only push AI chat if onboarding is NOT needed (returning user)
+                                            Future.delayed(const Duration(milliseconds: 50), () {
+                                              if (context.mounted) {
+                                                context.push('/ai-legal-chat');
+                                              }
+                                            });
+                                          }
+                                        });
+                                      }
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: WelcomeScreen.orange,

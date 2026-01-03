@@ -511,44 +511,52 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final evidenceFileName = 'EVIDENCE_${timestamp}_$fileName';
       
-      // Try to copy to Downloads directory
-      String? downloadsPath;
+      // Use app's documents directory (no special permissions needed)
+      final Directory? appDocDir = await getApplicationDocumentsDirectory();
       
-      // For Android, try multiple paths
-      final possiblePaths = [
-        '/storage/emulated/0/Download',
-        '/storage/emulated/0/Downloads',
-        '/sdcard/Download',
-        '/sdcard/Downloads',
-      ];
-      
-      for (final path in possiblePaths) {
-        final dir = Directory(path);
-        if (await dir.exists()) {
-          downloadsPath = path;
-          break;
-        }
+      if (appDocDir == null) {
+        throw Exception('Could not access app storage');
       }
       
-      if (downloadsPath == null) {
-        // Fallback: use app's external storage directory
-        final Directory? externalDir = await getExternalStorageDirectory();
-        if (externalDir != null) {
-          downloadsPath = externalDir.path;
-        } else {
-          throw Exception('Could not find Downloads folder');
-        }
+      // Create Evidence folder in app documents
+      final evidenceDir = Directory('${appDocDir.path}/Evidence');
+      if (!await evidenceDir.exists()) {
+        await evidenceDir.create(recursive: true);
       }
       
-      final newPath = '$downloadsPath/$evidenceFileName';
+      final newPath = '${evidenceDir.path}/$evidenceFileName';
       await file.copy(newPath);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Downloaded to:\n$evidenceFileName'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Evidence Downloaded!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Saved to: Evidence/$evidenceFileName',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Access via File Manager → Dharma → Evidence',
+                  style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }

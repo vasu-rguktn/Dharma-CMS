@@ -1,0 +1,141 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for Dharma CMS
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is an approved police officer
+    function isPolice() {
+      return request.auth != null &&
+             firestore.exists(/databases/(default)/documents/police/$(request.auth.uid)) &&
+             firestore.get(/databases/(default)/documents/police/$(request.auth.uid)).data.role == 'police' &&
+             firestore.get(/databases/(default)/documents/police/$(request.auth.uid)).data.isApproved == true;
+    }
+    
+    // Helper function to check if user owns the case
+    function ownsCase(caseId) {
+      return request.auth != null &&
+             firestore.exists(/databases/(default)/documents/cases/$(caseId)) &&
+             firestore.get(/databases/(default)/documents/cases/$(caseId)).data.userId == request.auth.uid;
+    }
+    
+    // CRIME SCENE EVIDENCE FILES
+    // Path: crime-scene-evidence/{caseId}/{filename}
+    match /crime-scene-evidence/{caseId}/{filename} {
+      // Police can upload crime scene evidence
+      allow create: if isPolice() && 
+                      request.resource.size < 50 * 1024 * 1024 && // Max 50MB
+                      request.resource.contentType.matches('image/.*') ||
+                      request.resource.contentType.matches('video/.*') ||
+                      request.resource.contentType == 'application/pdf';
+      
+      // Read access:
+      // - Police can read all evidence
+      // - Citizens can read evidence for their own cases
+      allow read: if isPolice() || ownsCase(caseId);
+      
+      // Police can update/delete evidence
+      allow update, delete: if isPolice();
+    }
+    
+    // GEO-TAGGED EVIDENCE (from geo-camera)
+    // Path: geo-evidence/{caseId}/{filename}
+    match /geo-evidence/{caseId}/{filename} {
+      // Police can upload geo-tagged evidence
+      allow create: if isPolice() && 
+                      request.resource.size < 50 * 1024 * 1024 && // Max 50MB
+                      (request.resource.contentType.matches('image/.*') ||
+                       request.resource.contentType.matches('video/.*'));
+      
+      // Read access:
+      // - Police can read all evidence
+      // - Citizens can read evidence for their own cases
+      allow read: if isPolice() || ownsCase(caseId);
+      
+      // Police can update/delete evidence
+      allow update, delete: if isPolice();
+    }
+    
+    // CASE DOCUMENTS (general case-related files)
+    // Path: case-documents/{caseId}/{filename}
+    match /case-documents/{caseId}/{filename} {
+      // Police and case owners can upload documents
+      allow create: if (isPolice() || ownsCase(caseId)) && 
+                      request.resource.size < 10 * 1024 * 1024; // Max 10MB
+      
+      // Read access:
+      // - Police can read all documents
+      // - Citizens can read documents for their own cases
+      allow read: if isPolice() || ownsCase(caseId);
+      
+      // Police and case owners can update/delete
+      allow update, delete: if isPolice() || ownsCase(caseId);
+    }
+    
+    // INVESTIGATION REPORTS (police-generated PDFs)
+    // Path: investigation-reports/{caseId}/{filename}
+    match /investigation-reports/{caseId}/{filename} {
+      // Only police can upload investigation reports
+      allow create: if isPolice() && 
+                      request.resource.size < 10 * 1024 * 1024 && // Max 10MB
+                      request.resource.contentType == 'application/pdf';
+      
+      // Read access:
+      // - Police can read all reports
+      // - Citizens can read reports for their own cases
+      allow read: if isPolice() || ownsCase(caseId);
+      
+      // Only police can update/delete reports
+      allow update, delete: if isPolice();
+    }
+    
+    // PETITION DOCUMENTS
+    // Path: petition-documents/{petitionId}/{filename}
+    match /petition-documents/{petitionId}/{filename} {
+      // Authenticated users can upload petition documents
+      allow create: if request.auth != null && 
+                      request.resource.size < 10 * 1024 * 1024; // Max 10MB
+      
+      // Authenticated users can read petition documents
+      allow read: if request.auth != null;
+      
+      // Only the uploader or police can update/delete
+      allow update, delete: if request.auth != null;
+    }
+    
+    // PROFILE PICTURES
+    // Path: profile-pictures/{userId}/{filename}
+    match /profile-pictures/{userId}/{filename} {
+      // Users can upload their own profile picture
+      allow create: if request.auth != null && 
+                      request.auth.uid == userId &&
+                      request.resource.size < 5 * 1024 * 1024 && // Max 5MB
+                      request.resource.contentType.matches('image/.*');
+      
+      // Anyone authenticated can read profile pictures
+      allow read: if request.auth != null;
+      
+      // Users can update/delete their own profile picture
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // COMPLAINT ATTACHMENTS (from citizen complaints)
+    // Path: complaint-attachments/{complaintId}/{filename}
+    match /complaint-attachments/{complaintId}/{filename} {
+      // Authenticated users can upload complaint attachments
+      allow create: if request.auth != null && 
+                      request.resource.size < 20 * 1024 * 1024; // Max 20MB
+      
+      // Police and the uploader can read
+      allow read: if request.auth != null;
+      
+      // Police can update/delete
+      allow update, delete: if isPolice();
+    }
+    
+    // Default: Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

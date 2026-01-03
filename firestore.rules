@@ -116,5 +116,85 @@ service cloud.firestore {
       allow update, delete: if isPolice() &&
         resource.data.officerUid == request.auth.uid;
     }
+
+    // CRIME DETAILS COLLECTION
+    // Stores detailed crime scene information for each case
+    match /crimeDetails/{caseId} {
+      // Police can create crime details for any case
+      allow create: if isPolice();
+
+      // Read access:
+      // - Police can read all crime details
+      // - Citizens can read crime details for their own cases
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can update crime details
+      allow update: if isPolice();
+
+      // Only police can delete crime details
+      allow delete: if isPolice();
+    }
+
+    // CASES SUBCOLLECTIONS
+    match /cases/{caseId}/{subcollection}/{docId} {
+      // MEDIA ANALYSES SUBCOLLECTION
+      // Stores AI-powered media analysis results
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can create, update, and delete media analyses
+      allow create, update, delete: if isPolice();
+    }
+
+    // SCENE ANALYSES SUBCOLLECTION (NEW)
+    // Stores AI-powered crime scene analysis from Gemini API
+    match /cases/{caseId}/sceneAnalyses/{analysisId} {
+      // Police can create scene analyses
+      allow create: if isPolice();
+
+      // Read access:
+      // - Police can read all scene analyses
+      // - Citizens can read analyses for their own cases
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can update and delete scene analyses
+      allow update, delete: if isPolice();
+    }
+    
+    // CRIME SCENE EVIDENCE SUBCOLLECTION (for file paths persistence)
+    match /cases/{caseId}/crimeSceneEvidence/{docId} {
+      // Police can create and update evidence records
+      allow create, update: if isPolice();
+
+      // Read access: Police + case owner
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can delete evidence records
+      allow delete: if isPolice();
+    }
+    
   }
 }

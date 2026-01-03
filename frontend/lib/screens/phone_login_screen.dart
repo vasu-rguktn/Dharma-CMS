@@ -281,7 +281,7 @@
 // }
 
 import 'dart:async';
-
+import 'package:Dharma/services/onboarding_service.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -456,7 +456,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
             content: Text(AppLocalizations.of(context)!.loginSuccessful),
           ),
         );
-        context.go('/ai-legal-guider');
+        // Go to dashboard first
+        context.go('/dashboard');
+        
+        // Check if onboarding is needed
+        final showOnboarding = await OnboardingService.shouldShowOnboarding();
+        
+        // Only push AI chat if onboarding is NOT needed (returning user)
+        if (!showOnboarding) {
+          // Wait a moment for dashboard to load, then push to AI chat
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (context.mounted) {
+              context.push('/ai-legal-chat');
+            }
+          });
+        }
       }
     } on FirebaseAuthException catch (e) {
       // ignore: use_build_context_synchronously

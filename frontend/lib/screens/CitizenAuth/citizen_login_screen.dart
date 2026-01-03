@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 class CitizenLoginScreen extends StatefulWidget {
   const CitizenLoginScreen({super.key});
@@ -98,7 +99,21 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
           context.go('/police-dashboard');
         } else {
           // citizen or other roles go to citizen dashboard
-          context.go('/ai-legal-guider');
+          // Go to dashboard first
+          context.go('/dashboard');
+          
+          // Check if onboarding is needed
+          final showOnboarding = await OnboardingService.shouldShowOnboarding();
+          
+          // Only push AI chat if onboarding is NOT needed (returning user)
+          if (!showOnboarding) {
+            // Wait a moment for dashboard to load, then push to AI chat
+            Future.delayed(const Duration(milliseconds: 50), () {
+              if (context.mounted) {
+                context.push('/ai-legal-chat');
+              }
+            });
+          }
         }
       }
     } on FirebaseAuthException catch (e) {
@@ -156,7 +171,21 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                 content: Text(localizations?.googleLoginSuccessful ??
                     'Google login successful')),
           );
-          context.go('/ai-legal-guider');
+          // Go to dashboard first
+          context.go('/dashboard');
+          
+          // Check if onboarding is needed
+          final showOnboarding = await OnboardingService.shouldShowOnboarding();
+          
+          // Only push AI chat if onboarding is NOT needed (returning user)
+          if (!showOnboarding) {
+            // Wait a moment for dashboard to load, then push to AI chat
+            Future.delayed(const Duration(milliseconds: 50), () {
+              if (context.mounted) {
+                context.push('/ai-legal-chat');
+              }
+            });
+          }
         }
       }
     } catch (e) {

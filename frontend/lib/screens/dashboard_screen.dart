@@ -6,6 +6,7 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'dashboard_body.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,7 +22,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     debugPrint('🟢 DashboardScreen initState');
     
     // Fetch petition stats after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       debugPrint('🟢 DashboardScreen PostFrameCallback');
       
       final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -31,6 +32,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final role = auth.role;
       
       debugPrint('🟢 userId: $userId, role: $role');
+      
+      // Check if onboarding should be shown for first-time citizen users
+      if (role == 'citizen') {
+        final shouldShow = await OnboardingService.shouldShowOnboarding();
+        if (shouldShow && mounted) {
+          context.go('/onboarding');
+          return; // Don't fetch stats if showing onboarding
+        }
+      }
       
       if (role == 'police') {
         // Police sees all petitions
@@ -67,7 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // === Floating Chatbot Button with Label ===
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.go('/ai-legal-guider'),
+          onPressed: () => context.go('/ai-legal-chat'),
           backgroundColor: const Color(0xFFFC633C),
           elevation: 6,
           shape: RoundedRectangleBorder(

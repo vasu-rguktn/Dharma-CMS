@@ -40,6 +40,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/native_speech_recognizer.dart';
 import 'package:Dharma/screens/geo_camera_screen.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -259,6 +260,18 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _nativeSpeech.onListeningStopped = () {
       print('Native ASR stopped');
     };
+  }
+  
+  /// Check if onboarding should be shown for first-time users
+  Future<void> _checkOnboarding() async {
+    final shouldShow = await OnboardingService.shouldShowOnboarding();
+    if (shouldShow && mounted) {
+      // Wait a bit for the screen to settle
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        context.go('/onboarding');
+      }
+    }
   }
   
   /// Correct common speech recognition mistakes

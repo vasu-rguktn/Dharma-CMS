@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/settings_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -236,6 +237,59 @@ class SettingsScreen extends StatelessWidget {
                     // Handle terms of service
                   },
                 ),
+                // Reset Onboarding (Visible to all for testing)
+                // if (authProvider.role != 'police') ...[ // Removed check to ensure visibility
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.replay, color: Colors.orange),
+                    title: const Text(
+                      'Reset Onboarding',
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                    subtitle: const Text('Show tutorial again'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.orange),
+                    onTap: () async {
+                      // Show confirmation dialog
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Reset Onboarding?'),
+                          content: const Text(
+                            'This will show the tutorial screens again on next app start. Continue?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: Text(localizations.cancel),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                'Reset',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        // Reset onboarding
+                        await OnboardingService.resetOnboarding();
+                        
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Onboarding reset! Restart the app to see tutorial.'),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                // ],
               ],
             ),
           ),
