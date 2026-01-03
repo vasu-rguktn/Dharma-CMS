@@ -7,8 +7,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ANPR Detection Tab
 class AnprDetectionTab extends StatefulWidget {
@@ -30,8 +30,7 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
   String _baseUrl = '';
   bool _isInitialized = false;
 
-  VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
+
 
   @override
   void initState() {
@@ -41,8 +40,6 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
 
   @override
   void dispose() {
-    _videoPlayerController?.dispose();
-    _chewieController?.dispose();
     super.dispose();
   }
 
@@ -50,12 +47,12 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     if (_isInitialized) return;
 
     // Prefer local FastAPI backend on port 8000.
-    final List<String> candidates = <String>['https://fastapi-app-335340524683.asia-south1.run.app'];
+    final List<String> candidates = <String>['http://127.0.0.1:8000'];
 
     final isAndroid =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
-      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
+      candidates.add('http://10.0.2.2:8000');
     }
 
     // Try to find a healthy backend
@@ -68,7 +65,7 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     }
 
     // Fallback to localhost:8000 if none are healthy
-    resolved ??= 'https://fastapi-app-335340524683.asia-south1.run.app';
+    resolved ??= 'http://127.0.0.1:8000';
     _baseUrl = resolved;
     _isInitialized = true;
   }
@@ -200,10 +197,6 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
                             _detectionResult = null;
                             _errorMessage = null;
                             _isVideo = false;
-                            _videoPlayerController?.dispose();
-                            _chewieController?.dispose();
-                            _videoPlayerController = null;
-                            _chewieController = null;
                           });
                         },
                         color: Colors.grey[600],
@@ -399,32 +392,6 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     final uniquePlates = _detectionResult!['unique_plates'] as List? ?? [];
     final processedFrames = _detectionResult!['processed_frames'] ?? 0;
     final totalFrames = _detectionResult!['total_frames'] ?? 0;
-    final videoUrl = _detectionResult!['video_url'];
-
-    // Initialize video player if we have a URL and haven't initialized yet
-    if (videoUrl != null && _videoPlayerController == null) {
-      // Construct full URL
-      final fullUrl = '$_baseUrl$videoUrl';
-      debugPrint('Video URL from backend: $videoUrl');
-      debugPrint('Full Video URL: $fullUrl');
-      
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(fullUrl));
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController!,
-        autoPlay: false,
-        looping: true,
-        autoInitialize: true,
-        aspectRatio: 16 / 9,
-        errorBuilder: (context, errorMessage) {
-          return Center(
-            child: Text(
-              'Error playing video: $errorMessage',
-              style: const TextStyle(color: Colors.red),
-            ),
-          );
-        },
-      );
-    }
 
     if (uniquePlates.isEmpty) {
       return Container(
@@ -452,17 +419,6 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_chewieController != null) ...[
-             Container(
-               height: 250,
-               decoration: BoxDecoration(
-                 color: Colors.black,
-                 borderRadius: BorderRadius.circular(8),
-               ),
-               child: Chewie(controller: _chewieController!),
-             ),
-             const SizedBox(height: 16),
-        ],
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -495,7 +451,22 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _savePlatesReport,
+            icon: const Icon(Icons.download),
+            label: const Text('Download Results as CSV'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         ...uniquePlates.asMap().entries.map((entry) {
           final index = entry.key;
           final plate = entry.value as Map<String, dynamic>;
@@ -640,6 +611,138 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
         ],
       ),
     );
+  }
+
+
+
+  Future<void> _savePlatesReport() async {
+    if (_detectionResult == null) return;
+    
+    final uniquePlates = _detectionResult!['unique_plates'] as List? ?? [];
+    if (uniquePlates.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No plates to save.')),
+        );
+      }
+      return;
+    }
+
+    // Web Handling
+    if (kIsWeb) {
+      try {
+        final buffer = StringBuffer();
+        buffer.writeln('Index,Plate Text,First Seen (s),Detection Count');
+        
+        for (int i = 0; i < uniquePlates.length; i++) {
+          final plate = uniquePlates[i];
+          final text = plate['text'] ?? 'Unknown';
+          final firstSeen = plate['first_seen_timestamp'] ?? 0.0;
+          final detections = (plate['detections'] as List? ?? []).length;
+          
+          buffer.writeln('${i + 1},$text,${firstSeen.toStringAsFixed(2)},$detections');
+        }
+
+        final csvData = buffer.toString();
+        // Use Uri.dataFromBytes for reliable data URI generation
+        final bytes = utf8.encode(csvData);
+        final uri = Uri.dataFromBytes(bytes, mimeType: 'text/csv');
+
+        // Note: canLaunchUrl is often unreliable for data URIs on web, so we just try to launch.
+        debugPrint('Attempting to launch data URI...');
+        await launchUrl(uri);
+        
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Download started. Check your browser downloads.')),
+           );
+        }
+      } catch (e) {
+        debugPrint('Web download error: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to download on Web: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    try {
+      // 1. Generate CSV content
+      final buffer = StringBuffer();
+      buffer.writeln('Index,Plate Text,First Seen (s),Detection Count');
+      
+      for (int i = 0; i < uniquePlates.length; i++) {
+        final plate = uniquePlates[i];
+        final text = plate['text'] ?? 'Unknown';
+        final firstSeen = plate['first_seen_timestamp'] ?? 0.0;
+        final detections = (plate['detections'] as List? ?? []).length;
+        
+        buffer.writeln('${i + 1},$text,${firstSeen.toStringAsFixed(2)},$detections');
+      }
+
+      // 2. Get directory
+      Directory? directory;
+      try {
+        if (Platform.isAndroid) {
+           directory = await getExternalStorageDirectory();
+        } else if (Platform.isIOS) {
+           directory = await getApplicationDocumentsDirectory();
+        } else {
+           // Desktop (Windows/Linux/macOS)
+           directory = await getDownloadsDirectory(); 
+           // Fallback if downloads is null
+           directory ??= await getApplicationDocumentsDirectory(); 
+        }
+      } catch (e) {
+        debugPrint('Error getting directory: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Error accessing storage: $e. Try restarting the app.')),
+          );
+        }
+        return;
+      }
+
+      if (directory == null) {
+         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Could not find a valid directory to save file.')),
+          );
+        }
+        return;
+      }
+      
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = '${directory.path}/plates_report_$timestamp.csv';
+      final file = File(filePath);
+
+      await file.writeAsString(buffer.toString());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Report saved to: $filePath'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save report: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showFileSourceDialog({required bool isImage}) async {

@@ -13,12 +13,14 @@ from routers.ai_investigation import router as ai_investigation_router
 from routers.legal_chat import router as legal_chat_router
 from routers.investigation_report import router as investigation_report_router
 from routers.document_drafting import router as document_drafting_router
-from routers.image_enhancement import router as image_enhancement_router
-from routers.anpr import router as anpr_router
+from routers.image_lab.image_enhancement import router as image_enhancement_router
+from routers.image_lab.anpr import router as anpr_router
 
 import firebase_admin
 from firebase_admin import credentials
 from routers.legal_suggestions import router as legal_suggester_router
+from routers.image_lab.person_router import router as person_router
+
 
 # Initialize Firebase Admin SDK
 try:
@@ -72,6 +74,15 @@ app.mount(
     name="anpr_videos",
 )
 
+# Serve Detected Persons
+persons_dir = Path("storage/persons")
+persons_dir.mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/static/persons",
+    StaticFiles(directory=str(persons_dir)),
+    name="persons",
+)
+
 app.include_router(complaint_router)
 app.include_router(ocr_router)
 # STT router is currently disabled to avoid NameError in production.
@@ -85,7 +96,7 @@ app.include_router(image_enhancement_router)
 app.include_router(anpr_router)
 
 app.include_router(legal_suggester_router)
-
+app.include_router(person_router)
 from routers.cases import router as cases_router
 app.include_router(cases_router)
 
