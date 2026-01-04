@@ -23,9 +23,10 @@ class PoliceAuthProvider with ChangeNotifier {
     required String name,
     required String email,
     required String password,
-    required String district,
-    required String stationName,
     required String rank,
+    String? range,
+    String? district,
+    String? stationName,
   }) async {
     try {
       // 1️⃣ Create Auth account
@@ -36,19 +37,32 @@ class PoliceAuthProvider with ChangeNotifier {
 
       final uid = credential.user!.uid;
 
-      // 2️⃣ Save ONLY in police collection
-      await _firestore.collection('police').doc(uid).set({
+      // 2️⃣ Prepare data based on rank
+      final Map<String, dynamic> policeData = {
         'uid': uid,
         'displayName': name,
         'email': email,
-        'district': district,
-        'stationName': stationName,
         'rank': rank,
         'role': 'police',
+        'state': 'Andhra Pradesh', // ✅ Always AP
         'isApproved': true, // later admin controlled
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      // 3️⃣ Add optional fields based on rank hierarchy
+      if (range != null && range.isNotEmpty) {
+        policeData['range'] = range;
+      }
+      if (district != null && district.isNotEmpty) {
+        policeData['district'] = district;
+      }
+      if (stationName != null && stationName.isNotEmpty) {
+        policeData['stationName'] = stationName;
+      }
+
+      // 4️⃣ Save in police collection
+      await _firestore.collection('police').doc(uid).set(policeData);
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthError(e));
     } catch (_) {
