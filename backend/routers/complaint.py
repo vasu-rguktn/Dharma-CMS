@@ -1522,7 +1522,9 @@ async def chat_step(payload: ChatStepRequest):
                 "Do not consider the incidnet location as the address of the citizen.\n"
                 "Do not ask the repeated questions if they already answered.\n"
 
-                "IMPORTANT NOTE : In Telugu, do not ask much question, just related to the case detailsn because this may feel users discomfort/bad experience"
+                "IMPORTANT NOTE :"
+                "In Telugu, do not ask much question, just related to the case detailsn because this may feel users discomfort/bad experience"
+                "Never ask a question if its answer already exists in the conversation memory or structured fields. Do not repeat questions"
             )
             
             # Convert Pydantic chat history to LLM format

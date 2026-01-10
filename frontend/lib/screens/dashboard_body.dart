@@ -275,8 +275,8 @@ class DashboardBody extends StatelessWidget {
           '/legal-suggestion', Colors.red.shade700),
       _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
           '/complaints', Colors.orange.shade700),
-      _quickActionCard(ctx, localizations.witnessPrep, Icons.people,
-          '/witness-preparation', Colors.brown),
+      // _quickActionCard(ctx, localizations.witnessPrep, Icons.people,
+      //     '/witness-preparation', Colors.brown),
       _quickActionCard(ctx, localizations.petitions, Icons.book, '/petitions',
           Colors.red.shade800),
       _quickActionCard(ctx, localizations.helpline, Icons.phone, '/helpline',
@@ -294,8 +294,8 @@ class DashboardBody extends StatelessWidget {
           '/chargesheet-generation', Colors.teal),
       _quickActionCard(ctx, localizations.chargesheetVetting, Icons.fact_check,
           '/chargesheet-vetting', Colors.indigo),
-      _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search,
-          '/media-analysis', Colors.cyan.shade700),
+      // _quickActionCard(ctx, localizations.mediaAnalysis, Icons.image_search,
+      //     '/media-analysis', Colors.cyan.shade700),
       _quickActionCard(ctx, localizations.caseJournal, Icons.book,
           '/case-journal', Colors.deepOrange),
       _quickActionCard(
@@ -313,6 +313,8 @@ class DashboardBody extends StatelessWidget {
           Colors.red.shade800),
       _quickActionCard(
           ctx, "Image Lab", Icons.camera_alt, '/image-lab', Colors.deepPurple),
+      _quickActionCard(
+          ctx, "Add Police", Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
     ];
   }
 
