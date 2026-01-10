@@ -2,5 +2,11 @@
 dharma-cms-5cc89-b74e10595572.json
 venv/
 backend/temp_videos/
+# Python cache
+__pycache__/
+*.pyc
 
 
+backend/storage/persons
+backend/yolov8n.pt
+backend/services/__pycache__
