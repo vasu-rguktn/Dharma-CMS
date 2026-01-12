@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:Dharma/models/petition.dart';
+import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/utils/petition_filter.dart';
+import 'package:Dharma/widgets/petition_update_timeline.dart';
+import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:intl/intl.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 class PetitionListModal extends StatefulWidget {
@@ -158,6 +162,165 @@ class _PetitionListModalState extends State<PetitionListModal> {
     );
   }
 
+  // Show petition details with timeline for police officers
+  void _showPetitionDetailsForPolice(BuildContext context, Petition petition) {
+    final policeProfile = context.read<PoliceAuthProvider>().policeProfile;
+    final policeOfficerName = policeProfile?['displayName'] ?? 'Officer';
+    final policeOfficerUserId = policeProfile?['uid'] ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.9,
+        builder: (_, scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        petition.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                
+                // Basic Info
+                const SizedBox(height: 16),
+                _buildInfoRow('Case ID', petition.caseId ?? 'N/A'),
+                _buildInfoRow('Petitioner', petition.petitionerName),
+                _buildInfoRow('Type', petition.type.displayName),
+                _buildInfoRow('Status', petition.policeStatus ?? 'Pending'),
+                if (petition.stationName != null)
+                  _buildInfoRow('Station', petition.stationName!),
+                
+                const SizedBox(height: 24),
+                const Divider(),
+                
+                // Timeline Section
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Case Updates',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AddPetitionUpdateDialog(
+                            petition: petition,
+                            policeOfficerName: policeOfficerName,
+                            policeOfficerUserId: policeOfficerUserId,
+                          ),
+                        );
+                        // Refresh if update was added
+                        if (result == true) {
+                          // The StreamBuilder will automatically update
+                        }
+                      },
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add Update'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Timeline with real-time updates
+                StreamBuilder<List<PetitionUpdate>>(
+                  stream: context
+                      .read<PetitionProvider>()
+                      .streamPetitionUpdates(petition.id!),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Text(
+                            'Error loading updates: ${snapshot.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final updates = snapshot.data ?? [];
+                    return PetitionUpdateTimeline(updates: updates);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPetitionCard(BuildContext context, Petition petition) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('dd MMM yyyy');
@@ -175,9 +338,13 @@ class _PetitionListModalState extends State<PetitionListModal> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          Navigator.of(context).pop();
-          // Navigate to petition details if needed
-          // GoRouter.of(context).push('/petition-details/${petition.id}');
+          // Show petition details with timeline for police
+          if (widget.isPolice) {
+            _showPetitionDetailsForPolice(context, petition);
+          } else {
+            // For citizens, just close and navigate
+            Navigator.of(context).pop();
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

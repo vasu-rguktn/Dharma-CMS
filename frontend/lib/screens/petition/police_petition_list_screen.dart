@@ -4,10 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:Dharma/models/petition.dart';
+import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/utils/petition_filter.dart';
+import 'package:Dharma/widgets/petition_update_timeline.dart';
+import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 /// Police Petition List Screen
 /// Shows filtered petitions for the police station and allows viewing/updating details
@@ -292,7 +297,91 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                     if (petition.policeSubStatus != null)
                       _buildDetailRow('Sub Status', petition.policeSubStatus!),
 
+                    const SizedBox(height: 24),
+                    const Divider(),
+
+                    // ============= PETITION UPDATES TIMELINE =============
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Case Updates',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final policeProfile = context.read<PoliceAuthProvider>().policeProfile;
+                            final policeOfficerName = policeProfile?['displayName'] ?? 'Officer';
+                            final policeOfficerUserId = policeProfile?['uid'] ?? '';
+
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AddPetitionUpdateDialog(
+                                petition: petition,
+                                policeOfficerName: policeOfficerName,
+                                policeOfficerUserId: policeOfficerUserId,
+                              ),
+                            );
+
+                            // Refresh the modal if update was added
+                            if (result == true && context.mounted) {
+                              setModal(() {}); // Trigger rebuild
+                            }
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Update'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
+
+                    // Display petition updates in real-time using StreamBuilder
+                    StreamBuilder<List<PetitionUpdate>>(
+                      stream: context
+                          .read<PetitionProvider>()
+                          .streamPetitionUpdates(petition.id!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: Text(
+                                'Error loading updates: ${snapshot.error}',
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final updates = snapshot.data ?? [];
+                        return PetitionUpdateTimeline(updates: updates);
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+                    const Divider(),
 
                     const Text(
                       'Police Status Update',
