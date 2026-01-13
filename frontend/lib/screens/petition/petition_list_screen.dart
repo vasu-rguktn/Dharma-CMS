@@ -1,6 +1,7 @@
 // lib/screens/petition/petition_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/utils/petition_filter.dart';
@@ -42,14 +43,19 @@ class _CitizenPetitionListScreenState extends State<CitizenPetitionListScreen> {
     final petitionProvider =
         Provider.of<PetitionProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final complaintProvider =
+        Provider.of<ComplaintProvider>(context, listen: false);
 
     final userId = authProvider.user?.uid;
     if (userId != null) {
+      // Fetch petitions
       await petitionProvider.fetchFilteredPetitions(
         isPolice: false,
         userId: userId,
         filter: widget.filter,
       );
+      // Fetch complaints (to know what is saved)
+      await complaintProvider.fetchComplaints(userId: userId);
     }
 
     setState(() => _isLoading = false);

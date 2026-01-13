@@ -8,12 +8,11 @@ from datetime import datetime, timedelta
 
 import os
 
+
+import os
 from dotenv import load_dotenv
-
-from openai import OpenAI
-
+import google.generativeai as genai
 import re
-
 from loguru import logger
 import json
 import sys
@@ -27,9 +26,6 @@ logger.add(
     diagnose=False,
 )
 
-
-
-
 router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 
 # pradeep savara has made changes to the code
@@ -38,23 +34,21 @@ router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 
 load_dotenv()
 
-HF_TOKEN = os.getenv("HF_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if not HF_TOKEN:
+if not GEMINI_API_KEY:
     # Allow server start; LLM features will be skipped if missing
+    logger.warning("GEMINI_API_KEY not found. LLM features will be disabled.")
     pass
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 print("\n" + "="*50)
-print("!!! TELUGU FIX LOADED: PROMPT UPDATED & NUCLEAR SANITIZATION ACTIVE !!!")
+print("!!! TELUGU FIX LOADED: GEMINI 1.5 FLASH ACTIVE & NUCLEAR SANITIZATION !!!")
 print("="*50 + "\n")
 
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=HF_TOKEN or "",
-    timeout=60.0,
-)
+LLM_MODEL = "gemini-flash-latest"
 
-LLM_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
 
 
 
@@ -315,62 +309,37 @@ def translate_to_telugu(text: str) -> str:
 
     """
 
-    if not HF_TOKEN or not _needs_translation(text):
-
+    if not GEMINI_API_KEY or not _needs_translation(text):
         return text
 
     try:
-
-        resp = client.chat.completions.create(
-
-            model=LLM_MODEL,
-
-            temperature=0.2,
-
-            max_tokens=2048,
-
-            messages=[
-
-                {
-
-                    "role": "system",
-
-                    "content": (
-
-                        "You will receive text entered by a Telugu speaker. "
-
-                        "Sometimes it is English sentences needing translation, other times it is Telugu words typed using English letters "
-
-                        "(romanized Telugu such as 'ela unnaru' or 'meeru ekkada unnaru'). "
-
-                        "Convert the input into natural Telugu script suitable for official police documentation. "
-
-                        "If the input is romanized Telugu, transliterate it faithfully. "
-
-                        "If the input is English, translate it into Telugu. "
-
-                        "Preserve personal names, places, and numbers exactly as provided. "
-
-                        "Return only the final Telugu text without quotes or commentary."
-
-                    ),
-
-                },
-
-                {"role": "user", "content": text},
-
-            ],
-
+        model = genai.GenerativeModel(LLM_MODEL)
+        
+        prompt = (
+            "You will receive text entered by a Telugu speaker.\n"
+            "Sometimes it is English sentences needing translation, other times it is Telugu words typed using English letters "
+            "(romanized Telugu such as 'ela unnaru' or 'meeru ekkada unnaru').\n"
+            "Convert the input into natural Telugu script suitable for official police documentation.\n"
+            "If the input is romanized Telugu, transliterate it faithfully.\n"
+            "If the input is English, translate it into Telugu.\n"
+            "Preserve personal names, places, and numbers exactly as provided.\n"
+            "Return only the final Telugu text without quotes or commentary.\n\n"
+            f"Input Text: {text}"
         )
 
-        translated = (resp.choices[0].message.content or "").strip()
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.2,
+                max_output_tokens=2048,
+            )
+        )
 
+        translated = (response.text or "").strip()
         return translated if translated else text
 
     except Exception as exc:
-
         logger.warning(f"Translation failed; using original text. Reason: {exc}")
-
         return text
 
 
@@ -565,70 +534,48 @@ def extract_incident_datetime(text: str) -> str:
 
 def get_official_complaint_label(complaint_type: str, details: str) -> Optional[str]:
 
-    if not HF_TOKEN:
-
+    if not GEMINI_API_KEY:
         return None
 
     try:
+        model = genai.GenerativeModel(LLM_MODEL)
 
         prompt = (
-
             "You are an expert in Indian criminal law. From the fields below, provide a concise official offence"
-
             " name and IPC section(s) if clearly applicable. Output exactly one short line like:\n"
-
             "Theft — IPC 378\nAttempted murder — IPC 307\nNot applicable\n\n"
-
             f"Complaint Type: {complaint_type}\n"
-
             f"Details: {details}\n\n"
-
-            "If unsure or not applicable, reply with 'Not applicable'. DO NOT invent IPC numbers."
-
+            "If unsure or not applicable, reply with 'Not applicable'. DO NOT invent IPC numbers.\n"
+            "Be concise and do not hallucinate IPCs unless clearly applicable."
         )
 
-        resp = client.chat.completions.create(
-
-            model=LLM_MODEL,
-
-            temperature=0.0,
-
-            max_tokens=2048,
-
-            messages=[
-
-                {"role": "system", "content": "Be concise and do not hallucinate IPCs unless clearly applicable."},
-
-                {"role": "user", "content": prompt},
-
-            ],
-
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.0,
+                max_output_tokens=2048,
+            )
         )
 
-        raw = (resp.choices[0].message.content or "").strip()
+        raw = (response.text or "").strip()
 
         if not raw:
-
             return None
 
         first_line = raw.splitlines()[0].strip()
 
         if re.match(r"(?i)not applicable", first_line):
-
             return None
 
         if re.search(r"\bIPC\b", first_line, flags=re.IGNORECASE) or re.search(r"\bsection\s*\d{2,4}\b", first_line, flags=re.IGNORECASE):
-
             cleaned = re.sub(r"[\(\[\{](.*?)[\)\]\}]", r"\1", first_line).strip()
-
             return cleaned
 
         return None
 
     except Exception as e:
-
         logger.warning(f"LLM official label lookup failed: {e}")
-
         return None
 
 
@@ -657,7 +604,7 @@ def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
 
     official_label = None
 
-    if HF_TOKEN:
+    if GEMINI_API_KEY:
 
         official_label = get_official_complaint_label(req.complaint_type, req.details)
 
@@ -1050,71 +997,52 @@ def classify_offence(
 
     # 6) LLM fallback if available (keeps previous behavior)
 
-    if HF_TOKEN:
+
+    # 6) LLM fallback if available (keeps previous behavior)
+
+    if GEMINI_API_KEY:
 
         try:
+            model = genai.GenerativeModel(LLM_MODEL)
 
             criteria = (
-
                 "You are an expert in Indian criminal procedure. Decide ONLY from the provided fields. "
-
                 "Do NOT assume missing facts, do NOT infer offences from examples in questions, and do NOT guess. "
-
                 "If the complaint involves 'Missing Person', 'Theft', 'Violence', 'Fraud', 'Cheating', or 'Cyber Crime', classify as COGNIZABLE.\n"
-
                 "If a specific offence is not explicitly present in the details, prefer NON-COGNIZABLE.\n\n"
-
                 "Output format (exactly one line):\n"
-
                 "COGNIZABLE  OR  NON-COGNIZABLE."
             )
 
             user_payload = (
-
+                f"{criteria}\n\n"
                 "Decide for this complaint using ONLY the following fields.\n\n"
-
                 f"Complaint Type: {complaint_type}\n"
-
                 f"Details: {details}"
-
             )
 
-            resp = client.chat.completions.create(
-
-                model=LLM_MODEL,
-
-                temperature=0.0,
-
-                max_tokens=2048,
-
-                messages=[
-
-                    {"role": "system", "content": criteria},
-
-                    {"role": "user", "content": user_payload},
-
-                ],
-
+            response = model.generate_content(
+                user_payload,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.0,
+                    max_output_tokens=2048,
+                )
             )
 
-            raw = (resp.choices[0].message.content or "").strip()
+            raw = (response.text or "").strip()
 
             result = _normalize_classification(raw)
 
             # safety: if model says theft but no theft mention -> downgrade
 
             if "theft" in result.lower() and "theft" not in text:
-
                 logger.warning("Model suggested theft but details do not contain theft → overriding to NON-COGNIZABLE")
-
                 return "NON-COGNIZABLE – No explicit cognizable offence mentioned in details."
 
             return result
 
         except Exception as e:
-
             logger.warning(f"LLM classification failed: {e} — falling back to NON-COGNIZABLE.")
-
             return "NON-COGNIZABLE – Could not determine; fallback classification."
 
 
@@ -1513,18 +1441,12 @@ async def chat_step(payload: ChatStepRequest):
 
 
                 "STRICT RULES:\n"
-                " Do NOT ask for Name, Address, or Phone Number during the investigation. Focus ONLY on the incident details. We will ask them later.\n"
-                "Ask only essential questions one by one to clearly understand the incident.\n"
-                "Do NOT ask about complaint type.\n"
-                "Ask ONLY ONE question at a time.\n"
-                "The citizen has already submitted a complaint.\n"
-                "Do NOT ask them to repeat the complaint.\n"
-                "Do not consider the incidnet location as the address of the citizen.\n"
-                "Do not ask the repeated questions if they already answered.\n"
-
-                "IMPORTANT NOTE :"
-                "In Telugu, do not ask much question, just related to the case detailsn because this may feel users discomfort/bad experience"
-                "Never ask a question if its answer already exists in the conversation memory or structured fields. Do not repeat questions"
+                "1. CHECK HISTORY FIRST: If the user has already mentioned a detail (Date, Time, Location, Vehicle Number, Phone), DO NOT ASK AGAIN.\n"
+                "2. ONE QUESTION ONLY: Ask exactly one question per turn.\n"
+                "3. NO REPETITION: If the user says 'I already told you', apologize and move to the next topic.\n"
+                "4. LANGUAGE: Speak in {language_name}. For Telugu, use direct, natural phrasing (e.g., 'మీ పేరు ఏమిటి?') and avoid excessive politeness or English transliteration.\n"
+                "5. TERMINATION: If you have the Who, What, When, Where, and How, output 'DONE'.\n"
+                "6. FOCUS: Do not ask for Name/Address/Phone yet. Focus on the incident details first.\n"
             )
             
             # Convert Pydantic chat history to LLM format
@@ -1539,44 +1461,67 @@ async def chat_step(payload: ChatStepRequest):
                 messages.append({"role": msg.role, "content": msg.content})
                 
             # 4. Call LLM
-            if not HF_TOKEN:
+            if not GEMINI_API_KEY:
                  return ChatStepResponse(status="done", final_response=None)
 
             if len(payload.chat_history) > 25:
                  logger.info("Chat history too long, forcing DONE.")
                  reply = "DONE"
             else:
-                completion = client.chat.completions.create(
-                    model=LLM_MODEL,
-                    messages=messages,
-                    temperature=0.3,
-                    max_tokens=2048,
-                )
-                
-                raw_content = completion.choices[0].message.content or ""
-                reply = raw_content.strip()
-                decision_upper = reply.upper().replace('"', '').replace("'", "")
+                try:
+                    # Construct full History for Gemini
+                    model = genai.GenerativeModel(LLM_MODEL)
+                    
+                    # Instead of list of dicts, Gemini often prefers a single text block or specific Content object structure.
+                    # For simplicity/robustness in Migration, we can flatten to a script or use the chat session.
+                    
+                    full_prompt = f"{system_prompt}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
+                    
+                    # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
+                    recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
+                    
+                    for msg in recent_history:
+                        role = "Police" if msg.role == "assistant" else "User" # or "Model" / "User"
+                        full_prompt += f"{role}: {msg.content}\n"
+                    
+                    full_prompt += "\nPolice (You):"
 
-                if "DONE" in decision_upper and len(decision_upper) < 10:
-                    is_done = True
-                    reply = "DONE"
-                
-                # Sanitize and Log
-                reply = safe_utf8(reply)
+                    response = model.generate_content(
+                        full_prompt,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.3,
+                            max_output_tokens=2048,
+                        )
+                    )
+                    
+                    raw_content = response.text or ""
+                    reply = raw_content.strip()
+                    decision_upper = reply.upper().replace('"', '').replace("'", "")
 
-                # FIX-3: HARD STOP TELUGU OUTPUT WHEN ENGLISH IS SELECTED
-                if language == "en":
-                    # Remove any accidental Telugu characters from LLM output
-                    reply = re.sub(r"[\u0C00-\u0C7F]+", "", reply).strip()
+                    if "DONE" in decision_upper and len(decision_upper) < 10:
+                        is_done = True
+                        reply = "DONE"
+                    
+                    # Sanitize and Log
+                    reply = safe_utf8(reply)
 
-                
-                # Fail-Safe: If sanitization stripped everything, use fallback
-                if not reply or len(reply.strip()) < 2:
-                     logger.warning("Sanitized reply was empty or too short. Using fallback.")
-                     reply = "మరిన్ని వివరాలు చెప్పండి." if language == "te" else "Please provide more details."
+                    # FIX-3: HARD STOP TELUGU OUTPUT WHEN ENGLISH IS SELECTED
+                    if language == "en":
+                        # Remove any accidental Telugu characters from LLM output
+                        reply = re.sub(r"[\u0C00-\u0C7F]+", "", reply).strip()
 
-                # logger.info(f"LLM Reply Hex: {reply.encode('utf-8').hex()}")
-                logger.info(f"LLM Reply: {reply}")
+                    
+                    # Fail-Safe: If sanitization stripped everything, use fallback
+                    if not reply or len(reply.strip()) < 2:
+                         logger.warning("Sanitized reply was empty or too short. Using fallback.")
+                         reply = "మరిన్ని వివరాలు చెప్పండి." if language == "te" else "Please provide more details."
+
+                    # logger.info(f"LLM Reply Hex: {reply.encode('utf-8').hex()}")
+                    logger.info(f"LLM Reply: {reply}")
+
+                except Exception as e:
+                    logger.error(f"Gemini Chat Generation Error: {e}")
+                    reply = "Could you please provide more details?"
 
 
             if not reply:
@@ -1711,15 +1656,22 @@ INFORMATION:
                                     "- Output the JSON values in Telugu where appropriate (narrative), but keep keys in English.\n"
                                     "- Need description like full narrative of the complaint not like just description.")
 
-            summary_completion = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=[{"role": "system", "content": summary_prompt}],
-                temperature=0.2, # Low temp for consistency
-                max_tokens=2048,
-                response_format={"type": "json_object"}
-            )
-            
-            final_json_str = summary_completion.choices[0].message.content.strip()
+            try:
+                model = genai.GenerativeModel(LLM_MODEL)
+                
+                response = model.generate_content(
+                    summary_prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.2,
+                        max_output_tokens=2048,
+                        response_mime_type="application/json", # Use Gemini's native JSON mode
+                    )
+                )
+                
+                final_json_str = response.text.strip()
+            except Exception as e:
+                logger.error(f"Gemini Summary Generation Error: {e}")
+                final_json_str = "{}"
             final_json_str = safe_utf8(final_json_str)
             # logger.info(f"Summary JSON: {final_json_str}")
             logger.info("Summary JSON received (length=%d)", len(final_json_str))
