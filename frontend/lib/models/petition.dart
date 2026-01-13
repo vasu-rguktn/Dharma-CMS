@@ -1,6 +1,3 @@
-
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum PetitionType {
@@ -122,10 +119,10 @@ class Petition {
   final String grounds;
   final String? prayerRelief;
   // ✅ INCIDENT & LOCATION DETAILS
-final String? incidentAddress;
-final Timestamp? incidentDate;
-final String? district;
-final String? stationName;
+  final String? incidentAddress;
+  final Timestamp? incidentDate;
+  final String? district;
+  final String? stationName;
 
   final String? firNumber;
   final String? nextHearingDate;
@@ -157,10 +154,10 @@ final String? stationName;
     required this.grounds,
     this.prayerRelief,
     // ✅ NEW PARAMETERS
-  this.incidentAddress,
-  this.incidentDate,
-  this.district,
-  this.stationName,
+    this.incidentAddress,
+    this.incidentDate,
+    this.district,
+    this.stationName,
     this.firNumber,
     this.nextHearingDate,
     this.filingDate,
@@ -180,7 +177,7 @@ final String? stationName;
     final data = doc.data() as Map<String, dynamic>;
     return Petition(
       id: doc.id,
-     caseId: data['case_id'],
+      caseId: data['case_id'],
       title: data['title'] ?? '',
       type: PetitionTypeExtension.fromString(data['type'] ?? 'other'),
       status: PetitionStatusExtension.fromString(data['status'] ?? 'draft'),
@@ -190,10 +187,9 @@ final String? stationName;
       grounds: data['grounds'] ?? '',
       prayerRelief: data['prayerRelief'],
       incidentAddress: data['incidentAddress'],
-incidentDate: data['incidentDate'],
-district: data['district'],
-stationName: data['stationName'],
-
+      incidentDate: data['incidentDate'],
+      district: data['district'],
+      stationName: data['stationName'],
       firNumber: data['firNumber'],
       nextHearingDate: data['nextHearingDate'],
       filingDate: data['filingDate'],
@@ -212,12 +208,54 @@ stationName: data['stationName'],
     );
   }
 
+  factory Petition.fromMap(Map<String, dynamic> data, String id) {
+    return Petition(
+      id: id,
+      caseId: data['case_id'],
+      title: data['title'] ?? '',
+      type: PetitionTypeExtension.fromString(data['type'] ?? 'other'),
+      status: PetitionStatusExtension.fromString(data['status'] ?? 'draft'),
+      petitionerName: data['petitionerName'] ?? '',
+      phoneNumber: data['phoneNumber'],
+      address: data['address'],
+      grounds: data['grounds'] ?? '',
+      prayerRelief: data['prayerRelief'],
+      incidentAddress: data['incidentAddress'],
+      incidentDate: data['incidentDate'] is Timestamp
+          ? data['incidentDate']
+          : (data['incidentDate'] != null
+              ? Timestamp.fromMicrosecondsSinceEpoch(
+                  (data['incidentDate'].seconds * 1000000 +
+                      data['incidentDate'].nanoseconds) as int)
+              : null), // Handle if it's not a direct Timestamp in some cases locally
+      district: data['district'],
+      stationName: data['stationName'],
+      firNumber: data['firNumber'],
+      nextHearingDate: data['nextHearingDate'],
+      filingDate: data['filingDate'],
+      orderDate: data['orderDate'],
+      orderDetails: data['orderDetails'],
+      policeStatus: data['policeStatus'],
+      policeSubStatus: data['policeSubStatus'],
+      extractedText: data['extractedText'],
+      handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
+      proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      userId: data['userId'] ?? '',
+      createdAt:
+          data['createdAt'] is Timestamp ? data['createdAt'] : Timestamp.now(),
+      updatedAt:
+          data['updatedAt'] is Timestamp ? data['updatedAt'] : Timestamp.now(),
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'title': title,
       'type': type.displayName,
       'case_id': caseId,
-
       'status': status.displayName,
       'petitionerName': petitionerName,
       if (phoneNumber != null) 'phoneNumber': phoneNumber,
@@ -225,10 +263,9 @@ stationName: data['stationName'],
       'grounds': grounds,
       if (prayerRelief != null) 'prayerRelief': prayerRelief,
       if (incidentAddress != null) 'incidentAddress': incidentAddress,
-if (incidentDate != null) 'incidentDate': incidentDate,
-if (district != null) 'district': district,
-if (stationName != null) 'stationName': stationName,
-
+      if (incidentDate != null) 'incidentDate': incidentDate,
+      if (district != null) 'district': district,
+      if (stationName != null) 'stationName': stationName,
       if (firNumber != null) 'firNumber': firNumber,
       if (nextHearingDate != null) 'nextHearingDate': nextHearingDate,
       if (filingDate != null) 'filingDate': filingDate,
