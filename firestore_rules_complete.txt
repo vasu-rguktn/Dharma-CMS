@@ -1,0 +1,242 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper to check if current user is an approved police officer.
+    // Police profiles live in /police/{uid} with fields: uid, role == 'police', isApproved == true
+    function isPolice() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/police/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/police/$(request.auth.uid)).data.role == 'police' &&
+             get(/databases/$(database)/documents/police/$(request.auth.uid)).data.isApproved == true;
+    }
+    
+    // USERS COLLECTION
+    // Modified to allow custom document IDs (Dharma_Name_Date) 
+    // by checking the 'uid' field inside the document instead of the document name.
+    match /users/{userId} {
+      // Allow read if:
+      // 1. The document's uid field matches the authenticated user's uid
+      // 2. OR the user is authenticated (simplified for now to avoid nested get() calls)
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      
+      // Allow create if the new document's 'uid' matches the logged-in user
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      
+      // Allow update if the existing document belongs to the user
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // POLICE COLLECTION (for police-specific data)
+    match /police/{policeId} {
+      // Allow read if authenticated and document's uid matches user's uid
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      
+      // Allow create if the new document's 'uid' matches the logged-in user
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      
+      // Allow update if the existing document belongs to the user
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    
+    // CASES COLLECTION (FIRs)
+    match /cases/{caseId} {
+      // Allow authenticated users to create a case where userId matches their uid
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Citizens: only own cases
+      // Police (stored in /police/{uid} with role == 'police'): all cases
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+
+      // Updates:
+      // - Citizen owner can update their own case
+      // - Approved police can update any case (to attach investigation PDFs, etc.)
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+
+      // Deletions remain restricted to the citizen owner
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // PETITIONS COLLECTION
+    match /petitions/{petitionId} {
+      // Allow anyone authenticated to read petitions (for now)
+      // This allows both citizens to see their own and police to see all
+      allow read: if request.auth != null;
+      
+      // Allow authenticated users to create petitions
+      allow create: if request.auth != null;
+      
+      // Allow update if user is the owner
+      // Note: For police updates, we rely on authentication only
+      // since checking role requires a complex get() call with custom IDs
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        // Allow if user is authenticated (police can update any petition)
+        // This is a simplified rule; for production, consider using custom claims
+        request.auth != null
+      );
+      
+      // Allow delete only if user is the owner
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // CASE JOURNAL ENTRIES
+    // Collection: caseJournalEntries
+    // Used only by police in the app (CaseJournalScreen)
+    match /caseJournalEntries/{entryId} {
+      // Only approved police can create journal entries,
+      // and the officerUid field must match their uid.
+      allow create: if isPolice() &&
+        request.resource.data.officerUid == request.auth.uid;
+
+      // Read access:
+      // - Any approved police officer can read journal entries
+      //   (for supervisor / station-level review).
+      // - The citizen who owns the underlying FIR/case can also read
+      //   entries for their own case, so that evidence attachments
+      //   show up under Case Details → Evidence tab.
+      allow read: if
+        isPolice() ||
+        (
+          request.auth != null &&
+          resource.data.caseId is string &&
+          exists(/databases/$(database)/documents/cases/$(resource.data.caseId)) &&
+          get(/databases/$(database)/documents/cases/$(resource.data.caseId)).data.userId == request.auth.uid
+        );
+
+      // Only the officer who created the entry can modify/delete it.
+      allow update, delete: if isPolice() &&
+        resource.data.officerUid == request.auth.uid;
+    }
+
+    // CRIME DETAILS COLLECTION
+    // Stores detailed crime scene information for each case
+    match /crimeDetails/{caseId} {
+      // Police can create crime details for any case
+      allow create: if isPolice();
+
+      // Read access:
+      // - Police can read all crime details
+      // - Citizens can read crime details for their own cases
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can update crime details
+      allow update: if isPolice();
+
+      // Only police can delete crime details
+      allow delete: if isPolice();
+    }
+
+    // CASES SUBCOLLECTIONS
+    match /cases/{caseId}/{subcollection}/{docId} {
+      // MEDIA ANALYSES SUBCOLLECTION
+      // Stores AI-powered media analysis results
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can create, update, and delete media analyses
+      allow create, update, delete: if isPolice();
+    }
+
+    // SCENE ANALYSES SUBCOLLECTION (NEW)
+    // Stores AI-powered crime scene analysis from Gemini API
+    match /cases/{caseId}/sceneAnalyses/{analysisId} {
+      // Police can create scene analyses
+      allow create: if isPolice();
+
+      // Read access:
+      // - Police can read all scene analyses
+      // - Citizens can read analyses for their own cases
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can update and delete scene analyses
+      allow update, delete: if isPolice();
+    }
+    
+    // CRIME SCENE EVIDENCE SUBCOLLECTION (for file paths persistence)
+    match /cases/{caseId}/crimeSceneEvidence/{docId} {
+      // Police can create and update evidence records
+      allow create, update: if isPolice();
+
+      // Read access: Police + case owner
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+
+      // Police can delete evidence records
+      allow delete: if isPolice();
+    }
+
+    // LEGAL QUERIES CHATS COLLECTION
+    // Collection: legal_queries_chats
+    // Used by both citizens and police for AI legal consultations
+    match /legal_queries_chats/{sessionId} {
+      // Allow authenticated users to create their own chat sessions
+      // The userId field must match the authenticated user's uid
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Users can only read their own chat sessions
+      allow read: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      // Users can update their own chat sessions (e.g., updating title, lastMessageAt)
+      allow update: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      // Users can delete their own chat sessions
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      // MESSAGES SUBCOLLECTION
+      // Allow users to read and write messages within their own chat sessions
+      match /messages/{messageId} {
+        // Allow creating messages if the parent session belongs to the user
+        allow create: if request.auth != null &&
+          get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
+
+        // Allow reading messages if the parent session belongs to the user
+        allow read: if request.auth != null &&
+          get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
+
+        // Allow updating messages if the parent session belongs to the user
+        allow update: if request.auth != null &&
+          get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
+
+        // Allow deleting messages if the parent session belongs to the user
+        allow delete: if request.auth != null &&
+          get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
+      }
+    }
+    
+  }
+}

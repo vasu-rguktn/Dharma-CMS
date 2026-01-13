@@ -24,7 +24,7 @@
 //     _ChatQ(
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'dart:html' as html;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -126,6 +126,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   // Orange color
   static const Color orange = Color(0xFFFC633C);
   static const Color background = Color(0xFFF5F8FE);
+
+  // Safe platform detection that works on web and mobile
+  bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
 
   @override
   void initState() {
@@ -333,7 +337,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // Small delay to ensure TTS audio has fully stopped
       Future.delayed(const Duration(milliseconds: 300), () async {
         if (_isRecording && mounted) {
-          if (Platform.isAndroid) {
+          if (_isAndroid) {
             // Restart native recognizer
             if (!_nativeSpeech.isListening && _currentSttLang != null) {
               await _nativeSpeech.startListening(language: _currentSttLang!);
@@ -390,7 +394,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Stop ASR if requested
     if (stopASR) {
       try {
-        if (Platform.isAndroid) {
+        if (_isAndroid) {
           _nativeSpeech.stopListening();
         } else {
           _speech.stop();
@@ -742,7 +746,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // STOP ASR when chat completes
     if (_isRecording) {
       print('Chat completed - stopping ASR');
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         _nativeSpeech.stopListening();
       } else {
         _speech.stop();
@@ -1453,7 +1457,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     if (_isRecording) {
       // Stop recording manually
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         // Use native recognizer on Android
         await _nativeSpeech.stopListening();
       } else {
@@ -1495,7 +1499,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // Start recording - ensure clean state
       await _flutterTts.stop();
 
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         // Use Android Native SpeechRecognizer
         print('Starting Android Native SpeechRecognizer...');
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 import 'package:Dharma/models/petition.dart';
+import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/services/storage_service.dart';
 import 'package:Dharma/utils/petition_filter.dart';
 
@@ -425,5 +427,116 @@ class PetitionProvider with ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  /* ================= PETITION UPDATES (TIMELINE) ================= */
+
+  /// Create a new petition update with optional photos and documents
+  Future<bool> createPetitionUpdate({
+    required String petitionId,
+    required String updateText,
+    required String addedBy,
+    required String addedByUserId,
+    List<PlatformFile>? photoFiles,
+    List<PlatformFile>? documentFiles,
+  }) async {
+    try {
+      List<String> photoUrls = [];
+      List<Map<String, String>> documents = [];
+
+      // Upload photos
+      if (photoFiles != null && photoFiles.isNotEmpty) {
+        final timestamp = DateTime.now()
+            .toString()
+            .split('.')
+            .first
+            .replaceAll(':', '-')
+            .replaceAll(' ', '_');
+
+        final photoFolderPath = 'petition_updates/$petitionId/photos/Photos_$timestamp';
+
+        photoUrls = await StorageService.uploadMultipleFiles(
+          files: photoFiles,
+          folderPath: photoFolderPath,
+        );
+      }
+
+      // Upload documents
+      if (documentFiles != null && documentFiles.isNotEmpty) {
+        final timestamp = DateTime.now()
+            .toString()
+            .split('.')
+            .first
+            .replaceAll(':', '-')
+            .replaceAll(' ', '_');
+
+        final docFolderPath = 'petition_updates/$petitionId/documents/Docs_$timestamp';
+
+        final documentUrls = await StorageService.uploadMultipleFiles(
+          files: documentFiles,
+          folderPath: docFolderPath,
+        );
+
+        // Create document objects with name and url
+        for (int i = 0; i < documentFiles.length; i++) {
+          documents.add({
+            'name': documentFiles[i].name,
+            'url': documentUrls[i],
+          });
+        }
+      }
+
+      // Create the update
+      final update = PetitionUpdate(
+        petitionId: petitionId,
+        updateText: updateText,
+        photoUrls: photoUrls,
+        documents: documents,
+        addedBy: addedBy,
+        addedByUserId: addedByUserId,
+        createdAt: Timestamp.now(),
+      );
+
+      // Save to Firestore
+      await _firestore
+          .collection('petition_updates')
+          .add(update.toMap());
+
+      debugPrint('✅ Petition update created successfully');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error creating petition update: $e');
+      return false;
+    }
+  }
+
+  /// Fetch all updates for a specific petition
+  Future<List<PetitionUpdate>> fetchPetitionUpdates(String petitionId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('petition_updates')
+          .where('petitionId', isEqualTo: petitionId)
+          .orderBy('createdAt', descending: false)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => PetitionUpdate.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('❌ Error fetching petition updates: $e');
+      return [];
+    }
+  }
+
+  /// Stream petition updates in real-time
+  Stream<List<PetitionUpdate>> streamPetitionUpdates(String petitionId) {
+    return _firestore
+        .collection('petition_updates')
+        .where('petitionId', isEqualTo: petitionId)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => PetitionUpdate.fromFirestore(doc))
+            .toList());
   }
 }

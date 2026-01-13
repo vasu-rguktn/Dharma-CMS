@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:Dharma/models/petition.dart';
+import 'package:Dharma/models/petition_update.dart';
+import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/widgets/full_screen_image_viewer.dart';
 
@@ -516,6 +520,58 @@ class _DetailContent extends StatelessWidget {
             ),
           ),
         ],
+
+        // ============= PETITION UPDATES TIMELINE (FOR CITIZENS) =============
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 16),
+        
+        Text(
+          'Case Progress Updates',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Track the progress of your petition here. Police will add updates about the work done on your case.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Display petition updates in real-time using StreamBuilder
+        if (petition.id != null)
+          StreamBuilder<List<PetitionUpdate>>(
+            stream: context.read<PetitionProvider>().streamPetitionUpdates(petition.id!),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Text(
+                      'Error loading updates: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                );
+              }
+
+              final updates = snapshot.data ?? [];
+              return PetitionUpdateTimeline(updates: updates);
+            },
+          ),
       ],
     );
   }
