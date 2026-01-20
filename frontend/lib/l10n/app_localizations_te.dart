@@ -1516,4 +1516,8 @@ String get listening => 'వింటుంది';
 
 @override
 String get tapToStopRecording => 'రికార్డింగ్ ఆపడానికి మైక్రోఫోన్ చిహ్నంపై టాప్ చేయండి';
+
+  @override
+  // TODO: implement profileUpdated
+  String get profileUpdated => throw UnimplementedError();
 }

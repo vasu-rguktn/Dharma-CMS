@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 
 /// Flutter wrapper for Android Native SpeechRecognizer
@@ -27,7 +28,7 @@ class NativeSpeechRecognizer {
   
   /// Start listening for speech
   Future<void> startListening({required String language}) async {
-    if (!Platform.isAndroid) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       throw UnsupportedError('NativeSpeechRecognizer is only supported on Android');
     }
     

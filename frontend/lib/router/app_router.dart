@@ -37,6 +37,7 @@ import 'package:Dharma/screens/settings_screen.dart';
 import 'package:Dharma/screens/Helpline_screen.dart';
 import 'package:Dharma/screens/Investigation_Guidelines/AI_Investigation_Guidelines.dart';
 import 'package:Dharma/screens/image_lab_screen.dart';
+import 'package:Dharma/screens/profile_screen.dart';
 
 
 
@@ -100,6 +101,7 @@ class AppRouter {
         '/ai-investigation-guidelines',
         '/petitions',
         '/settings',
+        '/profile', // Added Profile
         '/legal-queries',
         '/legal-suggestion',
         '/witness-preparation',
@@ -409,6 +411,11 @@ class AppRouter {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),

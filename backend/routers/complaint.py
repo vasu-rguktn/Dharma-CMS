@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from typing import Optional, Dict, Tuple
@@ -8,16 +8,23 @@ from datetime import datetime, timedelta
 
 import os
 
+
+import os
 from dotenv import load_dotenv
-
-from openai import OpenAI
-
+import google.generativeai as genai
 import re
-
 from loguru import logger
 import json
+import sys
 
-
+logger.remove()
+logger.add(
+    sys.stdout,
+    level="INFO",
+    enqueue=True,
+    backtrace=False,
+    diagnose=False,
+)
 
 router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 
@@ -27,21 +34,21 @@ router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 
 load_dotenv()
 
-HF_TOKEN = os.getenv("HF_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if not HF_TOKEN:
-
+if not GEMINI_API_KEY:
     # Allow server start; LLM features will be skipped if missing
-
+    logger.warning("GEMINI_API_KEY not found. LLM features will be disabled.")
     pass
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=HF_TOKEN or "",
-    timeout=20.0,
-)
+print("\n" + "="*50)
+print("!!! TELUGU FIX LOADED: GEMINI 1.5 FLASH ACTIVE & NUCLEAR SANITIZATION !!!")
+print("="*50 + "\n")
 
-LLM_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
+LLM_MODEL = "gemini-flash-latest"
+
 
 
 
@@ -73,7 +80,8 @@ class ChatStepRequest(BaseModel):
 
     phone: str
 
-    complaint_type: str
+    complaint_type: Optional[str] = ""
+
 
     initial_details: str
 
@@ -117,13 +125,13 @@ class ComplaintRequest(BaseModel):
 
     full_name: str = Field(..., min_length=1)
 
-    address: str = Field(..., min_length=1)
+    address: Optional[str] = None
 
     phone: str = Field(..., min_length=10)
 
-    complaint_type: str = Field(..., min_length=1)
+    complaint_type: Optional[str] = Field(default="General Complaint")
 
-    details: str = Field(..., min_length=10)
+    details: Optional[str] = None
 
     incident_details: Optional[str] = None
     
@@ -167,6 +175,22 @@ def resolve_language(lang: Optional[str]) -> str:
 
     return "en"
 
+def safe_utf8(text: Optional[str]) -> Optional[str]:
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        return str(text)
+    # 1. Encode with ignore to convert to bytes, dropping invalid chars
+    # 2. Decode back to string
+    clean_text = text.encode("utf-8", "ignore").decode("utf-8")
+    # 3. Explicitly remove the Replacement Character if it somehow survived or was in source
+    # 3. Explicitly remove the Replacement Character and Null bytes
+    clean_text = clean_text.replace("\ufffd", "").replace("\x00", "")
+    
+    # 4. Nuclear Option: Remove anything that is NOT a valid printable character
+    # Keep Telugu (\u0C00-\u0C7F), ASCII printable, and common symbols.
+    # Strip everything else including invisible control chars.
+    return re.sub(r'[^\u0C00-\u0C7F\x20-\x7E\n]', '', clean_text)
 
 
 
@@ -285,62 +309,37 @@ def translate_to_telugu(text: str) -> str:
 
     """
 
-    if not HF_TOKEN or not _needs_translation(text):
-
+    if not GEMINI_API_KEY or not _needs_translation(text):
         return text
 
     try:
-
-        resp = client.chat.completions.create(
-
-            model=LLM_MODEL,
-
-            temperature=0.2,
-
-            max_tokens=1024,
-
-            messages=[
-
-                {
-
-                    "role": "system",
-
-                    "content": (
-
-                        "You will receive text entered by a Telugu speaker. "
-
-                        "Sometimes it is English sentences needing translation, other times it is Telugu words typed using English letters "
-
-                        "(romanized Telugu such as 'ela unnaru' or 'meeru ekkada unnaru'). "
-
-                        "Convert the input into natural Telugu script suitable for official police documentation. "
-
-                        "If the input is romanized Telugu, transliterate it faithfully. "
-
-                        "If the input is English, translate it into Telugu. "
-
-                        "Preserve personal names, places, and numbers exactly as provided. "
-
-                        "Return only the final Telugu text without quotes or commentary."
-
-                    ),
-
-                },
-
-                {"role": "user", "content": text},
-
-            ],
-
+        model = genai.GenerativeModel(LLM_MODEL)
+        
+        prompt = (
+            "You will receive text entered by a Telugu speaker.\n"
+            "Sometimes it is English sentences needing translation, other times it is Telugu words typed using English letters "
+            "(romanized Telugu such as 'ela unnaru' or 'meeru ekkada unnaru').\n"
+            "Convert the input into natural Telugu script suitable for official police documentation.\n"
+            "If the input is romanized Telugu, transliterate it faithfully.\n"
+            "If the input is English, translate it into Telugu.\n"
+            "Preserve personal names, places, and numbers exactly as provided.\n"
+            "Return only the final Telugu text without quotes or commentary.\n\n"
+            f"Input Text: {text}"
         )
 
-        translated = (resp.choices[0].message.content or "").strip()
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.2,
+                max_output_tokens=2048,
+            )
+        )
 
+        translated = (response.text or "").strip()
         return translated if translated else text
 
     except Exception as exc:
-
         logger.warning(f"Translation failed; using original text. Reason: {exc}")
-
         return text
 
 
@@ -535,70 +534,48 @@ def extract_incident_datetime(text: str) -> str:
 
 def get_official_complaint_label(complaint_type: str, details: str) -> Optional[str]:
 
-    if not HF_TOKEN:
-
+    if not GEMINI_API_KEY:
         return None
 
     try:
+        model = genai.GenerativeModel(LLM_MODEL)
 
         prompt = (
-
             "You are an expert in Indian criminal law. From the fields below, provide a concise official offence"
-
             " name and IPC section(s) if clearly applicable. Output exactly one short line like:\n"
-
             "Theft — IPC 378\nAttempted murder — IPC 307\nNot applicable\n\n"
-
             f"Complaint Type: {complaint_type}\n"
-
             f"Details: {details}\n\n"
-
-            "If unsure or not applicable, reply with 'Not applicable'. DO NOT invent IPC numbers."
-
+            "If unsure or not applicable, reply with 'Not applicable'. DO NOT invent IPC numbers.\n"
+            "Be concise and do not hallucinate IPCs unless clearly applicable."
         )
 
-        resp = client.chat.completions.create(
-
-            model=LLM_MODEL,
-
-            temperature=0.0,
-
-            max_tokens=40,
-
-            messages=[
-
-                {"role": "system", "content": "Be concise and do not hallucinate IPCs unless clearly applicable."},
-
-                {"role": "user", "content": prompt},
-
-            ],
-
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.0,
+                max_output_tokens=2048,
+            )
         )
 
-        raw = (resp.choices[0].message.content or "").strip()
+        raw = (response.text or "").strip()
 
         if not raw:
-
             return None
 
         first_line = raw.splitlines()[0].strip()
 
         if re.match(r"(?i)not applicable", first_line):
-
             return None
 
         if re.search(r"\bIPC\b", first_line, flags=re.IGNORECASE) or re.search(r"\bsection\s*\d{2,4}\b", first_line, flags=re.IGNORECASE):
-
             cleaned = re.sub(r"[\(\[\{](.*?)[\)\]\}]", r"\1", first_line).strip()
-
             return cleaned
 
         return None
 
     except Exception as e:
-
         logger.warning(f"LLM official label lookup failed: {e}")
-
         return None
 
 
@@ -627,7 +604,7 @@ def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
 
     official_label = None
 
-    if HF_TOKEN:
+    if GEMINI_API_KEY:
 
         official_label = get_official_complaint_label(req.complaint_type, req.details)
 
@@ -649,10 +626,18 @@ def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
         address = translate_to_telugu(address)
         incident_short = translate_to_telugu(incident_short)
         narrative_full = translate_to_telugu(narrative_full)
-
-    complaint_type_line = req.complaint_type.strip()
-    if official_label:
-        complaint_type_line = f"{complaint_type_line} ({official_label})"
+        # Translate the base complaint type (e.g. "Theft") to Telugu
+        # But KEEP the official label (e.g. IPC 378) in English/Official format
+        cleaned_type = req.complaint_type.strip()
+        translated_type = translate_to_telugu(cleaned_type)
+        if official_label:
+            complaint_type_line = f"{translated_type} ({official_label})"
+        else:
+            complaint_type_line = translated_type
+    else:
+        complaint_type_line = req.complaint_type.strip()
+        if official_label:
+            complaint_type_line = f"{complaint_type_line} ({official_label})"
 
     localized_fields = {
         "full_name": full_name,
@@ -748,27 +733,14 @@ def extract_amount_in_inr(text: str) -> Optional[int]:
 
 def validate_name(name: str) -> bool:
     name = name.strip()
-    if not re.fullmatch(r"[A-Za-z ]+", name):
+    # Allow Telugu characters (\u0C00-\u0C7F), standard ASCII letters, spaces, dots.
+    if not re.fullmatch(r"[A-Za-z\u0C00-\u0C7F\s\.]+", name):
         return False
-    parts = name.split()
-    if len(parts) < 2:
-        return False
+    # Relax logic: Sometimes people enter just first name. Minimum length 3 is good.
     if len(name) < 3:
         return False
     return True
 
-
-def validate_phone(phone: str) -> bool:
-    phone = phone.strip()
-    if not phone.isdigit():
-        return False
-    if len(phone) != 10:
-        return False
-    if phone[0] not in "6789":
-        return False
-    if len(set(phone)) == 1:  # all digits same
-        return False
-    return True
 
 
 def validate_address(address: str) -> bool:
@@ -778,18 +750,26 @@ def validate_address(address: str) -> bool:
     if len(address) < 5:
         return False
 
-    # Must contain at least one alphabet (real place name)
-    if not re.search(r"[A-Za-z]", address):
+    # Placeholder detection
+    if any(p in address.lower() for p in ["unknown", "not provided", "n/a", "later", "don't know", "no address", "none"]):
         return False
 
-    # Allowed characters: letters, digits, space, comma, hyphen, slash
-    if not re.fullmatch(r"[A-Za-z0-9 ,\-\/]+", address):
+    # Allowed characters: letters (English + Telugu), digits, space, comma, hyphen, slash, dots, parens
+    # Remove Strict ASCII check
+    # if not re.search(r"[A-Za-z]", address): -> REMOVED (allows pure Telugu)
+    
+    # Check for invalid characters? Or just permissive allowlist.
+    # Allow: A-Z, a-z, 0-9, Telugu range, space, punctuation
+    if not re.fullmatch(r"[A-Za-z0-9\u0C00-\u0C7F\s,\-\/\.\(\)]+", address):
         return False
 
-    # Prevent addresses that are mostly numbers
-    letters_count = len(re.findall(r"[A-Za-z]", address))
+    # Prevent addresses that are mostly numbers (still useful, but careful with PIN codes)
+    # Count letters (English or Telugu)
+    letters_count = len(re.findall(r"[A-Za-z\u0C00-\u0C7F]", address))
     digits_count = len(re.findall(r"[0-9]", address))
-    if digits_count > letters_count * 3:
+    
+    # Relax digit check: Some addresses might be "H.No 1-2-3, Sector 5..."
+    if digits_count > letters_count * 5: # relaxed from 3 to 5
         return False
 
     # Optional PIN code check (if present)
@@ -798,6 +778,8 @@ def validate_address(address: str) -> bool:
         pin = pin_match.group()
         if len(set(pin)) == 1:  # 000000, 111111 etc.
             return False
+    
+    return True
 
     return True
 
@@ -1015,71 +997,52 @@ def classify_offence(
 
     # 6) LLM fallback if available (keeps previous behavior)
 
-    if HF_TOKEN:
+
+    # 6) LLM fallback if available (keeps previous behavior)
+
+    if GEMINI_API_KEY:
 
         try:
+            model = genai.GenerativeModel(LLM_MODEL)
 
             criteria = (
-
                 "You are an expert in Indian criminal procedure. Decide ONLY from the provided fields. "
-
                 "Do NOT assume missing facts, do NOT infer offences from examples in questions, and do NOT guess. "
-
                 "If the complaint involves 'Missing Person', 'Theft', 'Violence', 'Fraud', 'Cheating', or 'Cyber Crime', classify as COGNIZABLE.\n"
-
                 "If a specific offence is not explicitly present in the details, prefer NON-COGNIZABLE.\n\n"
-
                 "Output format (exactly one line):\n"
-
                 "COGNIZABLE  OR  NON-COGNIZABLE."
             )
 
             user_payload = (
-
+                f"{criteria}\n\n"
                 "Decide for this complaint using ONLY the following fields.\n\n"
-
                 f"Complaint Type: {complaint_type}\n"
-
                 f"Details: {details}"
-
             )
 
-            resp = client.chat.completions.create(
-
-                model=LLM_MODEL,
-
-                temperature=0.0,
-
-                max_tokens=100,
-
-                messages=[
-
-                    {"role": "system", "content": criteria},
-
-                    {"role": "user", "content": user_payload},
-
-                ],
-
+            response = model.generate_content(
+                user_payload,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.0,
+                    max_output_tokens=2048,
+                )
             )
 
-            raw = (resp.choices[0].message.content or "").strip()
+            raw = (response.text or "").strip()
 
             result = _normalize_classification(raw)
 
             # safety: if model says theft but no theft mention -> downgrade
 
             if "theft" in result.lower() and "theft" not in text:
-
                 logger.warning("Model suggested theft but details do not contain theft → overriding to NON-COGNIZABLE")
-
                 return "NON-COGNIZABLE – No explicit cognizable offence mentioned in details."
 
             return result
 
         except Exception as e:
-
             logger.warning(f"LLM classification failed: {e} — falling back to NON-COGNIZABLE.")
-
             return "NON-COGNIZABLE – Could not determine; fallback classification."
 
 
@@ -1101,58 +1064,31 @@ def classify_offence(
 )
 
 async def process_complaint(payload: ComplaintRequest):
-
     try:
-
         language = resolve_language(payload.language)
-
         conversation = build_conversation(payload)
-
         # produce the neat text summary requested by user (no description)
-
         formal_summary, localized_fields = generate_summary_text(payload)
 
-
-
         logger.info(f"Complaint input → type='{payload.complaint_type}', details='{payload.details}'")
-
         classification_context = _build_classification_context(
-
             payload.complaint_type,
-
             payload.details,
-
             language,
-
             localized_fields,
-
         )
-
         classification = classify_offence(
-
             formal_summary,
-
             complaint_type=payload.complaint_type,
-
             details=payload.details,
-
             classification_text=classification_context,
-
         )
-
         classification_for_logs = classification
-
         classification_display = classification
-
         if language == "te" and classification:
-
             classification_display = translate_to_telugu(classification)
 
-
-
         logger.info(f"Classification decided → {classification_display}")
-
-
 
         # Terminal-friendly log
         label_upper = ("" if classification_for_logs is None else str(classification_for_logs)).upper()
@@ -1181,6 +1117,75 @@ async def process_complaint(payload: ComplaintRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process complaint: {e}")
 
+def validate_imei(text: str) -> bool:
+    # 15 digits exactly
+    match = re.search(r"\b\d{15}\b", text)
+    if not match: return False
+    return True
+
+def validate_vehicle_number(text: str) -> bool:
+    # Broad Indian vehicle regex: e.g. TS09AB1234
+    # Pattern: State(2)-Num(1-2)-[OptionalChars]-Num(4)
+    # Flexible: allow spaces/hyphens
+    pattern = r"\b[A-Za-z]{2}[-\s]?[0-9]{1,2}[-\s]?[A-Za-z]{0,3}[-\s]?[0-9]{4}\b"
+    return bool(re.search(pattern, text, re.IGNORECASE))
+
+# Strict Indian Phone Validation
+def validate_phone(phone: str) -> bool:
+    if not phone: return False
+    # cleaning
+    phone = re.sub(r"[^0-9]", "", phone)
+    # Check length
+    if len(phone) != 10:
+        return False
+    # Check first digit (Indian Mobiles start with 6,7,8,9)
+    if phone[0] not in "6789":
+        return False
+    # Check for dummy numbers (all same digits)
+    if len(set(phone)) == 1:
+        return False
+    return True
+
+# --- CONSTANTS FOR IDENTITY QUESTIONS ---
+SYS_MSG_NAME_EN = "What is your full name?"
+SYS_MSG_NAME_TE = "మీ పూర్తి పేరు ఏమిటి?"
+SYS_MSG_ADDRESS_EN = "Where do you live (place / area)?"
+SYS_MSG_ADDRESS_TE = "మీరు ఎక్కడ ఉంటున్నారు (ప్రాంతం / ఊరు)?"
+SYS_MSG_PHONE_EN = "Please enter your valid mobile number (10 digits):"
+SYS_MSG_PHONE_TE = "దయచేసి మీ 10 అంకెల ఫోన్ నంబర్‌ను టైప్ చేయండి:"
+
+def recover_identity_from_history(history: list) -> dict:
+    """
+    Scans history to find valid answers to identity questions.
+    Returns a dict with found fields.
+    """
+    found = {"full_name": None, "address": None, "phone": None}
+    
+    for i in range(len(history) - 1):
+        msg = history[i]
+        next_msg = history[i+1]
+        
+        if msg.role == "assistant" and next_msg.role == "user":
+             content = msg.content.strip() # Exact matching requires stripping
+             user_ans = next_msg.content.strip()
+             
+             # Name - Check against constants (English & Telugu)
+             if content in [SYS_MSG_NAME_EN, SYS_MSG_NAME_TE] or "full name" in content.lower():
+                 if validate_name(user_ans):
+                     found["full_name"] = user_ans
+             
+             # Address - Check against constants (English & Telugu)
+             elif content in [SYS_MSG_ADDRESS_EN, SYS_MSG_ADDRESS_TE] or "where do you live" in content.lower():
+                 if validate_address(user_ans):
+                     found["address"] = user_ans
+             
+             # Phone - Check against constants (English & Telugu)
+             elif content in [SYS_MSG_PHONE_EN, SYS_MSG_PHONE_TE] or "mobile number" in content.lower():
+                 if validate_phone(user_ans):
+                     found["phone"] = user_ans
+                     
+    return found
+
 @router.post(
     "/chat-step",
     response_model=ChatStepResponse,
@@ -1197,95 +1202,388 @@ async def chat_step(payload: ChatStepRequest):
         # 1. Resolve Language
         language = resolve_language(payload.language)
 
-        # 2. Extract identity from initial details if missing
-        # Treat invalid phone in payload as missing
+        # --- STATE RECOVERY START ---
+        # Recover identity fields from history to fix "Not Provided" bug
+        # RE-ENABLED: This fixes the infinite loop by collecting answers from previous turns.
+        recovered = recover_identity_from_history(payload.chat_history)
+        if not payload.full_name and recovered["full_name"]:
+             payload.full_name = recovered["full_name"]
+             logger.info(f"Recovered Name: {payload.full_name}")
+        
+        # Phone validation included
+        if (not payload.phone or not validate_phone(payload.phone)) and recovered["phone"]:
+             if validate_phone(recovered["phone"]):
+                 payload.phone = recovered["phone"]
+                 logger.info(f"Recovered Phone: {payload.phone}")
+
+        if not payload.address and recovered["address"]:
+             payload.address = recovered["address"]
+             logger.info(f"Recovered Address: {payload.address}")
+        # --- STATE RECOVERY END ---
+
+        extracted = {"full_name": None, "address": None, "phone": None}
         payload_phone_valid = payload.phone and validate_phone(payload.phone)
         
-        if not payload.full_name or not payload_phone_valid or not payload.address:
-            # We can try to extract from initial_details
-            extracted = extract_identity_from_text(payload.initial_details)
-            if not payload.full_name and extracted["full_name"]:
-                payload.full_name = extracted["full_name"]
-            if not payload_phone_valid and extracted["phone"]:
-                payload.phone = extracted["phone"]
-            if not payload.address and extracted["address"]:
-                payload.address = extracted["address"]
+        # 1. If we have some identity in payload, great.
         
-        # 3. Build Context for LLM
-        # Use the "STRICT RULES" prompt from user
-        system_prompt = (
-            "You are a police officer collecting details and drafting a formal complaint.\n\n"
+        # 2. Extract from initial details logic
+        # DISABLED PER USER REQUEST (Force Ask even if provided initially)
+        # if not payload.full_name or not payload_phone_valid or not payload.address:
+        #     # We can try to extract from initial_details
+        #     extracted = extract_identity_from_text(payload.initial_details)
+        #     if not payload.full_name and extracted["full_name"]:
+        #         payload.full_name = extracted["full_name"]
+        #     if not payload.phone and not payload_phone_valid and extracted["phone"]:
+        #          if validate_phone(extracted["phone"]):
+        #             payload.phone = extracted["phone"]
+        #     if not payload.address and extracted["address"]:
+        #         payload.address = extracted["address"]
 
-            "STRICT RULES:\n"
-            "Ask only essential questions one by one to clearly understand the incident.\n"
-            "Do NOT ask about complaint type.\n"
-            " Ask ONLY ONE question at a time.\n"
-            "- The citizen has already submitted a complaint.\n"
-            "- Do NOT ask them to repeat the complaint.\n"
-            "- Do not consider the incidnet location as the address of the citizen.\n"
 
-
-            "FLOW RULES:\n"
-            "Ask name/phone/address ONLY AFTER investigation if not mentioned "
-            "1. The citizen has already given a free-text complaint.\n"
-            "2. FIRST, try to understand the incident from the complaint.\n"
-            "3. Ask ONLY ONE question at a time.\n"
-          
-            "4. Ask questions in this:\n"
-            "   a) Date & time of incident (if unclear)\n"
-            "   b) Incident location (DO NOT assume home address)\n"
-            "   c) Stolen item/ incident details\n"
-            "   d) Evidence / witnesses (optional)\n"
-            "5. If the incident location is unclear, explicitly ask:\n"
-            "   'Where exactly did the incident occur?'\n"
-            "6. Do NOT ask unnecessary or repetitive questions.\n"
-            "7. Once sufficient details are collected, reply ONLY with 'DONE'."
-            "8. Ask name/phone/address ONLY AFTER investigation"
-            "9. If the user clearly says they do not know or do not have the information, accept it and move forward. Do NOT repeat the question."
-            "10 .Never overwrite residential address with incident location, even if they look similar."
-            "11 . Need to ask manadatory questions like : for mobile lost/ theft IMEI number, for bike lost/theft : Registration Number,etc..."
-            "IDENTITY RULE:"
-            "- NEVER ask for name, phone, or residential address during investigation."
-            "- Identity details are handled separately by the system."
-            "- If asked during investigation, it is a violation."
-            "\n"
-            f"IMPORTANT: You must respond in the language: {language} (if 'te' is Telugu, if 'en' is English).\n"
-        )
         
-        # Convert Pydantic chat history to LLM format
-        messages = [{"role": "system", "content": system_prompt}]
-        # Prepend initial details as context from user
-        messages.append({"role": "user", "content": payload.initial_details})
+        # --- IDENTITY INTERCEPTION START ---
+        skip_llm = False
         
-        for msg in payload.chat_history:
-            messages.append({"role": msg.role, "content": msg.content})
-            
-        # 4. Call LLM
-        if not HF_TOKEN:
-             # Fallback
-             return ChatStepResponse(status="done", final_response=None)
+        if payload.chat_history:
+             last_assistant_msg = None
+             last_user_msg = None
+             # Actually better to take exactly the last message if user
+             if payload.chat_history[-1].role == "user":
+                 last_user_msg = payload.chat_history[-1].content
+             
+             # Check for User forcing DONE
+             if last_user_msg and re.search(r"\b(done|completed|finished|that's it|no more)\b", last_user_msg, re.IGNORECASE):
+                 skip_llm = True
+                 logger.info("User forced DONE.")
+             
+             # Find last assistant message
+             for m in reversed(payload.chat_history):
+                 if m.role == "assistant":
+                     last_assistant_msg = m.content
+                     break
+                 
+             if last_assistant_msg and last_user_msg and not skip_llm:
+                 la_lower = last_assistant_msg.lower()
+                 logger.info(f"Checking Interception. Last Asst: '{last_assistant_msg}'") 
 
-        if len(payload.chat_history) > 25:
-             logger.info("Chat history too long, forcing DONE.")
-             reply = "DONE"
-        else:
-            completion = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=250,
+                 captured_any = False
+                 
+                 # 1. PHONE CHECK
+                 # 1. PHONE CHECK
+                 # STRICT keywords only. Do NOT use "phone" or "contact" alone.
+                 phone_keywords = ["phone number", "mobile number", "contact number", "your number", "call you", "ఫోన్ నంబర్", "మొబైల్ నంబర్", "contact info", "10-digit"]
+                 matched_phone = any(k in la_lower for k in phone_keywords)
+                 phone_error_msg = None
+                 
+                 if matched_phone:
+                     if validate_phone(last_user_msg):
+                         logger.info(f"Intercepted VALID phone: {last_user_msg}")
+                         payload.phone = last_user_msg 
+                         captured_any = True
+                     else:
+                         phone_error_msg = "Invalid number. Please enter a valid 10-digit mobile number (starts with 6-9):"
+                         if language == "te":
+                             phone_error_msg = "నెంబర్ సరిగ్గా లేదు. దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్‌ను ఇవ్వండి:"
+
+                 # 2. NAME CHECK
+                 # 2. NAME CHECK
+                 name_keywords = ["full name", "your name", "complete name", "పూర్తి పేరు", "మీ పేరు"]
+                 matched_name = any(k in la_lower for k in name_keywords)
+                 name_error_msg = None
+                 
+                 if matched_name:
+                     if validate_name(last_user_msg):
+                         logger.info(f"Intercepted VALID name: {last_user_msg}")
+                         payload.full_name = last_user_msg
+                         captured_any = True
+                     else:
+                         name_error_msg = "Please provide your valid full name (at least 3 letters):"
+                         if language == "te":
+                             name_error_msg = "దయచేసి మీ సరైన పూర్తి పేరు చెప్పండి:"
+
+                 # 3. ADDRESS CHECK
+                 address_keywords = ["where do you live", "place / area", "residential address", "ఎక్కడ ఉంటున్నారు", "నివాస స్థలం"]
+                 matched_address = any(k in la_lower for k in address_keywords)
+                 address_error_msg = None
+                 
+                 if matched_address:
+                     if validate_address(last_user_msg):
+                          logger.info(f"Intercepted VALID address: {last_user_msg}")
+                          payload.address = last_user_msg
+                          captured_any = True
+                     else:
+                          address_error_msg = "Please provide a valid residential address (Place, Mandal, District):"
+                          if language == "te":
+                              address_error_msg = "దయచేసి సరైన నివాస చిరునామా ఇవ్వండి (ఊరు, మండలం, జిల్లా):"
+                
+                 # DECISION LOGIC
+                 if captured_any:
+                     skip_llm = True
+                 elif phone_error_msg: # Prioritize Phone error if nothing else captured
+                     return ChatStepResponse(status="question", message=phone_error_msg)
+                 elif name_error_msg:
+                     return ChatStepResponse(status="question", message=name_error_msg)
+                 elif address_error_msg:
+                     return ChatStepResponse(status="question", message=address_error_msg)
+
+        # --- IDENTITY INTERCEPTION END ---
+        
+        reply = ""
+        is_done = False
+
+        if not skip_llm:
+            # 3. Build Context for LLM
+            # Use the "STRICT RULES" prompt from user
+            display_lang = "Telugu" if language == "te" else "English"
+
+
+
+            # SYSTEM_PROMPT_EN = """
+            #     You are an expert Police Officer conducting an investigation in English.
+
+            #     GOAL: Ask relevant questions to understand the crime (Who, What, Where, When, How).
+
+            #     RULES:
+            #     1. Ask short, direct questions.
+            #     2. Ask ONE question at a time.
+            #     3. NEVER repeat facts already mentioned.
+            #     4. NEVER mix languages.
+            #     5. Ask only case-related mandatory questions.
+            #     6. Do NOT ask name, phone, or address.
+            #     7. End questions with '?'.
+
+            #     EXAMPLES:
+            #     - Where did the incident happen?
+            #     - When did it occur?
+            #     - What item was stolen?
+            #     - Did you notice any suspect?
+            #     """
+
+            # SYSTEM_PROMPT_TE = """
+            #     మీరు పోలీస్ అధికారి. మీరు విచారణ చేస్తున్నారు.
+
+            #     నియమాలు:
+            #     1. ఒక్క ప్రశ్న మాత్రమే అడగాలి.
+            #     2. ఇప్పటికే చెప్పిన విషయాలు మళ్ళీ అడగకూడదు.
+            #     3. తెలుగు మాత్రమే ఉపయోగించాలి.
+            #     4. పేరు, చిరునామా, ఫోన్ అడగకూడదు.
+            #     5. ఘటనకు సంబంధించిన ప్రశ్నలే అడగాలి.
+
+            #     ఉదాహరణలు:
+            #     - ఘటన ఎక్కడ జరిగింది?
+            #     - ఇది ఎప్పుడు జరిగింది?
+            #     - ఏ వస్తువు దొంగిలించబడింది?
+            #     - ఎవరికైనా అనుమానం కలిగిందా?
+            #     """
+
+            # system_prompt = SYSTEM_PROMPT_TE if language == "te" else SYSTEM_PROMPT_EN
+
+            system_prompt = (
+                f"You are an expert Police Officer conducting an investigation in {display_lang}.\n\n"
+
+                "GOAL: Ask relevant questions to understand the crime (Who, What, Where, When, How).\n"
+                "RULES:\n"
+                "NOTE : - NEVER assume the incident occurred at the complainant's residential address.\n"
+                "1. NEVER repeat facts the user already said. (If user said 'Stolen at market', DO NOT ask 'Where was it stolen?').\n"
+                "2. ASK SHORT, DIRECT QUESTIONS. One at a time.\n"
+                "3. START DIRECTLY. Do not say 'Okay', 'I understand', 'Good'. Just ask.\n"
+                "4. GRAMMAR: Ensure the sentence is complete and ends with '?'.\n"
+                "5. Ask only the case related question, donot ask the unnecessary questions\n"
+                "6. Ask the madatory questions like : for mobile theft: IMEI / model of the phone, for vehicle theft: model/ registration number,for missing: missing person details like age, name. like that need to ask the mandatory questions for the differt cases , i just provided the example ones, as you know for what type of cases what need to be asked. \n"
+                "7. Donot ask the repeated questions if they already answered.\n"
+                "8. NEVER ask the user 'What action should we take?' or 'How should we find it?'. YOU are the police. YOU investigate.\n"
+                "9. NEVER ask 'Were you there?' (It is offensive to victims). Assume they know the facts.\n"
+                "10. Focus ONLY on the present case. Ignore details from previous unrelated cases if any exist in history.\n"
+                "LANGUAGE INSTRUCTIONS:\n"
+                f"1. You MUST respond in: {language} only.\n"
+                "2. IF user selected 'en' (English): Speak ONLY English. Do NOT use Telugu text or script. Do not use 'Namaskaram'.\n"
+                "3. IF user selected 'te' (Telugu): Speak ONLY Telugu. Use formal 'Meeru/Tamaru'. Refer to user's items as 'Mee' (Your - e.g. 'Mee chain'), NEVER 'Naa' (My).\n"
+                "4. Do NOT mix languages if also the user did.\n"
+                "5. PERSPECTIVE: You are the Police Officer. The User is the Victim. Ask 'Where was YOUR bike stolen?', never 'Where was MY bike stolen?'.\n"
+                "6. Especially in telugu, NEVER repeat facts the user already said"
+                "- USE STANDARD QUESTIONS (Below):\n\n"
+
+                "GOLDEN EXAMPLES (Polite & Standard):\n"
+                "1. Location: 'ఘటన ఎక్కడ జరిగింది?' (Where did it happen?)\n"
+                "2. Time: 'ఇది ఎప్పుడు జరిగింది?' (When did it happen?)\n"
+                "3. Suspect: 'ఎవరైనా అనుమానంగా కనిపించారా?' (Did anyone look suspicious?)\n"
+                "4. Details: 'బైక్ నంబర్ ఏంటి?' (What is the bike number?)\n"
+                "5. Description: 'దాని రంగు లేదా గుర్తు ఏమిటి?' (What color or mark?)\n\n"
+
+                "BAD EXAMPLES (Avoid these) in their choosen languages:\n"
+                "❌ 'మీరు చెప్పిన సమాచారం ప్రకారం...' (Do not summarize)\n"
+                "❌ 'నేను ఒక ప్రశ్న అడుగుతాను...' (Do not announce)\n"
+                "❌ 'నేను గమనించాను...' (I noted... - DO NOT SAY THIS)\n"
+                "❌ 'మీరు చెప్పారు కదా...' (As you said... - DO NOT SAY THIS)\n"
+                "❌ 'దయచేసి చెప్పండి...' (Too formal/begging) -> Use 'Cheppandi' (Tell me)\n"
+                "❌ 'May I know...' -> Use 'What is...'\n"
+                "❌ 'వాటిని ఎలా కనుగొనాలి?' (How to find it? - NEVER ASK THIS)\n"
+                "❌ 'మీరు అక్కడ ఉన్నారా?' (Were you there? - NEVER ASK THIS)\n"
+                "❌ Do NOT sound robotic or rude. But be authoritative.\n"
+                "❌ Do NOT ask 'Where did you park?' for small items (phones/wallets/Laptops, etc). Ask 'Where did you keep it?'. 'Park' is ONLY for vehicles.\n\n"
+
+                "CRITICAL INSTRUCTIONS:\n"
+                "- NO PREAMBLE. NO CONFIRMATION. JUST ASK.\n"
+                "- Do NOT say 'We have noted your details'.\n"
+                "- Do NOT say 'Okay, I understand'.\n"
+                "- Do NOT say 'Based on what you said...'.\n"
+                "- ASK MAX 5-7 QUESTIONS. if you think the information is not sufficient ask the questions in sweeet and short.\n"
+                "- IF USER PROVIDES Name/Address/Phone: OUTPUT 'DONE' IMMEDIATELY.\n"
+                "- If you have Incident, Time, Place, and Item: OUTPUT 'DONE'.\n"
+                "- Do NOT loop asking for 'more details'.\n"
+                "- Do NOT ask for 'Phone Number' inside the chat unless user offers it. The App handles it.\n"
+                "- Donot ask the repeated questions if they already answered.\n"
+                "-Ask the madatory questions like : for mobile theft: IMEI / model of the phone, for vehicle theft: model/ registration number,for missing: missing person details like age, name. like that need to ask the mandatory questions for the differt cases , i just provided the example ones, as you know for what type of cases what need to be asked. \n"
+                "- Donot ask the repeated questions if they already answered.\n"
+                "- Donot aks unnecessary questions especially in telugu conversation."
+                "- Do NOT ask for Name, Address, or Phone Number during the investigation. Focus ONLY on the incident details. We will ask them later.\n"
+                "- TELUGU SPECIFIC: Use direct phrasing like 'చెప్పండి' (Tell me) instead of 'దయచేసి' (Please). Do not use 'May I know'. Just ask the question directly.\n"
+
+
+                "STRICT RULES:\n"
+                "1. CHECK HISTORY FIRST: If the user has already mentioned a detail (Date, Time, Location, Vehicle Number, Phone), DO NOT ASK AGAIN.\n"
+                "2. ONE QUESTION ONLY: Ask exactly one question per turn.\n"
+                "3. NO REPETITION: If the user says 'I already told you', apologize and move to the next topic.\n"
+                "4. LANGUAGE: Speak in {language_name}. For Telugu, use direct, natural phrasing (e.g., 'మీ పేరు ఏమిటి?') and avoid excessive politeness or English transliteration.\n"
+                "5. TERMINATION: If you have the Who, What, When, Where, and How, output 'DONE'.\n"
+                "6. FOCUS: Do not ask for Name/Address/Phone yet. Focus on the incident details first.\n"
             )
-            reply = completion.choices[0].message.content.strip()
+            
+            # Convert Pydantic chat history to LLM format
+            messages = [{"role": "system", "content": system_prompt}]
+            # Prepend initial details as context from user
+            messages.append({"role": "user", "content": payload.initial_details})
+            
+            # Limit history to last 12 turns to prevent context overflow (Llama-3-8B has 8k limit)
+            recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
+            
+            for msg in recent_history:
+                messages.append({"role": msg.role, "content": msg.content})
+                
+            # 4. Call LLM
+            if not GEMINI_API_KEY:
+                 return ChatStepResponse(status="done", final_response=None)
 
-        logger.info(f"LLM Reply: {reply}")
+            if len(payload.chat_history) > 25:
+                 logger.info("Chat history too long, forcing DONE.")
+                 reply = "DONE"
+            else:
+                try:
+                    # Construct full History for Gemini
+                    model = genai.GenerativeModel(LLM_MODEL)
+                    
+                    # Instead of list of dicts, Gemini often prefers a single text block or specific Content object structure.
+                    # For simplicity/robustness in Migration, we can flatten to a script or use the chat session.
+                    
+                    full_prompt = f"{system_prompt}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
+                    
+                    # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
+                    recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
+                    
+                    for msg in recent_history:
+                        role = "Police" if msg.role == "assistant" else "User" # or "Model" / "User"
+                        full_prompt += f"{role}: {msg.content}\n"
+                    
+                    full_prompt += "\nPolice (You):"
 
-        if not reply:
-            reply = "Could you please provide more details?"
+                    response = model.generate_content(
+                        full_prompt,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.3,
+                            max_output_tokens=2048,
+                        )
+                    )
+                    
+                    raw_content = response.text or ""
+                    reply = raw_content.strip()
+                    decision_upper = reply.upper().replace('"', '').replace("'", "")
+
+                    if "DONE" in decision_upper and len(decision_upper) < 10:
+                        is_done = True
+                        reply = "DONE"
+                    
+                    # Sanitize and Log
+                    reply = safe_utf8(reply)
+
+                    # FIX-3: HARD STOP TELUGU OUTPUT WHEN ENGLISH IS SELECTED
+                    if language == "en":
+                        # Remove any accidental Telugu characters from LLM output
+                        reply = re.sub(r"[\u0C00-\u0C7F]+", "", reply).strip()
+
+                    
+                    # Fail-Safe: If sanitization stripped everything, use fallback
+                    if not reply or len(reply.strip()) < 2:
+                         logger.warning("Sanitized reply was empty or too short. Using fallback.")
+                         reply = "మరిన్ని వివరాలు చెప్పండి." if language == "te" else "Please provide more details."
+
+                    # logger.info(f"LLM Reply Hex: {reply.encode('utf-8').hex()}")
+                    logger.info(f"LLM Reply: {reply}")
+
+                except Exception as e:
+                    logger.error(f"Gemini Chat Generation Error: {e}")
+                    reply = "Could you please provide more details?"
+
+
+            if not reply:
+                reply = "Could you please provide more details?"
+
+            # SAFETY NET: Check if LLM leaked validation error
+            if re.search(r"(invalid|valid)\s+(number|phone)", reply, re.IGNORECASE) and not re.search(r"\bDONE\b", reply, re.IGNORECASE):
+                 logger.warning("LLM leaked validation error. Intercepting and sending System Error.")
+                 msg = "Invalid number. Please enter a valid 10-digit mobile number (starts with 6-9):"
+                 if language == "te":
+                     msg = "నెంబర్ సరిగ్గా లేదు. దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్‌ను ఇవ్వండి:"
+                 return ChatStepResponse(status="question", message=msg)
+            
+            # 5. Check for "DONE" token anywhere in the reply
+            # Updated to include Telugu "completed" synonyms
+            if re.search(r"\bDONE\b|పూర్తయింది|completed", reply, re.IGNORECASE):
+                logger.info("LLM indicated DONE (or Telugu equivalent). Forcing Gatekeeping.")
+                is_done = True
+                reply = ""  # WIPE REPLY to ensure user doesn't see "That's consistent... DONE"
         
-        # 5. Check for DONE
-        clean_reply = re.sub(r"[^a-zA-Z]", "", reply).upper()
-        
-        if clean_reply == "DONE" or "DONE" in clean_reply.split():
+        # Unified Logic: If skipped LLM (intercepted/user done) OR LLM said Done => Finalize
+        if skip_llm or is_done:
+            # --- FINAL IDENTITY CONFIRMATION (ALWAYS ASK) ---
+            final_name_confirmed = payload.full_name and validate_name(payload.full_name)
+            final_address_confirmed = payload.address and validate_address(payload.address)
+            final_phone_confirmed = payload.phone and validate_phone(payload.phone)
+
+            if not final_name_confirmed:
+                msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
+                return ChatStepResponse(status="question", message=msg)
+
+            if not final_address_confirmed:
+                msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
+                return ChatStepResponse(status="question", message=msg)
+
+            if not final_phone_confirmed:
+                msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
+                return ChatStepResponse(status="question", message=msg)
+
+            
+            # --- MANDATORY SEQUENTIAL QUESTIONS START ---
+            # Only proceed to summary if we have ALL identity fields.
+            # 1. Name
+            # if not payload.full_name:
+            #     logger.info("Investigation done, but Name missing. Asking Name.")
+            #     msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
+            #     return ChatStepResponse(status="question", message=msg)
+                
+            # # 2. Address
+            # if not payload.address:
+            #     logger.info("Investigation done, but Address missing. Asking Address.")
+            #     msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
+            #     return ChatStepResponse(status="question", message=msg)
+                
+            # # 3. Phone
+            # # Ensure phone is valid too
+            # if not payload.phone or not validate_phone(payload.phone):
+            #     logger.info("Investigation done, but Phone missing/invalid. Asking Phone.")
+            #     msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
+            #     return ChatStepResponse(status="question", message=msg)
+            # # --- MANDATORY SEQUENTIAL QUESTIONS END ---
+
             # Generate final summary using NEW prompt
             
             transcript = payload.initial_details + "\n"
@@ -1299,10 +1597,10 @@ You are an expert police complaint writer.
 You are a senior police officer recording an FIR.\n\n
 
 - NEVER assume the incident occurred at the complainant's residential address.
-- Use the residential address ONLY for identification.
-- Use an incident location ONLY if explicitly mentioned by the user.
-- If the incident place is vague (e.g., "parking area"), keep it vague.
-- If the incident place is not clearly mentioned, leave it .
+- Use the residential address ONLY for identification (full_name/address/phone).
+- Use an incident location ONLY if explicitly mentioned by the user (e.g. 'at the market', 'at parking').
+- If the incident place is vague (e.g., "parking area"), keep it vague. Do NOT deduce it is the home address.
+- If the incident place is not clearly mentioned, leave it empty/null.
 - Extract name, phone, and address ONLY from the conversation.
 - Do NOT ask any questions.
 
@@ -1316,16 +1614,20 @@ IDENTITY RULES:\n
 END RULE:\n
 - When all incident + identity details are sufficient, reply ONLY with 'DONE'.
 
-
-
+NOTE : 1.If the date or time not mentioned, in the summary donot say date not mentioned and time not mentioned. Insted of that donot say anything about them.
+       2. if the date or time donot mentioned, donot assume the date or any place. just say nothing about them.
 TASKS:
 1. Identify the complaint type automatically.
 2. Extract date, time, and place from the conversation if mentioned.
 3. Describe  ONLY the incident location :where the incident happened in 1–2 lines, include the date&time if mentioned .
-4. Write a clear narrative description of the incident in plain English (no FIR format). Do NOT include FIR number, signatures, or headings.
+4. Write a clear narrative description of the incident in **FIRST PERSON PERSPECTIVE** (e.g., "I was walking...", "He beat me..."). 
+   - DO NOT use "You said...", "The user said...", "Complainant stated...".
+   - DO NOT summarize the chat structure ("We asked more questions..."). 
+   - Write it as a Formal Petition/Complaint to the Police Station.
 5. Do NOT invent dates, places, or items not explicitly mentioned by the user.
 6. Extract name, address, number from the conversation.
-
+7. Donot assume the incident location as the complainant's residential address untill they mentioned in the residential address.
+8. In details field, need the detailed description/ summarization of the entire complaint incident.
 
 OUTPUT FORMAT (STRICT JSON ONLY):
 {{
@@ -1334,9 +1636,9 @@ OUTPUT FORMAT (STRICT JSON ONLY):
     "phone": "",
     "complaint_type": "",
     "initial_details": "",
-  "details": "",
+    "details": "COMPREHENSIVE NARRATIVE in FIRST PERSON ('I...'). Must be a detailed formal complaint text suitable for an FIR. Include EVERY fact mentioned (Who, What, Where, When, How, Vehicle details, Suspects, etc). NOT a chat summary.",
   
-    "short_incident_summary": "Short 1-2 line summary of WHERE and WHEN the incident happened (e.g. 'Incident happened  at [Place] on [Date] around [Time]')."
+    "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names."
 }}
 
 INFORMATION:
@@ -1345,18 +1647,34 @@ INFORMATION:
             # Adjust prompt for language if needed
             if language == 'te':
                  summary_prompt = summary_prompt.replace("in plain English", "in Telugu (translated)")
-                 summary_prompt += "\n\nIMPORTANT: Output the JSON values in Telugu where appropriate (narrative), but keep keys in English."
+                 summary_prompt += ("\n\nIMPORTANT TELUGU RULES:\n"
+                                    "- Write the 'details' narrative as a FORMAL PETITION to the Station House Officer.\n"
+                                    "- Use FIRST PERSON ('Nenu...', 'Maaku...').\n"
+                                    "- NEVER start with 'You said' ('Meeru chepparu') or 'The user said'.\n"
+                                    "- NEVER mention 'We asked questions'.\n"
+                                    "- Output must be continuous Telugu text describing the incident formally.\n"
+                                    "- Output the JSON values in Telugu where appropriate (narrative), but keep keys in English.\n"
+                                    "- Need description like full narrative of the complaint not like just description.")
 
-            summary_completion = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=[{"role": "system", "content": summary_prompt}],
-                temperature=0.2, # Low temp for consistency
-                max_tokens=450,
-                response_format={"type": "json_object"}
-            )
-            
-            final_json_str = summary_completion.choices[0].message.content.strip()
-            logger.info(f"Summary JSON: {final_json_str}")
+            try:
+                model = genai.GenerativeModel(LLM_MODEL)
+                
+                response = model.generate_content(
+                    summary_prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.2,
+                        max_output_tokens=2048,
+                        response_mime_type="application/json", # Use Gemini's native JSON mode
+                    )
+                )
+                
+                final_json_str = response.text.strip()
+            except Exception as e:
+                logger.error(f"Gemini Summary Generation Error: {e}")
+                final_json_str = "{}"
+            final_json_str = safe_utf8(final_json_str)
+            # logger.info(f"Summary JSON: {final_json_str}")
+            logger.info("Summary JSON received (length=%d)", len(final_json_str))
             
             # Parse JSON
             try:
@@ -1366,82 +1684,112 @@ INFORMATION:
                 n_data = {}
 
             # Map to ComplaintResponse
-            narrative = n_data.get("details", "")
-            final_complaint_type = n_data.get("complaint_type", payload.complaint_type)
+            # narrative = n_data.get("details", "")
+            narrative = safe_utf8(n_data.get("details", ""))
+
+            # final_complaint_type = n_data.get("complaint_type", payload.complaint_type)
+            # if not final_complaint_type or not final_complaint_type.strip():
+            #     final_complaint_type = "General Complaint"
+
+            raw_llm_type = (n_data.get("complaint_type") or "").strip()
+            if not raw_llm_type:
+                final_complaint_type = "General Complaint"
+            else:
+                final_complaint_type = raw_llm_type
+            final_complaint_type = final_complaint_type.strip().title()
+
             initial_details_summary = n_data.get("initial_details", "")
-            short_incident = n_data.get("short_incident_summary", "")
+            # short_incident = n_data.get("short_incident_summary", "")
+            short_incident = safe_utf8(n_data.get("short_incident_summary", ""))
+
             
             # Extract collected identity if missing in payload
             extracted_name = n_data.get("full_name")
             extracted_address = n_data.get("address")
             extracted_phone = n_data.get("phone")
             
-            # Helper function to check if question was already asked
-            def was_question_asked(chat_history, question_keywords):
-                """Check if a question containing any of the keywords was already asked"""
-                for msg in chat_history:
-                    if msg.role == "assistant":
-                        content_lower = msg.content.lower()
-                        if any(keyword in content_lower for keyword in question_keywords):
-                            return True
-                return False
-            
+            # --- STRICT GATEKEEPING & DEBUG LOGGING ---
+            logger.info(f"Gatekeeper Payload Input: Name='{payload.full_name}', Addr='{payload.address}', Phone='{payload.phone}'")
+            logger.info(f"Gatekeeper LLM Extracted: Name='{extracted_name}', Addr='{extracted_address}', Phone='{extracted_phone}'")
+
+            # 1. NAME
             final_name = payload.full_name
-            # Validate extracted name if payload name is missing
-            extracted_name_valid = extracted_name and validate_name(extracted_name)
+            # extracted_name_valid = extracted_name and validate_name(extracted_name)
             
             if not final_name or not validate_name(final_name):
-                if extracted_name_valid:
-                    final_name = extracted_name
-                else:
-                    # Check if we already asked for name
-                    name_keywords = ["పూర్తి పేరు", "full name", "your name", "మీ పేరు"]
-                    if was_question_asked(payload.chat_history, name_keywords):
-                        # Already asked but no valid answer - use placeholder or skip
-                        logger.warning("Name question already asked but no valid answer received")
-                        final_name = "Not Provided"  # Use placeholder instead of asking again
-                    else:
-                        # First time asking - ask for it
-                        msg = "What is your full name?"
-                        if language == "te":
-                            msg = "మీ పూర్తి పేరు ఏమిటి?"
-                        return ChatStepResponse(status="question", message=msg)
+                # DISABLED FALLBACK
+                msg = SYS_MSG_NAME_EN
+                if language == "te":
+                    msg = SYS_MSG_NAME_TE
+                return ChatStepResponse(status="question", message=msg)
                 
+            # 2. ADDRESS
             final_address = payload.address
-            extracted_address_valid = extracted_address and validate_address(extracted_address)
+            # extracted_address_valid = extracted_address and validate_address(extracted_address)
             
             if not final_address or not validate_address(final_address):
-                if extracted_address_valid:
-                    final_address = extracted_address
-                else:
-                    # Check if we already asked for address
-                    address_keywords = ["నివసిస్తున్నారు", "where do you live", "your address", "మీ చిరునామా"]
-                    if was_question_asked(payload.chat_history, address_keywords):
-                        logger.warning("Address question already asked but no valid answer received")
-                        final_address = "Not Provided"
-                    else:
-                        # First time asking
-                        msg = "Where do you live (place / area)?"
-                        if language == "te":
-                            msg = "మీరు ఎక్కడ నివసిస్తున్నారు (ప్రాంతం / నగరం)?"
-                        return ChatStepResponse(status="question", message=msg)
+                # DISABLED FALLBACK
+                msg = SYS_MSG_ADDRESS_EN
+                if language == "te":
+                    msg = SYS_MSG_ADDRESS_TE
+                return ChatStepResponse(status="question", message=msg)
                 
+            # 3. PHONE
             final_phone = payload.phone
+            
+            # ONLY use extracted phone if it is STRICTLY VALID.
+            # DISABLED FALLBACK: FORCE ASK
+            # if extracted_phone and validate_phone(extracted_phone):
+            #      final_phone = extracted_phone
+            #      logger.info("Using Extracted Phone")
+            
+            # FORCE CHECK: If final_phone is invalid (None or False), RETURN QUESTION
             if not final_phone or not validate_phone(final_phone):
-                 if extracted_phone and validate_phone(extracted_phone):
-                     final_phone = extracted_phone
-                 else:
-                     # Check if we already asked for phone
-                     phone_keywords = ["ఫోన్ నంబర్", "phone number", "contact number", "మీ నంబర్"]
-                     if was_question_asked(payload.chat_history, phone_keywords):
-                         logger.warning("Phone question already asked but no valid answer received")
-                         final_phone = "Not Provided"
-                     else:
-                         # First time asking
-                         msg = "Enter your phone number (10 digits):"
-                         if language == "te":
-                             msg = "దయచేసి మీ ఫోన్ నంబర్‌ను నమోదు చేయండి (10 అంకెలు):"
-                         return ChatStepResponse(status="question", message=msg)
+                 logger.info("Phone missing or invalid. Asking user.")
+                 msg = SYS_MSG_PHONE_EN
+                 if language == "te":
+                     msg = SYS_MSG_PHONE_TE
+                 return ChatStepResponse(status="question", message=msg)
+
+            # --- SANITIZATION & CRITICAL FIELD CHECK ---
+            # Check for IMEI if "IMEI" keyword is mentioned
+            full_text_search = (narrative + " " + initial_details_summary).lower()
+            
+            if "imei" in full_text_search:
+                # Check if a valid 15-digit IMEI exists in the extracted/input text
+                # We check the narrative for the number
+                if not validate_imei(narrative) and not validate_imei(initial_details_summary) and not validate_imei(payload.initial_details):
+                     msg = "I noticed you mentioned an IMEI number, but it doesn't look like a valid 15-digit number. Please check and provide the correct IMEI."
+                     if language == "te":
+                         msg = "మీరు IMEI నంబర్ చెప్పినట్లున్నారు, కానీ అది 15 అంకెలు లేనట్లుంది. దయచేసి సరైన IMEI నంబర్ ఇవ్వండి."
+                     return ChatStepResponse(status="question", message=msg)
+
+            # Check for Vehicle Number if context suggests vehicle theft
+            vehicle_keywords = ["vehicle", "bike", "car", "scooter", "motorcycle", "registration number", "number plate", "license plate", "వాహనం", "బైక్", "కారు"]
+            if any(k in full_text_search for k in vehicle_keywords) and ("theft" in full_text_search or "lost" in full_text_search or "దొంగ" in full_text_search):
+                 # Look for pattern in EVERYTHING (Narrative + Initial + Last User Msg + History)
+                 combined_reg_search = (narrative or "") + " " + (initial_details_summary or "") + " " + (payload.initial_details or "")
+                 # Add last user message for freshness
+                 if payload.chat_history and payload.chat_history[-1].role == "user":
+                     combined_reg_search += " " + payload.chat_history[-1].content
+                 
+                 # Also check previous user messages just in case
+                 for m in payload.chat_history:
+                     if m.role == "user":
+                         combined_reg_search += " " + m.content
+
+                 found_valid_reg = validate_vehicle_number(combined_reg_search)
+                 if not found_valid_reg:
+                      # If explicit mention of "number" or "registration" missing, maybe ask?
+                      # But let's only block if they provided something looking like a reg but invalid?
+                      # Or strict: if vehicle theft, MANDATE reg number?
+                      # User asked: "Need to ask mandatory questions... for bike lost/theft : Registration Number"
+                      
+                      # If we haven't found a valid reg, ask for it.
+                      msg = "For vehicle cases, the Registration Number is mandatory. Please provide the Vehicle Registration Number (e.g., TS09AB1234)."
+                      if language == "te":
+                          msg = "వాహనం విషయంలో రిజిస్ట్రేషన్ నంబర్ తప్పనిసరి. దయచేసి మీ వాహన నంబర్ చెప్పండి (ఉదాహరణకు: TS09AB1234)."
+                      return ChatStepResponse(status="question", message=msg)
 
             # Create final object (mapping fields)
             try:
@@ -1462,10 +1810,13 @@ INFORMATION:
             # Generate the formal summary text block
             formal_summary_text, localized_fields = generate_summary_text(final_req)
             
-            # Override "details" in localized fields with the narrative/summary
+            # --- USER FEEDBACK MAPPING FIX ---
+            # 1. 'details' -> Full Summarization (Narrative)
+            # 2. 'incident_details' -> Where/When incident happened (Short Incident)
+            
             localized_fields["details"] = initial_details_summary
             localized_fields['incident_details'] = narrative
-            localized_fields['incident_address'] = short_incident
+            localized_fields['incident_address'] = short_incident # Keep consistent
             
             # Classification
             classification_context = _build_classification_context(
@@ -1481,27 +1832,56 @@ INFORMATION:
                  classification_text=classification_context
             )
             
+            # Translation of Classification Label
+            final_classification_str = classification
+            if language == "te":
+                final_classification_str = translate_to_telugu(classification)
+            
             final_response_obj = ComplaintResponse(
-                formal_summary=formal_summary_text, # Standard format
-                classification=classification,
-                original_classification=classification,
-                raw_conversation=transcript, # DIRECT TRANSCRIPT (No static Qs)
+                formal_summary=safe_utf8(formal_summary_text), # Standard format
+                classification=safe_utf8(final_classification_str),
+                original_classification=classification, # MUST BE ENGLISH "Cognizable" or "Non-Cognizable" for Logic
+                raw_conversation=safe_utf8(transcript), # DIRECT TRANSCRIPT (No static Qs)
                 timestamp=get_timestamp(),
-                localized_fields=localized_fields,
-                incident_details=narrative,
+                # localized_fields=localized_fields,
+                localized_fields={k: safe_utf8(v) for k, v in localized_fields.items()},
+                incident_details=safe_utf8(narrative),
                 incident_address=None,
                 
                 # New fields from user script logic
                 full_name=final_req.full_name,
                 address=final_req.address,
                 phone=final_req.phone,
-                initial_details=initial_details_summary
+                initial_details=safe_utf8(initial_details_summary)
             )
             
-            return ChatStepResponse(status="done", final_response=final_response_obj)
+            # return ChatStepResponse(status="done", final_response=final_response_obj)
+            return JSONResponse(
+                content=ChatStepResponse(
+                    status="done",
+                    final_response=final_response_obj
+                ).model_dump(),
+                media_type="application/json; charset=utf-8"
+            )
+            # End of DONE block
             
+            # If not done, return the question
+            reply = reply.encode("utf-8", "ignore").decode("utf-8")
+            return JSONResponse(
+                content=ChatStepResponse(
+                    status="question",
+                    message=safe_utf8(reply)
+                ).model_dump(),
+                media_type="application/json; charset=utf-8"
+            )
+
+
         else:
-            return ChatStepResponse(status="question", message=reply)
+            return JSONResponse(
+                content=ChatStepResponse(status="question", message=reply).model_dump(),
+                media_type="application/json; charset=utf-8"
+            )
+            # return ChatStepResponse(status="question", message=reply)
 
     except Exception as e:
         logger.error(f"Chat step failed: {e}")

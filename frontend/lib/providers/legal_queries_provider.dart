@@ -189,6 +189,7 @@ class LegalQueriesProvider with ChangeNotifier {
   /* ---------------- CHAT HISTORY STREAM ---------------- */
   Stream<List<Map<String, dynamic>>> chatSessionsStream() {
     final uid = _auth.currentUser!.uid;
+    debugPrint('🔍 [LEGAL_QUERIES] Querying chat sessions for userId: $uid');
 
     return _firestore
         .collection('legal_queries_chats')
@@ -196,6 +197,13 @@ class LegalQueriesProvider with ChangeNotifier {
         .snapshots()
         .map((snapshot) {
       final docs = snapshot.docs;
+      debugPrint('📚 [LEGAL_QUERIES] Found ${docs.length} chat sessions');
+
+      if (docs.isNotEmpty) {
+        for (var doc in docs) {
+          debugPrint('  - Session: ${doc.id}, Title: ${doc.data()['title']}');
+        }
+      }
 
       // Sort latest first
       docs.sort((a, b) {

@@ -1795,6 +1795,9 @@ abstract class AppLocalizations {
   /// **'Review the generated draft. This is a starting point and requires legal review and verification against original documents.'**
   String get reviewChargeSheetDesc;
 
+  /// Profile updated success message
+  String get profileUpdated;
+
   /// Message when no charge sheet is generated
   ///
   /// In en, this message translates to:

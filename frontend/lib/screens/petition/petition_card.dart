@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class PetitionCard extends StatelessWidget {
   final Petition petition;
   final String Function(Timestamp) formatTimestamp;
   final VoidCallback onTap;
-
 
   const PetitionCard({
     super.key,
@@ -20,24 +22,37 @@ class PetitionCard extends StatelessWidget {
     // If policeStatus is available, prioritize it
     if (policeStatus != null && policeStatus.isNotEmpty) {
       switch (policeStatus.toLowerCase()) {
-        case 'pending': return Colors.orange;
-        case 'received': return Colors.blue;
-        case 'in progress': return Colors.indigo;
-        case 'closed': return Colors.green;
-        case 'rejected': return Colors.red;
-        default: return Colors.grey;
+        case 'pending':
+          return Colors.orange;
+        case 'received':
+          return Colors.blue;
+        case 'in progress':
+          return Colors.indigo;
+        case 'closed':
+          return Colors.green;
+        case 'rejected':
+          return Colors.red;
+        default:
+          return Colors.grey;
       }
     }
 
     // Fallback to internal status
     switch (status) {
-      case PetitionStatus.draft: return Colors.grey;
-      case PetitionStatus.filed: return Colors.blue;
-      case PetitionStatus.underReview: return Colors.orange;
-      case PetitionStatus.hearingScheduled: return Colors.purple;
-      case PetitionStatus.granted: return Colors.green;
-      case PetitionStatus.rejected: return Colors.red;
-      case PetitionStatus.withdrawn: return Colors.brown;
+      case PetitionStatus.draft:
+        return Colors.grey;
+      case PetitionStatus.filed:
+        return Colors.blue;
+      case PetitionStatus.underReview:
+        return Colors.orange;
+      case PetitionStatus.hearingScheduled:
+        return Colors.purple;
+      case PetitionStatus.granted:
+        return Colors.green;
+      case PetitionStatus.rejected:
+        return Colors.red;
+      case PetitionStatus.withdrawn:
+        return Colors.brown;
     }
   }
 
@@ -47,9 +62,10 @@ class PetitionCard extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
 
     // Determine what text to show: policeStatus takes precedence
-    final String displayStatus = (petition.policeStatus != null && petition.policeStatus!.isNotEmpty)
-        ? petition.policeStatus!
-        : petition.status.displayName;
+    final String displayStatus =
+        (petition.policeStatus != null && petition.policeStatus!.isNotEmpty)
+            ? petition.policeStatus!
+            : petition.status.displayName;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -62,6 +78,7 @@ class PetitionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
@@ -70,10 +87,14 @@ class PetitionCard extends StatelessWidget {
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // STATUS BADGE
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _statusColor(petition.status, petition.policeStatus),
+                      color:
+                          _statusColor(petition.status, petition.policeStatus),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -85,6 +106,31 @@ class PetitionCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // SAVE BUTTON
+                  Consumer<ComplaintProvider>(builder: (context, provider, _) {
+                    final isSaved = provider.isPetitionSaved(petition.id);
+                    return InkWell(
+                      onTap: () async {
+                        final auth =
+                            Provider.of<AuthProvider>(context, listen: false);
+                        final userId = auth.user?.uid;
+                        if (userId == null) return;
+
+                        await provider.toggleSaveComplaint(
+                            petition.toMap(), userId);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          isSaved ? Icons.bookmark : Icons.bookmark_border,
+                          color: isSaved ? Colors.orange : Colors.grey,
+                          size: 24,
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
               const SizedBox(height: 8),
@@ -122,7 +168,8 @@ class PetitionCard extends StatelessWidget {
                   Icon(Icons.calendar_today, size: 14, color: Colors.grey[500]),
                   const SizedBox(width: 4),
                   Text(
-                    localizations.createdDate(formatTimestamp(petition.createdAt)),
+                    localizations
+                        .createdDate(formatTimestamp(petition.createdAt)),
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: Colors.grey[500], fontSize: 11),
                   ),

@@ -1539,4 +1539,8 @@ String get listening => 'Listening...';
 
 @override
 String get tapToStopRecording => 'Tap the microphone icon to stop recording';
+
+  @override
+  // TODO: implement profileUpdated
+  String get profileUpdated => throw UnimplementedError();
 }

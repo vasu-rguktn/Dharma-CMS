@@ -87,48 +87,6 @@ service cloud.firestore {
       // Allow delete only if user is the owner
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
-    
-    // SAVED COMPLAINTS COLLECTION
-    // Corrected rules for full CRUD access by owner
-    match /complaints/{complaintId} {
-      // Allow read if user owns the complaint
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      
-      // Allow create if user sets their own uid
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // Allow delete if user owns the complaint
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      
-      // Allow update if user owns the complaint
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    // PETITION UPDATES TIMELINE COLLECTION
-    // Collection: petition_updates
-    // Used by police to add progress updates on petitions with text, photos, and documents
-    match /petition_updates/{updateId} {
-      // Only approved police can create petition updates
-      // The addedByUserId field must match the authenticated police officer's uid
-      allow create: if isPolice() &&
-        request.resource.data.addedByUserId == request.auth.uid;
-
-      // Read access:
-      // - Any approved police officer can read petition updates
-      // - The citizen who owns the petition can read updates for their own petition
-      allow read: if request.auth != null && (
-        isPolice() ||
-        (
-          resource.data.petitionId is string &&
-          exists(/databases/$(database)/documents/petitions/$(resource.data.petitionId)) &&
-          get(/databases/$(database)/documents/petitions/$(resource.data.petitionId)).data.userId == request.auth.uid
-        )
-      );
-
-      // Only the police officer who created the update can modify or delete it
-      allow update, delete: if isPolice() &&
-        resource.data.addedByUserId == request.auth.uid;
-    }
 
     // CASE JOURNAL ENTRIES
     // Collection: caseJournalEntries
@@ -237,8 +195,6 @@ service cloud.firestore {
       // Police can delete evidence records
       allow delete: if isPolice();
     }
-<<<<<<< HEAD
-=======
 
     // LEGAL QUERIES CHATS COLLECTION
     // Collection: legal_queries_chats
@@ -281,7 +237,6 @@ service cloud.firestore {
           get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
       }
     }
->>>>>>> e3460d4fabfc77d45c4a9cf7df2aa35fcb7513b9
     
   }
 }

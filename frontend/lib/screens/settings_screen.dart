@@ -6,6 +6,7 @@ import 'package:Dharma/providers/settings_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/services/onboarding_service.dart';
 
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -66,6 +67,10 @@ class SettingsScreen extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(user?.email ?? ''),
+                    trailing: TextButton(
+                      onPressed: () => context.push('/profile'),
+                      child: const Text('View Profile', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                    ),
                   ),
                 ],
               ),

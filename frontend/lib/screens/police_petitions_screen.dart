@@ -1,11 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:Dharma/models/petition.dart';
+import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/police_auth_provider.dart';
+import 'package:Dharma/widgets/petition_update_timeline.dart';
+import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 
 class PolicePetitionsScreen extends StatefulWidget {
   const PolicePetitionsScreen({super.key});
@@ -16,33 +22,278 @@ class PolicePetitionsScreen extends StatefulWidget {
 }
 
 class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
-  String? _stationName;
+  // Police Profile Data
+  String? _policeRank;
+  String? _policeRange;
+  String? _policeDistrict;
+  String? _policeStation;
 
-  /// 🔎 FILTER STATE
+  // Filter selections (for dynamic filtering based on rank)
+  String? _selectedRange;
+  String? _selectedDistrict;
+  String? _selectedStation;
+
+  // Standard filters
   String? _searchQuery = '';
   String? _selectedPoliceStatus;
   String? _selectedType;
   DateTime? _fromDate;
   DateTime? _toDate;
 
-  /* ---------------- INIT ---------------- */
+  // Hierarchy data
+  Map<String, Map<String, List<String>>> _policeHierarchy = {};
+  bool _hierarchyLoading = true;
+
+  /* ================= RANK TIERS ================= */
+  
+  static const List<String> _stateLevelRanks = [
+    'Director General of Police',
+    'Additional Director General of Police',
+  ];
+
+  static const List<String> _rangeLevelRanks = [
+    'Inspector General of Police',
+    'Deputy Inspector General of Police',
+  ];
+
+  static const List<String> _districtLevelRanks = [
+    'Superintendent of Police',
+    'Additional Superintendent of Police',
+  ];
+
+  static const List<String> _stationLevelRanks = [
+    'Deputy Superintendent of Police',
+    'Inspector of Police',
+    'Sub Inspector of Police',
+    'Assistant Sub Inspector of Police',
+    'Head Constable',
+    'Police Constable',
+  ];
+
+  /* ================= INIT ================= */
+
   @override
   void initState() {
     super.initState();
-
+    _loadHierarchyData();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final policeProvider = context.read<PoliceAuthProvider>();
-      final station = policeProvider.policeProfile?['stationName'];
+      final profile = policeProvider.policeProfile;
 
-      if (station != null && station.toString().trim().isNotEmpty) {
-        setState(() => _stationName = station.toString().trim());
-        debugPrint('✅ Station loaded: $_stationName');
-      } else {
-        debugPrint('❌ Station name not found');
+      if (profile != null) {
+        setState(() {
+          _policeRank = profile['rank']?.toString();
+          _policeRange = profile['range']?.toString();
+          _policeDistrict = profile['district']?.toString();
+          _policeStation = profile['stationName']?.toString();
+
+          debugPrint('👮 Police Profile Loaded:');
+          debugPrint('   Rank: $_policeRank');
+          debugPrint('   Range: $_policeRange');
+          debugPrint('   District: $_policeDistrict');
+          debugPrint('   Station: $_policeStation');
+        });
       }
     });
   }
-  /* ---------------- FILTER LOGIC ---------------- */
+
+  /* ================= LOAD HIERARCHY ================= */
+
+  Future<void> _loadHierarchyData() async {
+    try {
+      debugPrint('🔄 [Petitions] Loading police hierarchy data...');
+      final jsonStr = await rootBundle
+          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+      final Map<String, dynamic> data = json.decode(jsonStr);
+
+      Map<String, Map<String, List<String>>> hierarchy = {};
+      int totalDistricts = 0;
+      int totalStations = 0;
+      
+      data.forEach((range, districts) {
+        if (districts is Map) {
+          Map<String, List<String>> districtMap = {};
+          districts.forEach((district, stations) {
+            final stationList = List<String>.from(stations ?? []);
+            districtMap[district.toString()] = stationList;
+            totalDistricts++;
+            totalStations += stationList.length;
+          });
+          hierarchy[range] = districtMap;
+        }
+      });
+
+      setState(() {
+        _policeHierarchy = hierarchy;
+        _hierarchyLoading = false;
+      });
+      
+      debugPrint('✅ [Petitions] Hierarchy loaded successfully!');
+      debugPrint('   📊 Ranges: ${hierarchy.length}');
+      debugPrint('   📊 Districts: $totalDistricts');
+      debugPrint('   📊 Stations: $totalStations');
+    } catch (e) {
+      debugPrint('❌ [Petitions] Error loading hierarchy data: $e');
+      setState(() => _hierarchyLoading = false);
+    }
+  }
+
+  /* ================= RANK-BASED FILTER VISIBILITY ================= */
+
+  bool _canFilterByRange() {
+    if (_policeRank == null) return false;
+    // DGP/Addl. DGP can filter by range
+    return _stateLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByDistrict() {
+    if (_policeRank == null) return false;
+    // DGP/Addl. DGP, IGP/DIG can filter by district
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByStation() {
+    if (_policeRank == null) return false;
+    // Everyone except station-level can filter by station
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank) ||
+           _districtLevelRanks.contains(_policeRank);
+  }
+
+  bool _isStationLevel() {
+    if (_policeRank == null) return false;
+    return _stationLevelRanks.contains(_policeRank);
+  }
+
+  /* ================= HIERARCHY HELPERS ================= */
+
+  List<String> _getAvailableRanges() {
+    return _policeHierarchy.keys.toList();
+  }
+
+  List<String> _getAvailableDistricts() {
+    // For DGP: Show districts from selected range
+    if (_selectedRange != null) {
+      return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
+    }
+    
+    // For IGP: Show districts from their assigned range
+    if (_policeRange != null) {
+      return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
+    }
+    
+    return [];
+  }
+
+  List<String> _getAvailableStations() {
+    String? targetRange;
+    String? targetDistrict;
+
+    // Determine which district to use
+    if (_selectedDistrict != null) {
+      targetDistrict = _selectedDistrict;
+    } else if (_policeDistrict != null) {
+      targetDistrict = _policeDistrict;
+    }
+
+    // Determine which range to use
+    if (_selectedRange != null) {
+      targetRange = _selectedRange;
+    } else if (_policeRange != null) {
+      targetRange = _policeRange;
+    } else if (targetDistrict != null) {
+      // If we have a district but no range, search for the district across all ranges
+      for (var range in _policeHierarchy.keys) {
+        if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
+          targetRange = range;
+          debugPrint('🔍 Found district "$targetDistrict" in range "$range"');
+          break;
+        }
+      }
+    }
+
+    if (targetRange == null || targetDistrict == null) {
+      debugPrint('❌ Cannot get stations: targetRange=$targetRange, targetDistrict=$targetDistrict');
+      return [];
+    }
+
+    final stations = _policeHierarchy[targetRange]?[targetDistrict] ?? [];
+    debugPrint('✅ Found ${stations.length} stations in $targetRange > $targetDistrict');
+    return stations;
+  }
+
+  /* ================= FILTER RESET ================= */
+
+  void _onRangeChanged(String? range) {
+    setState(() {
+      _selectedRange = range;
+      _selectedDistrict = null;
+      _selectedStation = null;
+    });
+  }
+
+  void _onDistrictChanged(String? district) {
+    setState(() {
+      _selectedDistrict = district;
+      _selectedStation = null;
+    });
+  }
+
+  /* ================= BUILD QUERY ================= */
+
+  Query<Map<String, dynamic>> _buildPetitionQuery() {
+    Query<Map<String, dynamic>> query = 
+        FirebaseFirestore.instance.collection('petitions');
+
+    // Station-level officers: filter by their assigned station
+    if (_isStationLevel() && _policeStation != null) {
+      query = query.where('stationName', isEqualTo: _policeStation);
+      debugPrint('🔍 Station Level Query: stationName = $_policeStation');
+    }
+    // SP/Addl. SP: filter by selected station (if any)
+    else if (_districtLevelRanks.contains(_policeRank)) {
+      if (_selectedStation != null) {
+        query = query.where('stationName', isEqualTo: _selectedStation);
+        debugPrint('🔍 District Level Query: stationName = $_selectedStation');
+      } else if (_policeDistrict != null) {
+        // If no station selected, show all from their district
+        query = query.where('district', isEqualTo: _policeDistrict);
+        debugPrint('🔍 District Level Query: district = $_policeDistrict');
+      }
+    }
+    // IGP/DIG: filter by selected district or station
+    else if (_rangeLevelRanks.contains(_policeRank)) {
+      if (_selectedStation != null) {
+        query = query.where('stationName', isEqualTo: _selectedStation);
+        debugPrint('🔍 Range Level Query: stationName = $_selectedStation');
+      } else if (_selectedDistrict != null) {
+        query = query.where('district', isEqualTo: _selectedDistrict);
+        debugPrint('🔍 Range Level Query: district = $_selectedDistrict');
+      } else if (_policeRange != null) {
+        // Show all from their range (would need a 'range' field in petitions)
+        // For now, we'll show all petitions
+        debugPrint('🔍 Range Level Query: Show all (no range filter in petition schema)');
+      }
+    }
+    // DGP/Addl. DGP: filter by selected hierarchy
+    else if (_stateLevelRanks.contains(_policeRank)) {
+      if (_selectedStation != null) {
+        query = query.where('stationName', isEqualTo: _selectedStation);
+        debugPrint('🔍 State Level Query: stationName = $_selectedStation');
+      } else if (_selectedDistrict != null) {
+        query = query.where('district', isEqualTo: _selectedDistrict);
+        debugPrint('🔍 State Level Query: district = $_selectedDistrict');
+      }
+      // If no filter, show all state petitions
+    }
+
+    return query.orderBy('createdAt', descending: true);
+  }
+
+  /* ================= FILTER PETITIONS ================= */
+
   List<Petition> _applyFilters(List<Petition> petitions) {
     debugPrint(
         '🔎 Filters → search=$_searchQuery status=$_selectedPoliceStatus type=$_selectedType fromDate=$_fromDate toDate=$_toDate');
@@ -95,7 +346,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     }).toList();
   }
 
-  /* ---------------- HELPERS ---------------- */
+  /* ================= UI HELPERS ================= */
+
   Color _getPoliceStatusColor(String status) {
     switch (status) {
       case 'Received':
@@ -146,80 +398,120 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     );
   }
 
-  Widget _buildFilterChip<T>({
-    required String label,
-    required T? value,
-    required List<T> options,
-    required void Function(T?) onSelected,
-  }) {
-    return PopupMenuButton<T>(
-      tooltip: label,
-      onSelected: onSelected,
-      itemBuilder: (context) => [
-        PopupMenuItem<T>(
-          value: null,
-          child: Text('All $label'),
-        ),
-        ...options.toSet().map(
-          (opt) => PopupMenuItem<T>(
-            value: opt,
-            child: Text(opt.toString()),
-          ),
-        ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade300),
-          color: Colors.white,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value == null ? label : '$label: $value',
-              style: const TextStyle(fontSize: 12),
-            ),
-            const Icon(Icons.arrow_drop_down, size: 18),
-          ],
-        ),
+  /* ================= SEARCHABLE DROPDOWN ================= */
+
+  Future<void> _openSearchableDropdown({
+    required String title,
+    required List<String> items,
+    required String? selectedValue,
+    required void Function(String?) onSelected,
+  }) async {
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No options available for $title')),
+      );
+      return;
+    }
+
+    final searchController = TextEditingController();
+    List<String> filtered = List.from(items);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        setModalState(() {
+                          filtered = items
+                              .where((e) => e
+                                  .toLowerCase()
+                                  .contains(value.toLowerCase()))
+                              .toList();
+                        });
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Expanded(
+                    child: Scrollbar(
+                      thumbVisibility: true,
+                      child: ListView.builder(
+                        itemCount: filtered.length + 1, // +1 for "All" option
+                        itemBuilder: (_, index) {
+                          if (index == 0) {
+                            return ListTile(
+                              title: Text('All $title'),
+                              trailing: selectedValue == null
+                                  ? const Icon(Icons.check, color: Colors.green)
+                                  : null,
+                              onTap: () {
+                                onSelected(null);
+                                Navigator.pop(context);
+                              },
+                            );
+                          }
+                          
+                          final item = filtered[index - 1];
+                          return ListTile(
+                            title: Text(item),
+                            trailing: item == selectedValue
+                                ? const Icon(Icons.check, color: Colors.green)
+                                : null,
+                            onTap: () {
+                              onSelected(item);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildDateFilterChip({
-    required String label,
-    required DateTime? value,
-    required VoidCallback onSelected,
-  }) {
-    return GestureDetector(
-      onTap: onSelected,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade300),
-          color: Colors.white,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value == null
-                  ? label
-                  : '$label: ${_formatTimestamp(Timestamp.fromDate(value))}',
-              style: const TextStyle(fontSize: 12),
-            ),
-            const Icon(Icons.arrow_drop_down, size: 18),
-          ],
-        ),
-      ),
-    );
-  }
+  /* ================= PETITION DETAIL MODAL ================= */
 
-  /* ---------------- PETITION DETAIL (UNCHANGED) ---------------- */
   void _showPetitionDetails(BuildContext context, Petition petition) {
+    final policeProfile = context.read<PoliceAuthProvider>().policeProfile;
+    final policeOfficerName = policeProfile?['displayName'] ?? 'Officer';
+    final policeOfficerUserId = policeProfile?['uid'] ?? '';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -348,6 +640,81 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     if (petition.orderDate != null && petition.orderDate!.isNotEmpty)
                       _buildDetailRow('Order Date', petition.orderDate!),
                     
+                    const SizedBox(height: 24),
+
+                    // ============= PETITION UPDATES TIMELINE ============= 
+                    const Divider(),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Case Updates',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AddPetitionUpdateDialog(
+                                petition: petition,
+                                policeOfficerName: policeOfficerName,
+                                policeOfficerUserId: policeOfficerUserId,
+                              ),
+                            );
+                            
+                            // Refresh the modal if update was added
+                            if (result == true && context.mounted) {
+                              setModal(() {}); // Trigger rebuild
+                            }
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Update'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Display petition updates in real-time using StreamBuilder
+                    StreamBuilder<List<PetitionUpdate>>(
+                      stream: context.read<PetitionProvider>().streamPetitionUpdates(petition.id!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: Text(
+                                'Error loading updates: ${snapshot.error}',
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final updates = snapshot.data ?? [];
+                        return PetitionUpdateTimeline(updates: updates);
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+                    const Divider(),
                     const SizedBox(height: 16),
                     
                     // Police Status Section
@@ -476,15 +843,6 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                           
                           debugPrint('🚀 Navigating to new case screen');
                           debugPrint('📦 Petition data being passed: $petitionData');
-                          debugPrint('📦 Data keys: ${petitionData.keys.toList()}');
-                          for (var key in petitionData.keys) {
-                            final value = petitionData[key];
-                            if (value is Map) {
-                              debugPrint('   $key: Map with keys ${value.keys.toList()}');
-                            } else {
-                              debugPrint('   $key: $value (${value.runtimeType})');
-                            }
-                          }
                           
                           // Navigate to new case screen with petition data
                           context.go(
@@ -547,7 +905,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         child: loading
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
-                            : const Text('Submit Update'),
+                            : const Text('Submit Status Update'),
                       ),
                     ),
                   ],
@@ -560,23 +918,48 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     );
   }
 
-  /* ---------------- UI ---------------- */
+  /* ================= BUILD UI ================= */
+
   @override
   Widget build(BuildContext context) {
-    if (_stationName == null) {
+    if (_hierarchyLoading || _policeRank == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Petitions – $_stationName')),
+      appBar: AppBar(
+        title: Text('Petitions – ${_policeRank ?? "Loading..."}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Your Access Level'),
+                  content: Text(
+                    'Rank: $_policeRank\n\n'
+                    'Range: ${_policeRange ?? "N/A"}\n'
+                    'District: ${_policeDistrict ?? "N/A"}\n'
+                    'Station: ${_policeStation ?? "N/A"}\n\n'
+                    'Filter petitions using the dropdown filters below.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('petitions')
-            .where('stationName', isEqualTo: _stationName)
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
+        stream: _buildPetitionQuery().snapshots(),
         builder: (context, snapshot) {
           debugPrint('📡 hasData=${snapshot.hasData} error=${snapshot.error}');
 
@@ -592,11 +975,112 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
           return Column(
             children: [
-              // SEARCH & FILTERS
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+              // === RANK-BASED FILTERS ===
+              Container(
+                color: Colors.blue.shade50,
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // DGP: Range → District → Station
+                    if (_canFilterByRange()) ...[
+                      _buildFilterPicker(
+                        label: 'Filter by Range',
+                        value: _selectedRange,
+                        icon: Icons.location_city,
+                        onTap: () {
+                          _openSearchableDropdown(
+                            title: 'Select Range',
+                            items: _getAvailableRanges(),
+                            selectedValue: _selectedRange,
+                            onSelected: _onRangeChanged,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // DGP, IGP: District
+                    if (_canFilterByDistrict()) ...[
+                      _buildFilterPicker(
+                        label: 'Filter by District',
+                        value: _selectedDistrict,
+                        icon: Icons.map,
+                        onTap: () {
+                          _openSearchableDropdown(
+                            title: 'Select District',
+                            items: _getAvailableDistricts(),
+                            selectedValue: _selectedDistrict,
+                            onSelected: _onDistrictChanged,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // DGP, IGP, SP: Station
+                    if (_canFilterByStation()) ...[
+                      _buildFilterPicker(
+                        label: 'Filter by Police Station',
+                        value: _selectedStation,
+                        icon: Icons.local_police,
+                        onTap: () {
+                          debugPrint('🔍 Station filter tapped');
+                          debugPrint('   Police Rank: $_policeRank');
+                          debugPrint('   Police Range: $_policeRange');
+                          debugPrint('   Police District: $_policeDistrict');
+                          debugPrint('   Selected Range: $_selectedRange');
+                          debugPrint('   Selected District: $_selectedDistrict');
+                          
+                          final availableStations = _getAvailableStations();
+                          debugPrint('   Available Stations: ${availableStations.length}');
+                          
+                          _openSearchableDropdown(
+                            title: 'Select Police Station',
+                            items: availableStations,
+                            selectedValue: _selectedStation,
+                            onSelected: (station) {
+                              setState(() => _selectedStation = station);
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                    
+                    // Station Level: Show assigned station (read-only)
+                    if (_isStationLevel() && _policeStation != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.indigo.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.local_police, color: Colors.indigo),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Showing petitions from: $_policeStation',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.indigo.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // === STANDARD FILTERS ===
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   children: [
                     TextField(
                       decoration: const InputDecoration(
@@ -946,6 +1430,116 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  /* ================= FILTER UI WIDGETS ================= */
+
+  Widget _buildFilterPicker({
+    required String label,
+    required String? value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value ?? label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: value == null ? Colors.grey : Colors.black,
+                  fontWeight: value == null ? FontWeight.normal : FontWeight.w600,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down, size: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip<T>({
+    required String label,
+    required T? value,
+    required List<T> options,
+    required void Function(T?) onSelected,
+  }) {
+    return PopupMenuButton<T>(
+      tooltip: label,
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        PopupMenuItem<T>(
+          value: null,
+          child: Text('All $label'),
+        ),
+        ...options.toSet().map(
+          (opt) => PopupMenuItem<T>(
+            value: opt,
+            child: Text(opt.toString()),
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value == null ? label : '$label: $value',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const Icon(Icons.arrow_drop_down, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateFilterChip({
+    required String label,
+    required DateTime? value,
+    required VoidCallback onSelected,
+  }) {
+    return GestureDetector(
+      onTap: onSelected,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value == null
+                  ? label
+                  : '$label: ${_formatTimestamp(Timestamp.fromDate(value))}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const Icon(Icons.arrow_drop_down, size: 18),
+          ],
+        ),
       ),
     );
   }

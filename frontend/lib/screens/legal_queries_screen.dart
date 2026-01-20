@@ -312,30 +312,29 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
       appBar: AppBar(
         backgroundColor: orange,
         title: const Text("Legal Assistant"),
-        leading: Row(
-          children: [
-            // Custom back button with logging
-            if (Navigator.of(context).canPop())
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  print('⬅️ [LEGAL_QUERIES] Back button pressed');
-                  print('📚 [LEGAL_QUERIES] Can pop: ${Navigator.of(context).canPop()}');
-                  Navigator.of(context).pop();
-                  print('✅ [LEGAL_QUERIES] Pop executed');
-                },
-              ),
-            // History drawer button
-            Expanded(
-              child: Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.history),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              ),
-            ),
-          ],
+        automaticallyImplyLeading: false, // Disable automatic hamburger menu
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to Dashboard',
+          onPressed: () {
+            print('⬅️ [LEGAL_QUERIES] Back button pressed - navigating to dashboard');
+            Navigator.of(context).pop(); // Navigate back to dashboard
+          },
         ),
+        actions: [
+          // History drawer button - opens chat history
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Chat History',
+              onPressed: () {
+                print('📜 [LEGAL_QUERIES] History button tapped - opening drawer');
+                Scaffold.of(context).openDrawer();
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
 
       /* ---------------- DRAWER : CHAT HISTORY ---------------- */
@@ -370,6 +369,19 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: provider.chatSessionsStream(),
                   builder: (context, snapshot) {
+                    print('🗂️ [LEGAL_QUERIES] History StreamBuilder state:');
+                    print('   - hasData: ${snapshot.hasData}');
+                    print('   - hasError: ${snapshot.hasError}');
+                    print('   - error: ${snapshot.error}');
+                    print('   - connectionState: ${snapshot.connectionState}');
+                    
+                    if (snapshot.hasError) {
+                      print('❌ [LEGAL_QUERIES] History error: ${snapshot.error}');
+                      return Center(
+                        child: Text('Error: ${snapshot.error}'),
+                      );
+                    }
+                    
                     if (!snapshot.hasData) {
                       return const Center(
                         child: CircularProgressIndicator(),
@@ -377,6 +389,8 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                     }
 
                     final sessions = snapshot.data!;
+                    print('   - sessions count: ${sessions.length}');
+                    
                     if (sessions.isEmpty) {
                       return const Center(
                         child: Text("No previous chats"),
