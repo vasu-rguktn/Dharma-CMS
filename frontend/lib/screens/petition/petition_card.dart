@@ -106,6 +106,21 @@ class PetitionCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (petition.isEscalated) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.trending_up,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                   const SizedBox(width: 8),
                   // SAVE BUTTON
                   Consumer<ComplaintProvider>(builder: (context, provider, _) {

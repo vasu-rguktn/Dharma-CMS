@@ -3,4 +3,5 @@ enum PetitionFilter {
   received,
   inProgress,
   closed,
+  escalated,
 }

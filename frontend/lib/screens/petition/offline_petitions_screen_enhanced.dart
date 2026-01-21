@@ -426,7 +426,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         const SizedBox(height: 20),
 
                         // Timeline Section
-                        _buildTimelineSection(petition.id!),
+                        _buildTimelineSection(petition),
 
                         const SizedBox(height: 80), // Space for action buttons
                       ],
@@ -510,7 +510,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     );
   }
 
-  Widget _buildTimelineSection(String petitionId) {
+  Widget _buildTimelineSection(Petition petition) {
+    final petitionId = petition.id!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -567,8 +568,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
             final updates = snapshot.data!.docs
                 .map((doc) => PetitionUpdate.fromFirestore(doc))
                 .toList();
+                
+            final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
 
-            return PetitionUpdateTimeline(updates: updates);
+            return PetitionUpdateTimeline(updates: allUpdates);
           },
         ),
       ],
