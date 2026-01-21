@@ -538,6 +538,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void _pauseASRForTTS() {
     if (_isRecording && mounted) {
       print('Pausing ASR for TTS...');
+
       
       if (_isAndroid) {
         // Use native recognizer on Android

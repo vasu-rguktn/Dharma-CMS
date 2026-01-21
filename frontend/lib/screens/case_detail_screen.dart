@@ -2425,8 +2425,12 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           (p.proofDocumentUrls != null && p.proofDocumentUrls!.isNotEmpty) ||
           p.handwrittenDocumentUrl != null,
     );
+    final hasCrimeSceneEvidence = _crimeSceneAttachments.isNotEmpty;
+    final hasMediaAnalyses = _mediaAnalyses.isNotEmpty;
 
-    final isLoading = _isLoadingJournal || _isLoadingPetitions;
+    final isLoading = _isLoadingJournal || 
+                      _isLoadingPetitions || 
+                      _isLoadingMedia; // Note: _isLoadingScenes not strictly checked here as it refers to CrimeDetails list
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -2442,7 +2446,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     const CircularProgressIndicator(),
                     const SizedBox(height: 12),
                     Text(
-                      'Loading linked evidence from investigation diary and petitions...',
+                      'Loading evidence from all sources...',
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: Colors.grey[700]),
                       textAlign: TextAlign.center,
@@ -2451,7 +2455,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 ),
               ),
             ),
-          if (!isLoading && !(hasJournalEvidence || hasPetitionEvidence))
+          
+          if (!isLoading && 
+              !(hasJournalEvidence || hasPetitionEvidence || hasCrimeSceneEvidence || hasMediaAnalyses))
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -2460,14 +2466,14 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     Icon(Icons.archive, size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
-                      'No linked evidence documents yet',
+                      'No evidence documents found',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'When officers attach documents in the Case Journal or upload proofs in related petitions, they will appear here.',
+                      'Attached documents from the Case Journal, Petitions, and Crime Scene captures will appear here.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -2477,21 +2483,110 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 ),
               ),
             ),
+
+          if (hasCrimeSceneEvidence)
+            _buildSection(
+              theme,
+              'Crime Scene Captures',
+              _buildCrimeSceneEvidenceWidgets(theme),
+            ),
+
           if (hasJournalEvidence)
             _buildSection(
               theme,
               'From Investigation Diary',
               _buildJournalEvidenceWidgets(theme),
             ),
+
           if (hasPetitionEvidence)
             _buildSection(
               theme,
               'From Petitions',
               _buildPetitionEvidenceWidgets(theme),
             ),
+
+          if (hasMediaAnalyses)
+             _buildSection(
+              theme,
+              'Forensic Analysis Reports',
+              _buildMediaAnalysisWidgets(theme),
+            ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildCrimeSceneEvidenceWidgets(ThemeData theme) {
+    if (_crimeSceneAttachments.isEmpty) return [];
+
+    return [
+       Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: List.generate(_crimeSceneAttachments.length, (index) {
+          final filePath = _crimeSceneAttachments[index];
+          final isVideo = filePath.toLowerCase().endsWith('.mp4') ||
+                          filePath.toLowerCase().endsWith('.mov');
+          final fileName = filePath.split('/').last.split('?').first; // Handle URLs with params
+
+          return InkWell(
+            onTap: () => _showEvidenceOptions(filePath, index),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 100,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade50,
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    height: 60,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(
+                      isVideo ? Icons.videocam : Icons.image,
+                      color: Colors.grey.shade700,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Evidence ${index + 1}',
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      )
+    ];
+  }
+
+  List<Widget> _buildMediaAnalysisWidgets(ThemeData theme) {
+     return _mediaAnalyses.map((report) {
+       return Padding(
+         padding: const EdgeInsets.only(bottom: 8.0),
+         child: ListTile(
+           contentPadding: EdgeInsets.zero,
+           leading: const Icon(Icons.description, color: Colors.purple),
+           title: Text(report.originalFileName),
+           subtitle: Text('Analyzed on ${_formatTimestamp(report.createdAt)}'),
+           trailing: IconButton(
+             icon: const Icon(Icons.picture_as_pdf),
+             onPressed: () => _downloadAnalysisPdf(report),
+           ),
+         ),
+       );
+     }).toList();
   }
 
   List<Widget> _buildJournalEvidenceWidgets(ThemeData theme) {

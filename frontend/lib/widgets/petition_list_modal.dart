@@ -203,7 +203,6 @@ class _PetitionListModalState extends State<PetitionListModal> {
                 
                 // Basic Info
                 const SizedBox(height: 16),
-                _buildInfoRow('Case ID', petition.caseId ?? 'N/A'),
                 _buildInfoRow('Petitioner', petition.petitionerName),
                 _buildInfoRow('Type', petition.type.displayName),
                 _buildInfoRow('Status', petition.policeStatus ?? 'Pending'),
@@ -331,7 +330,7 @@ class _PetitionListModalState extends State<PetitionListModal> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _getStatusColor(widget.filter).withValues(alpha: 0.3),
+          color: _getStatusColor(widget.filter).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -368,14 +367,6 @@ class _PetitionListModalState extends State<PetitionListModal> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Case ID: ${petition.caseId ?? "N/A"}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontFamily: 'monospace',
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -384,7 +375,7 @@ class _PetitionListModalState extends State<PetitionListModal> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(widget.filter).withValues(alpha: 0.1),
+                      color: _getStatusColor(widget.filter).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _getStatusColor(widget.filter),

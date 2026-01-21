@@ -206,51 +206,17 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final int _totalSteps = 9;
   
   // District list (English names - will be displayed localized)
-  final List<String> _apDistrictsEnglish = [
-    'Alluri Sitharama Raju',
-    'Anakapalli',
-    'Anantapur',
-    'Annamayya',
-    'Bapatla',
-    'Chittoor',
-    'East Godavari',
-    'Eluru',
-    'Guntur',
-    'Kadapa',
-    'Kakinada',
-    'Konaseema',
-    'Krishna',
-    'Kurnool',
-    'Manyam',
-    'Nandyal',
-    'NTR',
-    'Palnadu',
-    'Prakasam',
-    'Sri Sathya Sai',
-    'Srikakulam',
-    'Tirupati',
-    'Visakhapatnam',
-    'Vizianagaram',
-    'West Godavari',
-  ]..sort();
+  List<String> _apDistrictsEnglish = [];
   
-  // Sub-Division list (example - you may need to populate based on selected district)
-  final List<String> _subDivisions = [
-    'Nuzvid SDPO',
-    'Gudivada SDPO',
-    'Machilipatnam SDPO',
-    'Vijayawada SDPO',
-    // Add more as needed
-  ];
+  // Sub-Division list - will be loaded dynamically from JSON
+  List<String> _subDivisions = [];
   
-  // Circle list (example - you may need to populate based on selected sub-division)
-  final List<String> _circles = [
-    '-',
-    'Circle 1',
-    'Circle 2',
-    'Circle 3',
-    // Add more as needed
-  ];
+  // Circle list - will be loaded dynamically from JSON
+  List<String> _circles = [];
+  
+  // Loading states
+  bool _isLoadingSubDivisions = false;
+  bool _isLoadingCircles = false;
   
   // Police Station list - will be loaded dynamically from JSON
   List<String> _policeStationsEnglish = []; // English names
@@ -263,6 +229,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final TextEditingController _districtSearchController = TextEditingController();
   final TextEditingController _policeStationSearchController = TextEditingController();
 
+  // Loaded hierarchy data
+  Map<String, dynamic>? _policeHierarchyData;
+
   @override
   void initState() {
     super.initState();
@@ -270,7 +239,40 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _accusedList.add(_AccusedFormData());
     // Auto-fill FIR registration date to today
     _firRegistrationDate = DateTime.now();
-    // Note: Police stations will be loaded when district is selected
+
+    // Load hierarchy data
+    _loadHierarchy();
+  }
+
+  Future<void> _loadHierarchy() async {
+    try {
+      final String jsonString = await rootBundle.loadString('assets/Data/ap_police_hierarchy_fir.json');
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+      
+      if (mounted) {
+        setState(() {
+          _policeHierarchyData = jsonData;
+          // Populate districts from the JSON
+          if (jsonData['districts'] != null) {
+            _apDistrictsEnglish = (jsonData['districts'] as List)
+                .map((d) => d['name'] as String)
+                .toList()
+              ..sort();
+            debugPrint('✅ Loaded ${_apDistrictsEnglish.length} districts from hierarchy JSON');
+          } else {
+            debugPrint('❌ "districts" key missing or null in hierarchy JSON');
+          }
+        });
+        
+        // If we have a selected district (e.g. from prefill), reload stations
+        if (_selectedDistrict != null) {
+          _loadSubDivisionsForDistrict();
+          _loadAllPoliceStationsForDistrict();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading police hierarchy JSON: $e');
+    }
   }
 
   @override
@@ -384,7 +386,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             _selectedDistrict = districtName;
             debugPrint('✅ Pre-filled district: $districtName');
             // Load police stations for the district (async, will update later)
-            _loadPoliceStationsForDistrict().then((_) {
+            _loadSubDivisionsForDistrict();
+            _loadAllPoliceStationsForDistrict().then((_) {
               if (mounted && data['stationName'] != null) {
                 final stationName = data['stationName'].toString().trim();
                 if (stationName.isNotEmpty && stationName != 'null') {
@@ -616,7 +619,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       
       // Load districts to ensure dropdown works
       if (_selectedDistrict != null) {
-        _loadPoliceStationsForDistrict().then((_) {
+        _loadSubDivisionsForDistrict();
+        _loadAllPoliceStationsForDistrict().then((_) {
           if (mounted && c.policeStation != null) {
             setState(() {
               // Ensure the loaded station exists in the list
@@ -630,8 +634,131 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     });
   }
 
-  Future<void> _loadPoliceStationsForDistrict() async {
+  Future<void> _loadSubDivisionsForDistrict() async {
+    if (_policeHierarchyData == null || _selectedDistrict == null) return;
+
+    setState(() {
+      _isLoadingSubDivisions = true;
+      _subDivisions.clear();
+      _circles.clear();
+      _policeStationsEnglish.clear();
+      _selectedSubDivision = null;
+      _selectedCircle = null;
+      _selectedPoliceStation = null;
+    });
+
+    try {
+      if (_policeHierarchyData?['districts'] != null) {
+        final districts = _policeHierarchyData!['districts'] as List;
+        final districtData = districts.firstWhere(
+          (d) => d['name'] == _selectedDistrict,
+          orElse: () => null,
+        );
+
+        if (districtData != null && districtData['sdpos'] != null) {
+          final sdpos = districtData['sdpos'] as List;
+          setState(() {
+            _subDivisions = sdpos.map((s) => s['name'] as String).toList()..sort();
+            _isLoadingSubDivisions = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading sub-divisions: $e');
+      setState(() => _isLoadingSubDivisions = false);
+    }
+  }
+
+  Future<void> _loadCirclesForSubDivision() async {
+    if (_policeHierarchyData == null || _selectedDistrict == null || _selectedSubDivision == null) return;
+
+    setState(() {
+      _isLoadingCircles = true;
+      _circles.clear();
+      _policeStationsEnglish.clear();
+      _selectedCircle = null;
+      _selectedPoliceStation = null;
+    });
+
+    try {
+      final districts = _policeHierarchyData!['districts'] as List;
+      final districtData = districts.firstWhere((d) => d['name'] == _selectedDistrict, orElse: () => null);
+
+      if (districtData != null && districtData['sdpos'] != null) {
+        final sdpos = districtData['sdpos'] as List;
+        final sdpoData = sdpos.firstWhere((s) => s['name'] == _selectedSubDivision, orElse: () => null);
+
+        if (sdpoData != null && sdpoData['circles'] != null) {
+          final circles = sdpoData['circles'] as List;
+          setState(() {
+            _circles = circles.map((c) => c['name'] as String).toList()..sort();
+            _isLoadingCircles = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading circles: $e');
+      setState(() => _isLoadingCircles = false);
+    }
+  }
+
+  Future<void> _loadPoliceStationsForCircle() async {
+    if (_policeHierarchyData == null || _selectedDistrict == null || _selectedSubDivision == null || _selectedCircle == null) return;
+
+    setState(() {
+      _isLoadingPoliceStations = true;
+      _policeStationsEnglish.clear();
+      _selectedPoliceStation = null;
+    });
+
+    try {
+      final districts = _policeHierarchyData!['districts'] as List;
+      final districtData = districts.firstWhere((d) => d['name'] == _selectedDistrict, orElse: () => null);
+
+      if (districtData != null && districtData['sdpos'] != null) {
+        final sdpos = districtData['sdpos'] as List;
+        final sdpoData = sdpos.firstWhere((s) => s['name'] == _selectedSubDivision, orElse: () => null);
+
+        if (sdpoData != null && sdpoData['circles'] != null) {
+          final circles = sdpoData['circles'] as List;
+          final circleData = circles.firstWhere((c) => c['name'] == _selectedCircle, orElse: () => null);
+
+          if (circleData != null && circleData['police_stations'] != null) {
+            final stations = (circleData['police_stations'] as List).cast<String>().toList()..sort();
+            setState(() {
+              _policeStationsEnglish = stations;
+              _isLoadingPoliceStations = false;
+              if (stations.isEmpty) {
+                _policeStationLoadError = _getLocalizedLabel(
+                  'No police stations found for this circle',
+                  'ఈ సర్కిల్ కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+                );
+              }
+            });
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading police stations: $e');
+    }
+    
+    setState(() {
+      _isLoadingPoliceStations = false;
+      _policeStationLoadError = _getLocalizedLabel(
+        'Failed to load police stations',
+        'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది',
+      );
+    });
+  }
+
+  /// Keep this for backwards compatibility or direct district selection
+  Future<void> _loadAllPoliceStationsForDistrict() async {
     if (_selectedDistrict != null) {
+      if (_policeHierarchyData == null) {
+        await _loadHierarchy();
+      }
+
       setState(() {
         _isLoadingPoliceStations = true;
         _policeStationLoadError = null;
@@ -639,13 +766,35 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
       
       try {
-        final stations = await DistrictTranslations.getPoliceStationsForDistrict(
-          context,
-          _selectedDistrict!,
-        );
+        List<String> stations = [];
+        
+        if (_policeHierarchyData != null && _policeHierarchyData!['districts'] != null) {
+           final districts = _policeHierarchyData!['districts'] as List;
+           final districtData = districts.firstWhere(
+             (d) => d['name'] == _selectedDistrict, 
+             orElse: () => null
+           );
+           
+           if (districtData != null && districtData['sdpos'] != null) {
+             final sdpos = districtData['sdpos'] as List;
+             for (var sdpo in sdpos) {
+               if (sdpo['circles'] != null) {
+                 final circles = sdpo['circles'] as List;
+                 for (var circle in circles) {
+                    if (circle['police_stations'] != null) {
+                      final psList = (circle['police_stations'] as List).cast<String>();
+                      stations.addAll(psList);
+                    }
+                 }
+               }
+             }
+           }
+        }
+
         // Stations are returned in English for storage
         setState(() {
-          _policeStationsEnglish = stations;
+          // Remove duplicates if any and sort
+          _policeStationsEnglish = stations.toSet().toList()..sort();
           _isLoadingPoliceStations = false;
           if (stations.isEmpty) {
             _policeStationLoadError = _getLocalizedLabel(
@@ -747,7 +896,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -874,7 +1023,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1000,7 +1149,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -2086,40 +2235,13 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _policeStationsEnglish = [];
                   _districtSearchController.clear();
                 });
-                // Load police stations for selected district
                 if (value != null) {
-                  setState(() {
-                    _isLoadingPoliceStations = true;
-                    _policeStationLoadError = null;
-                    _policeStationsEnglish = [];
-                    _selectedPoliceStation = null; // Reset selection
-                  });
+                   // Load sub-divisions for the new district
+                  _loadSubDivisionsForDistrict();
                   
-                  try {
-                    final stations = await DistrictTranslations.getPoliceStationsForDistrict(
-                      context,
-                      value,
-                    );
-                    setState(() {
-                      _policeStationsEnglish = stations;
-                      _isLoadingPoliceStations = false;
-                      if (stations.isEmpty) {
-                        _policeStationLoadError = _getLocalizedLabel(
-                          'No police stations found for this district',
-                          'ఈ జిల్లా కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
-                        );
-                      }
-                    });
-                  } catch (e) {
-                    debugPrint('Error loading police stations: $e');
-                    setState(() {
-                      _isLoadingPoliceStations = false;
-                      _policeStationLoadError = _getLocalizedLabel(
-                        'Failed to load police stations. Please try again.',
-                        'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.',
-                      );
-                    });
-                  }
+                  // Also load full flattened list for direct station selection
+                  // (Currently the UI will clear this list visually via state but data will be fetched)
+                  _loadAllPoliceStationsForDistrict();
                 }
               },
               validator: (value) {
@@ -2130,90 +2252,121 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            // Sub-Division (SDPO) Dropdown
-            Builder(
-              builder: (context) {
-                final locale = Localizations.localeOf(context);
-                final labelText = locale.languageCode == 'te' ? 'ఉప-విభాగం (SDPO)' : 'Sub-Division (SDPO)';
-                final validationMsg = locale.languageCode == 'te' 
-                    ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
-                    : 'Please select a Sub-Division (SDPO)';
-                
-                return DropdownButtonFormField<String>(
-                  value: _selectedSubDivision,
-                  decoration: InputDecoration(
-                    labelText: '$labelText *',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.account_tree),
-                  ),
-                  items: _subDivisions
-                      .map((subDivEnglish) {
-                        final localizedName = DistrictTranslations.getSubDivisionName(context, subDivEnglish);
-                        return DropdownMenuItem(
-                          value: subDivEnglish, // Store English name
-                          child: Text(localizedName), // Display localized name
-                        );
-                      })
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedSubDivision = value;
-                      // Reset dependent dropdowns when sub-division changes
-                      _selectedCircle = null;
-                      _selectedPoliceStation = null;
-                    });
+            // Dynamic Sub-Division (SDPO) Dropdown
+            if (_subDivisions.isNotEmpty || _isLoadingSubDivisions) ...[
+                Builder(
+                  builder: (context) {
+                    final locale = Localizations.localeOf(context);
+                    final labelText = locale.languageCode == 'te' ? 'ఉప-విభాగం (SDPO)' : 'Sub-Division (SDPO)';
+                    final validationMsg = locale.languageCode == 'te' 
+                        ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
+                        : 'Please select a Sub-Division (SDPO)';
+                    
+                    return DropdownButtonFormField<String>(
+                      value: _selectedSubDivision,
+                      decoration: InputDecoration(
+                        labelText: '$labelText *',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.account_tree),
+                        suffixIcon: _isLoadingSubDivisions 
+                          ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+                          : null,
+                      ),
+                      items: _subDivisions
+                          .map((subDivEnglish) {
+                            final localizedName = DistrictTranslations.getSubDivisionName(context, subDivEnglish);
+                            return DropdownMenuItem(
+                              value: subDivEnglish, // Store English name
+                              child: Text(
+                                localizedName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          })
+                          .toList(),
+                      onChanged: (value) {
+                         // Only update if value changed
+                         if(value != _selectedSubDivision) {
+                            setState(() {
+                              _selectedSubDivision = value;
+                              _selectedCircle = null;
+                              _selectedPoliceStation = null;
+                              _policeStationSearchController.clear();
+                              _policeStationsEnglish.clear();
+                              _circles.clear();
+                            });
+                            // Load circles for selected SDPO
+                            _loadCirclesForSubDivision();
+                         }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return validationMsg;
+                        }
+                        return null;
+                      },
+                      isExpanded: true,
+                    );
                   },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return validationMsg;
-                    }
-                    return null;
+                ),
+                const SizedBox(height: 16),
+            ],
+
+            // Dynamic Circle Dropdown
+            if (_circles.isNotEmpty || _isLoadingCircles) ...[
+                Builder(
+                  builder: (context) {
+                    final locale = Localizations.localeOf(context);
+                    final labelText = locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
+                    final validationMsg = locale.languageCode == 'te'
+                        ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
+                        : 'Please select a Circle';
+                    
+                    return DropdownButtonFormField<String>(
+                      value: _selectedCircle,
+                      decoration: InputDecoration(
+                        labelText: '$labelText *',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.place),
+                        suffixIcon: _isLoadingCircles
+                          ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+                          : null,
+                      ),
+                      items: _circles
+                          .map((circleEnglish) {
+                            final localizedName = DistrictTranslations.getCircleName(context, circleEnglish);
+                            return DropdownMenuItem(
+                              value: circleEnglish, // Store English name
+                              child: Text(
+                                localizedName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          })
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != _selectedCircle) {
+                          setState(() {
+                            _selectedCircle = value;
+                            _selectedPoliceStation = null;
+                            _policeStationSearchController.clear();
+                          });
+                          // Load police stations for selected circle
+                          _loadPoliceStationsForCircle();
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty || value == '-') {
+                          return validationMsg;
+                        }
+                        return null;
+                      },
+                      isExpanded: true,
+                    );
                   },
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            // Circle Dropdown
-            Builder(
-              builder: (context) {
-                final locale = Localizations.localeOf(context);
-                final labelText = locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
-                final validationMsg = locale.languageCode == 'te'
-                    ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
-                    : 'Please select a Circle';
-                
-                return DropdownButtonFormField<String>(
-                  value: _selectedCircle,
-                  decoration: InputDecoration(
-                    labelText: '$labelText *',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.place),
-                  ),
-                  items: _circles
-                      .map((circleEnglish) {
-                        final localizedName = DistrictTranslations.getCircleName(context, circleEnglish);
-                        return DropdownMenuItem(
-                          value: circleEnglish, // Store English name
-                          child: Text(localizedName), // Display localized name
-                        );
-                      })
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCircle = value;
-                      // Reset police station when circle changes
-                      _selectedPoliceStation = null;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty || value == '-') {
-                      return validationMsg;
-                    }
-                    return null;
-                  },
-                );
-              },
-            ),
+                ),
+                const SizedBox(height: 16),
+            ],
             const SizedBox(height: 16),
             // Police Station Searchable Dropdown
             _buildSearchableDropdown<String>(

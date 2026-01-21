@@ -134,6 +134,27 @@ class Petition {
   final String? policeStatus;
   final String? policeSubStatus;
 
+  /// 📱 Offline submission fields
+  final String? submissionType; // 'online' or 'offline'
+  final String? submittedBy; // Officer UID who submitted offline
+  final String? submittedByName; // Officer name
+  final String? submittedByRank; // Officer rank
+
+  /// 👮 Assignment fields
+  final String? assignmentType; // 'range', 'district', 'station'
+  final String? assignedTo; // Officer UID assigned to
+  final String? assignedToName; // Officer name
+  final String? assignedToRank; // Officer rank
+  final String? assignedToRange; // Range assigned to
+  final String? assignedToDistrict; // District assigned to
+  final String? assignedToStation; // Station assigned to
+  final String? assignedBy; // UID of assigning officer
+  final String? assignedByName; // Name of assigning officer
+  final String? assignedByRank; // Rank of assigning officer
+  final Timestamp? assignedAt; // Assignment timestamp
+  final String? assignmentStatus; // 'pending', 'accepted', 'rejected'
+  final String? assignmentNotes; // Optional notes during assignment
+
   final String? extractedText;
   final String? handwrittenDocumentUrl;
   final List<String>? proofDocumentUrls;
@@ -165,6 +186,25 @@ class Petition {
     this.orderDetails,
     this.policeStatus,
     this.policeSubStatus,
+    // Offline submission parameters
+    this.submissionType,
+    this.submittedBy,
+    this.submittedByName,
+    this.submittedByRank,
+    // Assignment parameters
+    this.assignmentType,
+    this.assignedTo,
+    this.assignedToName,
+    this.assignedToRank,
+    this.assignedToRange,
+    this.assignedToDistrict,
+    this.assignedToStation,
+    this.assignedBy,
+    this.assignedByName,
+    this.assignedByRank,
+    this.assignedAt,
+    this.assignmentStatus,
+    this.assignmentNotes,
     this.extractedText,
     this.handwrittenDocumentUrl,
     this.proofDocumentUrls,
@@ -197,6 +237,25 @@ class Petition {
       orderDetails: data['orderDetails'],
       policeStatus: data['policeStatus'],
       policeSubStatus: data['policeSubStatus'],
+      // Offline submission fields
+      submissionType: data['submissionType'],
+      submittedBy: data['submittedBy'],
+      submittedByName: data['submittedByName'],
+      submittedByRank: data['submittedByRank'],
+      // Assignment fields
+      assignmentType: data['assignmentType'],
+      assignedTo: data['assignedTo'],
+      assignedToName: data['assignedToName'],
+      assignedToRank: data['assignedToRank'],
+      assignedToRange: data['assignedToRange'],
+      assignedToDistrict: data['assignedToDistrict'],
+      assignedToStation: data['assignedToStation'],
+      assignedBy: data['assignedBy'],
+      assignedByName: data['assignedByName'],
+      assignedByRank: data['assignedByRank'],
+      assignedAt: data['assignedAt'] as Timestamp?,
+      assignmentStatus: data['assignmentStatus'],
+      assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
       proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
@@ -237,6 +296,25 @@ class Petition {
       orderDetails: data['orderDetails'],
       policeStatus: data['policeStatus'],
       policeSubStatus: data['policeSubStatus'],
+      // Offline submission fields
+      submissionType: data['submissionType'],
+      submittedBy: data['submittedBy'],
+      submittedByName: data['submittedByName'],
+      submittedByRank: data['submittedByRank'],
+      // Assignment fields
+      assignmentType: data['assignmentType'],
+      assignedTo: data['assignedTo'],
+      assignedToName: data['assignedToName'],
+      assignedToRank: data['assignedToRank'],
+      assignedToRange: data['assignedToRange'],
+      assignedToDistrict: data['assignedToDistrict'],
+      assignedToStation: data['assignedToStation'],
+      assignedBy: data['assignedBy'],
+      assignedByName: data['assignedByName'],
+      assignedByRank: data['assignedByRank'],
+      assignedAt: data['assignedAt'] is Timestamp ? data['assignedAt'] : null,
+      assignmentStatus: data['assignmentStatus'],
+      assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
       proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
@@ -273,6 +351,25 @@ class Petition {
       if (orderDetails != null) 'orderDetails': orderDetails,
       if (policeStatus != null) 'policeStatus': policeStatus,
       if (policeSubStatus != null) 'policeSubStatus': policeSubStatus,
+      // Offline submission fields
+      if (submissionType != null) 'submissionType': submissionType,
+      if (submittedBy != null) 'submittedBy': submittedBy,
+      if (submittedByName != null) 'submittedByName': submittedByName,
+      if (submittedByRank != null) 'submittedByRank': submittedByRank,
+      // Assignment fields
+      if (assignmentType != null) 'assignmentType': assignmentType,
+      if (assignedTo != null) 'assignedTo': assignedTo,
+      if (assignedToName != null) 'assignedToName': assignedToName,
+      if (assignedToRank != null) 'assignedToRank': assignedToRank,
+      if (assignedToRange != null) 'assignedToRange': assignedToRange,
+      if (assignedToDistrict != null) 'assignedToDistrict': assignedToDistrict,
+      if (assignedToStation != null) 'assignedToStation': assignedToStation,
+      if (assignedBy != null) 'assignedBy': assignedBy,
+      if (assignedByName != null) 'assignedByName': assignedByName,
+      if (assignedByRank != null) 'assignedByRank': assignedByRank,
+      if (assignedAt != null) 'assignedAt': assignedAt,
+      if (assignmentStatus != null) 'assignmentStatus': assignmentStatus,
+      if (assignmentNotes != null) 'assignmentNotes': assignmentNotes,
       if (extractedText != null) 'extractedText': extractedText,
       if (handwrittenDocumentUrl != null)
         'handwrittenDocumentUrl': handwrittenDocumentUrl,

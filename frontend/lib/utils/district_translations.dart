@@ -462,7 +462,7 @@ class DistrictTranslations {
   /// Load police stations for a district and return localized names
   static Future<Map<String, List<String>>> loadPoliceStations(BuildContext context) async {
     try {
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
       
       final Map<String, List<String>> localizedData = {};
@@ -495,7 +495,7 @@ class DistrictTranslations {
     final englishDistrictName = getEnglishDistrictName(districtName, context) ?? districtName;
     
     try {
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
       
       if (jsonData.containsKey(englishDistrictName)) {

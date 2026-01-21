@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/models/case_doc.dart';
+import 'package:Dharma/models/petition.dart';
 
 // ───────────────── AUTH SCREENS ─────────────────
 import 'package:Dharma/screens/welcome_screen.dart';
@@ -55,6 +56,9 @@ import 'package:Dharma/screens/contact_officer_screen.dart';
 import 'package:Dharma/screens/petition/petitions_screen.dart';
 import 'package:Dharma/screens/police_petitions_screen.dart';
 import 'package:Dharma/screens/petition/create_petition_form.dart';
+import 'package:Dharma/screens/petition/submit_offline_petition_screen.dart';
+import 'package:Dharma/screens/petition/offline_petitions_screen.dart';
+
 
 
 
@@ -116,6 +120,7 @@ class AppRouter {
         '/contact-officer',
         '/cognigible-non-cognigible-separation',
         '/signup/police',
+        '/offline-petitions',
       ];
 
       // During loading, block access to protected routes
@@ -167,6 +172,8 @@ class AppRouter {
           '/ai-investigation-guidelines',
           '/image-lab',
           '/signup/police',
+          '/submit-offline-petition',
+          '/offline-petitions',
         ];
 
         // Citizen-only routes
@@ -361,11 +368,26 @@ class AppRouter {
             builder: (context, state) => const ImageLabScreen(),
           ),
 
+          GoRoute(
+            path: '/submit-offline-petition',
+            builder: (context, state) => SubmitOfflinePetitionScreen(
+              initialPetition: state.extra as Petition?,
+            ),
+          ),
+
+          // ─── OFFLINE PETITIONS (Sent & Assigned for all ranks) ───
+          GoRoute(
+            path: '/offline-petitions',
+            builder: (context, state) => const OfflinePetitionsScreen(),
+          ),
+
           // ─── SHARED SCREENS (Both roles) ───
 
           GoRoute(
             path: '/cases',
-            builder: (context, state) => const CasesScreen(),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CasesScreen(),
+            ),
           ),
 
           GoRoute(

@@ -451,6 +451,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
                           // Upload any newly added files and append to existing URLs
                           List<String> allUrls = List<String>.from(entry.attachmentUrls ?? []);
+                          print('[DEBUG] Base URLs before merge: ${allUrls.length}');
+                          
                           if (newFiles.isNotEmpty) {
                             final timestamp = DateTime.now()
                                 .toString()
@@ -463,8 +465,16 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               files: newFiles,
                               folderPath: folderPath,
                             );
+
+                            if (newUrls.isEmpty) {
+                               throw Exception("Upload failed: No files were successfully uploaded.");
+                            }
+                            
                             allUrls.addAll(newUrls);
+                            print('[DEBUG] New URLs added: ${newUrls.length}');
                           }
+                          
+                          print('[DEBUG] Final Update URLs: ${allUrls.length}');
 
                           await FirebaseFirestore.instance
                               .collection('caseJournalEntries')
@@ -650,6 +660,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               files: selectedFiles,
                               folderPath: folderPath,
                             );
+
+                            if (attachmentUrls.isEmpty) {
+                               throw Exception("Upload failed: No files were successfully uploaded. Please check your connection or try again.");
+                            }
                           }
 
                           final entry = CaseJournalEntry(

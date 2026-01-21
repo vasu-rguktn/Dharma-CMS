@@ -539,4 +539,142 @@ class PetitionProvider with ChangeNotifier {
             .map((doc) => PetitionUpdate.fromFirestore(doc))
             .toList());
   }
+
+  /* ================= OFFLINE PETITION ASSIGNMENT ================= */
+
+  /// 📤 Fetch petitions SENT by this officer (assigned by them)
+  /// Used in the "Sent" tab for high-level officers
+  Future<void> fetchSentPetitions(String officerId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      debugPrint('🔍 Fetching petitions sent by officer: $officerId');
+
+      final snapshot = await _firestore
+          .collection('petitions')
+          .where('assignedBy', isEqualTo: officerId)
+          .where('submissionType', isEqualTo: 'offline')
+          .orderBy('assignedAt', descending: true)
+          .get();
+
+      _petitions =
+          snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
+
+      debugPrint('✅ Fetched ${_petitions.length} sent petitions');
+    } catch (e) {
+      debugPrint('❌ Error fetching sent petitions: $e');
+      _petitions = [];
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// 📥 Fetch petitions ASSIGNED to this officer
+  /// Used in the "Assigned" tab for all officers
+  Future<void> fetchAssignedPetitions(String officerId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      debugPrint('🔍 Fetching petitions assigned to officer: $officerId');
+
+      final snapshot = await _firestore
+          .collection('petitions')
+          .where('assignedTo', isEqualTo: officerId)
+          .where('submissionType', isEqualTo: 'offline')
+          .orderBy('assignedAt', descending: true)
+          .get();
+
+      _petitions =
+          snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
+
+      debugPrint('✅ Fetched ${_petitions.length} assigned petitions');
+    } catch (e) {
+      debugPrint('❌ Error fetching assigned petitions: $e');
+      _petitions = [];
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// 📊 Fetch petitions assigned to a specific station/district/range
+  /// Used when viewing organizational assignments
+  Future<void> fetchAssignedPetitionsByUnit({
+    String? stationName,
+    String? districtName,
+    String? rangeName,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      debugPrint('🔍 Fetching petitions assigned to unit');
+
+      Query query = _firestore
+          .collection('petitions')
+          .where('submissionType', isEqualTo: 'offline');
+
+      if (stationName != null && stationName.isNotEmpty) {
+        query = query.where('assignedToStation', isEqualTo: stationName);
+        debugPrint('📍 Filtering by station: $stationName');
+      } else if (districtName != null && districtName.isNotEmpty) {
+        query = query.where('assignedToDistrict', isEqualTo: districtName);
+        debugPrint('📍 Filtering by district: $districtName');
+      } else if (rangeName != null && rangeName.isNotEmpty) {
+        query = query.where('assignedToRange', isEqualTo: rangeName);
+        debugPrint('📍 Filtering by range: $rangeName');
+      }
+
+      final snapshot = await query.orderBy('assignedAt', descending: true).get();
+
+      _petitions =
+          snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
+
+      debugPrint('✅ Fetched ${_petitions.length} unit-assigned petitions');
+    } catch (e) {
+      debugPrint('❌ Error fetching unit-assigned petitions: $e');
+      _petitions = [];
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// 📈 Get count of sent petitions by an officer
+  Future<int> getSentPetitionsCount(String officerId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('petitions')
+          .where('assignedBy', isEqualTo: officerId)
+          .where('submissionType', isEqualTo: 'offline')
+          .count()
+          .get();
+
+      return snapshot.count ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error getting sent petitions count: $e');
+      return 0;
+    }
+  }
+
+  /// 📈 Get count of assigned petitions to an officer
+  Future<int> getAssignedPetitionsCount(String officerId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('petitions')
+          .where('assignedTo', isEqualTo: officerId)
+          .where('submissionType', isEqualTo: 'offline')
+          .count()
+          .get();
+
+      return snapshot.count ?? 0;
+    } catch (e) {
+      debugPrint('❌ Error getting assigned petitions count: $e');
+      return 0;
+    }
+  }
+
 }
