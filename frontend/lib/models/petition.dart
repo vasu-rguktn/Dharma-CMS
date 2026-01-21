@@ -163,6 +163,36 @@ class Petition {
   final Timestamp createdAt;
   final Timestamp updatedAt;
 
+  /// Returns true if the petition has been pending for more than 15 days
+  bool get isEscalated {
+    if (policeStatus?.toLowerCase() == 'closed' || 
+        policeStatus?.toLowerCase() == 'rejected' ||
+        policeStatus?.toLowerCase() == 'resolved' ||
+        policeStatus?.toLowerCase() == 'in progress') {
+      return false;
+    }
+    final now = DateTime.now();
+    final difference = now.difference(createdAt.toDate()).inDays;
+    return difference >= 15;
+  }
+
+  /// Returns 0 for no escalation, 1 for SP (15 days), 2 for IG (30 days), 3 for DGP (45 days)
+  int get escalationLevel {
+    if (policeStatus?.toLowerCase() == 'closed' || 
+        policeStatus?.toLowerCase() == 'rejected' ||
+        policeStatus?.toLowerCase() == 'resolved' ||
+        policeStatus?.toLowerCase() == 'in progress') {
+      return 0;
+    }
+    final now = DateTime.now();
+    final difference = now.difference(createdAt.toDate()).inDays;
+    
+    if (difference >= 45) return 3; // DGP level
+    if (difference >= 30) return 2; // IG level
+    if (difference >= 15) return 1; // SP level
+    return 0;
+  }
+
   Petition({
     this.id,
     required this.title,

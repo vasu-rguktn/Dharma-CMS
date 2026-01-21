@@ -160,6 +160,25 @@ class DashboardBody extends StatelessWidget {
             ),
           ],
         ),
+        if (isPolice) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _statCard(
+                  ctx,
+                  'Escalated',
+                  '${stats['escalated'] ?? 0}',
+                  Icons.report_problem,
+                  Colors.red.shade700,
+                  PetitionFilter.escalated,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Spacer(),
+            ],
+          ),
+        ],
       ],
     );
   }

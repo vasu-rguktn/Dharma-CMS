@@ -20,6 +20,7 @@ class PetitionProvider with ChangeNotifier {
     'closed': 0,
     'received': 0,
     'inProgress': 0,
+    'escalated': 0,
   };
 
   Map<String, int> _userStats = {
@@ -27,6 +28,7 @@ class PetitionProvider with ChangeNotifier {
     'closed': 0,
     'received': 0,
     'inProgress': 0,
+    'escalated': 0,
   };
 
   List<Petition> get petitions => _petitions;
@@ -165,6 +167,7 @@ class PetitionProvider with ChangeNotifier {
       int offlineClosed = 0;
       int offlineReceived = 0;
       int offlineInProgress = 0;
+      int offlineEscalated = 0;
 
       if (userId == null) {
         Map<String, QueryDocumentSnapshot> offlineDocsMap = {};
@@ -217,16 +220,27 @@ class PetitionProvider with ChangeNotifier {
         for (var doc in offlineDocs) {
           final data = doc.data() as Map<String, dynamic>;
           final status = (data['policeStatus'] as String? ?? '').toLowerCase();
+          final createdAt = data['createdAt'] as Timestamp?;
 
-          if (status.contains('close') ||
+          final isClosed = status.contains('close') ||
               status.contains('resolve') ||
-              status.contains('reject')) {
+              status.contains('reject');
+
+          if (isClosed) {
             offlineClosed++;
           } else if (status.contains('progress') ||
               status.contains('investigation')) {
             offlineInProgress++;
           } else {
             offlineReceived++;
+          }
+
+          // Escalation check
+          final isInProgress = status.contains('progress') ||
+              status.contains('investigation');
+          if (!isClosed && !isInProgress && createdAt != null) {
+            final days = DateTime.now().difference(createdAt.toDate()).inDays;
+            if (days >= 15) offlineEscalated++;
           }
         }
       }
@@ -236,6 +250,7 @@ class PetitionProvider with ChangeNotifier {
       int closed = offlineClosed;
       int received = offlineReceived;
       int inProgress = offlineInProgress;
+      int escalated = offlineEscalated;
 
       for (var doc in onlineSnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
@@ -243,10 +258,13 @@ class PetitionProvider with ChangeNotifier {
 
         if (policeStatus != null) {
           final status = policeStatus.toLowerCase();
+          final createdAt = data['createdAt'] as Timestamp?;
 
-          if (status.contains('close') ||
+          final isClosed = status.contains('close') ||
               status.contains('resolve') ||
-              status.contains('reject')) {
+              status.contains('reject');
+
+          if (isClosed) {
             closed++;
           } else if (status.contains('progress') ||
               status.contains('investigation')) {
@@ -254,8 +272,21 @@ class PetitionProvider with ChangeNotifier {
           } else {
             received++;
           }
+
+          // Escalation check
+          final isInProgress = status.contains('progress') ||
+              status.contains('investigation');
+          if (!isClosed && !isInProgress && createdAt != null) {
+            final days = DateTime.now().difference(createdAt.toDate()).inDays;
+            if (days >= 15) escalated++;
+          }
         } else {
           received++;
+          final createdAt = data['createdAt'] as Timestamp?;
+          if (createdAt != null) {
+            final days = DateTime.now().difference(createdAt.toDate()).inDays;
+            if (days >= 15) escalated++;
+          }
         }
       }
 
@@ -264,6 +295,7 @@ class PetitionProvider with ChangeNotifier {
         'closed': closed,
         'received': received,
         'inProgress': inProgress,
+        'escalated': escalated,
       };
 
       if (userId != null) {
@@ -542,6 +574,9 @@ class PetitionProvider with ChangeNotifier {
                 status.contains('resolved') ||
                 status.contains('rejected');
 
+          case PetitionFilter.escalated:
+            return p.isEscalated;
+
           case PetitionFilter.all:
             return true;
         }
@@ -666,6 +701,47 @@ class PetitionProvider with ChangeNotifier {
         .map((snapshot) => snapshot.docs
             .map((doc) => PetitionUpdate.fromFirestore(doc))
             .toList());
+  }
+
+  /// Merges real updates with system-generated escalation updates
+  List<PetitionUpdate> getUpdatesWithEscalations(Petition petition, List<PetitionUpdate> realUpdates) {
+    List<PetitionUpdate> allUpdates = List.from(realUpdates);
+    final createdDate = petition.createdAt.toDate();
+    
+    // Status check: only escalate if not closed/rejected/resolved
+    final status = (petition.policeStatus ?? '').toLowerCase();
+    final isResolved = status.contains('close') || status.contains('resolve') || status.contains('reject');
+    
+    if (isResolved) return realUpdates;
+
+    // 15 days for SP
+    final spEscalationDate = createdDate.add(const Duration(days: 15));
+    if (DateTime.now().isAfter(spEscalationDate)) {
+      allUpdates.add(PetitionUpdate(
+        petitionId: petition.id ?? '',
+        updateText: "⚠️ ESCALATION: Petition has been pending for over 15 days at the Police Station level. It has now been automatically escalated to the District Superintendent of Police (SP) for review.",
+        addedBy: "System Auto-Escalation",
+        addedByUserId: "system",
+        createdAt: Timestamp.fromDate(spEscalationDate),
+      ));
+    }
+
+    // 30 days for IG
+    final igEscalationDate = createdDate.add(const Duration(days: 30));
+    if (DateTime.now().isAfter(igEscalationDate)) {
+      allUpdates.add(PetitionUpdate(
+        petitionId: petition.id ?? '',
+        updateText: "⚠️ ESCALATION: Petition remains pending after 30 days. It has been further escalated to the Range Inspector General (IG) for urgent attention.",
+        addedBy: "System Auto-Escalation",
+        addedByUserId: "system",
+        createdAt: Timestamp.fromDate(igEscalationDate),
+      ));
+    }
+
+    // Sort all updates by createdAt
+    allUpdates.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    
+    return allUpdates;
   }
 
   /* ================= OFFLINE PETITION ASSIGNMENT ================= */
