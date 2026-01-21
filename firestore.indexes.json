@@ -1,0 +1,93 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "offlinepetitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "assignedBy",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "assignedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "offlinepetitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "assignedTo",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "assignedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "offlinepetitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "assignedTo",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "assignmentStatus",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "petitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "stationName",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "petitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "stationName",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "policeStatus",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "petition_updates",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "petitionId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "addedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": []
+}

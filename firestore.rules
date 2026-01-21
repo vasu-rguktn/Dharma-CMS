@@ -67,25 +67,57 @@ service cloud.firestore {
 
     // PETITIONS COLLECTION
     match /petitions/{petitionId} {
-      // Allow anyone authenticated to read petitions (for now)
-      // This allows both citizens to see their own and police to see all
+      // Allow anyone authenticated to read petitions
       allow read: if request.auth != null;
       
-      // Allow authenticated users to create petitions
-      allow create: if request.auth != null;
+      // Allow create if:
+      // 1. User is authenticated AND userId matches their UID (citizen creating their own petition)
+      // 2. OR user is an approved police officer (can create offline petitions for citizens)
+      allow create: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
       
-      // Allow update if user is the owner
-      // Note: For police updates, we rely on authentication only
-      // since checking role requires a complex get() call with custom IDs
+      // Allow update if:
+      // 1. User is the owner of the petition
+      // 2. OR user is an approved police officer (can update any petition)
       allow update: if request.auth != null && (
         resource.data.userId == request.auth.uid ||
-        // Allow if user is authenticated (police can update any petition)
-        // This is a simplified rule; for production, consider using custom claims
-        request.auth != null
+        isPolice()
       );
       
       // Allow delete only if user is the owner
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // OFFLINE PETITIONS COLLECTION (NO UNDERSCORE - matches code)
+    // Collection: offlinepetitions
+    // Used by police officers to submit petitions on behalf of citizens
+    // and assign them to organizational units (Range, District, Station)
+    match /offlinepetitions/{petitionId} {
+      // Only approved police can create offline petitions
+      // The assignedBy field must match the authenticated police officer's uid
+      allow create: if isPolice() &&
+        request.resource.data.assignedBy == request.auth.uid;
+
+      // Read access:
+      // - Any approved police officer can read offline petitions
+      // - Police officers in the assigned organizational unit can read petitions assigned to them
+      // - The citizen whose petition it is (based on userId) can also read it
+      allow read: if request.auth != null && (
+        isPolice() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      // Update access:
+      // - The police officer who created the offline petition can update it
+      // - Any approved police officer can update the petition (to change status, add notes, etc.)
+      allow update: if isPolice();
+
+      // Delete access:
+      // - Only the police officer who created the offline petition can delete it
+      allow delete: if isPolice() &&
+        resource.data.assignedBy == request.auth.uid;
     }
     
     // SAVED COMPLAINTS COLLECTION

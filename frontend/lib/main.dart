@@ -10,6 +10,7 @@ import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/providers/offline_petition_provider.dart';
 import 'package:Dharma/providers/legal_queries_provider.dart';
 import 'package:Dharma/providers/settings_provider.dart';
 
@@ -74,6 +75,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<AuthProvider, PetitionProvider>(
           create: (_) => PetitionProvider(),
           update: (_, auth, previous) => previous ?? PetitionProvider(),
+        ),
+
+        /// 🔹 Offline Petition Provider
+        ChangeNotifierProvider<OfflinePetitionProvider>(
+          create: (_) => OfflinePetitionProvider(),
         ),
       ],
       child: Consumer2<AuthProvider, SettingsProvider>(
