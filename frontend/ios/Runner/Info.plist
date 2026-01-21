@@ -49,5 +49,13 @@
 	<string>We need access to your microphone for speech-to-text chat.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>We need speech recognition to convert your voice to text.</string>
+	
+	<!-- Geo-Camera permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access to capture evidence photos and videos with location watermarks for legal documentation.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app requires location access to embed GPS coordinates on captured evidence photos and videos for legal documentation.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app requires location access to embed GPS coordinates on captured evidence photos and videos for legal documentation.</string>
 </dict>
 </plist>

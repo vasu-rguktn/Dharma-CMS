@@ -281,7 +281,8 @@
 // }
 
 import 'dart:async';
-
+import 'package:flutter/foundation.dart'; // Added for kIsWeb
+import 'package:Dharma/services/onboarding_service.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -319,18 +320,22 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   @override
   void initState() {
     super.initState();
-    debugPrint('📲 PhoneLoginScreen initState -> starting OTP listener');
-    _listenForOtp();
+    if (!kIsWeb) {
+      debugPrint('📲 PhoneLoginScreen initState -> starting OTP listener');
+      _listenForOtp();
+    }
   }
 
   @override
   void dispose() {
     debugPrint('🧹 PhoneLoginScreen dispose -> stopping listeners');
-    cancel(); // From CodeAutoFill mixin
+    if (!kIsWeb) {
+      cancel(); // From CodeAutoFill mixin
+      SmsAutoFill().unregisterListener(); // CORRECT: SmsAutoFill()
+    }
     _timer?.cancel();
     _phoneController.dispose();
     _otpController.dispose();
-    SmsAutoFill().unregisterListener(); // CORRECT: SmsAutoFill()
     super.dispose();
   }
 
@@ -423,7 +428,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
     } catch (e) {
       setState(() => _isSendOtpDisabled = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
+        SnackBar(
+          content: Text('Failed: $e', maxLines: 4, overflow: TextOverflow.ellipsis),
+          duration: const Duration(seconds: 5),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -442,12 +450,18 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
     setState(() => _isLoading = true);
 
     try {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: otp,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (kIsWeb) {
+        // Web: Use AuthProvider to handle ConfirmationResult
+        final auth = Provider.of<MyAuth.AuthProvider>(context, listen: false);
+        await auth.verifyOtp(otp);
+      } else {
+        // Android: Existing manual credential logic
+        final credential = PhoneAuthProvider.credential(
+          verificationId: _verificationId!,
+          smsCode: otp,
+        );
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -456,7 +470,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
             content: Text(AppLocalizations.of(context)!.loginSuccessful),
           ),
         );
-        context.go('/ai-legal-guider');
+        // Go to dashboard first
+        context.go('/dashboard');
+        
+        // Check if onboarding is needed
+        final showOnboarding = await OnboardingService.shouldShowOnboarding();
+        
+        // Only push AI chat if onboarding is NOT needed (returning user)
+        if (!showOnboarding) {
+          // Wait a moment for dashboard to load, then push to AI chat
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (context.mounted) {
+              context.push('/ai-legal-chat');
+            }
+          });
+        }
       }
     } on FirebaseAuthException catch (e) {
       // ignore: use_build_context_synchronously
