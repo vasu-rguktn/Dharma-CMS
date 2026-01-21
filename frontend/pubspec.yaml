@@ -126,8 +126,9 @@ flutter:
     - assets/police_logo.png
     - assets/Frame.svg
     - assets/DashboardFrame.svg
-    - assets/data/district_police_stations.json
+    - assets/Data/district_police_stations.json
     - assets/Data/ap_police_hierarchy_complete.json
+    - assets/Data/ap_police_hierarchy_fir.json
 
 
 

@@ -673,7 +673,7 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: _getFilterColor(widget.filter)
-                                .withValues(alpha: 0.3),
+                                .withOpacity(0.3),
                             width: 1,
                           ),
                         ),
@@ -715,7 +715,7 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                                         color: _getPoliceStatusColor(
                                                 petition.policeStatus ??
                                                     'Pending')
-                                            .withValues(alpha: 0.1),
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
                                           color: _getPoliceStatusColor(

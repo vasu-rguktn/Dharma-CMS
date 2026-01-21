@@ -330,7 +330,7 @@ class _PetitionListModalState extends State<PetitionListModal> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _getStatusColor(widget.filter).withValues(alpha: 0.3),
+          color: _getStatusColor(widget.filter).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -375,7 +375,7 @@ class _PetitionListModalState extends State<PetitionListModal> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(widget.filter).withValues(alpha: 0.1),
+                      color: _getStatusColor(widget.filter).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _getStatusColor(widget.filter),

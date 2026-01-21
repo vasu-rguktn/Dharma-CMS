@@ -14,7 +14,12 @@ class CaseProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> fetchCases({String? userId, bool isAdmin = false}) async {
+  Future<void> fetchCases({
+    String? userId,
+    bool isAdmin = false,
+    String? district,
+    String? station,
+  }) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -25,6 +30,14 @@ class CaseProvider with ChangeNotifier {
 
       if (!isAdmin && userId != null) {
         query = query.where('userId', isEqualTo: userId);
+      } else if (isAdmin) {
+        // Police filters
+        if (district != null) {
+          query = query.where('district', isEqualTo: district);
+        }
+        if (station != null) {
+          query = query.where('policeStation', isEqualTo: station);
+        }
       }
 
       final snapshot = await query.get();
@@ -40,8 +53,18 @@ class CaseProvider with ChangeNotifier {
 
   Future<void> addCase(CaseDoc caseDoc, {String locale = 'en'}) async {
     try {
+      // DIRECT FIRESTORE WRITE: Bypassing API due to server error (500)
+      // This ensures the case is created immediately in the database.
+      // Note: Backend side-effects (like PDF generation) might be skipped until the API is fixed.
+      
+      final docRef = await _firestore.collection('cases').add(caseDoc.toMap());
+      debugPrint('✅ Case created in Firestore with ID: ${docRef.id}');
+      
+      await fetchCases();
+
+      /* 
+      // ORIGINAL API CODE (Kept for reference/restoration)
       final dio = Dio();
-      // Replace with your actual backend URL or use a global constant
       final String baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
 
       final response = await dio.post(
@@ -57,9 +80,10 @@ class CaseProvider with ChangeNotifier {
       } else {
         throw Exception('Failed to create case: ${response.data}');
       }
+      */
     } catch (e) {
       _error = e.toString();
-      debugPrint('Error adding case: $e');
+      debugPrint('❌ Error adding case: $e');
       rethrow;
     }
   }

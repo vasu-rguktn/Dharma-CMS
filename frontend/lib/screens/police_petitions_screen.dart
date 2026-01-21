@@ -77,26 +77,33 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   void initState() {
     super.initState();
     _loadHierarchyData();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final policeProvider = context.read<PoliceAuthProvider>();
-      final profile = policeProvider.policeProfile;
-
-      if (profile != null) {
-        setState(() {
-          _policeRank = profile['rank']?.toString();
-          _policeRange = profile['range']?.toString();
-          _policeDistrict = profile['district']?.toString();
-          _policeStation = profile['stationName']?.toString();
-
-          debugPrint('👮 Police Profile Loaded:');
-          debugPrint('   Rank: $_policeRank');
-          debugPrint('   Range: $_policeRange');
-          debugPrint('   District: $_policeDistrict');
-          debugPrint('   Station: $_policeStation');
-        });
-      }
+      _loadProfile();
     });
+  }
+
+  Future<void> _loadProfile() async {
+    final policeProvider = context.read<PoliceAuthProvider>();
+    // Ensure profile is loaded
+    await policeProvider.loadPoliceProfileIfLoggedIn();
+    
+    final profile = policeProvider.policeProfile;
+
+    if (profile != null && mounted) {
+      setState(() {
+        _policeRank = profile['rank']?.toString();
+        _policeRange = profile['range']?.toString();
+        _policeDistrict = profile['district']?.toString();
+        _policeStation = profile['stationName']?.toString();
+
+        debugPrint('👮 Police Profile Loaded:');
+        debugPrint('   Rank: $_policeRank');
+        debugPrint('   Range: $_policeRange');
+        debugPrint('   District: $_policeDistrict');
+        debugPrint('   Station: $_policeStation');
+      });
+    }
   }
 
   /* ================= LOAD HIERARCHY ================= */
@@ -206,10 +213,20 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       targetRange = _policeRange;
     } else if (targetDistrict != null) {
       // If we have a district but no range, search for the district across all ranges
+      // using case-insensitive match
       for (var range in _policeHierarchy.keys) {
-        if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
+        final districtMap = _policeHierarchy[range] ?? {};
+        // Check keys case-insensitively
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+
+        if (matchedKey.isNotEmpty) {
           targetRange = range;
-          debugPrint('🔍 Found district "$targetDistrict" in range "$range"');
+          // Update targetDistrict to the exact key found in JSON for lookup
+          targetDistrict = matchedKey;
+          debugPrint('🔍 Found district "$targetDistrict" (matched from "${_policeDistrict ?? _selectedDistrict}") in range "$range"');
           break;
         }
       }
@@ -220,9 +237,29 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       return [];
     }
 
-    final stations = _policeHierarchy[targetRange]?[targetDistrict] ?? [];
-    debugPrint('✅ Found ${stations.length} stations in $targetRange > $targetDistrict');
-    return stations;
+    // Final robust lookup using the exact keys
+    final districtMap = _policeHierarchy[targetRange] ?? {};
+    
+    // Try exact match first
+    if (districtMap.containsKey(targetDistrict)) {
+      final stations = districtMap[targetDistrict] ?? [];
+      debugPrint('✅ Found ${stations.length} stations in $targetRange > $targetDistrict');
+      return stations;
+    } 
+    
+    // Fallback: Try finding key again (redundant if we set it above, but safe)
+    final matchedKey = districtMap.keys.firstWhere(
+      (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+      orElse: () => '',
+    );
+    
+    if (matchedKey.isNotEmpty) {
+      final stations = districtMap[matchedKey] ?? [];
+      debugPrint('✅ Found ${stations.length} stations via fuzzy match in $targetRange > $matchedKey');
+      return stations;
+    }
+
+    return [];
   }
 
   /* ================= FILTER RESET ================= */

@@ -60,14 +60,14 @@ class _AccusedFormData {
 
   Map<String, dynamic> toMap() => {
         'name': name.text,
-        'fatherHusbandName': fatherName.text,
+        'fatherHusbandName': fatherName.text.isNotEmpty ? fatherName.text : null,
         'gender': gender,
-        'age': age.text,
-        'nationality': nationality.text,
-        'caste': caste.text,
-        'occupation': occupation.text,
-        'cellNo': cellNo.text,
-        'email': email.text,
+        'age': age.text.isNotEmpty ? age.text : null,
+        'nationality': nationality.text.isNotEmpty ? nationality.text : null,
+        'caste': caste.text.isNotEmpty ? caste.text : null,
+        'occupation': occupation.text.isNotEmpty ? occupation.text : null,
+        'cellNo': cellNo.text.isNotEmpty ? cellNo.text : null,
+        'email': email.text.isNotEmpty ? email.text : null,
         'address': [
           houseNo.text,
           street.text,
@@ -76,17 +76,18 @@ class _AccusedFormData {
           state.text,
           pin.text,
         ].where((p) => p.trim().isNotEmpty).join(', '),
-        'build': build.text,
-        'heightCms': heightCms.text,
-        'complexion': complexion.text,
-        'deformities': deformities.text,
+        'build': build.text.isNotEmpty ? build.text : null,
+        'heightCms': heightCms.text.isNotEmpty ? heightCms.text : null,
+        'complexion': complexion.text.isNotEmpty ? complexion.text : null,
+        'deformities': deformities.text.isNotEmpty ? deformities.text : null,
       };
 }
 
 class NewCaseScreen extends StatefulWidget {
   final Map<String, dynamic>? initialData;
+  final CaseDoc? existingCase;
   
-  const NewCaseScreen({super.key, this.initialData});
+  const NewCaseScreen({super.key, this.initialData, this.existingCase});
 
   @override
   State<NewCaseScreen> createState() => _NewCaseScreenState();
@@ -205,51 +206,17 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final int _totalSteps = 9;
   
   // District list (English names - will be displayed localized)
-  final List<String> _apDistrictsEnglish = [
-    'Alluri Sitharama Raju',
-    'Anakapalli',
-    'Anantapur',
-    'Annamayya',
-    'Bapatla',
-    'Chittoor',
-    'East Godavari',
-    'Eluru',
-    'Guntur',
-    'Kadapa',
-    'Kakinada',
-    'Konaseema',
-    'Krishna',
-    'Kurnool',
-    'Manyam',
-    'Nandyal',
-    'NTR',
-    'Palnadu',
-    'Prakasam',
-    'Sri Sathya Sai',
-    'Srikakulam',
-    'Tirupati',
-    'Visakhapatnam',
-    'Vizianagaram',
-    'West Godavari',
-  ]..sort();
+  List<String> _apDistrictsEnglish = [];
   
-  // Sub-Division list (example - you may need to populate based on selected district)
-  final List<String> _subDivisions = [
-    'Nuzvid SDPO',
-    'Gudivada SDPO',
-    'Machilipatnam SDPO',
-    'Vijayawada SDPO',
-    // Add more as needed
-  ];
+  // Sub-Division list - will be loaded dynamically from JSON
+  List<String> _subDivisions = [];
   
-  // Circle list (example - you may need to populate based on selected sub-division)
-  final List<String> _circles = [
-    '-',
-    'Circle 1',
-    'Circle 2',
-    'Circle 3',
-    // Add more as needed
-  ];
+  // Circle list - will be loaded dynamically from JSON
+  List<String> _circles = [];
+  
+  // Loading states
+  bool _isLoadingSubDivisions = false;
+  bool _isLoadingCircles = false;
   
   // Police Station list - will be loaded dynamically from JSON
   List<String> _policeStationsEnglish = []; // English names
@@ -262,6 +229,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final TextEditingController _districtSearchController = TextEditingController();
   final TextEditingController _policeStationSearchController = TextEditingController();
 
+  // Loaded hierarchy data
+  Map<String, dynamic>? _policeHierarchyData;
+
   @override
   void initState() {
     super.initState();
@@ -269,14 +239,55 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _accusedList.add(_AccusedFormData());
     // Auto-fill FIR registration date to today
     _firRegistrationDate = DateTime.now();
-    // Note: Police stations will be loaded when district is selected
+
+    // Load hierarchy data
+    _loadHierarchy();
+  }
+
+  Future<void> _loadHierarchy() async {
+    try {
+      final String jsonString = await rootBundle.loadString('assets/Data/ap_police_hierarchy_fir.json');
+      final Map<String, dynamic> jsonData = json.decode(jsonString);
+      
+      if (mounted) {
+        setState(() {
+          _policeHierarchyData = jsonData;
+          // Populate districts from the JSON
+          if (jsonData['districts'] != null) {
+            _apDistrictsEnglish = (jsonData['districts'] as List)
+                .map((d) => d['name'] as String)
+                .toList()
+              ..sort();
+            debugPrint('✅ Loaded ${_apDistrictsEnglish.length} districts from hierarchy JSON');
+          } else {
+            debugPrint('❌ "districts" key missing or null in hierarchy JSON');
+          }
+        });
+        
+        // If we have a selected district (e.g. from prefill), reload stations
+        if (_selectedDistrict != null) {
+          _loadSubDivisionsForDistrict();
+          _loadAllPoliceStationsForDistrict();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading police hierarchy JSON: $e');
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-fill from petition data if available (after dependencies are ready)
-    if (!_hasPrefilled && widget.initialData != null) {
+    
+    // Pre-fill from existing case if provided
+    if (!_hasPrefilled && widget.existingCase != null) {
+      _hasPrefilled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _prefillFromExistingCase();
+      });
+    }
+    // Pre-fill from petition data if available (and not editing)
+    else if (!_hasPrefilled && widget.initialData != null) {
       _hasPrefilled = true;
       // Use a small delay to ensure all controllers are fully initialized
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -375,7 +386,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             _selectedDistrict = districtName;
             debugPrint('✅ Pre-filled district: $districtName');
             // Load police stations for the district (async, will update later)
-            _loadPoliceStationsForDistrict().then((_) {
+            _loadSubDivisionsForDistrict();
+            _loadAllPoliceStationsForDistrict().then((_) {
               if (mounted && data['stationName'] != null) {
                 final stationName = data['stationName'].toString().trim();
                 if (stationName.isNotEmpty && stationName != 'null') {
@@ -445,8 +457,308 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     debugPrint('✅ Pre-fill completed. UI should update now.');
   }
 
-  Future<void> _loadPoliceStationsForDistrict() async {
+  void _prefillFromExistingCase() {
+    final c = widget.existingCase!;
+    setState(() {
+      _caseIdController.text = c.caseId ?? '';
+      _titleController.text = c.title;
+      _firNumberController.text = c.firNumber;
+      _yearController.text = c.year ?? '';
+      _selectedDistrict = c.district;
+      _selectedPoliceStation = c.policeStation;
+      _firRegistrationDate = c.dateFiled.toDate();
+      
+      _complainantNameController.text = c.complainantName ?? '';
+      _fatherHusbandNameController.text = c.complainantFatherHusbandName ?? '';
+      _selectedComplainantGender = c.complainantGender;
+      _mobileNumberController.text = c.complainantMobileNumber ?? '';
+      _nationalityController.text = c.complainantNationality ?? '';
+      _casteController.text = c.complainantCaste ?? '';
+      _occupationController.text = c.complainantOccupation ?? '';
+      if (c.complainantDob != null) {
+        try { _complainantDob = DateFormat('yyyy-MM-dd').parse(c.complainantDob!); } catch (_) {}
+      }
+      _ageController.text = c.complainantAge ?? '';
+      
+      // Parse complainant address
+      if (c.complainantAddress != null) {
+        final parts = c.complainantAddress!.split(', ');
+        if (parts.isNotEmpty) _complainantHouseNoController.text = parts.length > 0 ? parts[0] : '';
+        if (parts.length > 1) _complainantStreetController.text = parts[1];
+        if (parts.length > 2) _complainantAreaController.text = parts[2];
+        if (parts.length > 3) _complainantCityController.text = parts[3];
+        if (parts.length > 4) _complainantStateController.text = parts[4];
+        if (parts.length > 5) _complainantPinController.text = parts[5];
+      }
+
+      _ioNameController.text = c.investigatingOfficerName ?? '';
+      _ioRankController.text = c.investigatingOfficerRank ?? '';
+      _ioDistrictController.text = c.investigatingOfficerDistrict ?? '';
+      
+      // Occurrence Details
+      _occurrenceDayController.text = c.occurrenceDay ?? '';
+      if (c.occurrenceDateTimeFrom != null) {
+         try { _occurrenceDateTimeFrom = DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeFrom!); } catch (_) {}
+      }
+      if (c.occurrenceDateTimeTo != null) {
+         try { _occurrenceDateTimeTo = DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeTo!); } catch (_) {}
+      }
+      _timePeriodController.text = c.timePeriod ?? '';
+      _priorToDateTimeDetailsController.text = c.priorToDateTimeDetails ?? '';
+      _beatNumberController.text = c.beatNumber ?? '';
+      _streetVillageController.text = c.placeOfOccurrenceStreet ?? '';
+      _areaMandalController.text = c.placeOfOccurrenceArea ?? '';
+      _cityDistrictController.text = c.placeOfOccurrenceCity ?? '';
+      _stateController.text = c.placeOfOccurrenceState ?? 'Andhra Pradesh';
+      _pinController.text = c.placeOfOccurrencePin ?? '';
+      _latitudeController.text = c.placeOfOccurrenceLatitude ?? '';
+      _longitudeController.text = c.placeOfOccurrenceLongitude ?? '';
+      _distanceFromPSController.text = c.distanceFromPS ?? '';
+      _directionFromPSController.text = c.directionFromPS ?? '';
+      _isOutsideJurisdiction = c.isOutsideJurisdiction ?? false;
+
+      // Information Received
+      if (c.informationReceivedDateTime != null) {
+        try { _informationReceivedAtPs = DateFormat('yyyy-MM-dd HH:mm').parse(c.informationReceivedDateTime!); } catch (_) {}
+      }
+      _generalDiaryEntryNumberController.text = c.generalDiaryEntryNumber ?? '';
+      _selectedInformationType = c.informationType;
+
+      // Complainant Extra
+      _complainantPassportNumberController.text = c.complainantPassportNumber ?? '';
+      _complainantPassportPlaceController.text = c.complainantPassportPlaceOfIssue ?? '';
+      if (c.complainantPassportDateOfIssue != null) {
+        try { _complainantPassportDateOfIssue = DateFormat('yyyy-MM-dd').parse(c.complainantPassportDateOfIssue!); } catch (_) {}
+      }
+
+      // Incident & Complaint
+      _incidentDetailsController.text = c.incidentDetails ?? '';
+      _actsAndSectionsController.text = c.actsAndSectionsInvolved ?? '';
+      _complaintNarrativeController.text = c.complaintStatement ?? '';
+
+      // Properties / Delay / Inquest
+      _propertiesDetailsController.text = c.propertiesDetails ?? '';
+      _propertiesTotalValueController.text = c.propertiesTotalValueInr ?? '';
+      _isDelayInReporting = c.isDelayInReporting ?? false;
+      _inquestReportCaseNoController.text = c.inquestReportCaseNo ?? '';
+
+      // Action Taken / Dispatch
+      _actionTakenDetailsController.text = c.actionTakenDetails ?? '';
+      // io details already mapped
+      if (c.dispatchDateTime != null) {
+        try { _dispatchDateTime = DateFormat('yyyy-MM-dd HH:mm').parse(c.dispatchDateTime!); } catch (_) {}
+      }
+      _dispatchOfficerNameController.text = c.dispatchOfficerName ?? '';
+      _dispatchOfficerRankController.text = c.dispatchOfficerRank ?? '';
+      
+      // Confirmation
+      _isFirReadOverAndAdmittedCorrect = c.isFirReadOverAndAdmittedCorrect;
+      _isFirCopyGivenFreeOfCost = c.isFirCopyGivenFreeOfCost;
+      _isRoacRecorded = c.isRoacRecorded;
+      _complainantSignatureNoteController.text = c.complainantSignatureNote ?? '';
+
+      // Victim Details
+      _victimNameController.text = c.victimName ?? '';
+      _victimAgeController.text = c.victimAge ?? '';
+      _selectedVictimGender = c.victimGender;
+      _victimFatherNameController.text = c.victimFatherHusbandName ?? '';
+      _victimNationalityController.text = c.victimNationality ?? '';
+      _victimReligionController.text = c.victimReligion ?? '';
+      _victimCasteController.text = c.victimCaste ?? '';
+      _victimOccupationController.text = c.victimOccupation ?? '';
+      if (c.victimDob != null) {
+         try { _victimDob = DateFormat('yyyy-MM-dd').parse(c.victimDob!); } catch (_) {}
+      }
+      _isComplainantAlsoVictim = c.isComplainantAlsoVictim;
+      
+      // Parse victim address
+      if (c.victimAddress != null) {
+        final parts = c.victimAddress!.split(', ');
+        if (parts.isNotEmpty) _victimHouseNoController.text = parts.length > 0 ? parts[0] : '';
+        if (parts.length > 1) _victimStreetController.text = parts[1];
+        if (parts.length > 2) _victimAreaController.text = parts[2];
+        if (parts.length > 3) _victimCityController.text = parts[3];
+        if (parts.length > 4) _victimStateController.text = parts[4];
+        if (parts.length > 5) _victimPinController.text = parts[5];
+      }
+
+      // Accused List
+      _accusedList.clear();
+      if (c.accusedPersons != null && c.accusedPersons!.isNotEmpty) {
+        for (var a in c.accusedPersons!) {
+             final accused = _AccusedFormData();
+             accused.name.text = a['name'] ?? '';
+             accused.fatherName.text = a['fatherHusbandName'] ?? '';
+             accused.gender = a['gender'];
+             accused.age.text = a['age'] ?? '';
+             accused.nationality.text = a['nationality'] ?? '';
+             accused.caste.text = a['caste'] ?? '';
+             accused.occupation.text = a['occupation'] ?? '';
+             accused.cellNo.text = a['cellNo'] ?? '';
+             accused.email.text = a['email'] ?? '';
+             accused.build.text = a['build'] ?? '';
+             accused.heightCms.text = a['heightCms'] ?? '';
+             accused.complexion.text = a['complexion'] ?? '';
+             accused.deformities.text = a['deformities'] ?? '';
+             
+            // Parse accused address
+            if (a['address'] != null) {
+              final parts = (a['address'] as String).split(', ');
+              if (parts.isNotEmpty) accused.houseNo.text = parts.length > 0 ? parts[0] : '';
+              if (parts.length > 1) accused.street.text = parts[1];
+              if (parts.length > 2) accused.area.text = parts[2];
+              if (parts.length > 3) accused.city.text = parts[3];
+              if (parts.length > 4) accused.state.text = parts[4];
+              if (parts.length > 5) accused.pin.text = parts[5];
+            }
+            _accusedList.add(accused);
+        }
+      } else {
+         _accusedList.add(_AccusedFormData());
+      }
+      
+      // Load districts to ensure dropdown works
+      if (_selectedDistrict != null) {
+        _loadSubDivisionsForDistrict();
+        _loadAllPoliceStationsForDistrict().then((_) {
+          if (mounted && c.policeStation != null) {
+            setState(() {
+              // Ensure the loaded station exists in the list
+              if (_policeStationsEnglish.contains(c.policeStation)) {
+                 _selectedPoliceStation = c.policeStation;
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> _loadSubDivisionsForDistrict() async {
+    if (_policeHierarchyData == null || _selectedDistrict == null) return;
+
+    setState(() {
+      _isLoadingSubDivisions = true;
+      _subDivisions.clear();
+      _circles.clear();
+      _policeStationsEnglish.clear();
+      _selectedSubDivision = null;
+      _selectedCircle = null;
+      _selectedPoliceStation = null;
+    });
+
+    try {
+      if (_policeHierarchyData?['districts'] != null) {
+        final districts = _policeHierarchyData!['districts'] as List;
+        final districtData = districts.firstWhere(
+          (d) => d['name'] == _selectedDistrict,
+          orElse: () => null,
+        );
+
+        if (districtData != null && districtData['sdpos'] != null) {
+          final sdpos = districtData['sdpos'] as List;
+          setState(() {
+            _subDivisions = sdpos.map((s) => s['name'] as String).toList()..sort();
+            _isLoadingSubDivisions = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading sub-divisions: $e');
+      setState(() => _isLoadingSubDivisions = false);
+    }
+  }
+
+  Future<void> _loadCirclesForSubDivision() async {
+    if (_policeHierarchyData == null || _selectedDistrict == null || _selectedSubDivision == null) return;
+
+    setState(() {
+      _isLoadingCircles = true;
+      _circles.clear();
+      _policeStationsEnglish.clear();
+      _selectedCircle = null;
+      _selectedPoliceStation = null;
+    });
+
+    try {
+      final districts = _policeHierarchyData!['districts'] as List;
+      final districtData = districts.firstWhere((d) => d['name'] == _selectedDistrict, orElse: () => null);
+
+      if (districtData != null && districtData['sdpos'] != null) {
+        final sdpos = districtData['sdpos'] as List;
+        final sdpoData = sdpos.firstWhere((s) => s['name'] == _selectedSubDivision, orElse: () => null);
+
+        if (sdpoData != null && sdpoData['circles'] != null) {
+          final circles = sdpoData['circles'] as List;
+          setState(() {
+            _circles = circles.map((c) => c['name'] as String).toList()..sort();
+            _isLoadingCircles = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading circles: $e');
+      setState(() => _isLoadingCircles = false);
+    }
+  }
+
+  Future<void> _loadPoliceStationsForCircle() async {
+    if (_policeHierarchyData == null || _selectedDistrict == null || _selectedSubDivision == null || _selectedCircle == null) return;
+
+    setState(() {
+      _isLoadingPoliceStations = true;
+      _policeStationsEnglish.clear();
+      _selectedPoliceStation = null;
+    });
+
+    try {
+      final districts = _policeHierarchyData!['districts'] as List;
+      final districtData = districts.firstWhere((d) => d['name'] == _selectedDistrict, orElse: () => null);
+
+      if (districtData != null && districtData['sdpos'] != null) {
+        final sdpos = districtData['sdpos'] as List;
+        final sdpoData = sdpos.firstWhere((s) => s['name'] == _selectedSubDivision, orElse: () => null);
+
+        if (sdpoData != null && sdpoData['circles'] != null) {
+          final circles = sdpoData['circles'] as List;
+          final circleData = circles.firstWhere((c) => c['name'] == _selectedCircle, orElse: () => null);
+
+          if (circleData != null && circleData['police_stations'] != null) {
+            final stations = (circleData['police_stations'] as List).cast<String>().toList()..sort();
+            setState(() {
+              _policeStationsEnglish = stations;
+              _isLoadingPoliceStations = false;
+              if (stations.isEmpty) {
+                _policeStationLoadError = _getLocalizedLabel(
+                  'No police stations found for this circle',
+                  'ఈ సర్కిల్ కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+                );
+              }
+            });
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading police stations: $e');
+    }
+    
+    setState(() {
+      _isLoadingPoliceStations = false;
+      _policeStationLoadError = _getLocalizedLabel(
+        'Failed to load police stations',
+        'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది',
+      );
+    });
+  }
+
+  /// Keep this for backwards compatibility or direct district selection
+  Future<void> _loadAllPoliceStationsForDistrict() async {
     if (_selectedDistrict != null) {
+      if (_policeHierarchyData == null) {
+        await _loadHierarchy();
+      }
+
       setState(() {
         _isLoadingPoliceStations = true;
         _policeStationLoadError = null;
@@ -454,13 +766,35 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
       
       try {
-        final stations = await DistrictTranslations.getPoliceStationsForDistrict(
-          context,
-          _selectedDistrict!,
-        );
+        List<String> stations = [];
+        
+        if (_policeHierarchyData != null && _policeHierarchyData!['districts'] != null) {
+           final districts = _policeHierarchyData!['districts'] as List;
+           final districtData = districts.firstWhere(
+             (d) => d['name'] == _selectedDistrict, 
+             orElse: () => null
+           );
+           
+           if (districtData != null && districtData['sdpos'] != null) {
+             final sdpos = districtData['sdpos'] as List;
+             for (var sdpo in sdpos) {
+               if (sdpo['circles'] != null) {
+                 final circles = sdpo['circles'] as List;
+                 for (var circle in circles) {
+                    if (circle['police_stations'] != null) {
+                      final psList = (circle['police_stations'] as List).cast<String>();
+                      stations.addAll(psList);
+                    }
+                 }
+               }
+             }
+           }
+        }
+
         // Stations are returned in English for storage
         setState(() {
-          _policeStationsEnglish = stations;
+          // Remove duplicates if any and sort
+          _policeStationsEnglish = stations.toSet().toList()..sort();
           _isLoadingPoliceStations = false;
           if (stations.isEmpty) {
             _policeStationLoadError = _getLocalizedLabel(
@@ -562,7 +896,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -689,7 +1023,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -815,7 +1149,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1473,7 +1807,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             _complainantPassportDateOfIssue != null
                 ? DateFormat('yyyy-MM-dd').format(_complainantPassportDateOfIssue!)
                 : null,
-        accusedPersons: _accusedList.map((a) => a.toMap()).toList(),
+        accusedPersons: _accusedList
+            .where((a) => a.name.text.trim().isNotEmpty)
+            .map((a) => a.toMap())
+            .toList(),
         incidentDetails: _incidentDetailsController.text.isNotEmpty
             ? _incidentDetailsController.text
             : null,
@@ -1611,18 +1948,31 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ? _complainantSignatureNoteController.text
                 : null,
         isOutsideJurisdiction: _isOutsideJurisdiction,
-        status: CaseStatus.newCase,
-        dateFiled: Timestamp.now(),
+        status: widget.existingCase?.status ?? CaseStatus.newCase,
+        dateFiled: widget.existingCase?.dateFiled ?? Timestamp.now(),
         lastUpdated: Timestamp.now(),
-        userId: authProvider.userProfile?.uid,
+        userId: widget.existingCase?.userId ?? authProvider.userProfile?.uid,
       );
 
-      await caseProvider.addCase(newCase);
+      if (widget.existingCase != null) {
+        // Update existing case
+        await caseProvider.updateCase(widget.existingCase!.id!, newCase.toMap());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Case updated successfully')),
+          );
+        }
+      } else {
+        // Create new case
+        await caseProvider.addCase(newCase);
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
+           );
+        }
+      }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
-        );
         context.go('/cases');
       }
     } catch (e) {
@@ -1885,40 +2235,13 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _policeStationsEnglish = [];
                   _districtSearchController.clear();
                 });
-                // Load police stations for selected district
                 if (value != null) {
-                  setState(() {
-                    _isLoadingPoliceStations = true;
-                    _policeStationLoadError = null;
-                    _policeStationsEnglish = [];
-                    _selectedPoliceStation = null; // Reset selection
-                  });
+                   // Load sub-divisions for the new district
+                  _loadSubDivisionsForDistrict();
                   
-                  try {
-                    final stations = await DistrictTranslations.getPoliceStationsForDistrict(
-                      context,
-                      value,
-                    );
-                    setState(() {
-                      _policeStationsEnglish = stations;
-                      _isLoadingPoliceStations = false;
-                      if (stations.isEmpty) {
-                        _policeStationLoadError = _getLocalizedLabel(
-                          'No police stations found for this district',
-                          'ఈ జిల్లా కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
-                        );
-                      }
-                    });
-                  } catch (e) {
-                    debugPrint('Error loading police stations: $e');
-                    setState(() {
-                      _isLoadingPoliceStations = false;
-                      _policeStationLoadError = _getLocalizedLabel(
-                        'Failed to load police stations. Please try again.',
-                        'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.',
-                      );
-                    });
-                  }
+                  // Also load full flattened list for direct station selection
+                  // (Currently the UI will clear this list visually via state but data will be fetched)
+                  _loadAllPoliceStationsForDistrict();
                 }
               },
               validator: (value) {
@@ -1929,90 +2252,121 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            // Sub-Division (SDPO) Dropdown
-            Builder(
-              builder: (context) {
-                final locale = Localizations.localeOf(context);
-                final labelText = locale.languageCode == 'te' ? 'ఉప-విభాగం (SDPO)' : 'Sub-Division (SDPO)';
-                final validationMsg = locale.languageCode == 'te' 
-                    ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
-                    : 'Please select a Sub-Division (SDPO)';
-                
-                return DropdownButtonFormField<String>(
-                  value: _selectedSubDivision,
-                  decoration: InputDecoration(
-                    labelText: '$labelText *',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.account_tree),
-                  ),
-                  items: _subDivisions
-                      .map((subDivEnglish) {
-                        final localizedName = DistrictTranslations.getSubDivisionName(context, subDivEnglish);
-                        return DropdownMenuItem(
-                          value: subDivEnglish, // Store English name
-                          child: Text(localizedName), // Display localized name
-                        );
-                      })
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedSubDivision = value;
-                      // Reset dependent dropdowns when sub-division changes
-                      _selectedCircle = null;
-                      _selectedPoliceStation = null;
-                    });
+            // Dynamic Sub-Division (SDPO) Dropdown
+            if (_subDivisions.isNotEmpty || _isLoadingSubDivisions) ...[
+                Builder(
+                  builder: (context) {
+                    final locale = Localizations.localeOf(context);
+                    final labelText = locale.languageCode == 'te' ? 'ఉప-విభాగం (SDPO)' : 'Sub-Division (SDPO)';
+                    final validationMsg = locale.languageCode == 'te' 
+                        ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
+                        : 'Please select a Sub-Division (SDPO)';
+                    
+                    return DropdownButtonFormField<String>(
+                      value: _selectedSubDivision,
+                      decoration: InputDecoration(
+                        labelText: '$labelText *',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.account_tree),
+                        suffixIcon: _isLoadingSubDivisions 
+                          ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+                          : null,
+                      ),
+                      items: _subDivisions
+                          .map((subDivEnglish) {
+                            final localizedName = DistrictTranslations.getSubDivisionName(context, subDivEnglish);
+                            return DropdownMenuItem(
+                              value: subDivEnglish, // Store English name
+                              child: Text(
+                                localizedName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          })
+                          .toList(),
+                      onChanged: (value) {
+                         // Only update if value changed
+                         if(value != _selectedSubDivision) {
+                            setState(() {
+                              _selectedSubDivision = value;
+                              _selectedCircle = null;
+                              _selectedPoliceStation = null;
+                              _policeStationSearchController.clear();
+                              _policeStationsEnglish.clear();
+                              _circles.clear();
+                            });
+                            // Load circles for selected SDPO
+                            _loadCirclesForSubDivision();
+                         }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return validationMsg;
+                        }
+                        return null;
+                      },
+                      isExpanded: true,
+                    );
                   },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return validationMsg;
-                    }
-                    return null;
+                ),
+                const SizedBox(height: 16),
+            ],
+
+            // Dynamic Circle Dropdown
+            if (_circles.isNotEmpty || _isLoadingCircles) ...[
+                Builder(
+                  builder: (context) {
+                    final locale = Localizations.localeOf(context);
+                    final labelText = locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
+                    final validationMsg = locale.languageCode == 'te'
+                        ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
+                        : 'Please select a Circle';
+                    
+                    return DropdownButtonFormField<String>(
+                      value: _selectedCircle,
+                      decoration: InputDecoration(
+                        labelText: '$labelText *',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.place),
+                        suffixIcon: _isLoadingCircles
+                          ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+                          : null,
+                      ),
+                      items: _circles
+                          .map((circleEnglish) {
+                            final localizedName = DistrictTranslations.getCircleName(context, circleEnglish);
+                            return DropdownMenuItem(
+                              value: circleEnglish, // Store English name
+                              child: Text(
+                                localizedName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          })
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != _selectedCircle) {
+                          setState(() {
+                            _selectedCircle = value;
+                            _selectedPoliceStation = null;
+                            _policeStationSearchController.clear();
+                          });
+                          // Load police stations for selected circle
+                          _loadPoliceStationsForCircle();
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty || value == '-') {
+                          return validationMsg;
+                        }
+                        return null;
+                      },
+                      isExpanded: true,
+                    );
                   },
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            // Circle Dropdown
-            Builder(
-              builder: (context) {
-                final locale = Localizations.localeOf(context);
-                final labelText = locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
-                final validationMsg = locale.languageCode == 'te'
-                    ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
-                    : 'Please select a Circle';
-                
-                return DropdownButtonFormField<String>(
-                  value: _selectedCircle,
-                  decoration: InputDecoration(
-                    labelText: '$labelText *',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.place),
-                  ),
-                  items: _circles
-                      .map((circleEnglish) {
-                        final localizedName = DistrictTranslations.getCircleName(context, circleEnglish);
-                        return DropdownMenuItem(
-                          value: circleEnglish, // Store English name
-                          child: Text(localizedName), // Display localized name
-                        );
-                      })
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCircle = value;
-                      // Reset police station when circle changes
-                      _selectedPoliceStation = null;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty || value == '-') {
-                      return validationMsg;
-                    }
-                    return null;
-                  },
-                );
-              },
-            ),
+                ),
+                const SizedBox(height: 16),
+            ],
             const SizedBox(height: 16),
             // Police Station Searchable Dropdown
             _buildSearchableDropdown<String>(
@@ -4746,7 +5100,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/cases'),
         ),
-        title: Text(localizations.createNewCase),
+        title: Text(widget.existingCase != null 
+            ? 'Edit Case' // Localize this later
+            : localizations.createNewCase),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),
           child: _buildStepIndicator(),

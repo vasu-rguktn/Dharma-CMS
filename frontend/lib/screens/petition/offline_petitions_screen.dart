@@ -135,9 +135,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSentTab
-              ? _getPoliceStatusColor(petition.policeStatus).withValues(alpha: 0.3)
-              : _getPoliceStatusColor(petition.policeStatus).withValues(alpha: 0.3),
+          color: _getPoliceStatusColor(petition.policeStatus).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -468,7 +466,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withOpacity(0.05),
                           blurRadius: 10,
                           offset: const Offset(0, -5),
                         ),
@@ -980,9 +978,9 @@ class _StatusOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
           borderRadius: BorderRadius.circular(8),
-          color: color.withValues(alpha: 0.05),
+          color: color.withOpacity(0.05),
         ),
         child: Row(
           children: [

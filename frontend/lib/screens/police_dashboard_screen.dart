@@ -35,13 +35,25 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
   //   );
   // }
 @override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  final petitionProvider =
-      Provider.of<PetitionProvider>(context, listen: false);
-  final auth =
-      Provider.of<AuthProvider>(context, listen: false);
+    // Defer initialization to ensure context and providers are ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final petitionProvider =
+          Provider.of<PetitionProvider>(context, listen: false);
+      final auth =
+          Provider.of<AuthProvider>(context, listen: false);
+      
+      // Safety check: ensure userProfile exists
+      final stationName = auth.userProfile?.stationName;
+      
+      if (stationName != null) {
+        // ✅ Load station-wise stats
+        petitionProvider.fetchPetitionStats(
+          stationName: stationName,
+        );
 
   // ✅ Load organizational stats
   petitionProvider.fetchPetitionStats(
