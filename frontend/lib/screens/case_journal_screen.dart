@@ -12,6 +12,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/storage_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart'; // For rootBundle
+import 'dart:convert'; // For json decode
+import 'package:Dharma/providers/police_auth_provider.dart';
 
 class CaseJournalScreen extends StatefulWidget {
   const CaseJournalScreen({super.key});
@@ -39,20 +42,248 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   bool _isSavingFinalReport = false;
   final TextEditingController _reportController = TextEditingController();
 
+  // Police Profile Data & Hierarchy
+  String? _policeRank;
+  String? _policeRange;
+  String? _policeDistrict;
+  String? _policeStation;
+
+  // Filter selections
+  String? _selectedRange;
+  String? _selectedDistrict;
+  String? _selectedStation;
+
+  Map<String, Map<String, List<String>>> _policeHierarchy = {};
+  bool _hierarchyLoading = true;
+
+  /* ================= RANK TIERS ================= */
+  // (Same constants as CasesScreen)
+  static const List<String> _stateLevelRanks = [
+    'Director General of Police',
+    'Additional Director General of Police',
+  ];
+  static const List<String> _rangeLevelRanks = [
+    'Inspector General of Police',
+    'Deputy Inspector General of Police',
+  ];
+  static const List<String> _districtLevelRanks = [
+    'Superintendent of Police',
+    'Additional Superintendent of Police',
+  ];
+  static const List<String> _stationLevelRanks = [
+    'Deputy Superintendent of Police',
+    'Inspector of Police',
+    'Sub Inspector of Police',
+    'Assistant Sub Inspector of Police',
+    'Head Constable',
+    'Police Constable',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHierarchyData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfileAndFetch();
+    });
+  }
+
+  Future<void> _loadProfileAndFetch() async {
+    final auth = context.read<AuthProvider>();
+    
+    if (auth.role == 'police') {
+      final policeProvider = context.read<PoliceAuthProvider>();
+      await policeProvider.loadPoliceProfileIfLoggedIn();
+      final profile = policeProvider.policeProfile;
+
+      if (profile != null && mounted) {
+        setState(() {
+          _policeRank = profile['rank']?.toString();
+          _policeRange = profile['range']?.toString();
+          _policeDistrict = profile['district']?.toString();
+          _policeStation = profile['stationName']?.toString();
+        });
+      }
+    }
+    if (mounted) _fetchData();
+  }
+
+  Future<void> _loadHierarchyData() async {
+    try {
+      final jsonStr = await rootBundle
+          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+      final Map<String, dynamic> data = json.decode(jsonStr);
+
+      Map<String, Map<String, List<String>>> hierarchy = {};
+      data.forEach((range, districts) {
+        if (districts is Map) {
+          Map<String, List<String>> districtMap = {};
+          districts.forEach((district, stations) {
+            final stationList = List<String>.from(stations ?? []);
+            districtMap[district.toString()] = stationList;
+          });
+          hierarchy[range] = districtMap;
+        }
+      });
+
+      if (mounted) {
+        setState(() {
+          _policeHierarchy = hierarchy;
+          _hierarchyLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _hierarchyLoading = false);
+    }
+  }
+
+  Future<void> _fetchData() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+    
+    String? targetDistrict;
+    String? targetStation;
+
+    if (auth.role == 'police') {
+      // 1. Station Level: Must filter by assigned station
+      if (_isStationLevel() && _policeStation != null) {
+        targetStation = _policeStation;
+        targetDistrict = _policeDistrict; 
+      }
+      // 2. District Level (SP, ASP):
+      else if (_districtLevelRanks.contains(_policeRank)) {
+        // If they chose a specific station, filter by it
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict ?? _policeDistrict;
+        } 
+        // Otherwise, filter by their district (SHOW ALL STATIONS IN DISTRICT)
+        else {
+          targetStation = null; // Important: Clear station filter
+          targetDistrict = _policeDistrict;
+        }
+      }
+      // 3. Range Level (IGP, DIG):
+      else if (_rangeLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict; 
+        } else if (_selectedDistrict != null) {
+          targetStation = null;
+          targetDistrict = _selectedDistrict;
+        } else if (_policeRange != null) {
+          // Fallback to no filter essentially, or filtered by range if backend supported it
+          targetStation = null;
+          targetDistrict = null; 
+        }
+      }
+      // 4. State Level (DGP):
+      else if (_stateLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict;
+        } else if (_selectedDistrict != null) {
+          targetStation = null;
+          targetDistrict = _selectedDistrict;
+        }
+      }
+      // Fallback
+      else {
+         targetStation = _selectedStation;
+         targetDistrict = _selectedDistrict ?? _policeDistrict;
+      }
+    }
+
+    print('📖 [JOURNAL] Fetching with District=$targetDistrict, Station=$targetStation');
+    await caseProvider.fetchCases(
+      userId: auth.user?.uid,
+      isAdmin: auth.role == 'police',
+      district: targetDistrict,
+      station: targetStation,
+    );
+  }
+
+  // --- Hierarchy Helpers ---
+
+  bool _canFilterByRange() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByDistrict() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByStation() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank) ||
+           _districtLevelRanks.contains(_policeRank);
+  }
+
+  bool _isStationLevel() {
+    if (_policeRank == null) return false;
+    return _stationLevelRanks.contains(_policeRank);
+  }
+
+  List<String> _getAvailableRanges() => _policeHierarchy.keys.toList();
+
+  List<String> _getAvailableDistricts() {
+    if (_selectedRange != null) return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
+    if (_policeRange != null) return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
+    return [];
+  }
+
+  List<String> _getAvailableStations() {
+    String? targetRange = _selectedRange ?? _policeRange;
+    String? targetDistrict = _selectedDistrict ?? _policeDistrict;
+
+    if (targetRange == null && targetDistrict != null) {
+      for (var range in _policeHierarchy.keys) {
+         if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
+           targetRange = range;
+           break;
+         }
+      }
+    }
+
+    if (targetRange == null || targetDistrict == null) return [];
+    return _policeHierarchy[targetRange]?[targetDistrict] ?? [];
+  }
+
+  void _onRangeChanged(String? range) {
+    setState(() {
+      _selectedRange = range;
+      _selectedDistrict = null;
+      _selectedStation = null;
+      _selectedCaseId = null; // Clear selection on filter change
+    });
+    _fetchData();
+  }
+
+  void _onDistrictChanged(String? district) {
+    setState(() {
+      _selectedDistrict = district;
+      _selectedStation = null;
+      _selectedCaseId = null;
+    });
+    _fetchData();
+  }
+
+  void _onStationChanged(String? station) {
+    setState(() {
+      _selectedStation = station;
+      _selectedCaseId = null;
+    });
+    _fetchData();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_hasLoaded) {
-      _hasLoaded = true;
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        caseProvider.fetchCases(
-          userId: auth.user?.uid,
-          isAdmin: auth.role == 'police',
-        );
-      });
-    }
+    // Logic moved to initState
   }
 
   Future<void> _fetchJournalEntries(String caseId) async {
@@ -695,6 +926,76 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // HIERARCHY FILTERS (Only for Police)
+                    if (Provider.of<AuthProvider>(context).role == 'police' && !_hierarchyLoading)
+                       Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.blue.shade100),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.security, size: 20, color: Colors.blue.shade900),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Jurisdiction Filter',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            
+                            if (_canFilterByRange()) ...[
+                              _buildFilterDropdown(
+                                label: 'Range',
+                                value: _selectedRange,
+                                items: _getAvailableRanges(),
+                                onChanged: _onRangeChanged,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+
+                            if (_canFilterByDistrict()) ...[
+                              _buildFilterDropdown(
+                                label: 'District',
+                                value: _selectedDistrict,
+                                items: _getAvailableDistricts(),
+                                onChanged: _onDistrictChanged,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+
+                            if (_canFilterByStation()) ...[
+                              _buildFilterDropdown(
+                                label: 'Station',
+                                value: _selectedStation,
+                                items: _getAvailableStations(),
+                                onChanged: _onStationChanged,
+                              ),
+                            ],
+                            
+                            if (_isStationLevel() && _policeStation != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  'Station: $_policeStation', 
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                          ],
+                        ),
+                       ),
+
                     // Case Selector Card
                     Card(
                       elevation: 6,
@@ -1199,6 +1500,119 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    // Searchable dropdown using ModalBottomSheet
+    return InkWell(
+      onTap: () async {
+        if (items.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No $label options available')),
+          );
+          return;
+        }
+
+        final searchController = TextEditingController();
+        List<String> filtered = List.from(items);
+
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (_) => StatefulBuilder(
+            builder: (context, setModalState) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Text('Select $label',
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: const InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (val) {
+                          setModalState(() {
+                            filtered = items
+                                .where((e) =>
+                                    e.toLowerCase().contains(val.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filtered.length + 1,
+                        itemBuilder: (_, i) {
+                          if (i == 0) {
+                            return ListTile(
+                              title: Text('All $label'),
+                              onTap: () {
+                                onChanged(null);
+                                Navigator.pop(context);
+                              },
+                            );
+                          }
+                          final item = filtered[i - 1];
+                          return ListTile(
+                            title: Text(item),
+                            selected: item == value,
+                            trailing: item == value
+                                ? const Icon(Icons.check, color: Colors.green)
+                                : null,
+                            onTap: () {
+                              onChanged(item);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade400),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                value ?? 'All $label',
+                style: TextStyle(
+                  color: value == null ? Colors.grey.shade600 : Colors.black,
+                  fontWeight: value == null ? FontWeight.normal : FontWeight.bold,
+                ),
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down),
           ],
         ),
       ),

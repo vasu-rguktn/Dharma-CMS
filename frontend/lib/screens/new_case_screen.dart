@@ -60,14 +60,14 @@ class _AccusedFormData {
 
   Map<String, dynamic> toMap() => {
         'name': name.text,
-        'fatherHusbandName': fatherName.text,
+        'fatherHusbandName': fatherName.text.isNotEmpty ? fatherName.text : null,
         'gender': gender,
-        'age': age.text,
-        'nationality': nationality.text,
-        'caste': caste.text,
-        'occupation': occupation.text,
-        'cellNo': cellNo.text,
-        'email': email.text,
+        'age': age.text.isNotEmpty ? age.text : null,
+        'nationality': nationality.text.isNotEmpty ? nationality.text : null,
+        'caste': caste.text.isNotEmpty ? caste.text : null,
+        'occupation': occupation.text.isNotEmpty ? occupation.text : null,
+        'cellNo': cellNo.text.isNotEmpty ? cellNo.text : null,
+        'email': email.text.isNotEmpty ? email.text : null,
         'address': [
           houseNo.text,
           street.text,
@@ -76,17 +76,18 @@ class _AccusedFormData {
           state.text,
           pin.text,
         ].where((p) => p.trim().isNotEmpty).join(', '),
-        'build': build.text,
-        'heightCms': heightCms.text,
-        'complexion': complexion.text,
-        'deformities': deformities.text,
+        'build': build.text.isNotEmpty ? build.text : null,
+        'heightCms': heightCms.text.isNotEmpty ? heightCms.text : null,
+        'complexion': complexion.text.isNotEmpty ? complexion.text : null,
+        'deformities': deformities.text.isNotEmpty ? deformities.text : null,
       };
 }
 
 class NewCaseScreen extends StatefulWidget {
   final Map<String, dynamic>? initialData;
+  final CaseDoc? existingCase;
   
-  const NewCaseScreen({super.key, this.initialData});
+  const NewCaseScreen({super.key, this.initialData, this.existingCase});
 
   @override
   State<NewCaseScreen> createState() => _NewCaseScreenState();
@@ -275,8 +276,16 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-fill from petition data if available (after dependencies are ready)
-    if (!_hasPrefilled && widget.initialData != null) {
+    
+    // Pre-fill from existing case if provided
+    if (!_hasPrefilled && widget.existingCase != null) {
+      _hasPrefilled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _prefillFromExistingCase();
+      });
+    }
+    // Pre-fill from petition data if available (and not editing)
+    else if (!_hasPrefilled && widget.initialData != null) {
       _hasPrefilled = true;
       // Use a small delay to ensure all controllers are fully initialized
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -443,6 +452,182 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     });
     
     debugPrint('✅ Pre-fill completed. UI should update now.');
+  }
+
+  void _prefillFromExistingCase() {
+    final c = widget.existingCase!;
+    setState(() {
+      _caseIdController.text = c.caseId ?? '';
+      _titleController.text = c.title;
+      _firNumberController.text = c.firNumber;
+      _yearController.text = c.year ?? '';
+      _selectedDistrict = c.district;
+      _selectedPoliceStation = c.policeStation;
+      _firRegistrationDate = c.dateFiled.toDate();
+      
+      _complainantNameController.text = c.complainantName ?? '';
+      _fatherHusbandNameController.text = c.complainantFatherHusbandName ?? '';
+      _selectedComplainantGender = c.complainantGender;
+      _mobileNumberController.text = c.complainantMobileNumber ?? '';
+      _nationalityController.text = c.complainantNationality ?? '';
+      _casteController.text = c.complainantCaste ?? '';
+      _occupationController.text = c.complainantOccupation ?? '';
+      if (c.complainantDob != null) {
+        try { _complainantDob = DateFormat('yyyy-MM-dd').parse(c.complainantDob!); } catch (_) {}
+      }
+      _ageController.text = c.complainantAge ?? '';
+      
+      // Parse complainant address
+      if (c.complainantAddress != null) {
+        final parts = c.complainantAddress!.split(', ');
+        if (parts.isNotEmpty) _complainantHouseNoController.text = parts.length > 0 ? parts[0] : '';
+        if (parts.length > 1) _complainantStreetController.text = parts[1];
+        if (parts.length > 2) _complainantAreaController.text = parts[2];
+        if (parts.length > 3) _complainantCityController.text = parts[3];
+        if (parts.length > 4) _complainantStateController.text = parts[4];
+        if (parts.length > 5) _complainantPinController.text = parts[5];
+      }
+
+      _ioNameController.text = c.investigatingOfficerName ?? '';
+      _ioRankController.text = c.investigatingOfficerRank ?? '';
+      _ioDistrictController.text = c.investigatingOfficerDistrict ?? '';
+      
+      // Occurrence Details
+      _occurrenceDayController.text = c.occurrenceDay ?? '';
+      if (c.occurrenceDateTimeFrom != null) {
+         try { _occurrenceDateTimeFrom = DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeFrom!); } catch (_) {}
+      }
+      if (c.occurrenceDateTimeTo != null) {
+         try { _occurrenceDateTimeTo = DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeTo!); } catch (_) {}
+      }
+      _timePeriodController.text = c.timePeriod ?? '';
+      _priorToDateTimeDetailsController.text = c.priorToDateTimeDetails ?? '';
+      _beatNumberController.text = c.beatNumber ?? '';
+      _streetVillageController.text = c.placeOfOccurrenceStreet ?? '';
+      _areaMandalController.text = c.placeOfOccurrenceArea ?? '';
+      _cityDistrictController.text = c.placeOfOccurrenceCity ?? '';
+      _stateController.text = c.placeOfOccurrenceState ?? 'Andhra Pradesh';
+      _pinController.text = c.placeOfOccurrencePin ?? '';
+      _latitudeController.text = c.placeOfOccurrenceLatitude ?? '';
+      _longitudeController.text = c.placeOfOccurrenceLongitude ?? '';
+      _distanceFromPSController.text = c.distanceFromPS ?? '';
+      _directionFromPSController.text = c.directionFromPS ?? '';
+      _isOutsideJurisdiction = c.isOutsideJurisdiction ?? false;
+
+      // Information Received
+      if (c.informationReceivedDateTime != null) {
+        try { _informationReceivedAtPs = DateFormat('yyyy-MM-dd HH:mm').parse(c.informationReceivedDateTime!); } catch (_) {}
+      }
+      _generalDiaryEntryNumberController.text = c.generalDiaryEntryNumber ?? '';
+      _selectedInformationType = c.informationType;
+
+      // Complainant Extra
+      _complainantPassportNumberController.text = c.complainantPassportNumber ?? '';
+      _complainantPassportPlaceController.text = c.complainantPassportPlaceOfIssue ?? '';
+      if (c.complainantPassportDateOfIssue != null) {
+        try { _complainantPassportDateOfIssue = DateFormat('yyyy-MM-dd').parse(c.complainantPassportDateOfIssue!); } catch (_) {}
+      }
+
+      // Incident & Complaint
+      _incidentDetailsController.text = c.incidentDetails ?? '';
+      _actsAndSectionsController.text = c.actsAndSectionsInvolved ?? '';
+      _complaintNarrativeController.text = c.complaintStatement ?? '';
+
+      // Properties / Delay / Inquest
+      _propertiesDetailsController.text = c.propertiesDetails ?? '';
+      _propertiesTotalValueController.text = c.propertiesTotalValueInr ?? '';
+      _isDelayInReporting = c.isDelayInReporting ?? false;
+      _inquestReportCaseNoController.text = c.inquestReportCaseNo ?? '';
+
+      // Action Taken / Dispatch
+      _actionTakenDetailsController.text = c.actionTakenDetails ?? '';
+      // io details already mapped
+      if (c.dispatchDateTime != null) {
+        try { _dispatchDateTime = DateFormat('yyyy-MM-dd HH:mm').parse(c.dispatchDateTime!); } catch (_) {}
+      }
+      _dispatchOfficerNameController.text = c.dispatchOfficerName ?? '';
+      _dispatchOfficerRankController.text = c.dispatchOfficerRank ?? '';
+      
+      // Confirmation
+      _isFirReadOverAndAdmittedCorrect = c.isFirReadOverAndAdmittedCorrect;
+      _isFirCopyGivenFreeOfCost = c.isFirCopyGivenFreeOfCost;
+      _isRoacRecorded = c.isRoacRecorded;
+      _complainantSignatureNoteController.text = c.complainantSignatureNote ?? '';
+
+      // Victim Details
+      _victimNameController.text = c.victimName ?? '';
+      _victimAgeController.text = c.victimAge ?? '';
+      _selectedVictimGender = c.victimGender;
+      _victimFatherNameController.text = c.victimFatherHusbandName ?? '';
+      _victimNationalityController.text = c.victimNationality ?? '';
+      _victimReligionController.text = c.victimReligion ?? '';
+      _victimCasteController.text = c.victimCaste ?? '';
+      _victimOccupationController.text = c.victimOccupation ?? '';
+      if (c.victimDob != null) {
+         try { _victimDob = DateFormat('yyyy-MM-dd').parse(c.victimDob!); } catch (_) {}
+      }
+      _isComplainantAlsoVictim = c.isComplainantAlsoVictim;
+      
+      // Parse victim address
+      if (c.victimAddress != null) {
+        final parts = c.victimAddress!.split(', ');
+        if (parts.isNotEmpty) _victimHouseNoController.text = parts.length > 0 ? parts[0] : '';
+        if (parts.length > 1) _victimStreetController.text = parts[1];
+        if (parts.length > 2) _victimAreaController.text = parts[2];
+        if (parts.length > 3) _victimCityController.text = parts[3];
+        if (parts.length > 4) _victimStateController.text = parts[4];
+        if (parts.length > 5) _victimPinController.text = parts[5];
+      }
+
+      // Accused List
+      _accusedList.clear();
+      if (c.accusedPersons != null && c.accusedPersons!.isNotEmpty) {
+        for (var a in c.accusedPersons!) {
+             final accused = _AccusedFormData();
+             accused.name.text = a['name'] ?? '';
+             accused.fatherName.text = a['fatherHusbandName'] ?? '';
+             accused.gender = a['gender'];
+             accused.age.text = a['age'] ?? '';
+             accused.nationality.text = a['nationality'] ?? '';
+             accused.caste.text = a['caste'] ?? '';
+             accused.occupation.text = a['occupation'] ?? '';
+             accused.cellNo.text = a['cellNo'] ?? '';
+             accused.email.text = a['email'] ?? '';
+             accused.build.text = a['build'] ?? '';
+             accused.heightCms.text = a['heightCms'] ?? '';
+             accused.complexion.text = a['complexion'] ?? '';
+             accused.deformities.text = a['deformities'] ?? '';
+             
+            // Parse accused address
+            if (a['address'] != null) {
+              final parts = (a['address'] as String).split(', ');
+              if (parts.isNotEmpty) accused.houseNo.text = parts.length > 0 ? parts[0] : '';
+              if (parts.length > 1) accused.street.text = parts[1];
+              if (parts.length > 2) accused.area.text = parts[2];
+              if (parts.length > 3) accused.city.text = parts[3];
+              if (parts.length > 4) accused.state.text = parts[4];
+              if (parts.length > 5) accused.pin.text = parts[5];
+            }
+            _accusedList.add(accused);
+        }
+      } else {
+         _accusedList.add(_AccusedFormData());
+      }
+      
+      // Load districts to ensure dropdown works
+      if (_selectedDistrict != null) {
+        _loadPoliceStationsForDistrict().then((_) {
+          if (mounted && c.policeStation != null) {
+            setState(() {
+              // Ensure the loaded station exists in the list
+              if (_policeStationsEnglish.contains(c.policeStation)) {
+                 _selectedPoliceStation = c.policeStation;
+              }
+            });
+          }
+        });
+      }
+    });
   }
 
   Future<void> _loadPoliceStationsForDistrict() async {
@@ -1473,7 +1658,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             _complainantPassportDateOfIssue != null
                 ? DateFormat('yyyy-MM-dd').format(_complainantPassportDateOfIssue!)
                 : null,
-        accusedPersons: _accusedList.map((a) => a.toMap()).toList(),
+        accusedPersons: _accusedList
+            .where((a) => a.name.text.trim().isNotEmpty)
+            .map((a) => a.toMap())
+            .toList(),
         incidentDetails: _incidentDetailsController.text.isNotEmpty
             ? _incidentDetailsController.text
             : null,
@@ -1611,18 +1799,31 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ? _complainantSignatureNoteController.text
                 : null,
         isOutsideJurisdiction: _isOutsideJurisdiction,
-        status: CaseStatus.newCase,
-        dateFiled: Timestamp.now(),
+        status: widget.existingCase?.status ?? CaseStatus.newCase,
+        dateFiled: widget.existingCase?.dateFiled ?? Timestamp.now(),
         lastUpdated: Timestamp.now(),
-        userId: authProvider.userProfile?.uid,
+        userId: widget.existingCase?.userId ?? authProvider.userProfile?.uid,
       );
 
-      await caseProvider.addCase(newCase);
+      if (widget.existingCase != null) {
+        // Update existing case
+        await caseProvider.updateCase(widget.existingCase!.id!, newCase.toMap());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Case updated successfully')),
+          );
+        }
+      } else {
+        // Create new case
+        await caseProvider.addCase(newCase);
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
+           );
+        }
+      }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
-        );
         context.go('/cases');
       }
     } catch (e) {
@@ -4746,7 +4947,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/cases'),
         ),
-        title: Text(localizations.createNewCase),
+        title: Text(widget.existingCase != null 
+            ? 'Edit Case' // Localize this later
+            : localizations.createNewCase),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),
           child: _buildStepIndicator(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/case_doc.dart';
@@ -16,6 +17,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class CaseDetailScreen extends StatefulWidget {
   final String caseId;
@@ -683,6 +686,15 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           },
         ),
         title: Text(caseDoc.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Case',
+            onPressed: () {
+               context.push('/cases/new', extra: caseDoc);
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -1482,16 +1494,27 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                               size: 40,
                                             ),
                                           )
-                                        : Image.file(
-                                            File(filePath),
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                color: Colors.grey.shade300,
-                                                child: const Icon(Icons.image, size: 40),
-                                              );
-                                            },
-                                          ),
+                                        : (kIsWeb
+                                            ? Image.network(
+                                                filePath,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey.shade300,
+                                                    child: const Icon(Icons.image, size: 40),
+                                                  );
+                                                },
+                                              )
+                                            : Image.file(
+                                                File(filePath),
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey.shade300,
+                                                    child: const Icon(Icons.image, size: 40),
+                                                  );
+                                                },
+                                              )),
                                   ),
                                   
                                   // Tap indicator overlay

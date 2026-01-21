@@ -35,29 +35,45 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
   //   );
   // }
 @override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  final petitionProvider =
-      Provider.of<PetitionProvider>(context, listen: false);
-  final auth =
-      Provider.of<AuthProvider>(context, listen: false);
+    // Defer initialization to ensure context and providers are ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final petitionProvider =
+          Provider.of<PetitionProvider>(context, listen: false);
+      final auth =
+          Provider.of<AuthProvider>(context, listen: false);
+      
+      // Safety check: ensure userProfile exists
+      final stationName = auth.userProfile?.stationName;
+      
+      if (stationName != null) {
+        // ✅ Load station-wise stats
+        petitionProvider.fetchPetitionStats(
+          stationName: stationName,
+        );
 
-  // ✅ Load station-wise stats
-  petitionProvider.fetchPetitionStats(
-    stationName: auth.userProfile!.stationName,
-  );
-
-  // ✅ Auto-refresh every 30 seconds (station-wise)
-  _refreshTimer = Timer.periodic(
-    const Duration(seconds: 30),
-    (_) {
-      petitionProvider.fetchPetitionStats(
-        stationName: auth.userProfile!.stationName,
-      );
-    },
-  );
-}
+        // ✅ Auto-refresh every 30 seconds (station-wise)
+        _refreshTimer = Timer.periodic(
+          const Duration(seconds: 30),
+          (_) {
+            // Re-fetch safely
+            if (mounted) {
+               final currentAuth = Provider.of<AuthProvider>(context, listen: false);
+               final currentStation = currentAuth.userProfile?.stationName;
+               if (currentStation != null) {
+                 petitionProvider.fetchPetitionStats(
+                   stationName: currentStation,
+                 );
+               }
+            }
+          },
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
