@@ -98,6 +98,8 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
         return Colors.orange.shade700;
       case PetitionFilter.closed:
         return Colors.green.shade700;
+      case PetitionFilter.escalated:
+        return Colors.red.shade700;
     }
   }
 
@@ -111,6 +113,8 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
         return Icons.sync;
       case PetitionFilter.closed:
         return Icons.task_alt;
+      case PetitionFilter.escalated:
+        return Icons.trending_up;
     }
   }
 

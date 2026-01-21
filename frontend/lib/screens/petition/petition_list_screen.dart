@@ -76,6 +76,8 @@ class _CitizenPetitionListScreenState extends State<CitizenPetitionListScreen> {
         return Colors.orange.shade700;
       case PetitionFilter.closed:
         return Colors.green.shade700;
+      case PetitionFilter.escalated:
+        return Colors.red.shade700;
     }
   }
 
