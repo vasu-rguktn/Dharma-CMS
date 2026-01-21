@@ -21,6 +21,7 @@ class AuthProvider with ChangeNotifier {
   bool _isProfileLoading = true;
   bool _isPhoneVerifying = false;
   String? _verificationId;
+  ConfirmationResult? _webConfirmationResult;
 
   // ── GETTERS ───────────────────────────────────────────────────────
   User? get user => _user;
@@ -343,37 +344,55 @@ class AuthProvider with ChangeNotifier {
     required void Function(String message) onError,
   }) async {
     if (!Validators.isValidIndianPhone(phoneNumber)) {
-  onError('Enter a valid Indian mobile number');
-  return;
-}
-
+      onError('Enter a valid Indian mobile number');
+      return;
+    }
 
     _isPhoneVerifying = true;
     _verificationId = null;
+    _webConfirmationResult = null; // Reset web result
     notifyListeners();
 
     try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-        },
-        verificationFailed: (FirebaseAuthException e) {
+      if (kIsWeb) {
+        // Web: Use signInWithPhoneNumber for standard reCAPTCHA flow
+        try {
+          final confirmationResult = await _auth.signInWithPhoneNumber(phoneNumber);
+          _webConfirmationResult = confirmationResult;
+          _verificationId = confirmationResult.verificationId;
           _isPhoneVerifying = false;
           notifyListeners();
-          onError(e.message ?? 'Verification failed');
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          _verificationId = verificationId;
-          _isPhoneVerifying = false;
-          notifyListeners();
-          onCodeSent(verificationId, resendToken);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {
-          _verificationId = verificationId;
-        },
-        timeout: const Duration(seconds: 60),
-      );
+          onCodeSent(confirmationResult.verificationId, null);
+        } on FirebaseAuthException catch (e) {
+             if (e.code == 'invalid-app-credential') {
+               throw Exception('CRITICAL: App Check is likely blocking localhost.\n\nSOLUTION 1 (Easist): Go to Firebase Console > App Check > Apps. Click the "trash icon" or "unregister" specifically for the Web App to DISABLE App Check temporarily.\n\nSOLUTION 2: Generate a "Debug Token" in your browser console and add it to Firebase App Check settings for localhost.\n\nSOLUTION 3: Ensure "Authorized Domains" has ONLY "localhost" (no http/https).');
+             }
+             rethrow;
+        }
+      } else {
+        // Mobile: Use verifyPhoneNumber
+        await _auth.verifyPhoneNumber(
+          phoneNumber: phoneNumber,
+          verificationCompleted: (PhoneAuthCredential credential) async {
+            await _auth.signInWithCredential(credential);
+          },
+          verificationFailed: (FirebaseAuthException e) {
+            _isPhoneVerifying = false;
+            notifyListeners();
+            onError(e.message ?? 'Verification failed');
+          },
+          codeSent: (String verificationId, int? resendToken) {
+            _verificationId = verificationId;
+            _isPhoneVerifying = false;
+            notifyListeners();
+            onCodeSent(verificationId, resendToken);
+          },
+          codeAutoRetrievalTimeout: (String verificationId) {
+            _verificationId = verificationId;
+          },
+          timeout: const Duration(seconds: 60),
+        );
+      }
     } catch (e) {
       _isPhoneVerifying = false;
       notifyListeners();
@@ -383,6 +402,15 @@ class AuthProvider with ChangeNotifier {
 
   // ── PHONE OTP VERIFY ──────────────────────────────────────────────
   Future<UserCredential?> verifyOtp(String otp) async {
+    // Web Verification
+    if (kIsWeb) {
+      if (_webConfirmationResult == null) throw Exception('No web confirmation result found');
+      final userCredential = await _webConfirmationResult!.confirm(otp);
+      await _saveSessionTimestamp();
+      return userCredential;
+    }
+
+    // Mobile Verification
     if (_verificationId == null) throw Exception('No verification ID');
 
     final credential = PhoneAuthProvider.credential(
@@ -390,7 +418,6 @@ class AuthProvider with ChangeNotifier {
       smsCode: otp,
     );
     final userCredential = await _auth.signInWithCredential(credential);
-    // Save session timestamp on successful login
     await _saveSessionTimestamp();
     return userCredential;
   }
@@ -405,68 +432,150 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ── CREATE USER PROFILE ───────────────────────────────────────────
- Future<void> createUserProfile({
-  required String uid,
-  required String email,
-  String? displayName,
-  String? phoneNumber,
-  String? username,
-  String? dob,
-  String? gender,
-  String? houseNo,
-  String? address,
-  String? district,
-  
-  String? pincode,
-  String? stationName,
-  String role = 'citizen',
-}) async {
-  // ── VALIDATIONS (ADDED CORRECTLY) ─────────────────────
-  if (!Validators.isValidEmail(email)) {
-    throw Exception('Invalid email');
-  }
+  Future<void> createUserProfile({
+    required String uid,
+    required String email,
+    String? displayName,
+    String? phoneNumber,
+    String? username,
+    String? dob,
+    String? gender,
+    String? houseNo,
+    String? address,
+    String? district,
+    String? pincode,
+    String? stationName,
+    String? aadharNumber,
+    String role = 'citizen',
+  }) async {
+    // ── VALIDATIONS ────────────────────────────────────────────────
+    if (!Validators.isValidEmail(email)) {
+      throw Exception('Invalid email');
+    }
 
-  if (displayName != null && !Validators.isValidName(displayName)) {
-    throw Exception('Invalid name');
-  }
+    if (displayName != null && !Validators.isValidName(displayName)) {
+      throw Exception('Invalid name');
+    }
 
-  if (phoneNumber != null && !Validators.isValidIndianPhone(phoneNumber)) {
-    throw Exception('Invalid phone number');
-  }
+    if (phoneNumber != null && !Validators.isValidIndianPhone(phoneNumber)) {
+      throw Exception('Invalid phone number');
+    }
 
-  if (dob != null && !Validators.isValidDOB(dob)) {
-    throw Exception('Invalid DOB');
-  }
+    if (dob != null && !Validators.isValidDOB(dob)) {
+      throw Exception('Invalid DOB');
+    }
 
-  if (pincode != null && !Validators.isValidIndianPincode(pincode)) {
-    throw Exception('Invalid pincode');
-  }
-
-  // ── EXISTING LOGIC (UNCHANGED) ───────────────────────
-  final now = Timestamp.now();
-  final data = {
-    'uid': uid,
-    'email': email,
-    'displayName': displayName,
-    'phoneNumber': phoneNumber ?? '',
-    'username': username,
-    'dob': dob,
-    'gender': gender,
-    'houseNo': houseNo,
-    'address': address,
-    'district': district,
+    if (pincode != null && !Validators.isValidIndianPincode(pincode)) {
+      throw Exception('Invalid pincode');
+    }
     
-    'pincode': pincode,
-    'stationName': stationName,
-    'role': role,
-    'createdAt': now,
-    'updatedAt': now,
-  };
+    // Simple Aadhar validation (12 digits)
+    if (aadharNumber != null && aadharNumber.isNotEmpty) {
+      if (!RegExp(r'^\d{12}$').hasMatch(aadharNumber)) {
+        throw Exception('Invalid Aadhar number (must be 12 digits)');
+      }
+    }
 
-  // Remove null values (existing logic)
-  data.removeWhere((key, value) => value == null);
+    final now = Timestamp.now();
+    final data = {
+      'uid': uid,
+      'email': email,
+      'displayName': displayName,
+      'phoneNumber': phoneNumber ?? '',
+      'username': username,
+      'dob': dob,
+      'gender': gender,
+      'houseNo': houseNo,
+      'address': address,
+      'district': district,
+      'pincode': pincode,
+      'stationName': stationName,
+      'aadharNumber': aadharNumber,
+      'role': role,
+      'createdAt': now,
+      'updatedAt': now,
+    };
 
-  await _firestore.collection('users').doc(uid).set(data);
-  await _loadUserProfile(uid);
-}
+    // Remove null values
+    data.removeWhere((key, value) => value == null);
+
+    await _firestore.collection('users').doc(uid).set(data);
+    await _loadUserProfile(uid);
+  }
+
+  // ── UPDATE USER PROFILE ───────────────────────────────────────────
+  Future<void> updateUserProfile({
+    required String uid,
+    String? displayName,
+    String? phoneNumber,
+    String? username,
+    String? dob,
+    String? gender,
+    String? houseNo,
+    String? address,
+    String? district,
+    String? pincode,
+    String? stationName,
+    String? aadharNumber,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // ── VALIDATIONS ──────────────────────────────────────────────
+      if (displayName != null && !Validators.isValidName(displayName)) {
+        throw Exception('Invalid name');
+      }
+
+      if (phoneNumber != null && !Validators.isValidIndianPhone(phoneNumber)) {
+        throw Exception('Invalid phone number');
+      }
+
+      if (dob != null && !Validators.isValidDOB(dob)) {
+        throw Exception('Invalid DOB');
+      }
+
+      if (pincode != null && !Validators.isValidIndianPincode(pincode)) {
+        throw Exception('Invalid pincode');
+      }
+
+      if (aadharNumber != null && aadharNumber.isNotEmpty) {
+        if (!RegExp(r'^\d{12}$').hasMatch(aadharNumber)) {
+          throw Exception('Invalid Aadhar number (must be 12 digits)');
+        }
+      }
+
+      final now = Timestamp.now();
+      final Map<String, dynamic> data = {
+        'updatedAt': now,
+      };
+
+      if (displayName != null) data['displayName'] = displayName;
+      if (phoneNumber != null) data['phoneNumber'] = phoneNumber;
+      if (username != null) data['username'] = username;
+      if (dob != null) data['dob'] = dob;
+      if (gender != null) data['gender'] = gender;
+      if (houseNo != null) data['houseNo'] = houseNo;
+      if (address != null) data['address'] = address;
+      if (district != null) data['district'] = district;
+      if (pincode != null) data['pincode'] = pincode;
+      if (stationName != null) data['stationName'] = stationName;
+      if (aadharNumber != null) data['aadharNumber'] = aadharNumber;
+
+      // Determine collection based on current role
+      final collection = (_userProfile?.role == 'police') ? 'police' : 'users';
+      
+      await _firestore.collection(collection).doc(uid).update(data);
+      
+      // Reload profile to get fresh data
+      await _loadUserProfile(uid);
+      
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

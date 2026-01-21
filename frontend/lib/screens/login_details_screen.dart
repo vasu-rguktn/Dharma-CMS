@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 class LoginDetailsScreen extends StatefulWidget {
   const LoginDetailsScreen({super.key});
@@ -107,7 +108,21 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
         );
 
         debugPrint('🚀 NAVIGATING TO DASHBOARD');
-        context.go('/ai-legal-guider');
+        // Go to dashboard first
+        context.go('/dashboard');
+        
+        // Check if onboarding is needed
+        final showOnboarding = await OnboardingService.shouldShowOnboarding();
+        
+        // Only push AI chat if onboarding is NOT needed (returning user)
+        if (!showOnboarding) {
+          // Wait a moment for dashboard to load, then push to AI chat
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (context.mounted) {
+              context.push('/ai-legal-chat');
+            }
+          });
+        }
       } on FirebaseAuthException catch (e) {
         String errorMessage;
         switch (e.code) {

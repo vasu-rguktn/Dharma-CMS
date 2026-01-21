@@ -37,6 +37,7 @@ import 'package:Dharma/screens/settings_screen.dart';
 import 'package:Dharma/screens/Helpline_screen.dart';
 import 'package:Dharma/screens/Investigation_Guidelines/AI_Investigation_Guidelines.dart';
 import 'package:Dharma/screens/image_lab_screen.dart';
+import 'package:Dharma/screens/profile_screen.dart';
 
 
 
@@ -58,6 +59,10 @@ import 'package:Dharma/screens/petition/create_petition_form.dart';
 
 // ───────────────── UI ─────────────────
 import 'package:Dharma/widgets/app_scaffold.dart';
+
+// ───────────────── ONBOARDING ─────────────────
+import 'package:Dharma/screens/onboarding/onboarding_screen.dart';
+import 'package:Dharma/services/onboarding_service.dart';
 
 // ───────────────── ROUTER ─────────────────
 
@@ -81,6 +86,7 @@ class AppRouter {
         '/address',
         '/login_details',
         '/otp_verification',
+        '/onboarding', // Onboarding screen
       ];
 
       // List of routes that require authentication
@@ -95,6 +101,7 @@ class AppRouter {
         '/ai-investigation-guidelines',
         '/petitions',
         '/settings',
+        '/profile', // Added Profile
         '/legal-queries',
         '/legal-suggestion',
         '/witness-preparation',
@@ -136,6 +143,12 @@ class AppRouter {
 
       // ROLE-BASED ROUTE PROTECTION
       if (auth.isAuthenticated) {
+        // Check if citizen needs onboarding (first-time user)
+        if (auth.role == 'citizen' && path != '/onboarding') {
+          // This will be checked asynchronously, so we use a FutureBuilder approach
+          // For now, we'll let the dashboard handle showing onboarding
+        }
+
         // Police should never see the citizen AI guider screen
         if (auth.role == 'police' && path == '/ai-legal-guider') {
           return '/police-dashboard';
@@ -169,7 +182,7 @@ class AppRouter {
         // Prevent citizens from accessing police routes
         if (auth.role == 'citizen' &&
             policeOnlyRoutes.any((route) => path.startsWith(route))) {
-          return '/ai-legal-guider'; // Redirect to citizen dashboard
+          return '/ai-legal-chat'; // Redirect to citizen dashboard
         }
 
         // Prevent police from accessing citizen routes
@@ -224,6 +237,11 @@ class AppRouter {
       GoRoute(
         path: '/otp_verification',
         builder: (context, state) => const OtpVerificationScreen(),
+      ),
+
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
 
       // ───────────── PROTECTED ROUTES ─────────────
@@ -393,6 +411,11 @@ class AppRouter {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),

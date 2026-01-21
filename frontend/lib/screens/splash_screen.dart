@@ -31,7 +31,12 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     
     if (authProvider.isAuthenticated) {
-      context.go('/dashboard');
+      // Route based on user role
+      if (authProvider.role == 'police') {
+        context.go('/police-dashboard');
+      } else {
+        context.go('/dashboard');
+      }
     } else {
       context.go('/login');
     }

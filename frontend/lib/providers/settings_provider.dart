@@ -6,6 +6,10 @@ class SettingsProvider with ChangeNotifier {
   prefs.SharedPreferences? _prefs;
   Locale? _locale;
 
+  SettingsProvider() {
+    init();
+  }
+
   Locale? get locale => _locale;
 
   Future<void> init() async {

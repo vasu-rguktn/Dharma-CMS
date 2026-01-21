@@ -18,6 +18,8 @@ class UserProfile {
   final String? username;
   final String? dob;
   final String? gender;
+  final String? aadharNumber;
+
   final String role;
   final Timestamp createdAt;
   final Timestamp updatedAt;
@@ -40,6 +42,7 @@ class UserProfile {
     this.username,
     this.dob,
     this.gender,
+    this.aadharNumber,
     required this.role,
     required this.createdAt,
     required this.updatedAt,
@@ -65,6 +68,7 @@ class UserProfile {
       username: data['username'],
       dob: data['dob'],
       gender: data['gender'],
+      aadharNumber: data['aadharNumber'],
       role: data['role'] ?? 'citizen',
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
@@ -89,6 +93,7 @@ class UserProfile {
     String? username,
     String? dob,
     String? gender,
+    String? aadharNumber,
     String? role,
     Timestamp? createdAt,
     Timestamp? updatedAt,
@@ -111,6 +116,7 @@ class UserProfile {
       username: username ?? this.username,
       dob: dob ?? this.dob,
       gender: gender ?? this.gender,
+      aadharNumber: aadharNumber ?? this.aadharNumber,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

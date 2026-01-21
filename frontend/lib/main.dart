@@ -2,6 +2,7 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'package:Dharma/config/theme.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -25,7 +26,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+  await FirebaseAppCheck.instance.activate(
+    webProvider: ReCaptchaV3Provider('6LfUh1AsAAAAAPOY30pIf00IzpmIYRCWV4ZNhIQ-'),
+    androidProvider: AndroidProvider.playIntegrity, // or debug for now
+  );
   FirestoreService.configureFirestore();
 
   runApp(const MyApp());
@@ -42,12 +46,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(),
         ),
-         ChangeNotifierProvider<PoliceAuthProvider>(
-  create: (_) => PoliceAuthProvider()..loadPoliceProfileIfLoggedIn(),
-),
+        ChangeNotifierProvider<PoliceAuthProvider>(
+          create: (_) => PoliceAuthProvider()..loadPoliceProfileIfLoggedIn(),
+        ),
 
         /// 🔹 Police Auth (NEW)
-        
 
         ChangeNotifierProvider<SettingsProvider>(
           create: (_) => SettingsProvider(),
@@ -73,19 +76,15 @@ class MyApp extends StatelessWidget {
           update: (_, auth, previous) => previous ?? PetitionProvider(),
         ),
       ],
-
       child: Consumer2<AuthProvider, SettingsProvider>(
         builder: (context, authProvider, settingsProvider, _) {
           return MaterialApp.router(
             title: 'Dharma',
             debugShowCheckedModeBanner: false,
-
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.light,
-
             routerConfig: AppRouter.router,
-
             locale: settingsProvider.locale,
             supportedLocales: const [
               Locale('en'),
