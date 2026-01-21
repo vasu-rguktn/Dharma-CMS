@@ -58,25 +58,34 @@ class OnboardingPage extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Features List
-          ...content.features.map((feature) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: content.color,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        feature,
-                        style: Theme.of(context).textTheme.bodyMedium,
+          // Features List (Centered Block)
+          Center(
+            child: IntrinsicWidth(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: content.features.map((feature) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: content.color,
+                        size: 20,
                       ),
-                    ),
-                  ],
-                ),
-              )),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          feature,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+              ),
+            ),
+          ),
 
           // Example Text (if provided)
           if (content.exampleText != null) ...[

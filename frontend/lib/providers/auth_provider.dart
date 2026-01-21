@@ -365,7 +365,7 @@ class AuthProvider with ChangeNotifier {
           onCodeSent(confirmationResult.verificationId, null);
         } on FirebaseAuthException catch (e) {
              if (e.code == 'invalid-app-credential') {
-               throw Exception('Configuration Error: \n1. Check "Authorized Domains" in Firebase Console (add localhost).\n2. Enable "Identity Toolkit API" in Google Cloud Console.\n3. If "App Check" is enabled in Firebase, register your Web App with reCAPTCHA v3 site key.\n4. Check "API restrictions" in Google Cloud Console (ensure Identity Toolkit is allowed).');
+               throw Exception('CRITICAL: App Check is likely blocking localhost.\n\nSOLUTION 1 (Easist): Go to Firebase Console > App Check > Apps. Click the "trash icon" or "unregister" specifically for the Web App to DISABLE App Check temporarily.\n\nSOLUTION 2: Generate a "Debug Token" in your browser console and add it to Firebase App Check settings for localhost.\n\nSOLUTION 3: Ensure "Authorized Domains" has ONLY "localhost" (no http/https).');
              }
              rethrow;
         }

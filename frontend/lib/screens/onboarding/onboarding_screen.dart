@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:provider/provider.dart';
 import 'package:Dharma/models/onboarding_content.dart';
 import 'package:Dharma/screens/onboarding/onboarding_page.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/services/onboarding_service.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -39,14 +41,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     await OnboardingService.completeOnboarding();
     if (mounted) {
-      // Go to dashboard first, then push to AI chat
-      context.go('/dashboard');
-      // Wait a moment for dashboard to load, then push to AI chat
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (context.mounted) {
-          context.push('/ai-legal-chat');
-        }
-      });
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Check user role and navigate accordingly
+      if (authProvider.role == 'police') {
+        // Police users go to police dashboard
+        context.go('/police-dashboard');
+      } else {
+        // Citizen users go to dashboard, then AI chat
+        context.go('/dashboard');
+        // Wait a moment for dashboard to load, then push to AI chat
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (context.mounted) {
+            context.push('/ai-legal-chat');
+          }
+        });
+      }
     }
   }
 
