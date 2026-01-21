@@ -48,14 +48,17 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
         Provider.of<PetitionProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    final officerId = authProvider.userProfile?.uid;
     final stationName = authProvider.userProfile?.stationName;
-    if (stationName != null) {
-      await petitionProvider.fetchFilteredPetitions(
-        isPolice: true,
-        stationName: stationName,
-        filter: widget.filter,
-      );
-    }
+    final district = authProvider.userProfile?.district;
+
+    await petitionProvider.fetchFilteredPetitions(
+      isPolice: true,
+      officerId: officerId,
+      stationName: stationName,
+      district: district,
+      filter: widget.filter,
+    );
 
     setState(() {
       _filteredPetitions = petitionProvider.petitions;

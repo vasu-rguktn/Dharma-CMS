@@ -137,80 +137,149 @@ class PetitionProvider with ChangeNotifier {
   /// If [userId] is provided, fetches stats for that specific user (Citizen)
   /// If [userId] is null, fetches global stats (Police)
   Future<void> fetchPetitionStats({
-  String? userId,
-  String? stationName,
-}) async {
-  try {
-    debugPrint(
-        '🔍 fetchPetitionStats called | userId=$userId | stationName=$stationName');
+    String? userId,
+    String? officerId,
+    String? stationName,
+    String? district,
+    String? range,
+  }) async {
+    try {
+      debugPrint(
+          '🔍 fetchPetitionStats called | userId=$userId | officerId=$officerId | station=$stationName | district=$district | range=$range');
 
-    Query query = _firestore.collection('petitions');
+      // 1️⃣ Query Online Petitions
+      Query onlineQuery = _firestore.collection('petitions');
+      if (userId != null) {
+        onlineQuery = onlineQuery.where('userId', isEqualTo: userId);
+      } else if (stationName != null && stationName.isNotEmpty) {
+        onlineQuery = onlineQuery.where('stationName', isEqualTo: stationName);
+      } else if (district != null && district.isNotEmpty) {
+        onlineQuery = onlineQuery.where('district', isEqualTo: district);
+      }
 
-    // 👤 Citizen mode
-    if (userId != null) {
-      query = query.where('userId', isEqualTo: userId);
-      debugPrint('🔍 Filtering stats by userId');
-    }
+      final onlineSnapshot = await onlineQuery.get();
+      debugPrint('📊 Online documents found: ${onlineSnapshot.docs.length}');
 
-    // 🚓 Police mode (station-wise)
-    else if (stationName != null) {
-      query = query.where('stationName', isEqualTo: stationName);
-      debugPrint('🔍 Filtering stats by stationName');
-    }
+      // 2️⃣ Query Offline Petitions (only for Police mode)
+      int offlineTotal = 0;
+      int offlineClosed = 0;
+      int offlineReceived = 0;
+      int offlineInProgress = 0;
 
-    // Fetch documents
-    final snapshot = await query.get();
-    debugPrint('📊 Total documents found: ${snapshot.docs.length}');
+      if (userId == null) {
+        Map<String, QueryDocumentSnapshot> offlineDocsMap = {};
+        
+        // 1. Direct Assignments (Always check if officerId is provided)
+        if (officerId != null && officerId.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedTo', isEqualTo: officerId)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        }
 
-    int total = snapshot.docs.length;
-    int closed = 0;
-    int received = 0;
-    int inProgress = 0;
+        // 2. Organisational Assignments (Station > District > Range)
+        if (stationName != null && stationName.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedToStation', isEqualTo: stationName)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        } else if (district != null && district.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedToDistrict', isEqualTo: district)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        } else if (range != null && range.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedToRange', isEqualTo: range)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        }
 
-    for (var doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final policeStatus = data['policeStatus'] as String?;
+        final offlineDocs = offlineDocsMap.values.toList();
+        offlineTotal = offlineDocs.length;
+        debugPrint('📊 Offline documents found: $offlineTotal');
 
-      if (policeStatus != null) {
-        final status = policeStatus.toLowerCase();
+        offlineTotal = offlineDocs.length;
+        debugPrint('📊 Offline documents found: $offlineTotal');
 
-        if (status.contains('close') ||
-            status.contains('resolve') ||
-            status.contains('reject')) {
-          closed++;
-        } else if (status.contains('progress') ||
-            status.contains('investigation')) {
-          inProgress++;
+        for (var doc in offlineDocs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final status = (data['policeStatus'] as String? ?? '').toLowerCase();
+
+          if (status.contains('close') ||
+              status.contains('resolve') ||
+              status.contains('reject')) {
+            offlineClosed++;
+          } else if (status.contains('progress') ||
+              status.contains('investigation')) {
+            offlineInProgress++;
+          } else {
+            offlineReceived++;
+          }
+        }
+      }
+
+      // 3️⃣ Aggregate Stats
+      int total = onlineSnapshot.docs.length + offlineTotal;
+      int closed = offlineClosed;
+      int received = offlineReceived;
+      int inProgress = offlineInProgress;
+
+      for (var doc in onlineSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final policeStatus = data['policeStatus'] as String?;
+
+        if (policeStatus != null) {
+          final status = policeStatus.toLowerCase();
+
+          if (status.contains('close') ||
+              status.contains('resolve') ||
+              status.contains('reject')) {
+            closed++;
+          } else if (status.contains('progress') ||
+              status.contains('investigation')) {
+            inProgress++;
+          } else {
+            received++;
+          }
         } else {
           received++;
         }
-      } else {
-        received++;
       }
+
+      final statsMap = {
+        'total': total,
+        'closed': closed,
+        'received': received,
+        'inProgress': inProgress,
+      };
+
+      if (userId != null) {
+        _userStats = statsMap;
+        debugPrint('✅ Updated USER stats: $_userStats');
+      } else {
+        _globalStats = statsMap;
+        _petitionCount = total;
+        debugPrint('✅ Updated GLOBAL (Police) stats: $_globalStats');
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error fetching petition stats: $e');
     }
-
-    final statsMap = {
-      'total': total,
-      'closed': closed,
-      'received': received,
-      'inProgress': inProgress,
-    };
-
-    // Save stats correctly
-    if (userId != null) {
-      _userStats = statsMap;
-      debugPrint('✅ Updated USER stats: $_userStats');
-    } else {
-      _globalStats = statsMap;
-      _petitionCount = total;
-      debugPrint('✅ Updated STATION stats: $_globalStats');
-    }
-
-    notifyListeners();
-  } catch (e) {
-    debugPrint('❌ Error fetching petition stats: $e');
   }
-}
 
 
   /// Legacy method kept but redirected
@@ -378,33 +447,89 @@ class PetitionProvider with ChangeNotifier {
   Future<void> fetchFilteredPetitions({
     required bool isPolice,
     String? userId,
+    String? officerId,
     String? stationName,
+    String? district,
+    String? range,
     required PetitionFilter filter,
   }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      Query query = _firestore.collection('petitions');
+      debugPrint('🔍 fetchFilteredPetitions | isPolice=$isPolice | officerId=$officerId | station=$stationName | district=$district | range=$range | filter=$filter');
+      List<Petition> allPetitions = [];
 
-      if (isPolice && stationName != null) {
-        query = query.where('stationName', isEqualTo: stationName);
-      } else if (!isPolice && userId != null) {
-        query = query.where('userId', isEqualTo: userId);
+      // 1️⃣ Fetch Online Petitions (Citizens usually submit online)
+      Query onlineQuery = _firestore.collection('petitions');
+      if (isPolice) {
+        if (stationName != null && stationName.isNotEmpty) {
+          onlineQuery = onlineQuery.where('stationName', isEqualTo: stationName);
+        } else if (district != null && district.isNotEmpty) {
+          onlineQuery = onlineQuery.where('district', isEqualTo: district);
+        }
+      } else if (userId != null) {
+        onlineQuery = onlineQuery.where('userId', isEqualTo: userId);
+      }
+      final onlineSnapshot = await onlineQuery.get();
+      allPetitions.addAll(onlineSnapshot.docs.map((d) => Petition.fromFirestore(d)));
+
+      // 2️⃣ Fetch Offline Petitions (Direct + Organisational)
+      if (isPolice) {
+        Map<String, QueryDocumentSnapshot> offlineDocsMap = {};
+
+        // 1. Direct Assignments
+        if (officerId != null && officerId.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedTo', isEqualTo: officerId)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        }
+
+        // 2. Organisational Assignments
+        if (stationName != null && stationName.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedToStation', isEqualTo: stationName)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        } else if (district != null && district.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedToDistrict', isEqualTo: district)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        } else if (range != null && range.isNotEmpty) {
+          final snap = await _firestore
+              .collection('offlinepetitions')
+              .where('assignedToRange', isEqualTo: range)
+              .get();
+          for (var doc in snap.docs) {
+            offlineDocsMap[doc.id] = doc;
+          }
+        }
+        
+        allPetitions.addAll(offlineDocsMap.values.map((d) => Petition.fromFirestore(d)));
       }
 
-      final snapshot =
-          await query.orderBy('createdAt', descending: true).get();
+      // 🕒 Sort in memory (newest first)
+      allPetitions.sort((a, b) => (b.createdAt).compareTo(a.createdAt));
 
-      final all =
-          snapshot.docs.map((d) => Petition.fromFirestore(d)).toList();
-
-      _petitions = all.where((p) {
+      // 🔍 Filter by status
+      _petitions = allPetitions.where((p) {
         final status = (p.policeStatus ?? '').toLowerCase();
 
         switch (filter) {
           case PetitionFilter.received:
-            return status.contains('pending') ||
+            return status.isEmpty ||
+                status.contains('pending') ||
                 status.contains('received') ||
                 status.contains('acknowledge');
 
@@ -421,7 +546,10 @@ class PetitionProvider with ChangeNotifier {
             return true;
         }
       }).toList();
+      
+      debugPrint('✅ fetchFilteredPetitions found: ${_petitions.length} petitions');
     } catch (e) {
+      debugPrint('❌ Error fetchFilteredPetitions: $e');
       _petitions = [];
     }
 

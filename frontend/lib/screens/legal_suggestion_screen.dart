@@ -323,8 +323,27 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
 
               const SizedBox(height: 24),
 
+              // ───── LOADING STATE ─────
+              if (_loading)
+                Center(
+                  child: Column(
+                    children: [
+                      const CircularProgressIndicator(color: orange),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Analyzing incident and generating legal suggestions...",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // ───── RESULT ─────
-              if (_sectionsText != null) ...[
+              if (_sectionsText != null && !_loading) ...[
                 _buildSectionsTimeline(),
                 _buildReasoning(),
 
