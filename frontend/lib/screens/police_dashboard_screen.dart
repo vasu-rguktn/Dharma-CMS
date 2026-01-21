@@ -43,17 +43,24 @@ void initState() {
   final auth =
       Provider.of<AuthProvider>(context, listen: false);
 
-  // ✅ Load station-wise stats
+  // ✅ Load organizational stats
   petitionProvider.fetchPetitionStats(
-    stationName: auth.userProfile!.stationName,
+    officerId: auth.userProfile?.uid,
+    stationName: auth.userProfile?.stationName,
+    district: auth.userProfile?.district,
+    range: auth.userProfile?.rank != null && auth.userProfile!.rank!.contains('General') 
+        ? null 
+        : null, 
   );
 
-  // ✅ Auto-refresh every 30 seconds (station-wise)
+  // ✅ Auto-refresh every 30 seconds
   _refreshTimer = Timer.periodic(
     const Duration(seconds: 30),
     (_) {
       petitionProvider.fetchPetitionStats(
-        stationName: auth.userProfile!.stationName,
+        officerId: auth.userProfile?.uid,
+        stationName: auth.userProfile?.stationName,
+        district: auth.userProfile?.district,
       );
     },
   );

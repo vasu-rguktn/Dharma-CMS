@@ -298,6 +298,46 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     );
   }
 
+  Widget _thinkingBubble() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(orange),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "AI is thinking...",
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /* ---------------- UI ---------------- */
   @override
   Widget build(BuildContext context) {
@@ -435,12 +475,21 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                   );
                 }
 
-                // Add reverse: true here
+                final messages = snap.data!;
+                final showLoader = provider.isLoading;
+                final itemCount = messages.length + (showLoader ? 1 : 0);
+
                 return ListView.builder(
-                  reverse: true, // New messages appear at bottom, existing stay
+                  reverse: true,
                   padding: const EdgeInsets.all(16),
-                  itemCount: snap.data!.length,
-                  itemBuilder: (_, i) => _bubble(snap.data![i]),
+                  itemCount: itemCount,
+                  itemBuilder: (_, i) {
+                    if (showLoader && i == 0) {
+                      return _thinkingBubble();
+                    }
+                    final index = showLoader ? i - 1 : i;
+                    return _bubble(messages[index]);
+                  },
                 );
               },
             ),
