@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/case_doc.dart';
@@ -14,6 +17,7 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/screens/geo_camera_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:Dharma/services/storage_service.dart';
 import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:path_provider/path_provider.dart';
@@ -32,9 +36,13 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   late TabController _tabController;
   List<CaseJournalEntry> _journalEntries = [];
   List<MediaAnalysisRecord> _mediaAnalyses = [];
-  CrimeDetails? _crimeDetails;
   bool _isLoadingJournal = false;
   bool _isLoadingMedia = false;
+  bool _isAnalyzingScene = false;
+  
+  // New: Multiple Crime Scenes List
+  List<CrimeDetails> _crimeScenes = [];
+  bool _isLoadingScenes = true;
   bool _isLoadingPetitions = false;
   List<Petition> _linkedPetitions = [];
 
@@ -43,12 +51,14 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     _fetchCaseJournal();
+    _fetchLinkedPetitions();
+    _fetchCrimeScenes();
     _fetchMediaAnalyses();
-    _fetchCrimeDetails();
     _fetchCrimeSceneEvidence(); // NEW: Load saved evidence
-    // Fetch petitions linked to this case (by FIR number) after first frame
+    
+    // Auto-fetch if first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchLinkedPetitions();
+      // ...
     });
   }
 
@@ -82,17 +92,32 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   Future<void> _fetchMediaAnalyses() async {
     setState(() => _isLoadingMedia = true);
     try {
+      // Fetch specifically from 'sceneAnalyses' as saved by _analyzeSceneWithAI
       final snapshot = await FirebaseFirestore.instance
           .collection('cases')
           .doc(widget.caseId)
-          .collection('mediaAnalyses')
+          .collection('sceneAnalyses')
           .orderBy('createdAt', descending: true)
           .get();
 
       setState(() {
-        _mediaAnalyses = snapshot.docs
-            .map((doc) => MediaAnalysisRecord.fromFirestore(doc))
-            .toList();
+        _mediaAnalyses = snapshot.docs.map((doc) {
+          final data = doc.data();
+          // Map dynamic AI analysis to structured MediaAnalysisRecord if possible, 
+          // or create a generic record to display the text.
+          return MediaAnalysisRecord(
+            id: doc.id,
+            caseId: widget.caseId,
+            userId: data['analyzedBy'] ?? 'AI', // Map 'analyzedBy' to 'userId'
+            imageDataUri: (data['evidenceFiles'] as List?)?.firstOrNull ?? '', // Map 'evidenceFiles' first item to 'imageDataUri'
+            originalFileName: 'AI Analysis Report',
+            identifiedElements: [], // Text analysis doesn't strictly follow this structure yet
+            sceneNarrative: data['analysisText'] ?? '',
+            caseFileSummary: 'AI Analysis',
+            createdAt: data['createdAt'] ?? Timestamp.now(),
+            updatedAt: data['createdAt'] ?? Timestamp.now(),
+          );
+        }).toList();
       });
     } catch (e) {
       print('Error fetching media analyses: $e');
@@ -101,20 +126,26 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     }
   }
 
-  Future<void> _fetchCrimeDetails() async {
+  // Fetch Crime Scenes from Sub-collection
+  Future<void> _fetchCrimeScenes() async {
+    setState(() => _isLoadingScenes = true);
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('crimeDetails')
+      final snapshot = await FirebaseFirestore.instance
+          .collection('cases')
           .doc(widget.caseId)
+          .collection('crimeScenes')
+          .orderBy('createdAt', descending: true)
           .get();
 
-      if (doc.exists) {
-        setState(() {
-          _crimeDetails = CrimeDetails.fromFirestore(doc);
-        });
-      }
+      setState(() {
+        _crimeScenes = snapshot.docs
+            .map((doc) => CrimeDetails.fromFirestore(doc))
+            .toList();
+      });
     } catch (e) {
-      print('Error fetching crime details: $e');
+      print('Error fetching crime scenes: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingScenes = false);
     }
   }
 
@@ -205,8 +236,37 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     );
 
     if (capturedFile != null && mounted) {
+      String finalPath = capturedFile.path;
+
+      if (kIsWeb) {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Uploading captured evidence...')),
+           );
+        }
+        try {
+          final bytes = await capturedFile.readAsBytes();
+          final platformFile = PlatformFile(
+            name: capturedFile.name,
+            size: await capturedFile.length(),
+            bytes: bytes,
+          );
+          final storagePath = 'crime-scene-evidence/${widget.caseId}/${DateTime.now().millisecondsSinceEpoch}_${capturedFile.name}';
+          final url = await StorageService.uploadFile(file: platformFile, path: storagePath);
+          if (url != null) {
+            finalPath = url;
+          } else {
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload evidence'), backgroundColor: Colors.red));
+             return;
+          }
+        } catch (e) {
+          debugPrint('Error uploading capture: $e');
+          return;
+        }
+      }
+
       setState(() {
-        _crimeSceneAttachments.add(capturedFile.path);
+        _crimeSceneAttachments.add(finalPath);
       });
       
       // Save to Firestore
@@ -263,22 +323,55 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           type: FileType.custom,
           allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
         );
-        if (fileResult != null && fileResult.files.single.path != null) {
-          setState(() {
-            _crimeSceneAttachments.add(fileResult.files.single.path!);
-          });
-          
-          // Save to Firestore
-          await _saveCrimeSceneEvidence();
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Document uploaded'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
+        
+        if (fileResult != null && fileResult.files.isNotEmpty) {
+           String? finalPath;
+           
+           if (kIsWeb) {
+             // Web: Must upload to Storage to get a usable URL
+             if (mounted) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                 const SnackBar(content: Text('Uploading document...')),
+               );
+             }
+             
+             final fileIdx = fileResult.files.first;
+             final storagePath = 'crime-scene-evidence/${widget.caseId}/${DateTime.now().millisecondsSinceEpoch}_${fileIdx.name}';
+             
+             final url = await StorageService.uploadFile(
+               file: fileIdx, 
+               path: storagePath
+             );
+             
+             finalPath = url;
+             
+             if (finalPath == null && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                 const SnackBar(content: Text('Failed to upload document'), backgroundColor: Colors.red),
+               );
+             }
+           } else {
+             // Native: Use local path (existing behavior)
+             finalPath = fileResult.files.single.path;
+           }
+
+           if (finalPath != null) {
+              setState(() {
+                _crimeSceneAttachments.add(finalPath!);
+              });
+              
+              // Save to Firestore
+              await _saveCrimeSceneEvidence();
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Document uploaded'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+           }
         }
         return;
       }
@@ -328,12 +421,19 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
 
     try {
       // Initialize Gemini AI
-      const apiKey = 'AIzaSyCOXByDRXteWArP_lnoV8FajWbvXXawZ4Q';
+      const apiKey = 'AIzaSyCWCHW2p5Q-7qUkN7sNqQGxHDopOMnwHcw';
       
       final model = GenerativeModel(
         model: 'gemini-2.5-flash',
         apiKey: apiKey,
       );
+
+      // Detect language
+      final languageCode = Localizations.localeOf(context).languageCode;
+      String languageInstruction = "Provide the response in English.";
+      if (languageCode == 'te') {
+        languageInstruction = "Provide the response in Telugu language (తెలుగు). Ensure technical forensic terms are explained clearly in Telugu.";
+      }
 
       // Prepare the prompt
       final prompt = '''
@@ -344,6 +444,8 @@ Analyze this crime scene evidence image/video and provide a detailed forensic an
 3. **Environmental Factors**: Note lighting, weather conditions, location type
 4. **Forensic Observations**: Point out any blood stains, weapons, disturbances, or other forensic markers
 5. **Recommendations**: Suggest what additional evidence should be collected or areas to investigate
+
+$languageInstruction
 
 Provide a professional, detailed analysis suitable for law enforcement documentation.
 ''';
@@ -356,8 +458,24 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
         orElse: () => _crimeSceneAttachments.first,
       );
 
-      final imageFile = File(imagePath);
-      final imageBytes = await imageFile.readAsBytes();
+      Uint8List imageBytes;
+      
+      if (kIsWeb) {
+        // Web: Fetch image from URL
+        final Uri url = Uri.parse(imagePath);
+        final response = await http.get(url);
+        if (response.statusCode != 200) {
+          throw Exception('Failed to download image from text URL');
+        }
+        imageBytes = response.bodyBytes;
+      } else {
+        // Native: Read from local file
+        final imageFile = File(imagePath);
+        if (!await imageFile.exists()) {
+           throw Exception('Local image file not found');
+        }
+        imageBytes = await imageFile.readAsBytes();
+      }
 
       // Generate analysis
       final content = [
@@ -504,6 +622,23 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
   // Download evidence file
   Future<void> _downloadEvidence(String filePath) async {
     try {
+      if (kIsWeb) {
+        // Web download: Just open the URL
+        final Uri url = Uri.parse(filePath);
+        // Try generic launch
+        try {
+          if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+             // Fallback
+             await launchUrl(url, mode: LaunchMode.platformDefault);
+          }
+        } catch (e) {
+             // Last resort fallback
+             await launchUrl(url, mode: LaunchMode.platformDefault);
+        }
+        return;
+      }
+
+      // Native download
       final file = File(filePath);
       if (!await file.exists()) {
         throw Exception('File not found');
@@ -658,6 +793,292 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
             content: Text('Analysis error: $e'),
             backgroundColor: Colors.red,
           ),
+        );
+      }
+    }
+  }
+
+  // Edit Crime Details
+    void _showEditCrimeDetailsDialog(ThemeData theme, [CrimeDetails? existingScene]) {
+    final crimeTypeController = TextEditingController(text: existingScene?.crimeType ?? '');
+    final placeController = TextEditingController(text: existingScene?.placeOfOccurrenceDescription ?? '');
+    final evidenceController = TextEditingController(text: existingScene?.physicalEvidenceDescription ?? '');
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(existingScene == null ? 'Add Crime Scene' : 'Edit Crime Scene'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: crimeTypeController,
+                decoration: const InputDecoration(
+                  labelText: 'Crime Type',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 100,
+                child: TextField(
+                  controller: placeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Place Description',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  keyboardType: TextInputType.multiline,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 120,
+                child: TextField(
+                  controller: evidenceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Physical Evidence Description',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  keyboardType: TextInputType.multiline,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              final user = Provider.of<AuthProvider>(context, listen: false).user;
+              if (user == null) return;
+
+              final data = {
+                'crimeType': crimeTypeController.text,
+                'placeOfOccurrenceDescription': placeController.text,
+                'physicalEvidenceDescription': evidenceController.text,
+                'firNumber': existingScene?.firNumber ?? '', 
+                'userId': user.uid,
+                'updatedAt': FieldValue.serverTimestamp(),
+              };
+
+              final collection = FirebaseFirestore.instance
+                  .collection('cases')
+                  .doc(widget.caseId)
+                  .collection('crimeScenes');
+
+              try {
+                if (existingScene == null) {
+                  // Add New
+                  data['createdAt'] = FieldValue.serverTimestamp();
+                  await collection.add(data);
+                } else {
+                  // Update Existing
+                  await collection.doc(existingScene.id).update(data);
+                }
+                
+                _fetchCrimeScenes();
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(existingScene == null ? 'Crime scene added' : 'Crime scene updated')),
+                  );
+                }
+              } catch (e) {
+                print('Error saving crime scene: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Generate and Download PDF
+  Future<void> _downloadAnalysisPdf(MediaAnalysisRecord report) async {
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Generating PDF...')),
+        );
+      }
+      
+      // Fetch Case Details
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      final caseDoc = caseProvider.cases.firstWhere(
+        (c) => c.id == widget.caseId,
+        orElse: () => CaseDoc(id: widget.caseId, title: 'Case', firNumber: 'N/A', userId: '', dateFiled: Timestamp.now(), lastUpdated: Timestamp.now(), status: CaseStatus.newCase),
+      );
+
+      final pdf = pw.Document();
+      
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          header: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Crime Scene Analysis Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Case: ${caseDoc.title}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text('FIR: ${caseDoc.firNumber}'),
+                  ],
+                ),
+                pw.SizedBox(height: 5),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Date: ${_formatTimestamp(report.createdAt)}'),
+                    pw.Text('ID: ${widget.caseId}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey)),
+                  ],
+                ),
+                pw.SizedBox(height: 20),
+              ]
+            );
+          },
+          footer: (pw.Context context) {
+            return pw.Container(
+              alignment: pw.Alignment.centerRight,
+              margin: const pw.EdgeInsets.only(top: 10),
+              child: pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
+                  style: const pw.TextStyle(color: PdfColors.grey)),
+            );
+          },
+          build: (pw.Context context) {
+            final List<pw.Widget> content = [
+               pw.Text('Analysis Details:', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+               pw.SizedBox(height: 10),
+            ];
+
+            final paragraphs = report.sceneNarrative.split('\n');
+            for (final para in paragraphs) {
+               if (para.trim().isNotEmpty) {
+                 content.add(
+                   pw.Text(
+                     para.trim(),
+                     style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
+                     textAlign: pw.TextAlign.justify,
+                   )
+                 );
+                 content.add(pw.SizedBox(height: 6));
+               }
+            }
+
+            content.add(pw.SizedBox(height: 20));
+            content.add(pw.Text('Generated by Dharma CMS', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey)));
+            
+            return content;
+          },
+        ),
+      );
+      
+      final bytes = await pdf.save();
+      final fileName = 'Analysis_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      
+      // Upload to Storage to get a URL (works for both Web and Native validation)
+      // Path: cases/{caseId}/reports/{fileName}
+       final storagePath = 'case-documents/${widget.caseId}/$fileName';
+       
+       // Need PlatformFile for StorageService
+       final platformFile = PlatformFile(
+         name: fileName,
+         size: bytes.length,
+         bytes: bytes,
+       );
+       
+       final url = await StorageService.uploadFile(file: platformFile, path: storagePath);
+       
+       if (url != null) {
+          // Launch the URL to download/view
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri) || kIsWeb) {
+             // Web fallback often needs tolerant launch
+             await launchUrl(uri, mode: LaunchMode.externalApplication); 
+          } else {
+             await launchUrl(uri, mode: LaunchMode.platformDefault);
+          }
+       } else {
+         throw Exception('Failed to generate download link');
+       }
+
+    } catch (e) {
+      print('PDF Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error downloading PDF: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // Delete Analysis Report
+  Future<void> _deleteAnalysisReport(MediaAnalysisRecord report) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Report'),
+        content: const Text('Are you sure you want to delete this analysis report? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('cases')
+          .doc(widget.caseId)
+          .collection('sceneAnalyses')
+          .doc(report.id)
+          .delete();
+
+      setState(() {
+        _mediaAnalyses.removeWhere((r) => r.id == report.id);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting report: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -1322,7 +1743,6 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 
   // Crime Scene Evidence State
   List<String> _crimeSceneAttachments = [];
-  bool _isAnalyzingScene = false;
   String? _sceneAnalysisResult;
 
   Widget _buildCrimeSceneTab(CaseDoc caseDoc, ThemeData theme) {
@@ -1333,7 +1753,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Crime Scene Details Card
+          // Multiple Crime Scenes Section
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -1341,32 +1761,101 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.location_on, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Crime Scene Details',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                       Row(
+                         children: [
+                           const Icon(Icons.location_on, color: Colors.blue),
+                           const SizedBox(width: 8),
+                           Text(
+                             'Crime Scenes',
+                             style: theme.textTheme.titleLarge?.copyWith(
+                               fontWeight: FontWeight.bold,
+                             ),
+                           ),
+                         ],
+                       ),
+                       IconButton(
+                         icon: const Icon(Icons.add_location_alt, color: orange),
+                         tooltip: 'Add Scene',
+                         onPressed: () => _showEditCrimeDetailsDialog(theme),
+                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (_crimeDetails != null) ...[
-                    if (_crimeDetails!.crimeType != null)
-                      _buildInfoRow('Crime Type', _crimeDetails!.crimeType!),
-                    if (_crimeDetails!.placeOfOccurrenceDescription != null)
-                      _buildInfoRow('Place Description',
-                          _crimeDetails!.placeOfOccurrenceDescription!),
-                    if (_crimeDetails!.physicalEvidenceDescription != null)
-                      _buildInfoRow('Physical Evidence',
-                          _crimeDetails!.physicalEvidenceDescription!),
-                  ] else ...[
-                    const Text('No crime scene details available yet.'),
-                  ],
+                  
+                  if (_isLoadingScenes)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_crimeScenes.isEmpty)
+                    const Text('No crime scenes linked to this case yet.')
+                  else
+                    ..._crimeScenes.map((scene) {
+                       return Container(
+                         margin: const EdgeInsets.only(bottom: 12),
+                         padding: const EdgeInsets.all(12),
+                         decoration: BoxDecoration(
+                           border: Border.all(color: Colors.grey.shade300),
+                           borderRadius: BorderRadius.circular(8),
+                         ),
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Row(
+                               children: [
+                                 Text(
+                                   scene.crimeType ?? 'Unknown Type',
+                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                 ),
+                                 const Spacer(),
+                                 IconButton(
+                                   icon: const Icon(Icons.edit, size: 20, color: Colors.blueGrey),
+                                   onPressed: () => _showEditCrimeDetailsDialog(theme, scene),
+                                   visualDensity: VisualDensity.compact,
+                                 ),
+                                 IconButton(
+                                   icon: const Icon(Icons.delete, size: 20, color: Colors.redAccent),
+                                   onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (c) => AlertDialog(
+                                          title: const Text('Delete Scene'),
+                                          content: const Text('Are you sure you want to delete this scene?'),
+                                          actions: [
+                                            TextButton(onPressed: ()=>Navigator.pop(c, false), child: const Text('Cancel')),
+                                            TextButton(onPressed: ()=>Navigator.pop(c, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                          ],
+                                        ),
+                                      );
+                                      
+                                      if (confirm == true && scene.id != null) {
+                                         await FirebaseFirestore.instance
+                                            .collection('cases')
+                                            .doc(widget.caseId)
+                                            .collection('crimeScenes')
+                                            .doc(scene.id)
+                                            .delete();
+                                         _fetchCrimeScenes();
+                                      }
+                                   },
+                                   visualDensity: VisualDensity.compact,
+                                 ),
+                               ],
+                             ),
+                             const Divider(height: 12),
+                             if (scene.placeOfOccurrenceDescription?.isNotEmpty == true)
+                               _buildInfoRow('Place', scene.placeOfOccurrenceDescription!),
+                             if (scene.physicalEvidenceDescription?.isNotEmpty == true)
+                               _buildInfoRow('Physical Evidence', scene.physicalEvidenceDescription!),
+                             
+                             const SizedBox(height: 4),
+                             Text(
+                               'Recorded: ${_formatTimestamp(scene.createdAt)}',
+                               style:const TextStyle(fontSize: 10, color: Colors.grey),
+                             ),
+                           ],
+                         ),
+                       );
+                    }),
                 ],
               ),
             ),
@@ -1737,6 +2226,21 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text('Analyzed: ${_formatTimestamp(report.createdAt)}'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              tooltip: 'Download Report',
+              onPressed: () => _downloadAnalysisPdf(report),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.grey),
+              tooltip: 'Delete Report',
+              onPressed: () => _deleteAnalysisReport(report),
+            ),
+          ],
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),

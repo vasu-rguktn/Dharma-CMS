@@ -282,17 +282,77 @@ class _CasesScreenState extends State<CasesScreen> {
     } else if (_policeRange != null) {
       targetRange = _policeRange;
     } else if (targetDistrict != null) {
-      // Search for range containing this district
+      // Search for range containing this district (Case-insensitive check)
       for (var range in _policeHierarchy.keys) {
-         if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
+         final districtMap = _policeHierarchy[range] ?? {};
+         // Check if any key matches targetDistrict (ignore case/space)
+         final matchedKey = districtMap.keys.firstWhere(
+           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+           orElse: () => '',
+         );
+         
+         if (matchedKey.isNotEmpty) {
            targetRange = range;
+           // Update targetDistrict to the exact key found in JSON for lookup
+           targetDistrict = matchedKey; 
            break;
          }
       }
     }
 
-    if (targetRange == null || targetDistrict == null) return [];
-    return _policeHierarchy[targetRange]?[targetDistrict] ?? [];
+    List<String> stations = [];
+
+    // If we have a target range and district, ensure we match the exact key in the JSON
+    if (targetRange != null && targetDistrict != null) {
+      final districtMap = _policeHierarchy[targetRange] ?? {};
+      // Try exact match first
+      if (districtMap.containsKey(targetDistrict)) {
+        stations = List.from(districtMap[targetDistrict] ?? []);
+      } else {
+        // Try case-insensitive match
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchedKey.isNotEmpty) {
+          stations = List.from(districtMap[matchedKey] ?? []);
+        }
+      }
+    } else if (targetDistrict != null) { // Fallback global search
+       for (var range in _policeHierarchy.keys) {
+         final districtMap = _policeHierarchy[range] ?? {};
+         final matchedKey = districtMap.keys.firstWhere(
+           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+           orElse: () => '',
+         );
+         if (matchedKey.isNotEmpty) {
+            stations = List.from(districtMap[matchedKey] ?? []);
+            break; 
+         }
+       }
+    }
+
+    // MERGE WITH DYNAMIC STATIONS FROM FETCHED CASES
+    // This handles missing data in JSON (e.g. Commissionerates) 
+    // and ensures all actual active stations are listed.
+    try {
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      final dynamicStations = caseProvider.cases
+          .where((c) => c.policeStation != null && c.policeStation!.isNotEmpty)
+          .map((c) => c.policeStation!)
+          .toSet();
+      
+      for (final s in dynamicStations) {
+        if (!stations.contains(s)) {
+          stations.add(s);
+        }
+      }
+    } catch (e) {
+      // Ignore errors if provider not ready
+    }
+
+    stations.sort();
+    return stations;
   }
 
   /* ================= HANDLERS ================= */
