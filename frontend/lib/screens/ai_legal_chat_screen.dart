@@ -147,7 +147,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _setupTTSHandlers();
 
     // Setup native speech recognizer callbacks (Android only)
-    if (!kIsWeb && Platform.isAndroid) {
+    if (_isAndroid) {
       _setupNativeSpeechCallbacks();
     }
 
@@ -318,7 +318,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (_isRecording && mounted) {
       print('Pausing ASR for TTS...');
 
-      if (Platform.isAndroid) {
+      if (_isAndroid) {
         // Use native recognizer on Android
         _nativeSpeech.stopListening();
       } else {

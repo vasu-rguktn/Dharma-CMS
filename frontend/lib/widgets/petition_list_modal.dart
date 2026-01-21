@@ -203,7 +203,6 @@ class _PetitionListModalState extends State<PetitionListModal> {
                 
                 // Basic Info
                 const SizedBox(height: 16),
-                _buildInfoRow('Case ID', petition.caseId ?? 'N/A'),
                 _buildInfoRow('Petitioner', petition.petitionerName),
                 _buildInfoRow('Type', petition.type.displayName),
                 _buildInfoRow('Status', petition.policeStatus ?? 'Pending'),
@@ -367,14 +366,6 @@ class _PetitionListModalState extends State<PetitionListModal> {
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Case ID: ${petition.caseId ?? "N/A"}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontFamily: 'monospace',
-                          ),
                         ),
                       ],
                     ),

@@ -287,7 +287,25 @@ class DashboardBody extends StatelessWidget {
   // ── POLICE QUICK ACTIONS ──
   List<Widget> _policeActions(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
-    return [
+    
+    // Get police rank to check if officer can submit offline petitions
+    final auth = Provider.of<AuthProvider>(ctx, listen: false);
+    final policeProfile = auth.userProfile;
+    final policeRank = policeProfile?.rank;
+    
+    // Ranks eligible for offline petition submission
+    final spLevelRanks = [
+      'Superintendent of Police',
+      'Additional Superintendent of Police',
+      'Inspector General of Police',
+      'Deputy Inspector General of Police',
+      'Director General of Police',
+      'Additional Director General of Police',
+    ];
+    
+    final canSubmitOffline = policeRank != null && spLevelRanks.contains(policeRank);
+    
+    final actions = [
       _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document,
           '/document-drafting', Colors.green),
       _quickActionCard(ctx, localizations.chargesheetGen, Icons.file_present,
@@ -316,7 +334,49 @@ class DashboardBody extends StatelessWidget {
       _quickActionCard(
           ctx, "Add Police", Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
     ];
+    
+    // Add offline petition submission if officer is SP-level or above
+    if (canSubmitOffline) {
+      actions.insert(
+        0, // Add at the beginning for prominence
+        _quickActionCard(
+          ctx,
+          'Submit Offline Petition',
+          Icons.post_add,
+          '/submit-offline-petition',
+          Colors.teal.shade600,
+        ),
+      );
+      
+      // Add Offline Petitions (Sent & Assigned) button for high-level officers
+      actions.insert(
+        1, // Add right after Submit Offline Petition
+        _quickActionCard(
+          ctx,
+          'Offline Petitions',
+          Icons.assignment,
+          '/offline-petitions',
+          Colors.purple.shade600,
+        ),
+      );
+    } else {
+      // For low-level officers, add view-only Assigned Petitions button
+      actions.insert(
+        0,
+        _quickActionCard(
+          ctx,
+          'Assigned Petitions',
+          Icons.assignment,
+          '/offline-petitions',
+          Colors.purple.shade600,
+        ),
+      );
+    }
+
+    
+    return actions;
   }
+
 
   // ── RECENT ACTIVITY ──
   Widget _recentActivityCard(BuildContext ctx) {

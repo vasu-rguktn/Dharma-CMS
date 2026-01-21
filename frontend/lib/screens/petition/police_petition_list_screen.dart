@@ -204,8 +204,6 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                     if (petition.incidentDate != null)
                       _buildDetailRow('Incident Date',
                           _formatTimestamp(petition.incidentDate!)),
-                    if (petition.caseId != null && petition.caseId!.isNotEmpty)
-                      _buildDetailRow('Related Case ID', petition.caseId!),
                     if (petition.firNumber != null &&
                         petition.firNumber!.isNotEmpty)
                       _buildDetailRow('FIR Number', petition.firNumber!),
@@ -698,15 +696,6 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                                             ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Case ID: ${petition.caseId ?? "N/A"}',
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                              color: Colors.grey[600],
-                                              fontFamily: 'monospace',
-                                            ),
                                           ),
                                         ],
                                       ),
