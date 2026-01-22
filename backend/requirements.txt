@@ -1,4 +1,4 @@
-﻿fastapi
+fastapi
 uvicorn[standard]
 google-generativeai
 python-dotenv
@@ -26,3 +26,5 @@ pypdf
 firebase-admin
 pydantic
 imagehash
+chromadb
+sentence-transformers
