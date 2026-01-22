@@ -569,7 +569,8 @@ class _DetailContent extends StatelessWidget {
               }
 
               final updates = snapshot.data ?? [];
-              return PetitionUpdateTimeline(updates: updates);
+              final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
+              return PetitionUpdateTimeline(updates: allUpdates);
             },
           ),
       ],

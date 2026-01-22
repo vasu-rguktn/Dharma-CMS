@@ -39,6 +39,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/native_speech_recognizer.dart';
+import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -537,6 +538,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void _pauseASRForTTS() {
     if (_isRecording && mounted) {
       print('Pausing ASR for TTS...');
+
       
       if (_isAndroid) {
         // Use native recognizer on Android
@@ -1127,7 +1129,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 ),
               ),
               const Divider(height: 1),
-              // Photo options
+              // Photo options (GeoCamera)
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -1137,22 +1139,30 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   ),
                   child: const Icon(Icons.camera_alt, color: orange, size: 24),
                 ),
-                title: const Text('Take Photo'),
-                subtitle: Text('Capture a new photo',
+                title: const Text('Take Photo (GeoCam)'),
+                subtitle: Text('Capture photo with location tag',
                     style:
                         TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final image =
-                      await _imagePicker.pickImage(source: ImageSource.camera);
-                  if (image != null && mounted) {
+                  // Use Geo-Camera for evidence capture
+                  final XFile? geoTaggedImage = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeoCameraScreen(
+                        captureMode: CaptureMode.image,
+                      ),
+                    ),
+                  );
+                  
+                  if (geoTaggedImage != null && mounted) {
                     setState(() {
-                      _attachedFiles.add(image.path);
+                      _attachedFiles.add(geoTaggedImage.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text(
-                              'Photo attached: ${image.path.split('/').last}')),
+                              'Photo attached: ${geoTaggedImage.path.split('/').last}')),
                     );
                   }
                 },
@@ -1173,21 +1183,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                         TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final image =
-                      await _imagePicker.pickImage(source: ImageSource.gallery);
-                  if (image != null && mounted) {
-                    setState(() {
-                      _attachedFiles.add(image.path);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
+                  // Use pickImage for simplicity if pickMultiImage logic is complex with types
+                  // But LegalQueries uses pickMultiImage, lets try that
+                  // Note: pickMultiImage returns List<XFile>, we need paths
+                  final List<XFile> images = await _imagePicker.pickMultiImage();
+                  if (images.isNotEmpty && mounted) {
+                     setState(() {
+                        for (var img in images) {
+                          _attachedFiles.add(img.path);
+                        }
+                     });
+                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(
-                              'Photo attached: ${image.path.split('/').last}')),
+                          content: Text('${images.length} photos selected')),
                     );
                   }
                 },
               ),
-              // Video option
+              // Video option (GeoCamera)
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -1197,22 +1210,28 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   ),
                   child: const Icon(Icons.videocam, color: orange, size: 24),
                 ),
-                title: const Text('Record Video'),
-                subtitle: Text('Capture a new video',
+                title: const Text('Record Video (GeoCam)'),
+                subtitle: Text('Capture video with location tag',
                     style:
                         TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 onTap: () async {
                   Navigator.pop(context);
-                  final video =
-                      await _imagePicker.pickVideo(source: ImageSource.camera);
-                  if (video != null && mounted) {
+                  final XFile? geoTaggedVideo = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeoCameraScreen(
+                        captureMode: CaptureMode.video,
+                      ),
+                    ),
+                  );
+                  if (geoTaggedVideo != null && mounted) {
                     setState(() {
-                      _attachedFiles.add(video.path);
+                      _attachedFiles.add(geoTaggedVideo.path);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text(
-                              'Video attached: ${video.path.split('/').last}')),
+                              'Video attached: ${geoTaggedVideo.path.split('/').last}')),
                     );
                   }
                 },
@@ -1234,7 +1253,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 onTap: () async {
                   Navigator.pop(context);
                   final result = await FilePicker.platform.pickFiles(
-                    type: FileType.any,
+                    type: FileType.custom,
+                    allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'mp3', 'wav'],
                     allowMultiple: true,
                   );
                   if (result != null && mounted) {
@@ -1250,40 +1270,6 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   }
                 },
               ),
-              // Show attached files count if any
-              if (_attachedFiles.isNotEmpty) ...[
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: orange, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${_attachedFiles.length} file(s) attached',
-                          style: TextStyle(
-                              color: Colors.grey.shade700, fontSize: 14),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _attachedFiles.clear();
-                          });
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Attachments removed')),
-                          );
-                        },
-                        child: const Text('Clear',
-                            style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
               SizedBox(height: MediaQuery.of(context).padding.bottom),
             ],
           ),
@@ -1928,6 +1914,75 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
+  /* ---------------- FILES PREVIEW ---------------- */
+  Widget _buildFilePreview() {
+    if (_attachedFiles.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 70,
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _attachedFiles.length,
+        itemBuilder: (context, index) {
+          final path = _attachedFiles[index];
+          final name = path.split('/').last;
+          final isImage = name.toLowerCase().endsWith('.jpg') ||
+              name.toLowerCase().endsWith('.jpeg') ||
+              name.toLowerCase().endsWith('.png');
+          final isVideo = name.toLowerCase().endsWith('.mp4') ||
+              name.toLowerCase().endsWith('.mov');
+
+          return Container(
+            width: 70,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: orange.withOpacity(0.3)),
+              image: (isImage && !kIsWeb) 
+                  ? DecorationImage(
+                      image: FileImage(File(path)),
+                      fit: BoxFit.cover,
+                    ) 
+                  : null,
+            ),
+            child: Stack(
+              children: [
+                if (!isImage)
+                  Center(
+                    child: Icon(
+                      isVideo ? Icons.videocam : Icons.insert_drive_file,
+                      color: orange,
+                      size: 24,
+                    ),
+                  ),
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: InkWell(
+                    onTap: () => setState(() {
+                      _attachedFiles.removeAt(index);
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close,
+                          size: 14, color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _listeningMonitorTimer?.cancel(); // Cancel monitoring timer
@@ -2092,6 +2147,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 ],
               ),
             ),
+
+          // ── FILE PREVIEW ──
+          if (_attachedFiles.isNotEmpty) _buildFilePreview(),
 
           // ── INPUT FIELD ──
           if (!_isLoading && !_errored && _allowInput)
@@ -2273,9 +2331,39 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
           // ── LOADER ──
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: CircularProgressIndicator(color: orange),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(orange),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "AI is thinking...",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),

@@ -48,18 +48,32 @@ class StorageService {
         contentDisposition: 'inline',
       );
 
+      print('🚀 [UPLOAD] Starting upload for ${file.name} (Web: $kIsWeb)');
       if (kIsWeb) {
-        if (file.bytes == null) return null;
+        if (file.bytes == null) {
+          print('❌ [UPLOAD] Web upload failed: file.bytes is null');
+          return null;
+        }
+        print('📦 [UPLOAD] Uploading ${file.bytes!.length} bytes');
         uploadTask = ref.putData(file.bytes!, metadata);
       } else {
-        if (file.path == null) return null;
+        if (file.path == null) {
+          print('❌ [UPLOAD] Mobile upload failed: file.path is null');
+          return null;
+        }
+        print('📂 [UPLOAD] Uploading from path: ${file.path}');
         uploadTask = ref.putFile(File(file.path!), metadata);
       }
 
       final snapshot = await uploadTask;
-      return await snapshot.ref.getDownloadURL();
+      final url = await snapshot.ref.getDownloadURL();
+      print('✅ [UPLOAD] Success: $url');
+      return url;
     } catch (e) {
-      debugPrint('Error uploading file: $e');
+      print('❌ [UPLOAD] Error uploading file: $e');
+      if (kIsWeb) {
+        print('⚠️ [UPLOAD] Hint: If this is a CORS error, you need to configure CORS for your Firebase Storage bucket.');
+      }
       return null;
     }
   }

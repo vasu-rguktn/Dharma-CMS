@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/models/case_doc.dart';
 import 'package:Dharma/models/petition.dart';
 
 // ───────────────── AUTH SCREENS ─────────────────
@@ -384,14 +385,29 @@ class AppRouter {
 
           GoRoute(
             path: '/cases',
-            builder: (context, state) => const CasesScreen(),
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CasesScreen(),
+            ),
           ),
 
           GoRoute(
             path: '/cases/new',
-            builder: (context, state) => NewCaseScreen(
-              initialData: state.extra as Map<String, dynamic>?,
-            ),
+            builder: (context, state) {
+              final extra = state.extra;
+              CaseDoc? existingCase;
+              Map<String, dynamic>? initialData;
+
+              if (extra is CaseDoc) {
+                existingCase = extra;
+              } else if (extra is Map<String, dynamic>) {
+                initialData = extra;
+              }
+
+              return NewCaseScreen(
+                initialData: initialData,
+                existingCase: existingCase,
+              );
+            },
           ),
 
           GoRoute(

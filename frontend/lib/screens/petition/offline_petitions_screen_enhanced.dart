@@ -126,7 +126,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     return DateFormat('dd MMM yyyy, hh:mm a').format(date);
   }
 
-  Widget _buildPetitionCard(Petition petition, bool is SentTab) {
+  Widget _buildPetitionCard(Petition petition, bool isSentTab) {
     final theme = Theme.of(context);
     
     return Card(
@@ -135,9 +135,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSentTab
-              ? _getPoliceStatusColor(petition.policeStatus).withValues(alpha: 0.3)
-              : _getPoliceStatusColor(petition.policeStatus).withValues(alpha: 0.3),
+          color: _getPoliceStatusColor(petition.policeStatus).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -175,7 +173,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: _getPoliceStatusColor(petition.policeStatus)
-                          .withValues(alpha: 0.1),
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _getPoliceStatusColor(petition.policeStatus),
@@ -428,7 +426,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         const SizedBox(height: 20),
 
                         // Timeline Section
-                        _buildTimelineSection(petition.id!),
+                        _buildTimelineSection(petition),
 
                         const SizedBox(height: 80), // Space for action buttons
                       ],
@@ -444,7 +442,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withOpacity(0.05),
                           blurRadius: 10,
                           offset: const Offset(0, -5),
                         ),
@@ -512,7 +510,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     );
   }
 
-  Widget _buildTimelineSection(String petitionId) {
+  Widget _buildTimelineSection(Petition petition) {
+    final petitionId = petition.id!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -569,8 +568,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
             final updates = snapshot.data!.docs
                 .map((doc) => PetitionUpdate.fromFirestore(doc))
                 .toList();
+                
+            final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
 
-            return PetitionUpdateTimeline(updates: updates);
+            return PetitionUpdateTimeline(updates: allUpdates);
           },
         ),
       ],
@@ -682,10 +683,14 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   }
 
   void _showAddUpdateDialog(Petition petition) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => AddPetitionUpdateDialog(petition: petition),
+      builder: (_) => AddPetitionUpdateDialog(
+        petition: petition,
+        policeOfficerName: _officerName ?? 'Unknown Officer',
+        policeOfficerUserId: _officerId ?? '',
+      ),
     ).then((_) {
       // Refresh list after adding update
       if (mounted) {
@@ -907,9 +912,9 @@ class _StatusOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
           borderRadius: BorderRadius.circular(8),
-          color: color.withValues(alpha: 0.05),
+          color: color.withOpacity(0.05),
         ),
         child: Row(
           children: [

@@ -32,11 +32,24 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.settings,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                localizations.settings,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
 
@@ -54,22 +67,56 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ListTile(
-                    leading: CircleAvatar(
-                      radius: 30,
-                      child: Text(
-                        (user?.displayName ?? localizations.user)[0].toUpperCase(),
-                        style: const TextStyle(fontSize: 24),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.orange,
+                        child: Text(
+                          (user?.displayName ?? localizations.user)[0].toUpperCase(),
+                          style: const TextStyle(fontSize: 24, color: Colors.white),
+                        ),
                       ),
-                    ),
-                    title: Text(
-                      user?.displayName ?? localizations.user,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(user?.email ?? ''),
-                    trailing: TextButton(
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.displayName ?? localizations.user,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (user?.email != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                user!.email!,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
                       onPressed: () => context.push('/profile'),
-                      child: const Text('View Profile', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.person, size: 18, color: Colors.orange),
+                      label: const Text(
+                        'View Profile', 
+                        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
                     ),
                   ),
                 ],
