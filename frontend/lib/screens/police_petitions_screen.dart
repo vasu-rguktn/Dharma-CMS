@@ -112,7 +112,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     try {
       debugPrint('🔄 [Petitions] Loading police hierarchy data...');
       final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+          .loadString('assets/data/ap_police_hierarchy_complete.json');
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       Map<String, Map<String, List<String>>> hierarchy = {};

@@ -126,7 +126,7 @@ class _CasesScreenState extends State<CasesScreen> {
   Future<void> _loadHierarchyData() async {
     try {
       final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+          .loadString('assets/data/ap_police_hierarchy_complete.json');
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       Map<String, Map<String, List<String>>> hierarchy = {};
