@@ -13,6 +13,7 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/offline_petition_provider.dart';
 import 'package:Dharma/providers/legal_queries_provider.dart';
 import 'package:Dharma/providers/settings_provider.dart';
+import 'package:Dharma/providers/activity_provider.dart';
 
 import 'package:Dharma/router/app_router.dart';
 import 'package:Dharma/services/firestore_service.dart';
@@ -80,6 +81,9 @@ class MyApp extends StatelessWidget {
         /// 🔹 Offline Petition Provider
         ChangeNotifierProvider<OfflinePetitionProvider>(
           create: (_) => OfflinePetitionProvider(),
+        ),
+        ChangeNotifierProvider<ActivityProvider>(
+          create: (_) => ActivityProvider(),
         ),
       ],
       child: Consumer2<AuthProvider, SettingsProvider>(

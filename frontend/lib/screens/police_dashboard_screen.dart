@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
-import 'package:Dharma/providers/petition_provider.dart';   // <-- add this
+import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/utils/petition_filter.dart';
 import 'dashboard_body.dart';
 
 class PoliceDashboardScreen extends StatefulWidget {
@@ -51,6 +52,15 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
         district: profile?.district,
       );
 
+      // ✅ Load recent petitions for activity section
+      petitionProvider.fetchFilteredPetitions(
+        isPolice: true,
+        officerId: profile?.uid,
+        stationName: profile?.stationName,
+        district: profile?.district,
+        filter: PetitionFilter.all,
+      );
+
       // ✅ Auto-refresh every 30 seconds
       _refreshTimer = Timer.periodic(
         const Duration(seconds: 30),
@@ -60,6 +70,13 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
               officerId: profile?.uid,
               stationName: profile?.stationName,
               district: profile?.district,
+            );
+            petitionProvider.fetchFilteredPetitions(
+              isPolice: true,
+              officerId: profile?.uid,
+              stationName: profile?.stationName,
+              district: profile?.district,
+              filter: PetitionFilter.all,
             );
           }
         },
