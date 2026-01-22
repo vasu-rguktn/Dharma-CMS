@@ -10,3 +10,4 @@ __pycache__/
 backend/storage/persons
 backend/yolov8n.pt
 backend/services/__pycache__
+backend/dharma-cms-5cc89-firebase-adminsdk-fbsvc-23d34944fd.json
