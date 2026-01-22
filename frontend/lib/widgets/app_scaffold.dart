@@ -26,6 +26,25 @@ class _AppScaffoldState extends State<AppScaffold> {
     final dashboardRoute =
         authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
 
+    // Police-specific permission checks for offline petitions
+    bool canSubmitOffline = false;
+    String offlinePetitionsTitle = 'Assigned Petitions';
+    if (authProvider.role == 'police' && authProvider.userProfile != null) {
+      final policeRank = authProvider.userProfile?.rank;
+      final spLevelRanks = [
+        'Superintendent of Police',
+        'Additional Superintendent of Police',
+        'Inspector General of Police',
+        'Deputy Inspector General of Police',
+        'Director General of Police',
+        'Additional Director General of Police',
+      ];
+      canSubmitOffline = policeRank != null && spLevelRanks.contains(policeRank);
+      if (canSubmitOffline) {
+        offlinePetitionsTitle = 'Offline Petitions';
+      }
+    }
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -212,6 +231,15 @@ class _AppScaffoldState extends State<AppScaffold> {
                   localizations.caseJournal, '/case-journal', isDark),
 
               _buildDrawerSection(localizations.caseManagement, isDark),
+              
+              // Offline Petitions Section
+              if (canSubmitOffline)
+                _buildDrawerItem(context, Icons.post_add, 'Submit Offline Petition',
+                    '/submit-offline-petition', isDark),
+              
+              _buildDrawerItem(context, Icons.assignment, offlinePetitionsTitle,
+                  '/offline-petitions', isDark),
+
                _buildDrawerItem(context, Icons.file_copy_rounded,
                   localizations.allCases, '/cases', isDark),
               _buildDrawerItem(context, Icons.archive,

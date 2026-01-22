@@ -12,6 +12,7 @@ from routers.ocr import extract_case as _ocr_extract_case
 from routers.ai_investigation import router as ai_investigation_router
 from routers.legal_chat import router as legal_chat_router
 from routers.investigation_report import router as investigation_report_router
+from routers.chargesheet import router as chargesheet_router
 from routers.document_drafting import router as document_drafting_router
 from routers.image_lab.image_enhancement import router as image_enhancement_router
 from routers.image_lab.anpr import router as anpr_router
@@ -26,7 +27,7 @@ from routers.chargesheet_vetting import router as chargesheet_vetting_router
 # Initialize Firebase Admin SDK
 try:
     # Check for service account key file
-    cred_filename = "dharma-cms-5cc89-b74e10595572.json"
+    cred_filename = "dharma-cms-5cc89-firebase-adminsdk-fbsvc-23d34944fd.json"
     cred_path = Path(__file__).parent / cred_filename
     
     if cred_path.exists():
@@ -92,6 +93,7 @@ app.include_router(ocr_router)
 app.include_router(ai_investigation_router)
 app.include_router(legal_chat_router)
 app.include_router(investigation_report_router)
+app.include_router(chargesheet_router)
 app.include_router(document_drafting_router)
 app.include_router(image_enhancement_router)
 app.include_router(anpr_router)
@@ -101,6 +103,10 @@ app.include_router(person_router)
 app.include_router(chargesheet_vetting_router)
 from routers.cases import router as cases_router
 app.include_router(cases_router)
+
+from routers.case_lookup import router as case_lookup_router
+app.include_router(case_lookup_router)
+
 
 
 @app.get("/")
