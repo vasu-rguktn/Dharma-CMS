@@ -41,7 +41,8 @@ COPY . .
 RUN mkdir -p generated_reports/investigation_reports && \
     mkdir -p temp_videos && \
     mkdir -p legal_rag/chroma_db && \
-    mkdir -p legal_rag/data
+    mkdir -p legal_rag/data && \
+    mkdir -p storage/persons
 
 # (Optional) Expose Cloud Run port (informational only)
 EXPOSE 8080

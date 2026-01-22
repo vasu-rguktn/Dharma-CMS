@@ -37,6 +37,8 @@ services:
       - ./models:/app/models
       # Mount legal_rag directory to persist ChromaDB vector database
       - ./legal_rag:/app/legal_rag
+      # Mount storage directory to persist detected persons and other data
+      - ./storage:/app/storage
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]

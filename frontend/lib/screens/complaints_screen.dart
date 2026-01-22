@@ -1,6 +1,7 @@
 // lib/screens/complaints_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -10,8 +11,25 @@ import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/screens/petition/petition_card.dart';
 import 'package:Dharma/screens/petition/petition_detail_bottom_sheet.dart';
 
-class ComplaintsScreen extends StatelessWidget {
+class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});
+
+  @override
+  State<ComplaintsScreen> createState() => _ComplaintsScreenState();
+}
+
+class _ComplaintsScreenState extends State<ComplaintsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final complaintProvider = Provider.of<ComplaintProvider>(context, listen: false);
+      if (authProvider.user != null) {
+        complaintProvider.fetchComplaints(userId: authProvider.user!.uid);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +58,14 @@ class ComplaintsScreen extends StatelessWidget {
                   children: [
                     // PURE ORANGE BACK ARROW — NO BACKGROUND
                     GestureDetector(
-                      onTap: () => context.go('/dashboard'),
+                      onTap: () {
+                         final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                         if (authProvider.role == 'police') {
+                           context.go('/police-dashboard');
+                         } else {
+                           context.go('/dashboard');
+                         }
+                      },
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: Icon(

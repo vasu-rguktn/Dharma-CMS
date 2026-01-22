@@ -15,6 +15,7 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
+import 'package:Dharma/data/station_data_constants.dart';
 
 class PolicePetitionsScreen extends StatefulWidget {
   const PolicePetitionsScreen({super.key});
@@ -113,91 +114,16 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
   /* ================= LOAD HIERARCHY ================= */
 
-  Future<void> _loadHierarchyData({bool retry = false}) async {
-    if (retry) {
-      setState(() {
-        _hierarchyLoading = true;
-        _hierarchyError = null;
-        _usingFirestoreFallback = false;
-      });
-    }
-
+  void _loadHierarchyData({bool retry = false}) {
+    // Simplify loading by using hardcoded constants - 100% reliable
+    debugPrint('🔄 [Petitions] Loading police hierarchy data from constants...');
+    
     try {
-      debugPrint('🔄 [Petitions] Loading police hierarchy data...');
-      debugPrint('   📍 Platform: ${kIsWeb ? "Web" : "Native"}');
-      debugPrint('   📍 Asset path: assets/data/ap_police_hierarchy_complete.json');
-      
-      String jsonStr;
-      
-      // Try loading from asset
-      try {
-        debugPrint('   🔄 Attempting rootBundle.loadString()...');
-        jsonStr = await rootBundle
-            .loadString('assets/data/ap_police_hierarchy_complete.json')
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                throw TimeoutException('Asset loading timed out after 10 seconds');
-              },
-            );
-        debugPrint('   ✅ rootBundle.loadString() succeeded');
-      } catch (assetError) {
-        debugPrint('   ❌ rootBundle.loadString() failed: $assetError');
-        
-        // On web, try HTTP fetch as fallback
-        if (kIsWeb) {
-          debugPrint('   🔄 Attempting HTTP fetch for web...');
-          try {
-            // Try different possible paths for web
-            final possiblePaths = [
-              '/assets/data/ap_police_hierarchy_complete.json',
-              'assets/data/ap_police_hierarchy_complete.json',
-              '/assets/assets/data/ap_police_hierarchy_complete.json',
-            ];
-            
-            String? fetchedJson;
-            for (final path in possiblePaths) {
-              try {
-                debugPrint('   🔄 Trying path: $path');
-                final uri = Uri.base.resolve(path);
-                final response = await http.get(uri).timeout(
-                  const Duration(seconds: 10),
-                );
-                
-                if (response.statusCode == 200) {
-                  fetchedJson = response.body;
-                  debugPrint('   ✅ HTTP fetch succeeded from: $path');
-                  break;
-                } else {
-                  debugPrint('   ❌ HTTP fetch failed with status ${response.statusCode} for: $path');
-                }
-              } catch (e) {
-                debugPrint('   ❌ HTTP fetch error for $path: $e');
-                continue;
-              }
-            }
-            
-            if (fetchedJson != null) {
-              jsonStr = fetchedJson;
-            } else {
-              throw Exception('All HTTP fetch attempts failed. Asset not found in web build.');
-            }
-          } catch (httpError) {
-            debugPrint('   ❌ HTTP fetch also failed: $httpError');
-            rethrow; // Re-throw the original asset error
-          }
-        } else {
-          rethrow; // Re-throw the original asset error for native platforms
-        }
-      }
-
-      debugPrint('   🔄 Parsing JSON...');
-      final Map<String, dynamic> data = json.decode(jsonStr);
-      debugPrint('   ✅ JSON parsed successfully');
-
       Map<String, Map<String, List<String>>> hierarchy = {};
       int totalDistricts = 0;
       int totalStations = 0;
+      
+      final data = kPoliceHierarchyComplete;
       
       data.forEach((range, districts) {
         if (districts is Map) {
@@ -212,257 +138,30 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
         }
       });
 
-      setState(() {
-        _policeHierarchy = hierarchy;
-        _hierarchyLoading = false;
-        _hierarchyError = null;
-        _usingFirestoreFallback = false;
-      });
-      
-      debugPrint('✅ [Petitions] Hierarchy loaded successfully!');
-      debugPrint('   📊 Ranges: ${hierarchy.length}');
-      debugPrint('   📊 Districts: $totalDistricts');
-      debugPrint('   📊 Stations: $totalStations');
-    } catch (e, stackTrace) {
-      final errorMessage = 'Error loading hierarchy data: $e';
-      debugPrint('❌ [Petitions] $errorMessage');
-      debugPrint('❌ [Petitions] Error type: ${e.runtimeType}');
-      debugPrint('❌ [Petitions] Stack trace: $stackTrace');
-      
-      // Store detailed error for user display
-      final detailedError = '''
-Asset Loading Failed:
-- Error: $e
-- Type: ${e.runtimeType}
-- Platform: ${kIsWeb ? "Web" : "Native"}
-- Path tried: assets/data/ap_police_hierarchy_complete.json
-
-This usually means:
-1. Asset not bundled in build (check pubspec.yaml)
-2. Wrong asset path (case sensitivity issue)
-3. Asset file missing from build output
-4. Network/CORS issue (web only)
-
-Falling back to Firestore data...
-''';
-      
-      debugPrint('📋 [Petitions] Detailed error info:\n$detailedError');
-      
-      setState(() {
-        _hierarchyError = 'Asset loading failed: ${e.toString()}';
-      });
-      
-      // Try Firestore fallback
-      await _loadHierarchyFromFirestore();
-    }
-  }
-
-  /* ================= FIRESTORE FALLBACK ================= */
-
-  Future<void> _loadHierarchyFromFirestore() async {
-    try {
-      debugPrint('🔄 [Petitions] Attempting Firestore fallback for hierarchy data...');
-      
-      // Extract unique stations with their districts
-      Map<String, Set<String>> districtToStations = {};
-      
-      // Query ALL petitions using pagination to get complete data
-      debugPrint('📡 [Petitions] Querying all petitions...');
-      QuerySnapshot? petitionsSnapshot;
-      Query petitionsQuery = FirebaseFirestore.instance.collection('petitions');
-      int petitionsCount = 0;
-      
-      do {
-        if (petitionsSnapshot == null) {
-          petitionsSnapshot = await petitionsQuery.limit(1000).get();
-        } else {
-          final lastDoc = petitionsSnapshot.docs.last;
-          petitionsSnapshot = await petitionsQuery.startAfterDocument(lastDoc).limit(1000).get();
-        }
-        
-        for (var doc in petitionsSnapshot.docs) {
-          final data = doc.data() as Map<String, dynamic>?;
-          if (data == null) continue;
-          
-          final district = data['district']?.toString();
-          final station = data['stationName']?.toString();
-          
-          if (district != null && station != null && district.isNotEmpty && station.isNotEmpty) {
-            districtToStations.putIfAbsent(district, () => <String>{}).add(station);
-          }
-        }
-        
-        petitionsCount += petitionsSnapshot.docs.length;
-        debugPrint('   📊 Loaded $petitionsCount petitions so far...');
-      } while (petitionsSnapshot.docs.length == 1000);
-      
-      debugPrint('✅ [Petitions] Loaded $petitionsCount total petitions');
-      
-      // Query ALL cases using pagination to get complete data
-      debugPrint('📡 [Petitions] Querying all cases...');
-      QuerySnapshot? casesSnapshot;
-      Query casesQuery = FirebaseFirestore.instance.collection('cases');
-      int casesCount = 0;
-      
-      do {
-        if (casesSnapshot == null) {
-          casesSnapshot = await casesQuery.limit(1000).get();
-        } else {
-          final lastDoc = casesSnapshot.docs.last;
-          casesSnapshot = await casesQuery.startAfterDocument(lastDoc).limit(1000).get();
-        }
-        
-        for (var doc in casesSnapshot.docs) {
-          final data = doc.data() as Map<String, dynamic>?;
-          if (data == null) continue;
-          
-          final district = data['district']?.toString();
-          final station = data['policeStation']?.toString();
-          
-          if (district != null && station != null && district.isNotEmpty && station.isNotEmpty) {
-            districtToStations.putIfAbsent(district, () => <String>{}).add(station);
-          }
-        }
-        
-        casesCount += casesSnapshot.docs.length;
-        debugPrint('   📊 Loaded $casesCount cases so far...');
-      } while (casesSnapshot.docs.length == 1000);
-      
-      debugPrint('✅ [Petitions] Loaded $casesCount total cases');
-
-      debugPrint('📊 [Petitions] Extracted ${districtToStations.length} districts with stations');
-      debugPrint('📊 [Petitions] Total unique stations: ${districtToStations.values.fold<int>(0, (sum, stations) => sum + stations.length)}');
-      
-      // Try to load the asset JSON first to get proper range structure
-      // If that fails, we'll build a simplified structure
-      Map<String, Map<String, List<String>>> hierarchy = {};
-      
-      try {
-        // Try to load asset to get proper range structure
-        final jsonStr = await rootBundle
-            .loadString('assets/data/ap_police_hierarchy_complete.json')
-            .timeout(const Duration(seconds: 5));
-        final Map<String, dynamic> assetData = json.decode(jsonStr);
-        
-        // Build hierarchy from asset data
-        assetData.forEach((range, districts) {
-          if (districts is Map) {
-            Map<String, List<String>> districtMap = {};
-            districts.forEach((district, stations) {
-              final stationList = List<String>.from(stations ?? []);
-              districtMap[district.toString()] = stationList;
-            });
-            hierarchy[range] = districtMap;
-          }
-        });
-        
-        // Now merge Firestore data into the asset structure
-        for (var entry in districtToStations.entries) {
-          final district = entry.key;
-          final stations = entry.value.toList()..sort();
-          
-          // Try to find which range this district belongs to
-          String? foundRange;
-          for (var range in hierarchy.keys) {
-            if (hierarchy[range]?.containsKey(district) == true) {
-              foundRange = range;
-              // Merge stations - add Firestore stations that aren't in asset
-              final existingStations = hierarchy[range]![district] ?? [];
-              for (var station in stations) {
-                if (!existingStations.any((s) => s.toLowerCase() == station.toLowerCase())) {
-                  existingStations.add(station);
-                }
-              }
-              hierarchy[range]![district] = existingStations..sort();
-              break;
-            }
-          }
-          
-          // If district not found in asset, try case-insensitive match
-          if (foundRange == null) {
-            for (var range in hierarchy.keys) {
-              final districtMap = hierarchy[range] ?? {};
-              final matchedKey = districtMap.keys.firstWhere(
-                (k) => k.trim().toLowerCase() == district.trim().toLowerCase(),
-                orElse: () => '',
-              );
-              
-              if (matchedKey.isNotEmpty) {
-                foundRange = range;
-                final existingStations = hierarchy[range]![matchedKey] ?? [];
-                for (var station in stations) {
-                  if (!existingStations.any((s) => s.toLowerCase() == station.toLowerCase())) {
-                    existingStations.add(station);
-                  }
-                }
-                hierarchy[range]![matchedKey] = existingStations..sort();
-                break;
-              }
-            }
-          }
-          
-          // If still not found, add to "Unknown Range"
-          if (foundRange == null) {
-            hierarchy.putIfAbsent('Unknown Range', () => {})[district] = stations;
-          }
-        }
-        
-        debugPrint('✅ [Petitions] Merged Firestore data with asset structure');
-      } catch (e) {
-        // If asset loading fails, build simplified structure
-        debugPrint('⚠️ [Petitions] Could not load asset for structure, building simplified hierarchy');
-        
-        for (var entry in districtToStations.entries) {
-          final district = entry.key;
-          final stations = entry.value.toList()..sort();
-          
-          // Try to find range from existing hierarchy if available
-          String? range;
-          for (var r in _policeHierarchy.keys) {
-            if (_policeHierarchy[r]?.containsKey(district) == true) {
-              range = r;
-              break;
-            }
-          }
-          range ??= 'Unknown Range';
-          
-          hierarchy.putIfAbsent(range, () => {})[district] = stations;
-        }
-      }
-
-      if (hierarchy.isNotEmpty) {
+      if (mounted) {
         setState(() {
-          // Merge with existing hierarchy if any
-          for (var rangeEntry in hierarchy.entries) {
-            if (_policeHierarchy.containsKey(rangeEntry.key)) {
-              _policeHierarchy[rangeEntry.key]!.addAll(rangeEntry.value);
-            } else {
-              _policeHierarchy[rangeEntry.key] = rangeEntry.value;
-            }
-          }
+          _policeHierarchy = hierarchy;
           _hierarchyLoading = false;
           _hierarchyError = null;
-          _usingFirestoreFallback = true;
+          _usingFirestoreFallback = false;
         });
         
-        debugPrint('✅ [Petitions] Hierarchy loaded from Firestore fallback!');
+        debugPrint('✅ [Petitions] Hierarchy loaded successfully from constants!');
         debugPrint('   📊 Ranges: ${hierarchy.length}');
-        debugPrint('   📊 Districts: ${districtToStations.length}');
-        debugPrint('   📊 Total Stations: ${districtToStations.values.fold<int>(0, (sum, stations) => sum + stations.length)}');
-      } else {
-        throw Exception('No data found in Firestore fallback');
+        debugPrint('   📊 Districts: $totalDistricts');
+        debugPrint('   📊 Stations: $totalStations');
       }
-    } catch (e, stackTrace) {
-      debugPrint('❌ [Petitions] Firestore fallback also failed: $e');
-      debugPrint('❌ [Petitions] Stack trace: $stackTrace');
-      
-      setState(() {
-        _hierarchyLoading = false;
-        _hierarchyError = 'Failed to load police station data. Please check your connection and try again.';
-        _usingFirestoreFallback = false;
-      });
+    } catch (e) {
+      debugPrint('❌ [Petitions] Error parsing hierarchy constants: $e');
+      if (mounted) {
+        setState(() {
+           _hierarchyError = 'Failed to parse station data: $e';
+        });
+      }
     }
   }
+
+  // Firestore fallback removed as it is no longer needed with hardcoded constants
 
   /* ================= RANK-BASED FILTER VISIBILITY ================= */
 

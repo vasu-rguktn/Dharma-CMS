@@ -28,3 +28,4 @@ pydantic
 imagehash
 chromadb
 sentence-transformers
+requests

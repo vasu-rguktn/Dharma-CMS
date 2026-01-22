@@ -12,6 +12,7 @@ import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 
 
 /// Police Petition List Screen
@@ -735,6 +736,31 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    // SAVE BUTTON
+                                    Consumer<ComplaintProvider>(builder: (context, provider, _) {
+                                      final isSaved = provider.isPetitionSaved(petition.id);
+                                      return InkWell(
+                                        onTap: () async {
+                                          final auth =
+                                              Provider.of<AuthProvider>(context, listen: false);
+                                          final userId = auth.user?.uid;
+                                          if (userId == null) return;
+
+                                          await provider.toggleSaveComplaint(
+                                              petition.toMap(), userId);
+                                        },
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Icon(
+                                            isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                            color: isSaved ? Colors.orange : Colors.grey,
+                                            size: 24,
+                                          ),
+                                        ),
+                                      );
+                                    }),
                                   ],
                                 ),
                                 const SizedBox(height: 12),

@@ -353,10 +353,11 @@ class DashboardBody extends StatelessWidget {
       ),
       _quickActionCard(ctx, localizations.allCases, Icons.file_copy_rounded,
           '/cases', Colors.blue.shade700),
-      _quickActionCard(ctx, localizations.complaints, Icons.archive,
-          '/complaints', Colors.orange.shade700),
       _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions',
           Colors.red.shade800),
+      _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
+          '/complaints', Colors.orange.shade700),
+
       _quickActionCard(
           ctx, "Image Lab", Icons.camera_alt, '/image-lab', Colors.deepPurple),
       _quickActionCard(

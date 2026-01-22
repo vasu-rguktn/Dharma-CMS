@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../utils/district_translations.dart';
+import 'package:Dharma/data/station_data_constants.dart';
 
 class _AccusedFormData {
   final name = TextEditingController();
@@ -246,8 +247,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   Future<void> _loadHierarchy() async {
     try {
-      final String jsonString = await rootBundle.loadString('assets/data/ap_police_hierarchy_fir.json');
-      final Map<String, dynamic> jsonData = json.decode(jsonString);
+      // Use hardcoded constant for reliability
+      debugPrint('🔄 Loading police hierarchy (FIR) from constants...');
+      final Map<String, dynamic> jsonData = kPoliceHierarchyFir;
       
       if (mounted) {
         setState(() {
@@ -271,7 +273,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error loading police hierarchy JSON: $e');
+      debugPrint('❌ Error parsing police hierarchy constants: $e');
     }
   }
 
