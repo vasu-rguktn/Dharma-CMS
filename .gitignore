@@ -10,3 +10,7 @@ __pycache__/
 backend/storage/persons
 backend/yolov8n.pt
 backend/services/__pycache__
+
+# Legal RAG local data (do not commit)
+backend/legal_rag/data/
+backend/legal_rag/chroma_db/

@@ -2,6 +2,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 import google.generativeai as genai
 import os
+from typing import Optional
+
+from services.legal_rag import rag_enabled, retrieve_context
 
 # ===================== ROUTER =====================
 router = APIRouter(
@@ -22,6 +25,10 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 # ===================== REQUEST SCHEMA =====================
 class LegalSuggestionRequest(BaseModel):
     incident_description: str
+    # Frontend already sends this; keep it optional for backwards-compat.
+    language: Optional[str] = None
+    # Optional tuning knobs (safe defaults)
+    top_k: Optional[int] = 4
 
 # ===================== RESPONSE SCHEMA =====================
 class LegalSuggestionResponse(BaseModel):
@@ -64,11 +71,35 @@ Reasoning:
 # ===================== ENDPOINT =====================
 @router.post("/", response_model=LegalSuggestionResponse)
 def suggest_legal_sections(data: LegalSuggestionRequest):
+    lang = (data.language or "en").strip()
+    incident = data.incident_description.strip()
+
+    # Lightweight language hint (matches how the Flutter app appends language text elsewhere).
+    if lang == "te":
+        incident = f"{incident} (Please reply in Telugu language)"
+    elif lang and lang != "en":
+        incident = f"{incident} (Please reply in {lang} language)"
+
+    # If RAG is enabled, retrieve context from Chroma and ground the answer.
+    context_block = ""
+    if rag_enabled():
+        try:
+            top_k = int(data.top_k or 4)
+            context_text, _sources = retrieve_context(incident, top_k=top_k)
+            if context_text:
+                context_block = f"""
+Context (retrieved knowledge base excerpts):
+{context_text}
+"""
+        except Exception:
+            # If RAG fails, fall back to plain generation rather than breaking the endpoint.
+            context_block = ""
 
     prompt = f"""{SYSTEM_PROMPT}
+{context_block}
 
 Incident Description:
-{data.incident_description}
+{incident}
 """
 
     try:
