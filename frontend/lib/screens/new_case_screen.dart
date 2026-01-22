@@ -246,7 +246,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   Future<void> _loadHierarchy() async {
     try {
-      final String jsonString = await rootBundle.loadString('assets/Data/ap_police_hierarchy_fir.json');
+      final String jsonString = await rootBundle.loadString('assets/data/ap_police_hierarchy_fir.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
       
       if (mounted) {
@@ -896,7 +896,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1023,7 +1023,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1149,7 +1149,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/Data/district_police_stations.json');
+      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;

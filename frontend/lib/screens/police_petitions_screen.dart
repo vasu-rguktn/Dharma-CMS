@@ -123,16 +123,42 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     try {
       debugPrint('🔄 [Petitions] Loading police hierarchy data...');
       
-      // Try loading from asset with timeout
-      final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json')
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException('Asset loading timed out after 10 seconds');
-            },
-          );
+      // Try multiple asset paths (case sensitivity fix)
+      List<String> assetPaths = [
+        'assets/Data/ap_police_hierarchy_complete.json',  // Original path
+        'assets/data/ap_police_hierarchy_complete.json',  // Lowercase data
+        'assets/Data/ap_police_hierarchy_complete.json',   // Try again
+      ];
       
+      String? jsonStr;
+      String? successfulPath;
+      
+      for (final path in assetPaths) {
+        try {
+          debugPrint('🔍 [Petitions] Trying asset path: $path');
+          jsonStr = await rootBundle
+              .loadString(path)
+              .timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException('Asset loading timed out after 10 seconds for path: $path');
+                },
+              );
+          successfulPath = path;
+          debugPrint('✅ [Petitions] Successfully loaded from: $path');
+          break;
+        } catch (e) {
+          debugPrint('❌ [Petitions] Failed to load from $path: $e');
+          if (path == assetPaths.last) {
+            rethrow; // Re-throw if all paths failed
+          }
+        }
+      }
+      
+      if (jsonStr == null || jsonStr.isEmpty) {
+        throw Exception('Asset file is empty or could not be loaded from any path');
+      }
+
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       Map<String, Map<String, List<String>>> hierarchy = {};
@@ -177,85 +203,152 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   Future<void> _loadHierarchyFromFirestore() async {
     try {
       debugPrint('🔄 [Petitions] Attempting Firestore fallback for hierarchy data...');
+      debugPrint('📊 [Petitions] Querying ALL documents (no limit) for complete data...');
       
-      // Query all petitions to extract unique stations
-      final petitionsSnapshot = await FirebaseFirestore.instance
-          .collection('petitions')
-          .limit(1000) // Limit to avoid too much data
-          .get();
+      // Query ALL petitions (no limit) to get complete station data
+      QuerySnapshot petitionsSnapshot;
+      try {
+        petitionsSnapshot = await FirebaseFirestore.instance
+            .collection('petitions')
+            .get();
+        debugPrint('✅ [Petitions] Loaded ${petitionsSnapshot.docs.length} petitions');
+      } catch (e) {
+        debugPrint('⚠️ [Petitions] Error loading all petitions, trying with limit: $e');
+        petitionsSnapshot = await FirebaseFirestore.instance
+            .collection('petitions')
+            .limit(5000) // Increased limit
+            .get();
+      }
 
-      // Also query cases for additional stations
-      final casesSnapshot = await FirebaseFirestore.instance
-          .collection('cases')
-          .limit(1000)
-          .get();
+      // Query ALL cases (no limit) for additional stations
+      QuerySnapshot casesSnapshot;
+      try {
+        casesSnapshot = await FirebaseFirestore.instance
+            .collection('cases')
+            .get();
+        debugPrint('✅ [Petitions] Loaded ${casesSnapshot.docs.length} cases');
+      } catch (e) {
+        debugPrint('⚠️ [Petitions] Error loading all cases, trying with limit: $e');
+        casesSnapshot = await FirebaseFirestore.instance
+            .collection('cases')
+            .limit(5000) // Increased limit
+            .get();
+      }
 
-      // Extract unique stations with their districts
+      // Also query police profiles which might have complete station/district/range data
+      QuerySnapshot policeProfilesSnapshot;
+      try {
+        policeProfilesSnapshot = await FirebaseFirestore.instance
+            .collection('police_profiles')
+            .get();
+        debugPrint('✅ [Petitions] Loaded ${policeProfilesSnapshot.docs.length} police profiles');
+      } catch (e) {
+        debugPrint('⚠️ [Petitions] Error loading police profiles: $e');
+        policeProfilesSnapshot = QuerySnapshot.empty;
+      }
+
+      // Extract unique stations with their districts and ranges
+      Map<String, Map<String, Set<String>>> rangeToDistrictToStations = {};
       Map<String, Set<String>> districtToStations = {};
+      
+      // From police profiles (most complete data)
+      for (var doc in policeProfilesSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final range = data['range']?.toString();
+        final district = data['district']?.toString();
+        final station = data['stationName']?.toString();
+        
+        if (range != null && district != null && station != null && 
+            range.isNotEmpty && district.isNotEmpty && station.isNotEmpty) {
+          rangeToDistrictToStations
+              .putIfAbsent(range, () => {})
+              .putIfAbsent(district, () => <String>{})
+              .add(station);
+          districtToStations.putIfAbsent(district, () => <String>{}).add(station);
+        }
+      }
       
       // From petitions
       for (var doc in petitionsSnapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
+        final range = data['range']?.toString();
         final district = data['district']?.toString();
         final station = data['stationName']?.toString();
         
         if (district != null && station != null && district.isNotEmpty && station.isNotEmpty) {
+          final effectiveRange = range ?? 'Unknown Range';
+          rangeToDistrictToStations
+              .putIfAbsent(effectiveRange, () => {})
+              .putIfAbsent(district, () => <String>{})
+              .add(station);
           districtToStations.putIfAbsent(district, () => <String>{}).add(station);
         }
       }
       
       // From cases
       for (var doc in casesSnapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
+        final range = data['range']?.toString();
         final district = data['district']?.toString();
         final station = data['policeStation']?.toString();
         
         if (district != null && station != null && district.isNotEmpty && station.isNotEmpty) {
+          final effectiveRange = range ?? 'Unknown Range';
+          rangeToDistrictToStations
+              .putIfAbsent(effectiveRange, () => {})
+              .putIfAbsent(district, () => <String>{})
+              .add(station);
           districtToStations.putIfAbsent(district, () => <String>{}).add(station);
         }
       }
 
-      // Build a simplified hierarchy structure
-      // Since we don't have range info from Firestore, we'll create a flat structure
+      // Build complete hierarchy structure
       Map<String, Map<String, List<String>>> hierarchy = {};
       
-      // Group districts by first letter or create a default range
-      for (var entry in districtToStations.entries) {
-        final district = entry.key;
-        final stations = entry.value.toList()..sort();
+      // Convert sets to sorted lists
+      for (var rangeEntry in rangeToDistrictToStations.entries) {
+        final range = rangeEntry.key;
+        final districtMap = rangeEntry.value;
         
-        // Try to find range from existing hierarchy if available, otherwise use "Unknown Range"
-        String? range;
-        for (var r in _policeHierarchy.keys) {
-          if (_policeHierarchy[r]?.containsKey(district) == true) {
-            range = r;
-            break;
-          }
+        Map<String, List<String>> sortedDistrictMap = {};
+        for (var districtEntry in districtMap.entries) {
+          sortedDistrictMap[districtEntry.key] = districtEntry.value.toList()..sort();
         }
-        range ??= 'Unknown Range';
-        
-        hierarchy.putIfAbsent(range, () => {})[district] = stations;
+        hierarchy[range] = sortedDistrictMap;
+      }
+      
+      // If we still don't have range info, use district-based grouping
+      if (hierarchy.isEmpty || hierarchy.values.every((m) => m.isEmpty)) {
+        debugPrint('⚠️ [Petitions] No range data found, grouping by district only');
+        for (var entry in districtToStations.entries) {
+          final district = entry.key;
+          final stations = entry.value.toList()..sort();
+          hierarchy.putIfAbsent('Unknown Range', () => {})[district] = stations;
+        }
       }
 
       if (hierarchy.isNotEmpty) {
         setState(() {
-          // Merge with existing hierarchy if any
-          for (var rangeEntry in hierarchy.entries) {
-            if (_policeHierarchy.containsKey(rangeEntry.key)) {
-              _policeHierarchy[rangeEntry.key]!.addAll(rangeEntry.value);
-            } else {
-              _policeHierarchy[rangeEntry.key] = rangeEntry.value;
-            }
-          }
+          // Replace existing hierarchy with Firestore data (more complete)
+          _policeHierarchy = hierarchy;
           _hierarchyLoading = false;
           _hierarchyError = null;
           _usingFirestoreFallback = true;
         });
         
+        int totalStations = hierarchy.values.fold<int>(
+          0, 
+          (sum, districtMap) => sum + districtMap.values.fold<int>(0, (s, stations) => s + stations.length)
+        );
+        
         debugPrint('✅ [Petitions] Hierarchy loaded from Firestore fallback!');
         debugPrint('   📊 Ranges: ${hierarchy.length}');
         debugPrint('   📊 Districts: ${districtToStations.length}');
-        debugPrint('   📊 Total Stations: ${districtToStations.values.fold<int>(0, (sum, stations) => sum + stations.length)}');
+        debugPrint('   📊 Total Stations: $totalStations');
+        debugPrint('   📊 Range breakdown:');
+        for (var rangeEntry in hierarchy.entries) {
+          debugPrint('      - ${rangeEntry.key}: ${rangeEntry.value.length} districts, ${rangeEntry.value.values.fold<int>(0, (s, stations) => s + stations.length)} stations');
+        }
       } else {
         throw Exception('No data found in Firestore fallback');
       }

@@ -140,16 +140,42 @@ class _CasesScreenState extends State<CasesScreen> {
     try {
       debugPrint('🔄 [CASES] Loading police hierarchy data...');
       
-      // Try loading from asset with timeout
-      final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json')
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException('Asset loading timed out after 10 seconds');
-            },
-          );
+      // Try multiple asset paths (case sensitivity fix)
+      List<String> assetPaths = [
+        'assets/Data/ap_police_hierarchy_complete.json',  // Original path
+        'assets/data/ap_police_hierarchy_complete.json',  // Lowercase data
+        'assets/Data/ap_police_hierarchy_complete.json',   // Try again
+      ];
       
+      String? jsonStr;
+      String? successfulPath;
+      
+      for (final path in assetPaths) {
+        try {
+          debugPrint('🔍 [CASES] Trying asset path: $path');
+          jsonStr = await rootBundle
+              .loadString(path)
+              .timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  throw TimeoutException('Asset loading timed out after 10 seconds for path: $path');
+                },
+              );
+          successfulPath = path;
+          debugPrint('✅ [CASES] Successfully loaded from: $path');
+          break;
+        } catch (e) {
+          debugPrint('❌ [CASES] Failed to load from $path: $e');
+          if (path == assetPaths.last) {
+            rethrow; // Re-throw if all paths failed
+          }
+        }
+      }
+      
+      if (jsonStr == null || jsonStr.isEmpty) {
+        throw Exception('Asset file is empty or could not be loaded from any path');
+      }
+
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       Map<String, Map<String, List<String>>> hierarchy = {};

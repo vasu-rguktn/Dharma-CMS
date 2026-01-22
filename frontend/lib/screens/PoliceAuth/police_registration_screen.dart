@@ -93,7 +93,7 @@ class _PoliceRegistrationScreenState
     try {
       debugPrint('🔄 Loading police hierarchy data...');
       final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+          .loadString('assets/data/ap_police_hierarchy_complete.json');
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       // Convert to proper structure
