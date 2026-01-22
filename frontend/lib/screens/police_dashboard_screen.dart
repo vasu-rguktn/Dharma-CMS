@@ -34,7 +34,6 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
   //     (_) => petitionProvider.fetchPetitionCount(),
   //   );
   // }
-@override
   @override
   void initState() {
     super.initState();
@@ -55,28 +54,30 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
           stationName: stationName,
         );
 
-  // ✅ Load organizational stats
-  petitionProvider.fetchPetitionStats(
-    officerId: auth.userProfile?.uid,
-    stationName: auth.userProfile?.stationName,
-    district: auth.userProfile?.district,
-    range: auth.userProfile?.rank != null && auth.userProfile!.rank!.contains('General') 
-        ? null 
-        : null, 
-  );
+        // ✅ Load organizational stats
+        petitionProvider.fetchPetitionStats(
+          officerId: auth.userProfile?.uid,
+          stationName: auth.userProfile?.stationName,
+          district: auth.userProfile?.district,
+          range: auth.userProfile?.rank != null && auth.userProfile!.rank!.contains('General') 
+              ? null 
+              : null, 
+        );
 
-  // ✅ Auto-refresh every 30 seconds
-  _refreshTimer = Timer.periodic(
-    const Duration(seconds: 30),
-    (_) {
-      petitionProvider.fetchPetitionStats(
-        officerId: auth.userProfile?.uid,
-        stationName: auth.userProfile?.stationName,
-        district: auth.userProfile?.district,
-      );
-    },
-  );
-}
+        // ✅ Auto-refresh every 30 seconds
+        _refreshTimer = Timer.periodic(
+          const Duration(seconds: 30),
+          (_) {
+            petitionProvider.fetchPetitionStats(
+              officerId: auth.userProfile?.uid,
+              stationName: auth.userProfile?.stationName,
+              district: auth.userProfile?.district,
+            );
+          },
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {

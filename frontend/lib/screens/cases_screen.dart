@@ -1,6 +1,11 @@
 // lib/screens/cases_screen.dart
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/case_status.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +13,6 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:flutter/services.dart'; // For rootBundle
-import 'dart:convert'; // For json decode
 import 'package:Dharma/providers/police_auth_provider.dart';
 
 
@@ -42,6 +45,8 @@ class _CasesScreenState extends State<CasesScreen> {
   // Hierarchy data
   Map<String, Map<String, List<String>>> _policeHierarchy = {};
   bool _hierarchyLoading = true;
+  String? _hierarchyError; // Error message if loading fails
+  bool _usingFirestoreFallback = false; // Track if using Firestore fallback
 
   /* ================= RANK TIERS ================= */
   
@@ -123,10 +128,28 @@ class _CasesScreenState extends State<CasesScreen> {
     if (mounted) _fetchData();
   }
 
-  Future<void> _loadHierarchyData() async {
+  Future<void> _loadHierarchyData({bool retry = false}) async {
+    if (retry) {
+      setState(() {
+        _hierarchyLoading = true;
+        _hierarchyError = null;
+        _usingFirestoreFallback = false;
+      });
+    }
+
     try {
+      debugPrint('🔄 [CASES] Loading police hierarchy data...');
+      
+      // Try loading from asset with timeout
       final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+          .loadString('assets/Data/ap_police_hierarchy_complete.json')
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Asset loading timed out after 10 seconds');
+            },
+          );
+      
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       Map<String, Map<String, List<String>>> hierarchy = {};
@@ -146,11 +169,116 @@ class _CasesScreenState extends State<CasesScreen> {
         setState(() {
           _policeHierarchy = hierarchy;
           _hierarchyLoading = false;
+          _hierarchyError = null;
+          _usingFirestoreFallback = false;
+        });
+        debugPrint('✅ [CASES] Hierarchy loaded successfully!');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ [CASES] Error loading hierarchy data: $e');
+      debugPrint('❌ [CASES] Stack trace: $stackTrace');
+      
+      // Try Firestore fallback
+      await _loadHierarchyFromFirestore();
+    }
+  }
+
+  /* ================= FIRESTORE FALLBACK ================= */
+
+  Future<void> _loadHierarchyFromFirestore() async {
+    try {
+      debugPrint('🔄 [CASES] Attempting Firestore fallback for hierarchy data...');
+      
+      // Query all cases to extract unique stations
+      final casesSnapshot = await FirebaseFirestore.instance
+          .collection('cases')
+          .limit(1000) // Limit to avoid too much data
+          .get();
+
+      // Also query petitions for additional stations
+      final petitionsSnapshot = await FirebaseFirestore.instance
+          .collection('petitions')
+          .limit(1000)
+          .get();
+
+      // Extract unique stations with their districts
+      Map<String, Set<String>> districtToStations = {};
+      
+      // From cases
+      for (var doc in casesSnapshot.docs) {
+        final data = doc.data();
+        final district = data['district']?.toString();
+        final station = data['policeStation']?.toString();
+        
+        if (district != null && station != null && district.isNotEmpty && station.isNotEmpty) {
+          districtToStations.putIfAbsent(district, () => <String>{}).add(station);
+        }
+      }
+      
+      // From petitions
+      for (var doc in petitionsSnapshot.docs) {
+        final data = doc.data();
+        final district = data['district']?.toString();
+        final station = data['stationName']?.toString();
+        
+        if (district != null && station != null && district.isNotEmpty && station.isNotEmpty) {
+          districtToStations.putIfAbsent(district, () => <String>{}).add(station);
+        }
+      }
+
+      // Build a simplified hierarchy structure
+      Map<String, Map<String, List<String>>> hierarchy = {};
+      
+      // Group districts by first letter or create a default range
+      for (var entry in districtToStations.entries) {
+        final district = entry.key;
+        final stations = entry.value.toList()..sort();
+        
+        // Try to find range from existing hierarchy if available, otherwise use "Unknown Range"
+        String? range;
+        for (var r in _policeHierarchy.keys) {
+          if (_policeHierarchy[r]?.containsKey(district) == true) {
+            range = r;
+            break;
+          }
+        }
+        range ??= 'Unknown Range';
+        
+        hierarchy.putIfAbsent(range, () => {})[district] = stations;
+      }
+
+      if (hierarchy.isNotEmpty && mounted) {
+        setState(() {
+          // Merge with existing hierarchy if any
+          for (var rangeEntry in hierarchy.entries) {
+            if (_policeHierarchy.containsKey(rangeEntry.key)) {
+              _policeHierarchy[rangeEntry.key]!.addAll(rangeEntry.value);
+            } else {
+              _policeHierarchy[rangeEntry.key] = rangeEntry.value;
+            }
+          }
+          _hierarchyLoading = false;
+          _hierarchyError = null;
+          _usingFirestoreFallback = true;
+        });
+        
+        debugPrint('✅ [CASES] Hierarchy loaded from Firestore fallback!');
+        debugPrint('   📊 Ranges: ${hierarchy.length}');
+        debugPrint('   📊 Districts: ${districtToStations.length}');
+      } else {
+        throw Exception('No data found in Firestore fallback');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ [CASES] Firestore fallback also failed: $e');
+      debugPrint('❌ [CASES] Stack trace: $stackTrace');
+      
+      if (mounted) {
+        setState(() {
+          _hierarchyLoading = false;
+          _hierarchyError = 'Failed to load police station data. Please check your connection and try again.';
+          _usingFirestoreFallback = false;
         });
       }
-    } catch (e) {
-      print('❌ [CASES] Error loading hierarchy: $e');
-      if (mounted) setState(() => _hierarchyLoading = false);
     }
   }
 
@@ -399,12 +527,116 @@ class _CasesScreenState extends State<CasesScreen> {
     print('📱 [CASES_SCREEN] Screen built');
     print('📚 [CASES_SCREEN] Can pop: ${Navigator.of(context).canPop()}');
 
+    // Show loading state
+    if (_hierarchyLoading && Provider.of<AuthProvider>(context).role == 'police') {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F3F6),
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading police hierarchy data...',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Show error state with retry option (only for police)
+    if (_hierarchyError != null && 
+        _policeHierarchy.isEmpty && 
+        Provider.of<AuthProvider>(context).role == 'police') {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F3F6),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red[300],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Failed to Load Police Stations',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _hierarchyError!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _loadHierarchyData(retry: true),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       // Slightly darker background so white cards stand out clearly
       backgroundColor: const Color(0xFFF1F3F6),
       body: SafeArea(
         child: Column(
           children: [
+            // Show warning if using Firestore fallback
+            if (_usingFirestoreFallback && Provider.of<AuthProvider>(context).role == 'police')
+              Container(
+                width: double.infinity,
+                color: Colors.orange.shade50,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Using fallback data. Some stations may be missing. Tap retry to reload from asset.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _loadHierarchyData(retry: true),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
             // HEADER: Arrow + Title + New Case Button (all in one row)
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
