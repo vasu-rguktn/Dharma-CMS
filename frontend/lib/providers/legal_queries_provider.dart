@@ -10,6 +10,8 @@ class LegalQueriesProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
   String? _currentSessionId;
   String? get currentSessionId => _currentSessionId;
 
@@ -86,6 +88,9 @@ class LegalQueriesProvider with ChangeNotifier {
       'text': trimmed + attachText,
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    _isLoading = true;
+    notifyListeners();
 
     try {
       final token = await _auth.currentUser!.getIdToken();
@@ -183,6 +188,9 @@ class LegalQueriesProvider with ChangeNotifier {
         'text': '⚠️ Unable to get legal response. Please try again.',
         'timestamp': FieldValue.serverTimestamp(),
       });
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

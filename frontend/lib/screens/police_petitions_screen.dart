@@ -39,6 +39,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   String? _selectedType;
   DateTime? _fromDate;
   DateTime? _toDate;
+  String? _selectedUrgency; // 'Escalated' or 'DGP Level'
 
   // Hierarchy data
   Map<String, Map<String, List<String>>> _policeHierarchy = {};
@@ -76,26 +77,33 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   void initState() {
     super.initState();
     _loadHierarchyData();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final policeProvider = context.read<PoliceAuthProvider>();
-      final profile = policeProvider.policeProfile;
-
-      if (profile != null) {
-        setState(() {
-          _policeRank = profile['rank']?.toString();
-          _policeRange = profile['range']?.toString();
-          _policeDistrict = profile['district']?.toString();
-          _policeStation = profile['stationName']?.toString();
-
-          debugPrint('👮 Police Profile Loaded:');
-          debugPrint('   Rank: $_policeRank');
-          debugPrint('   Range: $_policeRange');
-          debugPrint('   District: $_policeDistrict');
-          debugPrint('   Station: $_policeStation');
-        });
-      }
+      _loadProfile();
     });
+  }
+
+  Future<void> _loadProfile() async {
+    final policeProvider = context.read<PoliceAuthProvider>();
+    // Ensure profile is loaded
+    await policeProvider.loadPoliceProfileIfLoggedIn();
+    
+    final profile = policeProvider.policeProfile;
+
+    if (profile != null && mounted) {
+      setState(() {
+        _policeRank = profile['rank']?.toString();
+        _policeRange = profile['range']?.toString();
+        _policeDistrict = profile['district']?.toString();
+        _policeStation = profile['stationName']?.toString();
+
+        debugPrint('👮 Police Profile Loaded:');
+        debugPrint('   Rank: $_policeRank');
+        debugPrint('   Range: $_policeRange');
+        debugPrint('   District: $_policeDistrict');
+        debugPrint('   Station: $_policeStation');
+      });
+    }
   }
 
   /* ================= LOAD HIERARCHY ================= */
@@ -104,7 +112,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     try {
       debugPrint('🔄 [Petitions] Loading police hierarchy data...');
       final jsonStr = await rootBundle
-          .loadString('assets/Data/ap_police_hierarchy_complete.json');
+          .loadString('assets/data/ap_police_hierarchy_complete.json');
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       Map<String, Map<String, List<String>>> hierarchy = {};
@@ -205,10 +213,20 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       targetRange = _policeRange;
     } else if (targetDistrict != null) {
       // If we have a district but no range, search for the district across all ranges
+      // using case-insensitive match
       for (var range in _policeHierarchy.keys) {
-        if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
+        final districtMap = _policeHierarchy[range] ?? {};
+        // Check keys case-insensitively
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+
+        if (matchedKey.isNotEmpty) {
           targetRange = range;
-          debugPrint('🔍 Found district "$targetDistrict" in range "$range"');
+          // Update targetDistrict to the exact key found in JSON for lookup
+          targetDistrict = matchedKey;
+          debugPrint('🔍 Found district "$targetDistrict" (matched from "${_policeDistrict ?? _selectedDistrict}") in range "$range"');
           break;
         }
       }
@@ -219,9 +237,29 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       return [];
     }
 
-    final stations = _policeHierarchy[targetRange]?[targetDistrict] ?? [];
-    debugPrint('✅ Found ${stations.length} stations in $targetRange > $targetDistrict');
-    return stations;
+    // Final robust lookup using the exact keys
+    final districtMap = _policeHierarchy[targetRange] ?? {};
+    
+    // Try exact match first
+    if (districtMap.containsKey(targetDistrict)) {
+      final stations = districtMap[targetDistrict] ?? [];
+      debugPrint('✅ Found ${stations.length} stations in $targetRange > $targetDistrict');
+      return stations;
+    } 
+    
+    // Fallback: Try finding key again (redundant if we set it above, but safe)
+    final matchedKey = districtMap.keys.firstWhere(
+      (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+      orElse: () => '',
+    );
+    
+    if (matchedKey.isNotEmpty) {
+      final stations = districtMap[matchedKey] ?? [];
+      debugPrint('✅ Found ${stations.length} stations via fuzzy match in $targetRange > $matchedKey');
+      return stations;
+    }
+
+    return [];
   }
 
   /* ================= FILTER RESET ================= */
@@ -339,6 +377,11 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           p.createdAt
               .toDate()
               .isAfter(_toDate!.add(const Duration(days: 1)))) {
+        return false;
+      }
+
+      // Filter by Urgency
+      if (_selectedUrgency == 'Escalated' && !p.isEscalated) {
         return false;
       }
 
@@ -709,7 +752,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         }
 
                         final updates = snapshot.data ?? [];
-                        return PetitionUpdateTimeline(updates: updates);
+                        final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
+                        return PetitionUpdateTimeline(updates: allUpdates);
                       },
                     ),
 
@@ -1152,6 +1196,18 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                               },
                             ),
                             const SizedBox(width: 8),
+                            // ESCALATED FILTER
+                            _buildFilterChip<String>(
+                              label: 'Urgency',
+                              value: _selectedUrgency,
+                              options: const [
+                                'Escalated',
+                              ],
+                              onSelected: (value) {
+                                setState(() => _selectedUrgency = value);
+                              },
+                            ),
+                            const SizedBox(width: 8),
                             _buildDateFilterChip(
                               label: 'From Date',
                               value: _fromDate,
@@ -1186,6 +1242,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                             const SizedBox(width: 8),
                             if (_selectedPoliceStatus != null ||
                                 _selectedType != null ||
+                                _selectedUrgency != null ||
                                 _fromDate != null ||
                                 _toDate != null ||
                                 (_searchQuery != null && _searchQuery!.isNotEmpty))
@@ -1194,6 +1251,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                   setState(() {
                                     _selectedPoliceStatus = null;
                                     _selectedType = null;
+                                    _selectedUrgency = null;
                                     _fromDate = null;
                                     _toDate = null;
                                     _searchQuery = '';
@@ -1321,30 +1379,78 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
-                                                    if (p.policeStatus != null)
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 4,
-                                                        ),
-                                                        decoration: BoxDecoration(
-                                                          color: _getPoliceStatusColor(
-                                                                  p.policeStatus!)
-                                                              .withOpacity(0.12),
-                                                          borderRadius: BorderRadius.circular(20),
-                                                        ),
-                                                        child: Text(
-                                                          p.policeStatus!,
-                                                          style: TextStyle(
-                                                            fontSize: 11,
-                                                            fontWeight: FontWeight.w600,
+                                                      if (p.policeStatus != null)
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 4,
+                                                          ),
+                                                          decoration: BoxDecoration(
                                                             color: _getPoliceStatusColor(
-                                                                p.policeStatus!),
+                                                                    p.policeStatus!)
+                                                                .withOpacity(0.12),
+                                                            borderRadius: BorderRadius.circular(20),
+                                                          ),
+                                                          child: Text(
+                                                            p.policeStatus!,
+                                                            style: TextStyle(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: _getPoliceStatusColor(
+                                                                  p.policeStatus!),
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                                  ],
-                                                ),
+                                                      if (p.isEscalated) ...[
+                                                        const SizedBox(width: 8),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                              horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.red.shade100,
+                                                            borderRadius: BorderRadius.circular(20),
+                                                            border: Border.all(color: Colors.red.shade300),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(Icons.trending_up,
+                                                                  size: 10, color: Colors.red.shade800),
+                                                              const SizedBox(width: 4),
+                                                              Text(
+                                                                'ESCALATED',
+                                                                style: TextStyle(
+                                                                  fontSize: 9,
+                                                                  fontWeight: FontWeight.bold,
+                                                                  color: Colors.red.shade900,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                      if (p.escalationLevel == 3) ...[
+                                                        const SizedBox(width: 8),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                              horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.deepPurple.shade100,
+                                                            borderRadius: BorderRadius.circular(20),
+                                                            border: Border.all(color: Colors.deepPurple.shade300),
+                                                          ),
+                                                          child: Text(
+                                                            'DGP LEVEL',
+                                                            style: TextStyle(
+                                                              fontSize: 9,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.deepPurple.shade900,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   p.petitionerName,

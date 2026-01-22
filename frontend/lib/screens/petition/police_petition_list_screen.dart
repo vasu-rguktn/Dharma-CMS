@@ -48,14 +48,17 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
         Provider.of<PetitionProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    final officerId = authProvider.userProfile?.uid;
     final stationName = authProvider.userProfile?.stationName;
-    if (stationName != null) {
-      await petitionProvider.fetchFilteredPetitions(
-        isPolice: true,
-        stationName: stationName,
-        filter: widget.filter,
-      );
-    }
+    final district = authProvider.userProfile?.district;
+
+    await petitionProvider.fetchFilteredPetitions(
+      isPolice: true,
+      officerId: officerId,
+      stationName: stationName,
+      district: district,
+      filter: widget.filter,
+    );
 
     setState(() {
       _filteredPetitions = petitionProvider.petitions;
@@ -95,6 +98,8 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
         return Colors.orange.shade700;
       case PetitionFilter.closed:
         return Colors.green.shade700;
+      case PetitionFilter.escalated:
+        return Colors.red.shade700;
     }
   }
 
@@ -108,6 +113,8 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
         return Icons.sync;
       case PetitionFilter.closed:
         return Icons.task_alt;
+      case PetitionFilter.escalated:
+        return Icons.trending_up;
     }
   }
 
@@ -666,7 +673,7 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: _getFilterColor(widget.filter)
-                                .withValues(alpha: 0.3),
+                                .withOpacity(0.3),
                             width: 1,
                           ),
                         ),
@@ -708,7 +715,7 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                                         color: _getPoliceStatusColor(
                                                 petition.policeStatus ??
                                                     'Pending')
-                                            .withValues(alpha: 0.1),
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
                                           color: _getPoliceStatusColor(

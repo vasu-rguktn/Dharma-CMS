@@ -135,9 +135,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSentTab
-              ? _getPoliceStatusColor(petition.policeStatus).withValues(alpha: 0.3)
-              : _getPoliceStatusColor(petition.policeStatus).withValues(alpha: 0.3),
+          color: _getPoliceStatusColor(petition.policeStatus).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -170,27 +168,51 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _getPoliceStatusColor(petition.policeStatus)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _getPoliceStatusColor(petition.policeStatus),
-                        width: 1,
-                      ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (petition.isEscalated) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.red.shade300),
+                            ),
+                            child: const Text(
+                              'ESCALATED',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _getPoliceStatusColor(petition.policeStatus)
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _getPoliceStatusColor(petition.policeStatus),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            petition.policeStatus?.toUpperCase() ?? 'RECEIVED',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: _getPoliceStatusColor(petition.policeStatus),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      petition.policeStatus?.toUpperCase() ?? 'RECEIVED',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: _getPoliceStatusColor(petition.policeStatus),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -428,7 +450,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         const SizedBox(height: 20),
 
                         // Timeline Section
-                        _buildTimelineSection(petition.id!),
+                        _buildTimelineSection(petition),
 
                         const SizedBox(height: 80), // Space for action buttons
                       ],
@@ -444,7 +466,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withOpacity(0.05),
                           blurRadius: 10,
                           offset: const Offset(0, -5),
                         ),
@@ -512,7 +534,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     );
   }
 
-  Widget _buildTimelineSection(String petitionId) {
+  Widget _buildTimelineSection(Petition petition) {
+    final petitionId = petition.id!;
     debugPrint('🔍 Building timeline for petition: $petitionId');
     
     return Column(
@@ -612,9 +635,9 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                 .map((doc) => PetitionUpdate.fromFirestore(doc))
                 .toList();
 
-            debugPrint('✅ Loaded ${updates.length} timeline updates');
+            final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
 
-            return PetitionUpdateTimeline(updates: updates);
+            return PetitionUpdateTimeline(updates: allUpdates);
           },
         ),
       ],
@@ -955,9 +978,9 @@ class _StatusOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
           borderRadius: BorderRadius.circular(8),
-          color: color.withValues(alpha: 0.05),
+          color: color.withOpacity(0.05),
         ),
         child: Row(
           children: [

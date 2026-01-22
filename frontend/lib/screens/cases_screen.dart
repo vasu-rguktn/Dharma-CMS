@@ -8,6 +8,10 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:flutter/services.dart'; // For rootBundle
+import 'dart:convert'; // For json decode
+import 'package:Dharma/providers/police_auth_provider.dart';
+
 
 class CasesScreen extends StatefulWidget {
   const CasesScreen({super.key});
@@ -18,10 +22,52 @@ class CasesScreen extends StatefulWidget {
 
 class _CasesScreenState extends State<CasesScreen> {
   bool _hasLoaded = false;
+  bool _isFiltersExpanded = true;
   String? _searchQuery;
-  String? _selectedStation;
+  // String? _selectedStation; // Replaced by hierarchy logic for police
   String? _selectedStatus;
   String? _selectedAgeRange;
+
+  // Police Profile Data
+  String? _policeRank;
+  String? _policeRange;
+  String? _policeDistrict;
+  String? _policeStation;
+
+  // Filter selections (for dynamic filtering based on rank)
+  String? _selectedRange;
+  String? _selectedDistrict;
+  String? _selectedStation; // Reusing this name but managed differently
+
+  // Hierarchy data
+  Map<String, Map<String, List<String>>> _policeHierarchy = {};
+  bool _hierarchyLoading = true;
+
+  /* ================= RANK TIERS ================= */
+  
+  static const List<String> _stateLevelRanks = [
+    'Director General of Police',
+    'Additional Director General of Police',
+  ];
+
+  static const List<String> _rangeLevelRanks = [
+    'Inspector General of Police',
+    'Deputy Inspector General of Police',
+  ];
+
+  static const List<String> _districtLevelRanks = [
+    'Superintendent of Police',
+    'Additional Superintendent of Police',
+  ];
+
+  static const List<String> _stationLevelRanks = [
+    'Deputy Superintendent of Police',
+    'Inspector of Police',
+    'Sub Inspector of Police',
+    'Assistant Sub Inspector of Police',
+    'Head Constable',
+    'Police Constable',
+  ];
 
   Color _statusColor(CaseStatus status) {
     switch (status) {
@@ -42,20 +88,306 @@ class _CasesScreenState extends State<CasesScreen> {
     return DateFormat.yMMMd().format(dateTime);
   }
 
+  /* ================= INIT & LOAD ================= */
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHierarchyData();
+
+    // Defer profile loading until context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfileAndFetch();
+    });
+  }
+
+  Future<void> _loadProfileAndFetch() async {
+    final auth = context.read<AuthProvider>();
+    
+    if (auth.role == 'police') {
+      final policeProvider = context.read<PoliceAuthProvider>();
+      await policeProvider.loadPoliceProfileIfLoggedIn();
+      final profile = policeProvider.policeProfile;
+
+      if (profile != null && mounted) {
+        setState(() {
+          _policeRank = profile['rank']?.toString();
+          _policeRange = profile['range']?.toString();
+          _policeDistrict = profile['district']?.toString();
+          _policeStation = profile['stationName']?.toString();
+        });
+        print('👮 [CASES] Police Profile: Rank=$_policeRank, Dist=$_policeDistrict');
+      }
+    }
+    
+    if (mounted) _fetchData();
+  }
+
+  Future<void> _loadHierarchyData() async {
+    try {
+      final jsonStr = await rootBundle
+          .loadString('assets/data/ap_police_hierarchy_complete.json');
+      final Map<String, dynamic> data = json.decode(jsonStr);
+
+      Map<String, Map<String, List<String>>> hierarchy = {};
+      
+      data.forEach((range, districts) {
+        if (districts is Map) {
+          Map<String, List<String>> districtMap = {};
+          districts.forEach((district, stations) {
+            final stationList = List<String>.from(stations ?? []);
+            districtMap[district.toString()] = stationList;
+          });
+          hierarchy[range] = districtMap;
+        }
+      });
+
+      if (mounted) {
+        setState(() {
+          _policeHierarchy = hierarchy;
+          _hierarchyLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ [CASES] Error loading hierarchy: $e');
+      if (mounted) setState(() => _hierarchyLoading = false);
+    }
+  }
+
+  Future<void> _fetchData() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+    
+    // Determine effective filters
+    String? targetDistrict;
+    String? targetStation;
+
+    if (auth.role == 'police') {
+      // 1. Station Level: Must filter by assigned station
+      if (_isStationLevel() && _policeStation != null) {
+        targetStation = _policeStation;
+        targetDistrict = _policeDistrict; 
+      }
+      // 2. District Level (SP, ASP):
+      else if (_districtLevelRanks.contains(_policeRank)) {
+        // If they chose a specific station, filter by it
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict ?? _policeDistrict;
+        } 
+        // Otherwise, filter by their district (SHOW ALL STATIONS IN DISTRICT)
+        else {
+          targetStation = null; // Important: Clear station filter
+          targetDistrict = _policeDistrict;
+        }
+      }
+      // 3. Range Level (IGP, DIG):
+      else if (_rangeLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict; // Might be null if implicitly selected
+        } else if (_selectedDistrict != null) {
+          targetStation = null;
+          targetDistrict = _selectedDistrict;
+        } else if (_policeRange != null) {
+          // Ideally filter by range, but backend might not support range query directly on cases.
+          // For now, we rely on selectedDistrict. If none selected, we might show all or limit?
+          // Let's assume fetching all for range if supported, or let them pick.
+          // Based on current CaseProvider, we can't filter by 'range'. 
+          // So we default to no district/station filter unless specified.
+          targetStation = null;
+          targetDistrict = null; 
+        }
+      }
+      // 4. State Level (DGP):
+      else if (_stateLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict;
+        } else if (_selectedDistrict != null) {
+          targetStation = null;
+          targetDistrict = _selectedDistrict;
+        }
+      }
+      // Fallback for edge cases or untagged ranks
+      else {
+         // Attempt to respect manual selections if rank logic fails
+         targetStation = _selectedStation;
+         targetDistrict = _selectedDistrict ?? _policeDistrict;
+      }
+    }
+
+    print('📡 [CASES] Fetching with District=$targetDistrict, Station=$targetStation');
+    await caseProvider.fetchCases(
+      userId: auth.user?.uid,
+      isAdmin: auth.role == 'police',
+      district: targetDistrict,
+      station: targetStation,
+    );
+  }
+
+  /* ================= RANK VISIBILITY HELPERS ================= */
+
+  bool _canFilterByRange() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByDistrict() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByStation() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank) ||
+           _districtLevelRanks.contains(_policeRank);
+  }
+
+  bool _isStationLevel() {
+    if (_policeRank == null) return false;
+    return _stationLevelRanks.contains(_policeRank);
+  }
+
+  /* ================= HIERARCHY HELPERS ================= */
+
+  List<String> _getAvailableRanges() {
+    return _policeHierarchy.keys.toList();
+  }
+
+  List<String> _getAvailableDistricts() {
+    if (_selectedRange != null) {
+      return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
+    }
+    if (_policeRange != null) {
+      return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
+    }
+    return [];
+  }
+
+  List<String> _getAvailableStations() {
+    String? targetRange;
+    String? targetDistrict;
+
+    if (_selectedDistrict != null) {
+      targetDistrict = _selectedDistrict;
+    } else if (_policeDistrict != null) {
+      targetDistrict = _policeDistrict;
+    }
+
+    if (_selectedRange != null) {
+      targetRange = _selectedRange;
+    } else if (_policeRange != null) {
+      targetRange = _policeRange;
+    } else if (targetDistrict != null) {
+      // Search for range containing this district (Case-insensitive check)
+      for (var range in _policeHierarchy.keys) {
+         final districtMap = _policeHierarchy[range] ?? {};
+         // Check if any key matches targetDistrict (ignore case/space)
+         final matchedKey = districtMap.keys.firstWhere(
+           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+           orElse: () => '',
+         );
+         
+         if (matchedKey.isNotEmpty) {
+           targetRange = range;
+           // Update targetDistrict to the exact key found in JSON for lookup
+           targetDistrict = matchedKey; 
+           break;
+         }
+      }
+    }
+
+    List<String> stations = [];
+
+    // If we have a target range and district, ensure we match the exact key in the JSON
+    if (targetRange != null && targetDistrict != null) {
+      final districtMap = _policeHierarchy[targetRange] ?? {};
+      // Try exact match first
+      if (districtMap.containsKey(targetDistrict)) {
+        stations = List.from(districtMap[targetDistrict] ?? []);
+      } else {
+        // Try case-insensitive match
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchedKey.isNotEmpty) {
+          stations = List.from(districtMap[matchedKey] ?? []);
+        }
+      }
+    } else if (targetDistrict != null) { // Fallback global search
+       for (var range in _policeHierarchy.keys) {
+         final districtMap = _policeHierarchy[range] ?? {};
+         final matchedKey = districtMap.keys.firstWhere(
+           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+           orElse: () => '',
+         );
+         if (matchedKey.isNotEmpty) {
+            stations = List.from(districtMap[matchedKey] ?? []);
+            break; 
+         }
+       }
+    }
+
+    // MERGE WITH DYNAMIC STATIONS FROM FETCHED CASES
+    // This handles missing data in JSON (e.g. Commissionerates) 
+    // and ensures all actual active stations are listed.
+    try {
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      final dynamicStations = caseProvider.cases
+          .where((c) => c.policeStation != null && c.policeStation!.isNotEmpty)
+          .map((c) => c.policeStation!)
+          .toSet();
+      
+      for (final s in dynamicStations) {
+        if (!stations.contains(s)) {
+          stations.add(s);
+        }
+      }
+    } catch (e) {
+      // Ignore errors if provider not ready
+    }
+
+    stations.sort();
+    return stations;
+  }
+
+  /* ================= HANDLERS ================= */
+
+  void _onRangeChanged(String? range) {
+    setState(() {
+      _selectedRange = range;
+      _selectedDistrict = null;
+      _selectedStation = null;
+    });
+    _fetchData();
+  }
+
+  void _onDistrictChanged(String? district) {
+    setState(() {
+      _selectedDistrict = district;
+      _selectedStation = null;
+    });
+    _fetchData();
+  }
+
+  void _onStationChanged(String? station) {
+    setState(() {
+      _selectedStation = station;
+    });
+    _fetchData();
+  }
+
+  /* ================= BUILDERS ================= */
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_hasLoaded) {
-      _hasLoaded = true;
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        caseProvider.fetchCases(
-          userId: auth.user?.uid,
-          isAdmin: auth.role == 'police',
-        );
-      });
-    }
+    // Logic moved to initState and _loadProfileAndFetch
+    // Leaving empty or minimal to avoid double-fetching
   }
 
   @override
@@ -149,6 +481,8 @@ class _CasesScreenState extends State<CasesScreen> {
               ),
             ),
 
+            // SEARCH & FILTERS,
+
             // SEARCH & FILTERS
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -194,19 +528,54 @@ class _CasesScreenState extends State<CasesScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _buildFilterChip<String>(
-                            label: 'Station',
-                            value: _selectedStation,
-                            options: {
-                              for (final c in caseProvider.cases)
-                                if (c.policeStation != null)
-                                  c.policeStation!: c.policeStation!,
-                            }.values.toList(),
-                            onSelected: (value) {
-                              setState(() => _selectedStation = value);
-                            },
-                          ),
-                          const SizedBox(width: 8),
+
+                          // JURISDICTION FILTERS (For Police)
+                          if (Provider.of<AuthProvider>(context).role == 'police' && !_hierarchyLoading) ...[
+                             if (_canFilterByRange()) ...[
+                                _buildFilterDropdown(
+                                  label: 'Range',
+                                  value: _selectedRange,
+                                  items: _getAvailableRanges(),
+                                  onChanged: _onRangeChanged,
+                                ),
+                                const SizedBox(width: 8),
+                             ],
+                             if (_canFilterByDistrict()) ...[
+                                _buildFilterDropdown(
+                                  label: 'District',
+                                  value: _selectedDistrict,
+                                  items: _getAvailableDistricts(),
+                                  onChanged: _onDistrictChanged,
+                                ),
+                                const SizedBox(width: 8),
+                             ],
+                             if (_canFilterByStation()) ...[
+                                _buildFilterDropdown(
+                                  label: 'Station',
+                                  value: _selectedStation,
+                                  items: _getAvailableStations(),
+                                  onChanged: _onStationChanged,
+                                ),
+                                const SizedBox(width: 8),
+                             ],
+                          ],
+
+                          // Only show Station chip if NOT police (since police use hierarchy above)
+                          if (Provider.of<AuthProvider>(context).role != 'police') ...[
+                            _buildFilterChip<String>(
+                              label: 'Station',
+                              value: _selectedStation,
+                              options: {
+                                for (final c in caseProvider.cases)
+                                  if (c.policeStation != null)
+                                    c.policeStation!: c.policeStation!,
+                              }.values.toList(),
+                              onSelected: (value) {
+                                setState(() => _selectedStation = value);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                          ],
                           _buildFilterChip<String>(
                             label: 'Status',
                             value: _selectedStatus,
@@ -231,6 +600,23 @@ class _CasesScreenState extends State<CasesScreen> {
                               setState(() => _selectedAgeRange = value);
                             },
                           ),
+                          
+                          // Info Icon (Police Only) - At the end of filters
+                          if (Provider.of<AuthProvider>(context).role == 'police') ...[
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _showAccessLevelDialog,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Icon(Icons.info_outline, size: 20, color: Colors.blue.shade700),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -259,6 +645,42 @@ class _CasesScreenState extends State<CasesScreen> {
     AppLocalizations localizations,
     Color orange,
   ) {
+    if (caseProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (caseProvider.error != null) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Error loading cases',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  caseProvider.error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _fetchData,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
     // Apply in-memory filters
     final filteredCases = caseProvider.cases.where((c) {
       // Search query
@@ -278,8 +700,10 @@ class _CasesScreenState extends State<CasesScreen> {
         if (!haystack.contains(query)) return false;
       }
 
-      // Station filter
-      if (_selectedStation != null &&
+      // Station filter (Skip if police, as handled by backend fetch)
+      // For non-police (user view), keep client side filter
+      if (Provider.of<AuthProvider>(context, listen: false).role != 'police' &&
+          _selectedStation != null &&
           _selectedStation!.isNotEmpty &&
           c.policeStation != _selectedStation) {
         return false;
@@ -489,12 +913,68 @@ class _CasesScreenState extends State<CasesScreen> {
     );
   }
 
+  void _showAccessLevelDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Your Access Level', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildAccessInfoRow('Rank', _policeRank),
+            const SizedBox(height: 8),
+            _buildAccessInfoRow('Range', _policeRange),
+            const SizedBox(height: 8),
+            _buildAccessInfoRow('District', _policeDistrict),
+            const SizedBox(height: 8),
+            _buildAccessInfoRow('Station', _policeStation),
+            const SizedBox(height: 16),
+            const Text(
+              'Filter cases using the dropdown filters.',
+              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Color(0xFFFC633C))),
+          ),
+        ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  Widget _buildAccessInfoRow(String label, String? value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 70,
+          child: Text(
+            '$label:',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value ?? 'N/A',
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFilterChip<T>({
     required String label,
     required T? value,
     required List<T> options,
     required void Function(T?) onSelected,
   }) {
+    // ... existing implementation ...
     return PopupMenuButton<T>(
       tooltip: label,
       onSelected: onSelected,
@@ -524,6 +1004,117 @@ class _CasesScreenState extends State<CasesScreen> {
               value == null ? label : '$label: $value',
               style: const TextStyle(fontSize: 12),
             ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    // ... existing implementation ...
+    return InkWell(
+      onTap: () async {
+        if (items.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No $label options available')),
+          );
+          return;
+        }
+
+        final searchController = TextEditingController();
+        List<String> filtered = List.from(items);
+
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (_) => StatefulBuilder(
+            builder: (context, setModalState) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Text('Select $label',
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: const InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (val) {
+                          setModalState(() {
+                            filtered = items
+                                .where((e) =>
+                                    e.toLowerCase().contains(val.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filtered.length + 1,
+                        itemBuilder: (_, i) {
+                          if (i == 0) {
+                            return ListTile(
+                              title: Text('All $label'),
+                              onTap: () {
+                                onChanged(null);
+                                Navigator.pop(context);
+                              },
+                            );
+                          }
+                          final item = filtered[i - 1];
+                          return ListTile(
+                            title: Text(item),
+                            selected: item == value,
+                            trailing: item == value
+                                ? const Icon(Icons.check, color: Colors.green)
+                                : null,
+                            onTap: () {
+                              onChanged(item);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value == null ? label : '$label: $value',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const SizedBox(width: 4),
             const Icon(Icons.arrow_drop_down, size: 18),
           ],
         ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -54,16 +55,28 @@ class GeoCameraService {
       }
 
       // Check permission
-      final hasPermission = await hasLocationPermission();
-      if (!hasPermission) {
-        print('Location permission not granted');
-        return null;
+      if (kIsWeb) {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          final requested = await Geolocator.requestPermission();
+          if (requested == LocationPermission.denied || 
+              requested == LocationPermission.deniedForever) {
+            print('Location permission denied on web');
+            return null;
+          }
+        }
+      } else {
+        final hasPermission = await hasLocationPermission();
+        if (!hasPermission) {
+          print('Location permission not granted');
+          return null;
+        }
       }
 
       // Get current position with best accuracy
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.best,
-        timeLimit: const Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 30),
       );
 
       // Cache the position
