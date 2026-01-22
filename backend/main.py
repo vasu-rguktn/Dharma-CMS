@@ -20,6 +20,7 @@ import firebase_admin
 from firebase_admin import credentials
 from routers.legal_suggestions import router as legal_suggester_router
 from routers.image_lab.person_router import router as person_router
+from routers.chargesheet_vetting import router as chargesheet_vetting_router
 
 
 # Initialize Firebase Admin SDK
@@ -97,6 +98,7 @@ app.include_router(anpr_router)
 
 app.include_router(legal_suggester_router)
 app.include_router(person_router)
+app.include_router(chargesheet_vetting_router)
 from routers.cases import router as cases_router
 app.include_router(cases_router)
 
