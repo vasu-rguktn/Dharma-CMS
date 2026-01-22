@@ -34,49 +34,38 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
   //     (_) => petitionProvider.fetchPetitionCount(),
   //   );
   // }
-@override
   @override
   void initState() {
     super.initState();
 
-    // Defer initialization to ensure context and providers are ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final petitionProvider =
-          Provider.of<PetitionProvider>(context, listen: false);
-      final auth =
-          Provider.of<AuthProvider>(context, listen: false);
+      final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+      final auth = Provider.of<AuthProvider>(context, listen: false);
       
-      // Safety check: ensure userProfile exists
-      final stationName = auth.userProfile?.stationName;
+      final profile = auth.userProfile;
       
-      if (stationName != null) {
-        // ✅ Load station-wise stats
-        petitionProvider.fetchPetitionStats(
-          stationName: stationName,
-        );
-
-  // ✅ Load organizational stats
-  petitionProvider.fetchPetitionStats(
-    officerId: auth.userProfile?.uid,
-    stationName: auth.userProfile?.stationName,
-    district: auth.userProfile?.district,
-    range: auth.userProfile?.rank != null && auth.userProfile!.rank!.contains('General') 
-        ? null 
-        : null, 
-  );
-
-  // ✅ Auto-refresh every 30 seconds
-  _refreshTimer = Timer.periodic(
-    const Duration(seconds: 30),
-    (_) {
+      // ✅ Load organizational stats initially
       petitionProvider.fetchPetitionStats(
-        officerId: auth.userProfile?.uid,
-        stationName: auth.userProfile?.stationName,
-        district: auth.userProfile?.district,
+        officerId: profile?.uid,
+        stationName: profile?.stationName,
+        district: profile?.district,
       );
-    },
-  );
-}
+
+      // ✅ Auto-refresh every 30 seconds
+      _refreshTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) {
+          if (mounted) {
+            petitionProvider.fetchPetitionStats(
+              officerId: profile?.uid,
+              stationName: profile?.stationName,
+              district: profile?.district,
+            );
+          }
+        },
+      );
+    });
+  }
 
   @override
   void dispose() {
