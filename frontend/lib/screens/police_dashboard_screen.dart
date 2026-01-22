@@ -47,20 +47,22 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
           Provider.of<AuthProvider>(context, listen: false);
       
       // Safety check: ensure userProfile exists
-      final stationName = auth.userProfile?.stationName;
+      final userProfile = auth.userProfile;
+      final stationName = userProfile?.stationName;
       
       if (stationName != null) {
         // ✅ Load station-wise stats
         petitionProvider.fetchPetitionStats(
           stationName: stationName,
         );
+      }
 
       // ✅ Load recent petitions for activity section
       petitionProvider.fetchFilteredPetitions(
         isPolice: true,
-        officerId: profile?.uid,
-        stationName: profile?.stationName,
-        district: profile?.district,
+        officerId: userProfile?.uid,
+        stationName: userProfile?.stationName,
+        district: userProfile?.district,
         filter: PetitionFilter.all,
       );
 
@@ -69,16 +71,17 @@ class _PoliceDashboardScreenState extends State<PoliceDashboardScreen> {
         const Duration(seconds: 30),
         (_) {
           if (mounted) {
+            final currentProfile = auth.userProfile;
             petitionProvider.fetchPetitionStats(
-              officerId: auth.userProfile?.uid,
-              stationName: auth.userProfile?.stationName,
-              district: auth.userProfile?.district,
+              officerId: currentProfile?.uid,
+              stationName: currentProfile?.stationName,
+              district: currentProfile?.district,
             );
             petitionProvider.fetchFilteredPetitions(
               isPolice: true,
-              officerId: profile?.uid,
-              stationName: profile?.stationName,
-              district: profile?.district,
+              officerId: currentProfile?.uid,
+              stationName: currentProfile?.stationName,
+              district: currentProfile?.district,
               filter: PetitionFilter.all,
             );
           }
