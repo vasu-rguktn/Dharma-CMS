@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/utils/petition_filter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'dashboard_body.dart';
@@ -46,10 +47,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Police sees all petitions
         debugPrint('🟢 Fetching GLOBAL petition stats (police)');
         petitionProvider.fetchPetitionStats();
+        petitionProvider.fetchFilteredPetitions(
+          isPolice: true,
+          stationName: auth.userProfile?.stationName,
+          district: auth.userProfile?.district,
+          filter: PetitionFilter.all,
+        );
       } else if (userId != null) {
         // Citizen sees only their petitions
         debugPrint('🟢 Fetching USER petition stats for userId: $userId');
         petitionProvider.fetchPetitionStats(userId: userId);
+        petitionProvider.fetchFilteredPetitions(
+          isPolice: false,
+          userId: userId,
+          filter: PetitionFilter.all,
+        );
       } else {
         debugPrint('⚠️ Cannot fetch stats - userId is NULL');
       }
