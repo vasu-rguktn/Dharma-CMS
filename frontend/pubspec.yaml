@@ -130,6 +130,7 @@ flutter:
     - assets/data/district_police_stations.json
     - assets/data/ap_police_hierarchy_complete.json
     - assets/data/ap_police_hierarchy_fir.json
+    - assets/data/pincodes.json
 
 
 

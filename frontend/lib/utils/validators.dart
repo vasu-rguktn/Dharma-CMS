@@ -51,11 +51,8 @@ class Validators {
         age--;
       }
 
-      // return age >= 18 && age <= 120; // Original constraint
-      // Relaxed constraint for general DOB validtion (e.g. allowing minors if needed, or keeping adult check?)
-      // User request implies just "invalid dob error" fixes parsing.
-      // Keeping original age logic but ensuring parsing works.
-      return age >= 0 && age <= 120; // Allow 0 to 120 (unless strict 18+ is required by app logic, but parsing was likely the crash)
+      // Enforce minimum age of 18 years for user registration
+      return age >= 18 && age <= 120;
     } catch (_) {
       return false;
     }

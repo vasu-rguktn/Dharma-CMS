@@ -108,9 +108,9 @@
     "@pleaseSelectDOB": {
         "description": "Date of birth required validation message"
     },
-    "enterValidDateFormat": "తేదీని YYYY-MM-DD ఫార్మాట్‌లో నమోదు చేయండి",
+    "enterValidDateFormat": "నమోదు చేయడానికి మీరు కనీసం 18 సంవత్సరాలు ఉండాలి",
     "@enterValidDateFormat": {
-        "description": "Date format validation message"
+        "description": "Age validation message for registration"
     },
     "pleaseSelectGender": "దయచేసి మీ లింగాన్ని ఎంచుకోండి",
     "@pleaseSelectGender": {
