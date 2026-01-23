@@ -24,7 +24,9 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
   final _incidentTextController = TextEditingController();
   final _additionalInstructionsController = TextEditingController();
   final _dio = Dio(BaseOptions(
-    baseUrl: kIsWeb ? 'http://127.0.0.1:8000' : 'http://10.0.2.2:8000',
+    // baseUrl: kIsWeb ? 'http://127.0.0.1:8000' : 'http://10.0.2.2:8000',
+     baseUrl: "https://fastapi-app-335340524683.asia-south1.run.app",
+
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 120), // Allow 2 mins for AI generation
   ));

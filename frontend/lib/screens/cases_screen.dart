@@ -1,6 +1,11 @@
 // lib/screens/cases_screen.dart
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/models/case_status.dart';
 import 'package:go_router/go_router.dart';
@@ -8,9 +13,10 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:flutter/services.dart'; // For rootBundle
-import 'dart:convert'; // For json decode
 import 'package:Dharma/providers/police_auth_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
+import 'package:Dharma/data/station_data_constants.dart';
 
 
 class CasesScreen extends StatefulWidget {
@@ -42,6 +48,8 @@ class _CasesScreenState extends State<CasesScreen> {
   // Hierarchy data
   Map<String, Map<String, List<String>>> _policeHierarchy = {};
   bool _hierarchyLoading = true;
+  String? _hierarchyError; // Error message if loading fails
+  bool _usingFirestoreFallback = false; // Track if using Firestore fallback
 
   /* ================= RANK TIERS ================= */
   
@@ -89,7 +97,7 @@ class _CasesScreenState extends State<CasesScreen> {
   }
 
   /* ================= INIT & LOAD ================= */
-
+  
   @override
   void initState() {
     super.initState();
@@ -123,13 +131,13 @@ class _CasesScreenState extends State<CasesScreen> {
     if (mounted) _fetchData();
   }
 
-  Future<void> _loadHierarchyData() async {
+  void _loadHierarchyData({bool retry = false}) {
+    // Simplify loading by using hardcoded constants - 100% reliable
+    debugPrint('🔄 [CASES] Loading police hierarchy data from constants...');
+    
     try {
-      final jsonStr = await rootBundle
-          .loadString('assets/data/ap_police_hierarchy_complete.json');
-      final Map<String, dynamic> data = json.decode(jsonStr);
-
       Map<String, Map<String, List<String>>> hierarchy = {};
+      final data = kPoliceHierarchyComplete;
       
       data.forEach((range, districts) {
         if (districts is Map) {
@@ -146,13 +154,23 @@ class _CasesScreenState extends State<CasesScreen> {
         setState(() {
           _policeHierarchy = hierarchy;
           _hierarchyLoading = false;
+          _hierarchyError = null;
+          _usingFirestoreFallback = false;
         });
+        debugPrint('✅ [CASES] Hierarchy loaded successfully from constants!');
       }
     } catch (e) {
-      print('❌ [CASES] Error loading hierarchy: $e');
-      if (mounted) setState(() => _hierarchyLoading = false);
+      debugPrint('❌ [CASES] Error parsing hierarchy constants: $e');
+      if (mounted) {
+        setState(() {
+          _hierarchyError = 'Failed to parse station data: $e';
+        });
+      }
     }
   }
+
+  // Firestore fallback removed as it is no longer needed with hardcoded constants
+
 
   Future<void> _fetchData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -399,12 +417,103 @@ class _CasesScreenState extends State<CasesScreen> {
     print('📱 [CASES_SCREEN] Screen built');
     print('📚 [CASES_SCREEN] Can pop: ${Navigator.of(context).canPop()}');
 
+    // Show loading state
+    if (_hierarchyLoading && Provider.of<AuthProvider>(context).role == 'police') {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F3F6),
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading police hierarchy data...',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Show error state with retry option (only for police)
+    if (_policeHierarchy.isEmpty && 
+        Provider.of<AuthProvider>(context).role == 'police') {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F3F6),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red[300],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Failed to Load Police Stations',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Unknown Error',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       // Slightly darker background so white cards stand out clearly
       backgroundColor: const Color(0xFFF1F3F6),
       body: SafeArea(
         child: Column(
           children: [
+            // Show warning if using Firestore fallback
+            if (_usingFirestoreFallback && Provider.of<AuthProvider>(context).role == 'police')
+              Container(
+                width: double.infinity,
+                color: Colors.orange.shade50,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Using fallback data. Some stations may be missing. Tap retry to reload from asset.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _loadHierarchyData(retry: true),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
             // HEADER: Arrow + Title + New Case Button (all in one row)
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),

@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
@@ -17,14 +18,17 @@ class DocumentDraftingScreen extends StatefulWidget {
 class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   final _caseDataController = TextEditingController();
   final _additionalInstructionsController = TextEditingController();
-  final _draftController =
-      TextEditingController(); // NEW: Controller for editable draft
+  final _draftController = TextEditingController();
+  
   // Use 10.0.2.2 for Android emulator, localhost for web/iOS
   final _dio = Dio(BaseOptions(baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app'));
 
   String? _recipientType;
   bool _isLoading = false;
   Map<String, dynamic>? _draft;
+  
+  // New state for file
+  PlatformFile? _attachedFile;
 
   @override
   void dispose() {
@@ -34,12 +38,39 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
     super.dispose();
   }
 
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _attachedFile = result.files.first;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking file: $e')),
+      );
+    }
+  }
+
+  void _removeFile() {
+    setState(() {
+      _attachedFile = null;
+    });
+  }
+
   Future<void> _handleSubmit() async {
-    if (_caseDataController.text.trim().isEmpty || _recipientType == null) {
+    // Validate: At least caseData OR a file must be present + recipientType
+    bool hasData = _caseDataController.text.trim().isNotEmpty || _attachedFile != null;
+    
+    if (!hasData || _recipientType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(AppLocalizations.of(context)!.provideCaseDataAndRecipient),
+          content: Text(AppLocalizations.of(context)!.provideCaseDataAndRecipient),
           backgroundColor: Colors.red,
         ),
       );
@@ -52,16 +83,40 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
     });
 
     try {
+      // Prepare FormData
+      final formData = FormData.fromMap({
+        'caseData': _caseDataController.text, // Backend handles empty string
+        'recipientType': _recipientType,
+        'additionalInstructions': _additionalInstructionsController.text.trim().isEmpty
+            ? null
+            : _additionalInstructionsController.text,
+      });
+
+      // Append file if exists
+      if (_attachedFile != null) {
+        // Handle bytes (Web) or path (Mobile/Desktop)
+        if (_attachedFile!.bytes != null) {
+             formData.files.add(MapEntry(
+            'file',
+            MultipartFile.fromBytes(
+              _attachedFile!.bytes!,
+              filename: _attachedFile!.name,
+            ),
+          ));
+        } else if (_attachedFile!.path != null) {
+          formData.files.add(MapEntry(
+            'file',
+            await MultipartFile.fromFile(
+              _attachedFile!.path!,
+              filename: _attachedFile!.name,
+            ),
+          ));
+        }
+      }
+
       final response = await _dio.post(
         '/api/document-drafting',
-        data: {
-          'caseData': _caseDataController.text,
-          'recipientType': _recipientType,
-          'additionalInstructions':
-              _additionalInstructionsController.text.trim().isEmpty
-                  ? null
-                  : _additionalInstructionsController.text,
-        },
+        data: formData,
       );
 
       setState(() {
@@ -81,7 +136,8 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
         );
       }
     } catch (error) {
-      if (mounted) {
+       debugPrint("Drafting Error: $error");
+       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!
@@ -107,12 +163,11 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // SAME PREMIUM HEADER: Orange Arrow + Title
+            // HEADER
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 16, 24, 12),
               child: Row(
                 children: [
-                  // PURE ORANGE BACK ARROW — NO CIRCLE
                   GestureDetector(
                     onTap: () {
                       final authProvider =
@@ -141,7 +196,6 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
 
                   const SizedBox(width: 8),
 
-                  // Title
                   Expanded(
                     child: Text(
                       localizations.aiDocumentDrafter,
@@ -207,7 +261,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                             const SizedBox(height: 8),
                             TextField(
                               controller: _caseDataController,
-                              maxLines: 10,
+                              maxLines: 8,
                               decoration: InputDecoration(
                                 hintText: localizations.pasteCaseDataHint,
                                 hintStyle: TextStyle(color: Colors.grey[500]),
@@ -220,7 +274,56 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                 contentPadding: const EdgeInsets.all(16),
                               ),
                             ),
+                            
+                            const SizedBox(height: 16),
+
+                            // 📂 FILE UPLOAD SECTION
+                            Row(
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: _pickFile,
+                                  icon: const Icon(Icons.upload_file),
+                                  label: const Text('Attach Document (Optional)'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.indigo.shade50,
+                                    foregroundColor: Colors.indigo,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_attachedFile != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _attachedFile!.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+                                      onPressed: _removeFile,
+                                    )
+                                  ],
+                                ),
+                              ),
+                            ],
+
                             const SizedBox(height: 20),
+
                             Text(localizations.recipientType,
                                 style: const TextStyle(
                                     fontSize: 17, fontWeight: FontWeight.bold)),
@@ -344,7 +447,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // ✅ EDITABLE TEXT FIELD
+                              // EDITABLE TEXT FIELD
                               Container(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 0),
