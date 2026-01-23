@@ -1559,6 +1559,420 @@ String get filterCasesUsingFilters => 'డ్రాప్‌డౌన్ ఫి�
 @override
 String get casesScreenSubtitle => 'మీకు సంబంధించిన FIR ల / కేసుల వివరాలను నిర్వహించండి మరియు చూడండి.';
 
+
+  @override
+  String get crimeScene => 'నేర దృశ్యం';
+
+  @override
+  String get investigation => 'విచారణ';
+
+  @override
+  String get evidence => 'సాక్ష్యం';
+
+  @override
+  String get finalReport => 'చివరి నివేదిక';
+
+  @override
+  String get editCase => 'కేసును సవరించండి';
+
+  @override
+  String get caseInformation => 'కేసు సమాచారం';
+
+
+  @override
+  String get year => 'సంవత్సరం';
+
+  @override
+  String get complaintId => 'ఫిర్యాదు ID';
+
+  @override
+  String get firDate => 'FIR తేదీ';
+
+  @override
+  String get firFiledAt => 'FIR ఫైల్ చేసిన సమయం';
+
+
+  @override
+  String get occurrenceOfOffence => '2. నేరం సంభవించిన సమయం';
+
+  @override
+  String get distanceFromPS => 'పోలీస్ స్టేషన్ నుండి దూరం';
+
+  @override
+  String get directionFromPS => 'పోలీస్ స్టేషన్ నుండి దిశ';
+
+  @override
+  String get outsideJurisdiction => 'అధికార పరిధి వెలుపల:';
+
+  @override
+  String get informationReceivedAtPS => 'పోలీస్ స్టేషన్‌లో పొందిన సమాచారం';
+
+  @override
+  String get dateTimeReceived => 'పొందిన తేదీ & సమయం';
+
+  @override
+  String get gdEntryNo => 'GD ఎంట్రీ నం.';
+
+  @override
+  String get typeOfInformation => '4. సమాచారం రకం';
+
+  @override
+  String get complainantInformantDetails => '5. ఫిర్యాదుదారు / సమాచారదాత వివరాలు';
+
+  @override
+  String get name => 'పేరు';
+
+  @override
+  String get fatherHusbandName => 'తండ్రి/భర్త పేరు';
+
+  @override
+  String get dob => 'జన్మ తేదీ';
+
+  @override
+  String get nationality => 'జాతీయత';
+
+  @override
+  String get caste => 'కులం';
+
+  @override
+  String get occupation => 'వృత్తి';
+
+  @override
+  String get passportNo => 'పాస్‌పోర్ట్ నం.';
+
+  @override
+  String get passportPlaceOfIssue => 'పాస్‌పోర్ట్ జారీ స్థానం';
+
+  @override
+  String get passportDateOfIssue => 'పాస్‌పోర్ట్ జారీ తేదీ';
+
+  @override
+  String get victimDetails => 'బాధితుడు వివరాలు';
+
+  @override
+  String get religion => 'మతం';
+
+  @override
+  String get complainantAlsoVictim => 'ఫిర్యాదుదారు కూడా బాధితుడు';
+
+  @override
+  String get accusedDetails => '6. నిందితుడు వివరాలు';
+
+  @override
+  String get accused => 'నిందితుడు';
+
+  @override
+  String get propertiesDelayInquest => 'ఆస్తులు / ఆలస్యం / విచారణ';
+
+  @override
+  String get propertiesInvolved => '7. ప్రమేయం ఉన్న ఆస్తులు';
+
+  @override
+  String get totalValueINR => 'మొత్తం విలువ (రూ.)';
+
+  @override
+  String get delayInReporting => '8. నివేదించడంలో ఆలస్యం (ఏదైనా ఉంటే)';
+
+  @override
+  String get inquestReportCaseNo => 'విచారణ నివేదిక / U.D. కేసు నం.';
+
+  @override
+  String get actsStatement => 'చట్టాలు & ప్రకటన';
+
+  @override
+  String get actsAndSectionsInvolved => 'ప్రమేయం ఉన్న చట్టాలు & సెక్షన్లు';
+
+  @override
+  String get complaintStatement => 'ఫిర్యాదు / ఫిర్యాదుదారు ప్రకటన:';
+
+  @override
+  String get briefIncidentDetails => 'సంక్షిప్త ఘటన వివరాలు:';
+
+  @override
+  String get actionTakenAndConfirmation => 'చేసిన చర్య & నిర్ధారణ';
+
+  @override
+  String get actionTaken => '11. తీసుకున్న చర్య';
+
+  @override
+  String get investigatingOfficer => 'విచారణ అధికారి';
+
+  @override
+  String get dispatchToCourtDateTime => 'కోర్టుకు పంపిన తేదీ & సమయం';
+
+  @override
+  String get dispatchingOfficer => 'పంపిన అధికారి';
+
+  @override
+  String get dispatchingOfficerRank => 'పంపిన అధికారి హోదా';
+
+  @override
+  String get firReadAndAdmittedCorrect => 'FIR చదువబడింది మరియు సరిగా కీకర్లు చేసుకున్నారు';
+
+  @override
+  String get copyGivenFreeOfCost => 'FIR కాపీ ఉచితంగా ఇవ్వబడింది';
+
+  @override
+  String get roacRecorded => 'ROAC (రికార్డ్ చేయబడింది & అంగీకరించబడింది)';
+
+  @override
+  String get signatureThumbImpression => 'ఫిర్యాదుదారు/సమాచారదాత సంతకం/బొటనవేలు ముద్ర (అన్వయమైతే \'డిజిటల్‌గా సంతకం చేయబడింది\' లేదా మార్గాన్ని నమోదు చేయండి)';
+
+  @override
+  String get yes => 'అవును';
+
+  @override
+  String get no => 'కాదు';
+
+  @override
+  String get crimeScenes => 'నేర దృశ్యాలు';
+
+  @override
+  String get addScene => 'దృశ్యం జోడించండి';
+
+  @override
+  String get noCrimeScenesLinked => 'ఈ కేసుకు ఇంకా నేర దృశ్యాలు లింక్ చేయబడలేదు.';
+
+  @override
+  String get unknownType => 'తెలియని రకం';
+
+  @override
+  String get deleteScene => 'దృశ్యం తొలగించండు';
+
+  @override
+  String get areSureDeleteScene => 'మీరు ఈ దృశ్యం తొలగించాలని చేస్తున్నారా?';
+
+  @override
+  String get place => 'స్థానం';
+
+  @override
+  String get physicalEvidence => 'భౌతిక సాక్ష్యం';
+
+  @override
+  String get recorded => 'నమోదు చేయబడింది:';
+
+  @override
+  String get captureCrimeSceneEvidence => 'నేర దృశ్య సాక్ష్యం సంగ్రహించండి';
+
+  @override
+  String get photo => 'ఫోటో';
+
+  @override
+  String get video => 'వీడియో';
+
+  @override
+  String get upload => 'అప్‌లోడ్';
+
+  @override
+  String get evidenceFiles => 'సాక్ష్య ఫైల్‌లు';
+
+  @override
+  String get analyzeSceneWithAI => 'నేర దృశ్యం AI తో విశ్లేషించండి';
+
+
+  @override
+  String get aiSceneAnalysis => 'AI నేర దృశ్య విశ్లేషణ';
+
+  @override
+  String get crimeSceneAnalysisReports => 'నేర దృశ్య విశ్లేషణ నివేదికలు';
+
+  @override
+  String get noAnalysisReportsFound => 'విశ్లేషణ నివేదికలు కనుగొనబడలేదు.';
+
+  @override
+  String get caseJournalIOsDiary => 'కేసు జర్నల్ (IO యొక్క డయరీ)';
+
+  @override
+  String get noJournalEntriesYet => 'ఈ కేసుకు ఇంకా జర్నల్ ఎంట్రీలు లేవు.';
+
+  @override
+  String get crimeSceneCaptures => 'నేర దృశ్య సంగ్రహణలు';
+
+  @override
+  String get fromInvestigationDiary => 'విచారణ డయరీ నుండి';
+
+  @override
+  String get fromPetitions => 'పిటిషన్ల నుండి';
+
+  @override
+  String get forensicAnalysisReports => 'ఫోరెన్సిక్ విశ్లేషణ నివేదికలు';
+
+  @override
+  String get noEvidenceDocumentsFound => 'సాక్ష్య పత్రాలు కనుగొనబడలేదు';
+
+  @override
+  String get attachedDocumentsWillAppearHere => 'కేసు జర్నల్, పిటిషన్‌లు మరియు నేర దృశ్య సంగ్రహణల నుండి జత చేసిన పత్రాలు ఇక్కడ కనిపిస్తాయి.';
+
+  @override
+  String get noDocumentsAttachedJournal => 'విచారణ డయరీలో ఇంకా పత్రాలు జత చేయబడలేదు.';
+
+  @override
+  String get noPetitionDocumentsLinked => 'ఈ కేసుకు ఇంకా పిటిషన్ పత్రాలు లింక్ చేయబడలేదు.';
+
+  @override
+  String get finalInvestigationReport => 'చివరి విచారణ నివేదిక / కోర్టు పత్రం';
+
+  @override
+  String get generatedOn => 'రూపొందించిన తేదీ:';
+
+  @override
+  String get noFinalReportAttached => 'ఈ కేసుకు చివరి విచారణ నివేదిక జత చేయబడలేదు.';
+
+  @override
+  String get onceSomeoneGeneratesReport => 'విచారణ అధికారి కేసు జర్నల్ స్క్రీన్ నుండి AI సహాయక విచారణ నివేదికను రూపొందించి నిర్ధారించిన తర్వాత, చివరి PDF ఇక్కడ లింక్ చేయబడుతుంది.';
+
+  @override
+  String get courtReadyReportGenerated => 'కోర్టుకు సిద్ధ విచారణ నివేదిక PDF రూపొందించబడింది మరియు ఈ కేసుకు జత చేయబడింది.';
+
+  @override
+  String get downloadViewFinalReportPDF => 'చివరి నివేదిక PDFను డౌన్‌లోడ్ / చూడండి';
+
+  @override
+  String get loadingEvidenceFromAllSources => 'అన్ని మూలాల నుండి సాక్ష్యం లోడ్ చేయుచున్నది...';
+
+  @override
+  String get addCrimeScene => 'నేర దృశ్యం జోడించండి';
+
+  @override
+  String get editCrimeScene => 'నేర దృశ్యం సవరించండి';
+
+  @override
+  String get crimeType => 'నేర రకం';
+
+  @override
+  String get placeDescription => 'స్థానం వివరణ';
+
+  @override
+  String get physicalEvidenceDescription => 'భౌతిక సాక్ష్యం వివరణ';
+
+
+
+  @override
+  String get crimeSceneAdded => 'నేర దృశ్యం జోడించబడింది';
+
+  @override
+  String get crimeSceneUpdated => 'నేర దృశ్యం నవీకరించబడింది';
+
+  @override
+  String get errorSavingCrimeScene => 'లోపం:';
+
+
+  @override
+  String get uploadingCapturedEvidence => 'సంగ్రహించిన సాక్ష్యం అప్‌లోడ్ చేయుచున్నది...';
+
+  @override
+  String get failedUploadEvidence => 'సాక్ష్యం అప్‌లోడ్ చేయడంలో విఫలమైంది';
+
+  @override
+  String get geoTaggedPhotoCaptured => 'జియో-ట్యాగ్ చేసిన ఫోటో సంగ్రహించబడింది';
+
+  @override
+  String get geoTaggedVideoCaptured => 'జియో-ట్యాగ్ చేసిన వీడియో సంగ్రహించబడింది';
+
+  @override
+  String get uploadEvidence => 'సాక్ష్యం అప్‌లోడ్ చేయండు';
+
+  @override
+  String get chooseFileType => 'ఫైల్ రకం ఎంచుకోండి:';
+
+  @override
+  String get image => 'చిత్రం';
+
+  @override
+  String get document => 'పత్రం';
+
+  @override
+  String get uploadingDocument => 'పత్రం అప్‌లోడ్ చేయుచున్నది...';
+
+  @override
+  String get failedUploadDocument => 'పత్రం అప్‌లోడ్ చేయడంలో విఫలమైంది';
+
+  @override
+  String get documentUploaded => 'పత్రం అప్‌లోడ్ చేయబడింది';
+
+  @override
+  String get imageUploaded => 'చిత్రం అప్‌లోడ్ చేయబడింది';
+
+  @override
+  String get videoUploaded => 'వీడియో అప్‌లోడ్ చేయబడింది';
+
+  @override
+  String get errorUploadingFile => 'ఫైల్ అప్‌లోడ్‌లో లోపం:';
+
+  @override
+  String get pleaseCapturUploadEvidenceFirst => 'మొదట సాక్ష్యం సంగ్రహించండి లేదా అప్‌లోడ్ చేయండి';
+
+  @override
+  String get sceneAnalysisComplete => 'నేర దృశ్య విశ్లేషణ పూర్తి!';
+
+  @override
+  String get analysisError => 'విశ్లేషణ లోపం:';
+
+  @override
+  String get downloadEvidence => 'సాక్ష్యం డౌన్‌లోడ్ చేయండు';
+
+  @override
+  String get saveToDeviceDownloads => 'పరికర డౌన్‌లోడ్‌ల ఫోల్డర్‌కు సేవ్ చేయండి';
+
+  @override
+  String get analyzeWithAI => 'AI తో విశ్లేషించండు';
+
+  @override
+  String get getForensicAnalysis => 'ఫోరెన్సిక్ విశ్లేషణ పొందండు';
+
+  @override
+  String get downloadReport => 'నివేదిక డౌన్‌లోడ్ చేయండు';
+
+  @override
+  String get deleteReport => 'నివేదిక తొలగించండు';
+
+  @override
+  String get deleteReportConfirmation => 'మీరు ఈ విశ్లేషణ నివేదిక తొలగించాలని చేస్తున్నారా? ఇది రద్దు చేయలేము.';
+
+  @override
+  String get reportDeleted => 'నివేదిక తొలగించబడింది';
+
+  @override
+  String get errorDeletingReport => 'నివేదిక తొలగించడంలో లోపం:';
+
+  @override
+  String get generatingPDF => 'PDF రూపొందిస్తున్నది...';
+
+  @override
+  String get errorDownloadingPDF => 'PDF డౌన్‌లోడ్‌లో లోపం:';
+
+  @override
+  String get analyzedOn => 'విశ్లేషించిన తేదీ';
+
+
+  @override
+  String get sceneNarrative => 'నేర వర్ణన:';
+
+  @override
+  String get caseFileSummary => 'కేసు ఫైల్ సారాంశం:';
+
+  @override
+  String get filedOn => 'ఫైల్ చేసిన తేదీ:';
+
+  @override
+  String get accessViaFileManager => 'ఫైల్ మేనేజర్ → ధర్మ → సాక్ష్యం ద్వారా యాక్సెస్ చేయండి';
+
+  @override
+  String get evidenceDownloaded => 'సాక్ష్యం డౌన్‌లోడ్ చేయబడింది!';
+
+  @override
+  String get savedTo => 'సేవ్ చేసిన రిజిస్ట్రేషన:';
+
+  @override
+  String get downloadFailed => 'డౌన్‌లోడ్ విఫలమైంది:';
+
+
+  @override
+  String get analysisErrorEvidence => 'సాక్ష్యం విశ్లేషించడంలో లోపం:';
+
+  @override
+  String get evidenceRemoved => 'సాక్ష్యం తొలగించబడింది';
+
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();
@@ -1566,4 +1980,12 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
   @override
   // TODO: implement ok
   String get ok => 'సరే';
+  
+  @override
+  // TODO: implement from
+  String get from => throw UnimplementedError();
+  
+  @override
+  // TODO: implement to
+  String get to => throw UnimplementedError();
 }

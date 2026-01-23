@@ -88,6 +88,19 @@ service firebase.storage {
       // Only police can update/delete reports
       allow update, delete: if isPolice();
     }
+
+    // CASE JOURNAL / INVESTIGATION DIARY
+    // Path: case_journal/{caseId}/entries/{timestamp}/{filename}
+    match /case_journal/{caseId}/{allPaths=**} {
+      // Police can upload/write entries
+      allow create: if isPolice() && request.resource.size < 50 * 1024 * 1024;
+      
+      // Police can update/delete
+      allow update, delete: if isPolice();
+      
+      // Police and Case Owners (Citizens) can read attachments
+      allow read: if isPolice() || ownsCase(caseId);
+    }
     
     // PETITION DOCUMENTS
     // Path: petition-documents/{petitionId}/{filename}

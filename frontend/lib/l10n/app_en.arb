@@ -49,13 +49,13 @@
   },
   "phone": "Phone",
   "@phone": {
-    "description": "Phone field label"
+    "description": "Phone information type option"
   },
   "phoneNumber": "Phone Number",
   "@phoneNumber": {
     "description": "Phone number field"
   },
-  "dateOfBirth": "Date of Birth (YYYY-MM-DD)",
+  "dateOfBirth": "Date of Birth",
   "@dateOfBirth": {
     "description": "Date of birth field label"
   },
@@ -127,7 +127,7 @@
   "@addressDetails": {
     "description": "Address form title"
   },
-  "houseNo": "House No",
+  "houseNo": "House No.",
   "@houseNo": {
     "description": "House number field label"
   },
@@ -153,7 +153,7 @@
   },
   "policeStation": "Police Station",
   "@policeStation": {
-    "description": "Police station field label"
+    "description": "Label for police station field"
   },
   "enterHouseNumber": "Please enter your house number",
   "@enterHouseNumber": {
@@ -324,7 +324,9 @@
   "@welcomeUser": {
     "description": "Welcome message",
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "legalAssistanceHub": "Your Legal Assistance Hub",
@@ -337,11 +339,11 @@
   },
   "quickActions": "Quick Actions",
   "@quickActions": {
-    "description": "Quick actions section"
+    "description": "Quick actions section title"
   },
   "recentActivity": "Recent Activity",
   "@recentActivity": {
-    "description": "Recent activity section"
+    "description": "Recent activity section title"
   },
   "noRecentActivity": "No recent activity",
   "@noRecentActivity": {
@@ -361,7 +363,7 @@
   },
   "totalPetitions": "Total Petitions",
   "@totalPetitions": {
-    "description": "Total petitions stat"
+    "description": "Label for total petitions"
   },
   "aiChat": "AI Chat",
   "@aiChat": {
@@ -485,7 +487,7 @@
   },
   "firDetails": "FIR Details",
   "@firDetails": {
-    "description": "FIR details label"
+    "description": "Tab title for FIR details in case detail screen"
   },
   "incidentDetails": "Incident Details",
   "@incidentDetails": {
@@ -577,15 +579,15 @@
   },
   "save": "Save",
   "@save": {
-    "description": "Save button"
+    "description": "Save button text"
   },
   "cancel": "Cancel",
   "@cancel": {
-    "description": "Cancel button"
+    "description": "Cancel button text"
   },
   "delete": "Delete",
   "@delete": {
-    "description": "Delete button"
+    "description": "Delete button text"
   },
   "edit": "Edit",
   "@edit": {
@@ -691,7 +693,6 @@
   "@pleaseStopListening": {
     "description": "Message shown when user tries to send while recording"
   },
-   
   "welcomeToDharma": "Welcome to Dharma",
   "@welcomeToDharma": {
     "description": "Welcome message in AI legal chat"
@@ -704,7 +705,9 @@
   "@pleaseAnswerAllQuestions": {
     "description": "Error message when not all questions are answered",
     "placeholders": {
-      "missing": { "type": "String" }
+      "missing": {
+        "type": "String"
+      }
     }
   },
   "complaintSummary": "Complaint Summary:",
@@ -715,75 +718,89 @@
   "@classification": {
     "description": "Classification label with value",
     "placeholders": {
-      "classification": { "type": "String" }
+      "classification": {
+        "type": "String"
+      }
     }
   },
   "somethingWentWrong": "Sorry, something went wrong. Please try again later.",
   "@somethingWentWrong": {
     "description": "Generic error message"
-  }
-
-
-    "loginWithPhone": "Login with Phone",
-  "@loginWithPhone": { "description": "Title for phone login screen" },
-
+  },
+  "loginWithPhone": "Login with Phone",
+  "@loginWithPhone": {
+    "description": "Title for phone login screen"
+  },
   "mobileNumber": "Mobile Number",
-  "@mobileNumber": { "description": "Label for mobile number input field" },
-
+  "@mobileNumber": {
+    "description": "Label for mobile number field"
+  },
   "sendOtp": "Send OTP",
-  "@sendOtp": { "description": "Button text to send OTP" },
-
+  "@sendOtp": {
+    "description": "Button text to send OTP"
+  },
   "verifyOtp": "Verify OTP",
-  "@verifyOtp": { "description": "Button text to verify OTP" },
-
+  "@verifyOtp": {
+    "description": "Button text to verify OTP"
+  },
   "otpSent": "OTP sent!",
-  "@otpSent": { "description": "Message shown when OTP is sent" },
-
+  "@otpSent": {
+    "description": "Message shown when OTP is sent"
+  },
   "otpResent": "OTP resent!",
-  "@otpResent": { "description": "Message shown when OTP is resent" },
-
+  "@otpResent": {
+    "description": "Message shown when OTP is resent"
+  },
   "enterValidNumber": "Enter valid 10-digit number",
-  "@enterValidNumber": { "description": "Validation message for phone number" },
-
+  "@enterValidNumber": {
+    "description": "Validation message for phone number"
+  },
   "enterOtp": "Enter 6-digit OTP",
-  "@enterOtp": { "description": "Validation message for OTP input" },
-
+  "@enterOtp": {
+    "description": "Validation message for OTP input"
+  },
   "resendIn": "Resend in {seconds} sec",
   "@resendIn": {
     "description": "Countdown text before resend is enabled",
     "placeholders": {
-      "seconds": { "type": "int", "description": "Remaining seconds" }
+      "seconds": {
+        "type": "int",
+        "description": "Remaining seconds"
+      }
     }
   },
-
   "resendOtp": "Resend OTP",
-  "@resendOtp": { "description": "Button to resend OTP" },
-
+  "@resendOtp": {
+    "description": "Button to resend OTP"
+  },
   "loginSuccessful": "Login Successful!",
-  "@loginSuccessful": { "description": "Message shown after successful login" },
-
+  "@loginSuccessful": {
+    "description": "Message shown after successful login"
+  },
   "wrongOtp": "Wrong OTP",
-  "@wrongOtp": { "description": "Error message for wrong OTP" },
-
+  "@wrongOtp": {
+    "description": "Error message for wrong OTP"
+  },
   "otpExpired": "OTP expired",
-  "@otpExpired": { "description": "Error message for expired OTP" },
-
+  "@otpExpired": {
+    "description": "Error message for expired OTP"
+  },
   "invalidOtp": "Invalid OTP",
-  "@invalidOtp": { "description": "Generic invalid OTP message" },
-
+  "@invalidOtp": {
+    "description": "Generic invalid OTP message"
+  },
   "backToEmailLogin": "Back to Email Login",
-  "@backToEmailLogin": { "description": "Navigation link text to email login" }
- 
-"emergencyHelplines": "Emergency Helplines",
+  "@backToEmailLogin": {
+    "description": "Navigation link text to email login"
+  },
+  "emergencyHelplines": "Emergency Helplines",
   "@emergencyHelplines": {
     "description": "Title of the Emergency Helplines screen"
   },
-
   "sos112": "SOS 112",
   "@sos112": {
     "description": "Text on the SOS emergency call button"
   },
-
   "helplineEmergencyAll": "Emergency (All-in-One)",
   "@helplineEmergencyAll": {
     "description": "Type of emergency service"
@@ -792,7 +809,6 @@
   "@helplineEmergencyAllDesc": {
     "description": "Description for all-in-one emergency number"
   },
-
   "helplinePolice": "Police Control Room",
   "@helplinePolice": {
     "description": "Police emergency helpline title"
@@ -801,7 +817,6 @@
   "@helplinePoliceDesc": {
     "description": "Description for police control room helpline"
   },
-
   "helplineFire": "Fire & Rescue",
   "@helplineFire": {
     "description": "Fire and rescue emergency service"
@@ -810,7 +825,6 @@
   "@helplineFireDesc": {
     "description": "Description for fire emergency"
   },
-
   "helplineAmbulance": "Ambulance",
   "@helplineAmbulance": {
     "description": "Ambulance helpline title"
@@ -819,7 +833,6 @@
   "@helplineAmbulanceDesc": {
     "description": "Description for ambulance helpline"
   },
-
   "helplineAmbulanceAlt": "Ambulance (Alternative)",
   "@helplineAmbulanceAlt": {
     "description": "Alternative ambulance service"
@@ -828,7 +841,6 @@
   "@helplineAmbulanceAltDesc": {
     "description": "Description for alternate ambulance number"
   },
-
   "helplineWomen": "Women Helpline",
   "@helplineWomen": {
     "description": "Women's safety helpline"
@@ -837,7 +849,6 @@
   "@helplineWomenDesc": {
     "description": "Description for women helpline"
   },
-
   "helplineDomestic": "Domestic Violence",
   "@helplineDomestic": {
     "description": "Domestic violence helpline"
@@ -846,7 +857,6 @@
   "@helplineDomesticDesc": {
     "description": "Description for domestic violence helpline"
   },
-
   "helplineChild": "Child Helpline",
   "@helplineChild": {
     "description": "Child helpline title"
@@ -855,7 +865,6 @@
   "@helplineChildDesc": {
     "description": "Description for child helpline"
   },
-
   "helplineCyber": "Cyber Crime",
   "@helplineCyber": {
     "description": "Cyber crime helpline"
@@ -863,35 +872,27 @@
   "helplineCyberDesc": "Fraud, cyber threats",
   "@helplineCyberDesc": {
     "description": "Description for cyber crime helpline"
-  }
-
+  },
   "support": "Support",
   "@support": {
     "description": "Label for support service or helpline"
-  
-}
-
-"closed": "Closed",
+  },
+  "closed": "Closed",
   "@closed": {
     "description": "Status indicating the case or request is closed"
   },
-
   "inProgress": "In Progress",
   "@inProgress": {
     "description": "Status indicating the case or request is ongoing"
   },
-
-  
   "yourLegalAssistanceHub": "Your Legal Assistance Hub",
   "@yourLegalAssistanceHub": {
     "description": "Label for the user's legal assistance hub"
-  }
-
-"received": "Received",
+  },
+  "received": "Received",
   "@received": {
     "description": "Indicates that a request, message, or submission was received"
   },
-
   "welcome": "Welcome",
   "@welcome": {
     "description": "Welcome message"
@@ -900,28 +901,14 @@
   "@policeCommandCenter": {
     "description": "Title for police dashboard"
   },
-  "quickActions": "Quick Actions",
-  "@quickActions": {
-    "description": "Quick actions section title"
-  },
-  "recentActivity": "Recent Activity",
-  "@recentActivity": {
-    "description": "Recent activity section title"
-  },
   "petitionOverview": "Petition Overview",
   "@petitionOverview": {
     "description": "Petition overview section title"
   },
-  "totalPetitions": "Total Petitions",
-  "@totalPetitions": {
-    "description": "Label for total petitions"
-  },
-
   "recentActivityDescription": "Shows the most recent actions or updates related to your account",
   "@recentActivityDescription": {
     "description": "Description text for the recent activity section"
   },
-
   "loginFailed": "Login Failed",
   "@loginFailed": {
     "description": "Error message for failed login attempt"
@@ -930,22 +917,18 @@
   "@userNotRegistered": {
     "description": "Message shown when the user is not registered"
   },
-
   "registeredAs": "You are registered as a",
   "@registeredAs": {
     "description": "Message indicating the user is registered as a certain role"
   },
-
   "tryingToLoginAs": "but trying to login as a",
   "@tryingToLoginAs": {
     "description": "Message indicating the user is trying to login as a different role"
   },
-
   "googleLoginSuccessful": "Google Login Successful",
   "@googleLoginSuccessful": {
     "description": "Success message for Google login"
   },
-
   "aiInvestigationGuidelines": "AI Investigation Guidelines",
   "@aiInvestigationGuidelines": {
     "description": "Title shown for AI-based investigation rules or guidelines"
@@ -1057,7 +1040,7 @@
   },
   "year": "Year",
   "@year": {
-    "description": "Year field label"
+    "description": "Label for year field"
   },
   "yearHint": "E.g., 2025",
   "@yearHint": {
@@ -1071,13 +1054,13 @@
   "@selectDate": {
     "description": "Placeholder text for date picker"
   },
-  "occurrenceOfOffence": "2. Occurrence of Offence",
+  "occurrenceOfOffence": "Occurrence of Offence",
   "@occurrenceOfOffence": {
-    "description": "Step 2 title for occurrence of offence"
+    "description": "Section header for occurrence details"
   },
   "dayOfOccurrence": "Day of Occurrence",
   "@dayOfOccurrence": {
-    "description": "Day of occurrence field label"
+    "description": "Label for day of occurrence field"
   },
   "dayOfOccurrenceHint": "E.g., Monday",
   "@dayOfOccurrenceHint": {
@@ -1097,43 +1080,43 @@
   },
   "timePeriod": "Time Period",
   "@timePeriod": {
-    "description": "Time period field label"
+    "description": "Label for time period field"
   },
   "timePeriodHint": "E.g., 19:15-21:30",
   "@timePeriodHint": {
     "description": "Hint text for time period"
   },
-  "priorToDateTimeDetails": "Prior to Date/Time (Details)",
+  "priorToDateTimeDetails": "Prior to Date/Time Details",
   "@priorToDateTimeDetails": {
-    "description": "Prior to date/time details field label"
+    "description": "Label for prior date/time details"
   },
   "beatNumber": "Beat Number",
   "@beatNumber": {
-    "description": "Beat number field label"
+    "description": "Label for beat number field"
   },
   "placeOfOccurrence": "Place of Occurrence",
   "@placeOfOccurrence": {
     "description": "Place of occurrence section title"
   },
-  "streetVillage": "Street/Village",
+  "streetVillage": "Street / Village",
   "@streetVillage": {
-    "description": "Street/village field label"
+    "description": "Label for street/village field"
   },
-  "areaMandal": "Area/Mandal",
+  "areaMandal": "Area / Mandal",
   "@areaMandal": {
-    "description": "Area/mandal field label"
+    "description": "Label for area/mandal field"
   },
-  "cityDistrict": "City/District",
+  "cityDistrict": "City / District",
   "@cityDistrict": {
-    "description": "City/district field label"
+    "description": "Label for city/district field"
   },
   "pin": "PIN",
   "@pin": {
-    "description": "PIN field label"
+    "description": "Label for PIN code field"
   },
   "latitude": "Latitude",
   "@latitude": {
-    "description": "Latitude field label"
+    "description": "Label for latitude field"
   },
   "latitudeHint": "e.g., 16.5062",
   "@latitudeHint": {
@@ -1141,7 +1124,7 @@
   },
   "longitude": "Longitude",
   "@longitude": {
-    "description": "Longitude field label"
+    "description": "Label for longitude field"
   },
   "longitudeHint": "e.g., 80.6480",
   "@longitudeHint": {
@@ -1171,9 +1154,9 @@
   "@directionFromPs": {
     "description": "Direction from PS field label"
   },
-  "outsideJurisdiction": "Outside Jurisdiction:",
+  "outsideJurisdiction": "Outside Jurisdiction",
   "@outsideJurisdiction": {
-    "description": "Outside jurisdiction section title"
+    "description": "Label for outside jurisdiction field"
   },
   "isOutsideJurisdiction": "Is Outside Jurisdiction?",
   "@isOutsideJurisdiction": {
@@ -1195,9 +1178,9 @@
   "@generalDiaryEntryNumberHint": {
     "description": "Hint text for general diary entry number"
   },
-  "typeOfInformation": "4. Type of Information",
+  "typeOfInformation": "Type of Information",
   "@typeOfInformation": {
-    "description": "Step 4 title for type of information"
+    "description": "Label for type of information received"
   },
   "type": "Type",
   "@type": {
@@ -1211,13 +1194,9 @@
   "@written": {
     "description": "Written information type option"
   },
-  "phone": "Phone",
-  "@phone": {
-    "description": "Phone information type option"
-  },
-  "accusedDetails": "6. Accused Details",
+  "accusedDetails": "Accused Details",
   "@accusedDetails": {
-    "description": "Step 6 title for accused details"
+    "description": "Section header for accused details"
   },
   "addAccused": "Add Accused",
   "@addAccused": {
@@ -1225,7 +1204,7 @@
   },
   "accused": "Accused",
   "@accused": {
-    "description": "Accused label"
+    "description": "Label for accused person"
   },
   "deleteAccused": "Delete Accused",
   "@deleteAccused": {
@@ -1237,27 +1216,27 @@
   },
   "name": "Name",
   "@name": {
-    "description": "Name field label"
+    "description": "Label for name field"
   },
-  "fatherHusbandName": "Father's/Husband's Name",
+  "fatherHusbandName": "Father/Husband Name",
   "@fatherHusbandName": {
-    "description": "Father's/husband's name field label"
+    "description": "Label for father/husband name field"
   },
   "age": "Age",
   "@age": {
-    "description": "Age field label"
+    "description": "Filter label for age in cases screen"
   },
   "nationality": "Nationality",
   "@nationality": {
-    "description": "Nationality field label"
+    "description": "Label for nationality field"
   },
   "caste": "Caste",
   "@caste": {
-    "description": "Caste field label"
+    "description": "Label for caste field"
   },
   "occupation": "Occupation",
   "@occupation": {
-    "description": "Occupation field label"
+    "description": "Label for occupation field"
   },
   "cellNo": "Cell No.",
   "@cellNo": {
@@ -1266,10 +1245,6 @@
   "accusedAddress": "Accused Address:",
   "@accusedAddress": {
     "description": "Accused address section title"
-  },
-  "houseNo": "House No.",
-  "@houseNo": {
-    "description": "House number field label"
   },
   "physicalFeatures": "Physical Features:",
   "@physicalFeatures": {
@@ -1291,9 +1266,9 @@
   "@deformitiesPeculiarities": {
     "description": "Deformities/peculiarities field label"
   },
-  "propertiesInvolved": "7. Properties Involved",
+  "propertiesInvolved": "Properties Involved",
   "@propertiesInvolved": {
-    "description": "Step 7 title for properties involved"
+    "description": "Label for properties involved field"
   },
   "detailsOfPropertiesStolenInvolved": "Details of Properties Stolen/Involved",
   "@detailsOfPropertiesStolenInvolved": {
@@ -1303,9 +1278,9 @@
   "@totalValueOfPropertiesStolenInr": {
     "description": "Total value of properties field label"
   },
-  "delayInReporting": "8. Delay in Reporting (if any)",
+  "delayInReporting": "Delay in Reporting",
   "@delayInReporting": {
-    "description": "Step 8 title for delay in reporting"
+    "description": "Label for delay in reporting field"
   },
   "wasThereDelayInReporting": "Was there a delay in reporting?",
   "@wasThereDelayInReporting": {
@@ -1319,9 +1294,9 @@
   "@inquestReportUdCaseNoLabel": {
     "description": "Inquest report case number field label"
   },
-  "actsAndSectionsInvolved": "Acts & Sections Involved",
+  "actsAndSectionsInvolved": "Acts & Sections Involved:",
   "@actsAndSectionsInvolved": {
-    "description": "Acts and sections section title"
+    "description": "Label for acts and sections involved"
   },
   "actsAndSectionsHint": "E.g., IPC 379, BNS 101",
   "@actsAndSectionsHint": {
@@ -1341,7 +1316,7 @@
   },
   "victimDetails": "Victim Details",
   "@victimDetails": {
-    "description": "Victim details section title"
+    "description": "Section header for victim details"
   },
   "complainantIsAlsoVictim": "Complainant is also the Victim",
   "@complainantIsAlsoVictim": {
@@ -1387,9 +1362,9 @@
   "@victimAddress": {
     "description": "Victim address section title"
   },
-  "actionTaken": "11. Action Taken",
+  "actionTaken": "Action Taken",
   "@actionTaken": {
-    "description": "Step 11 title for action taken"
+    "description": "Label for action taken field"
   },
   "actionTakenDetails": "Action Taken (Details)",
   "@actionTakenDetails": {
@@ -1435,29 +1410,21 @@
   "@firCopyGivenFreeOfCost": {
     "description": "FIR copy given confirmation checkbox label"
   },
-  "roacRecorded": "ROAC (Recorded Over & Admitted Correct)",
+  "roacRecorded": "ROAC recorded",
   "@roacRecorded": {
-    "description": "ROAC recorded confirmation checkbox label"
+    "description": "Label for ROAC recorded field"
   },
-  "signatureThumbImpression": "Signature/Thumb Impression of Complainant/Informant (Enter 'Digitally Signed' or path if applicable)",
+  "signatureThumbImpression": "Signature / Thumb Impression",
   "@signatureThumbImpression": {
-    "description": "Signature/thumb impression field label"
+    "description": "Label for signature/thumb impression field"
   },
-  "complainantInformantDetails": "5. Complainant / Informant Details",
+  "complainantInformantDetails": "Complainant / Informant Details",
   "@complainantInformantDetails": {
-    "description": "Step 5 title for complainant/informant details"
-  },
-  "dateOfBirth": "Date of Birth",
-  "@dateOfBirth": {
-    "description": "Date of birth field label"
+    "description": "Section header for complainant/informant details"
   },
   "ageAutoCalculated": "Age (auto-calculated)",
   "@ageAutoCalculated": {
     "description": "Age field label (auto-calculated)"
-  },
-  "mobileNumber": "Mobile Number",
-  "@mobileNumber": {
-    "description": "Mobile number field label"
   },
   "mobileNumberHint": "10 digits",
   "@mobileNumberHint": {
@@ -1473,7 +1440,7 @@
   },
   "passportNo": "Passport No.",
   "@passportNo": {
-    "description": "Passport number field label"
+    "description": "Label for passport number field"
   },
   "placeOfIssue": "Place of Issue",
   "@placeOfIssue": {
@@ -1535,36 +1502,30 @@
   "@vijayawadaSdpo": {
     "description": "Vijayawada SDPO sub-division"
   },
-  
-"imageLab": "Image Lab",
+  "imageLab": "Image Lab",
   "@imageLab": {
     "description": "Title for image lab feature"
   },
-
   "addPolice": "Add Police",
   "@addPolice": {
     "description": "Button to add police"
   },
-
   "submitOfflinePetition": "Submit Offline Petition",
   "@submitOfflinePetition": {
     "description": "Button to submit offline petition"
   },
-
   "offlinePetitions": "Offline Petitions",
   "@offlinePetitions": {
     "description": "List of offline petitions"
   },
-
   "assignedPetitions": "Assigned Petitions",
   "@assignedPetitions": {
     "description": "List of petitions assigned to officer"
   },
   "escalated": "Escalated",
-    "@escalated": {
-      "description": "Status label for escalated petition or case"
-    },
-
+  "@escalated": {
+    "description": "Status label for escalated petition or case"
+  },
   "aiThinking": "AI is thinking...",
   "legalQuestionHint": "Ask a legal question...",
   "getLegalSuggestions": "Get Legal Suggestions",
@@ -1584,10 +1545,6 @@
   "@range": {
     "description": "Filter label for police range in cases screen"
   },
-  "age": "Age",
-  "@age": {
-    "description": "Filter label for age in cases screen"
-  },
   "viewDetails": "View Details",
   "@viewDetails": {
     "description": "Button label to view case details"
@@ -1603,5 +1560,497 @@
   "ok": "OK",
   "@ok": {
     "description": "OK button text"
+  },
+  "crimeScene": "Crime Scene",
+  "@crimeScene": {
+    "description": "Tab title for crime scene in case detail screen"
+  },
+  "investigation": "Investigation",
+  "@investigation": {
+    "description": "Tab title for investigation in case detail screen"
+  },
+  "evidence": "Evidence",
+  "@evidence": {
+    "description": "Tab title for evidence in case detail screen"
+  },
+  "finalReport": "Final Report",
+  "@finalReport": {
+    "description": "Tab title for final report in case detail screen"
+  },
+  "editCase": "Edit Case",
+  "@editCase": {
+    "description": "Tooltip for edit case button"
+  },
+  "caseInformation": "Case Information",
+  "@caseInformation": {
+    "description": "Section header for case information"
+  },
+  "firNumber": "FIR Number",
+  "@firNumber": {
+    "description": "Label for FIR number field"
+  },
+  "complaintId": "Complaint ID",
+  "@complaintId": {
+    "description": "Label for complaint ID field"
+  },
+  "firDate": "FIR Date",
+  "@firDate": {
+    "description": "Label for FIR date field"
+  },
+  "firFiledAt": "FIR Filed At",
+  "@firFiledAt": {
+    "description": "Label for FIR filed timestamp"
+  },
+  "from": "From",
+  "@from": {
+    "description": "Label for start date/time"
+  },
+  "to": "To",
+  "@to": {
+    "description": "Label for end date/time"
+  },
+  "distanceFromPS": "Distance from PS",
+  "@distanceFromPS": {
+    "description": "Label for distance from police station"
+  },
+  "directionFromPS": "Direction from PS",
+  "@directionFromPS": {
+    "description": "Label for direction from police station"
+  },
+  "informationReceivedAtPS": "Information Received at PS",
+  "@informationReceivedAtPS": {
+    "description": "Section header for information received at police station"
+  },
+  "dateTimeReceived": "Date & Time Received",
+  "@dateTimeReceived": {
+    "description": "Label for date and time information received"
+  },
+  "gdEntryNo": "GD Entry No.",
+  "@gdEntryNo": {
+    "description": "Label for general diary entry number"
+  },
+  "dob": "Date of Birth",
+  "@dob": {
+    "description": "Label for date of birth field"
+  },
+  "address": "Address",
+  "@address": {
+    "description": "Label for address field"
+  },
+  "passportPlaceOfIssue": "Passport Place of Issue",
+  "@passportPlaceOfIssue": {
+    "description": "Label for passport place of issue"
+  },
+  "passportDateOfIssue": "Passport Date of Issue",
+  "@passportDateOfIssue": {
+    "description": "Label for passport date of issue"
+  },
+  "religion": "Religion",
+  "@religion": {
+    "description": "Label for religion field"
+  },
+  "complainantAlsoVictim": "Complainant is also the Victim",
+  "@complainantAlsoVictim": {
+    "description": "Label for complainant also victim field"
+  },
+  "propertiesDelayInquest": "Properties / Delay / Inquest",
+  "@propertiesDelayInquest": {
+    "description": "Section header for properties and delay details"
+  },
+  "totalValueINR": "Total Value (INR)",
+  "@totalValueINR": {
+    "description": "Label for total property value"
+  },
+  "inquestReportCaseNo": "Inquest Report / U.D. Case No.",
+  "@inquestReportCaseNo": {
+    "description": "Label for inquest report case number"
+  },
+  "actsStatement": "Acts & Statement",
+  "@actsStatement": {
+    "description": "Section header for acts and statement details"
+  },
+  "complaintStatement": "Complaint / Statement of Complainant:",
+  "@complaintStatement": {
+    "description": "Label for complaint/statement"
+  },
+  "briefIncidentDetails": "Brief Incident Details:",
+  "@briefIncidentDetails": {
+    "description": "Label for brief incident details"
+  },
+  "actionTakenAndConfirmation": "Action Taken & Confirmation",
+  "@actionTakenAndConfirmation": {
+    "description": "Section header for action taken and confirmation"
+  },
+  "investigatingOfficer": "Investigating Officer",
+  "@investigatingOfficer": {
+    "description": "Label for investigating officer name"
+  },
+  "rank": "Rank",
+  "@rank": {
+    "description": "Label for officer rank"
+  },
+  "dispatchToCourtDateTime": "Dispatch to Court (Date & Time)",
+  "@dispatchToCourtDateTime": {
+    "description": "Label for dispatch to court date and time"
+  },
+  "dispatchingOfficer": "Dispatching Officer",
+  "@dispatchingOfficer": {
+    "description": "Label for dispatching officer name"
+  },
+  "dispatchingOfficerRank": "Dispatching Officer Rank",
+  "@dispatchingOfficerRank": {
+    "description": "Label for dispatching officer rank"
+  },
+  "firReadAndAdmittedCorrect": "FIR read over and admitted correct",
+  "@firReadAndAdmittedCorrect": {
+    "description": "Label for FIR read and admitted correct field"
+  },
+  "copyGivenFreeOfCost": "Copy of FIR given free of cost",
+  "@copyGivenFreeOfCost": {
+    "description": "Label for copy given free of cost field"
+  },
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes option for boolean fields"
+  },
+  "no": "No",
+  "@no": {
+    "description": "No option for boolean fields"
+  },
+  "crimeScenes": "Crime Scenes",
+  "@crimeScenes": {
+    "description": "Header for crime scenes section"
+  },
+  "addScene": "Add Scene",
+  "@addScene": {
+    "description": "Button tooltip to add crime scene"
+  },
+  "noCrimeScenesLinked": "No crime scenes linked to this case yet.",
+  "@noCrimeScenesLinked": {
+    "description": "Message when no crime scenes found"
+  },
+  "unknownType": "Unknown Type",
+  "@unknownType": {
+    "description": "Default label for unknown crime type"
+  },
+  "deleteScene": "Delete Scene",
+  "@deleteScene": {
+    "description": "Dialog title for deleting crime scene"
+  },
+  "areSureDeleteScene": "Are you sure you want to delete this scene?",
+  "@areSureDeleteScene": {
+    "description": "Confirmation message for deleting scene"
+  },
+  "place": "Place",
+  "@place": {
+    "description": "Label for place description"
+  },
+  "physicalEvidence": "Physical Evidence",
+  "@physicalEvidence": {
+    "description": "Label for physical evidence description"
+  },
+  "recorded": "Recorded:",
+  "@recorded": {
+    "description": "Label for recorded timestamp"
+  },
+  "captureCrimeSceneEvidence": "Capture Crime Scene Evidence",
+  "@captureCrimeSceneEvidence": {
+    "description": "Header for evidence capture section"
+  },
+  "photo": "Photo",
+  "@photo": {
+    "description": "Button label to capture photo"
+  },
+  "video": "Video",
+  "@video": {
+    "description": "Button label to capture video"
+  },
+  "upload": "Upload",
+  "@upload": {
+    "description": "Button label to upload files"
+  },
+  "evidenceFiles": "Evidence File(s)",
+  "@evidenceFiles": {
+    "description": "Label for evidence files count"
+  },
+  "analyzeSceneWithAI": "Analyze Scene with AI",
+  "@analyzeSceneWithAI": {
+    "description": "Button label to analyze scene with AI"
+  },
+  "analyzing": "Analyzing...",
+  "@analyzing": {
+    "description": "Text shown while analyzing"
+  },
+  "aiSceneAnalysis": "AI Scene Analysis",
+  "@aiSceneAnalysis": {
+    "description": "Header for AI analysis results"
+  },
+  "crimeSceneAnalysisReports": "Crime Scene Analysis Reports",
+  "@crimeSceneAnalysisReports": {
+    "description": "Header for analysis reports section"
+  },
+  "noAnalysisReportsFound": "No analysis reports found.",
+  "@noAnalysisReportsFound": {
+    "description": "Message when no analysis reports found"
+  },
+  "caseJournalIOsDiary": "Case Journal (IO's Diary)",
+  "@caseJournalIOsDiary": {
+    "description": "Header for case journal section"
+  },
+  "noJournalEntriesYet": "No journal entries yet for this case.",
+  "@noJournalEntriesYet": {
+    "description": "Message when no journal entries found"
+  },
+  "crimeSceneCaptures": "Crime Scene Captures",
+  "@crimeSceneCaptures": {
+    "description": "Section header for crime scene captures"
+  },
+  "fromInvestigationDiary": "From Investigation Diary",
+  "@fromInvestigationDiary": {
+    "description": "Section header for journal evidence"
+  },
+  "fromPetitions": "From Petitions",
+  "@fromPetitions": {
+    "description": "Section header for petition evidence"
+  },
+  "forensicAnalysisReports": "Forensic Analysis Reports",
+  "@forensicAnalysisReports": {
+    "description": "Section header for forensic reports"
+  },
+  "noEvidenceDocumentsFound": "No evidence documents found",
+  "@noEvidenceDocumentsFound": {
+    "description": "Message when no evidence found"
+  },
+  "attachedDocumentsWillAppearHere": "Attached documents from the Case Journal, Petitions, and Crime Scene captures will appear here.",
+  "@attachedDocumentsWillAppearHere": {
+    "description": "Descriptive text about evidence"
+  },
+  "noDocumentsAttachedJournal": "No documents attached in the investigation diary yet.",
+  "@noDocumentsAttachedJournal": {
+    "description": "Message when no journal attachments"
+  },
+  "noPetitionDocumentsLinked": "No petition documents linked to this case yet.",
+  "@noPetitionDocumentsLinked": {
+    "description": "Message when no petition attachments"
+  },
+  "finalInvestigationReport": "Final Investigation Report / Court Document",
+  "@finalInvestigationReport": {
+    "description": "Header for final report section"
+  },
+  "generatedOn": "Generated on:",
+  "@generatedOn": {
+    "description": "Label for report generation date"
+  },
+  "noFinalReportAttached": "No final investigation report has been attached to this case yet.",
+  "@noFinalReportAttached": {
+    "description": "Message when no final report"
+  },
+  "onceSomeoneGeneratesReport": "Once an investigating officer generates and confirms the AI-assisted investigation report from the Case Journal screen, the final PDF will be linked here.",
+  "@onceSomeoneGeneratesReport": {
+    "description": "Explanation text for final report"
+  },
+  "courtReadyReportGenerated": "A court-ready investigation report PDF has been generated and attached to this case.",
+  "@courtReadyReportGenerated": {
+    "description": "Message when final report exists"
+  },
+  "downloadViewFinalReportPDF": "Download / View Final Report PDF",
+  "@downloadViewFinalReportPDF": {
+    "description": "Button label to download final report"
+  },
+  "loadingEvidenceFromAllSources": "Loading evidence from all sources...",
+  "@loadingEvidenceFromAllSources": {
+    "description": "Loading message for evidence tab"
+  },
+  "addCrimeScene": "Add Crime Scene",
+  "@addCrimeScene": {
+    "description": "Dialog title for adding new crime scene"
+  },
+  "editCrimeScene": "Edit Crime Scene",
+  "@editCrimeScene": {
+    "description": "Dialog title for editing crime scene"
+  },
+  "crimeType": "Crime Type",
+  "@crimeType": {
+    "description": "Label for crime type field"
+  },
+  "placeDescription": "Place Description",
+  "@placeDescription": {
+    "description": "Label for place description field"
+  },
+  "physicalEvidenceDescription": "Physical Evidence Description",
+  "@physicalEvidenceDescription": {
+    "description": "Label for physical evidence description field"
+  },
+  "crimeSceneAdded": "Crime scene added",
+  "@crimeSceneAdded": {
+    "description": "Success message for adding crime scene"
+  },
+  "crimeSceneUpdated": "Crime scene updated",
+  "@crimeSceneUpdated": {
+    "description": "Success message for updating crime scene"
+  },
+  "errorSavingCrimeScene": "Error:",
+  "@errorSavingCrimeScene": {
+    "description": "Error prefix message"
+  },
+  "uploadingCapturedEvidence": "Uploading captured evidence...",
+  "@uploadingCapturedEvidence": {
+    "description": "Status message while uploading"
+  },
+  "failedUploadEvidence": "Failed to upload evidence",
+  "@failedUploadEvidence": {
+    "description": "Error message for upload failure"
+  },
+  "geoTaggedPhotoCaptured": "Geo-tagged photo captured",
+  "@geoTaggedPhotoCaptured": {
+    "description": "Success message for photo capture"
+  },
+  "geoTaggedVideoCaptured": "Geo-tagged video captured",
+  "@geoTaggedVideoCaptured": {
+    "description": "Success message for video capture"
+  },
+  "uploadEvidence": "Upload Evidence",
+  "@uploadEvidence": {
+    "description": "Dialog title for uploading evidence"
+  },
+  "chooseFileType": "Choose file type to upload:",
+  "@chooseFileType": {
+    "description": "Instructions for file type selection"
+  },
+  "image": "Image",
+  "@image": {
+    "description": "Image option"
+  },
+  "document": "Document",
+  "@document": {
+    "description": "Document option"
+  },
+  "uploadingDocument": "Uploading document...",
+  "@uploadingDocument": {
+    "description": "Status message while uploading document"
+  },
+  "failedUploadDocument": "Failed to upload document",
+  "@failedUploadDocument": {
+    "description": "Error message for document upload failure"
+  },
+  "documentUploaded": "Document uploaded",
+  "@documentUploaded": {
+    "description": "Success message for document upload"
+  },
+  "imageUploaded": "Image uploaded",
+  "@imageUploaded": {
+    "description": "Success message for image upload"
+  },
+  "videoUploaded": "Video uploaded",
+  "@videoUploaded": {
+    "description": "Success message for video upload"
+  },
+  "errorUploadingFile": "Error uploading file:",
+  "@errorUploadingFile": {
+    "description": "Error message prefix for file upload"
+  },
+  "pleaseCapturUploadEvidenceFirst": "Please capture or upload evidence first",
+  "@pleaseCapturUploadEvidenceFirst": {
+    "description": "Message when no evidence for analysis"
+  },
+  "sceneAnalysisComplete": "Scene analysis complete!",
+  "@sceneAnalysisComplete": {
+    "description": "Success message for analysis completion"
+  },
+  "analysisError": "Analysis error:",
+  "@analysisError": {
+    "description": "Error message prefix for analysis"
+  },
+  "downloadEvidence": "Download Evidence",
+  "@downloadEvidence": {
+    "description": "Option to download evidence"
+  },
+  "saveToDeviceDownloads": "Save to device Downloads folder",
+  "@saveToDeviceDownloads": {
+    "description": "Description for download option"
+  },
+  "analyzeWithAI": "Analyze with AI",
+  "@analyzeWithAI": {
+    "description": "Option to analyze with AI"
+  },
+  "getForensicAnalysis": "Get forensic analysis",
+  "@getForensicAnalysis": {
+    "description": "Description for AI analyze option"
+  },
+  "downloadReport": "Download Report",
+  "@downloadReport": {
+    "description": "Tooltip for download report button"
+  },
+  "deleteReport": "Delete Report",
+  "@deleteReport": {
+    "description": "Tooltip for delete report button"
+  },
+  "deleteReportConfirmation": "Are you sure you want to delete this analysis report? This cannot be undone.",
+  "@deleteReportConfirmation": {
+    "description": "Confirmation message for report deletion"
+  },
+  "reportDeleted": "Report deleted",
+  "@reportDeleted": {
+    "description": "Success message for report deletion"
+  },
+  "errorDeletingReport": "Error deleting report:",
+  "@errorDeletingReport": {
+    "description": "Error message prefix for report deletion"
+  },
+  "generatingPDF": "Generating PDF...",
+  "@generatingPDF": {
+    "description": "Status message while generating PDF"
+  },
+  "errorDownloadingPDF": "Error downloading PDF:",
+  "@errorDownloadingPDF": {
+    "description": "Error message prefix for PDF download"
+  },
+  "analyzedOn": "Analyzed on",
+  "@analyzedOn": {
+    "description": "Label for analysis date"
+  },
+  "identifiedElements": "Identified Elements:",
+  "@identifiedElements": {
+    "description": "Header for identified elements list"
+  },
+  "sceneNarrative": "Scene Narrative:",
+  "@sceneNarrative": {
+    "description": "Header for scene narrative"
+  },
+  "caseFileSummary": "Case File Summary:",
+  "@caseFileSummary": {
+    "description": "Header for case file summary"
+  },
+  "filedOn": "Filed on:",
+  "@filedOn": {
+    "description": "Label for filing date"
+  },
+  "accessViaFileManager": "Access via File Manager → Dharma → Evidence",
+  "@accessViaFileManager": {
+    "description": "Instructions for accessing evidence files"
+  },
+  "evidenceDownloaded": "Evidence Downloaded!",
+  "@evidenceDownloaded": {
+    "description": "Success message for evidence download"
+  },
+  "savedTo": "Saved to:",
+  "@savedTo": {
+    "description": "Label for saved location"
+  },
+  "downloadFailed": "Download failed:",
+  "@downloadFailed": {
+    "description": "Error message prefix for download failure"
+  },
+  "analysisComplete": "Analysis complete!",
+  "@analysisComplete": {
+    "description": "Success message for individual evidence analysis"
+  },
+  "analysisErrorEvidence": "Error analyzing evidence:",
+  "@analysisErrorEvidence": {
+    "description": "Error message prefix for evidence analysis"
+  },
+  "evidenceRemoved": "Evidence removed",
+  "@evidenceRemoved": {
+    "description": "Success message for evidence removal"
   }
 }
