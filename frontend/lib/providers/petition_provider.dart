@@ -416,6 +416,7 @@ class PetitionProvider with ChangeNotifier {
       userId: petition.userId,
       createdAt: petition.createdAt,
       updatedAt: petition.updatedAt,
+      isAnonymous: petition.isAnonymous,
     );
 
     await _firestore

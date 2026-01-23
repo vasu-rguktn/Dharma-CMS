@@ -83,13 +83,17 @@ class _AiInvestigationGuidelinesScreenState
 
   /* ---------------- BUILD FIR DETAILS ---------------- */
   String _buildFirDetails(Petition p) {
+    final phoneDisplay = p.phoneNumber == null
+        ? 'N/A'
+        : (p.isAnonymous ? maskPhoneNumber(p.phoneNumber) : p.phoneNumber!);
+    
     return '''
 Case ID: ${p.caseId ?? 'N/A'}
 Petition Title: ${p.title}
 Petition Type: ${p.type.displayName}
 
 Petitioner Name: ${p.petitionerName}
-Phone Number: ${p.phoneNumber ?? 'N/A'}
+Phone Number: $phoneDisplay
 
 District: ${p.district ?? 'N/A'}
 Police Station: ${p.stationName ?? 'N/A'}

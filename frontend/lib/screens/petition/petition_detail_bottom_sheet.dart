@@ -322,7 +322,10 @@ class _DetailContent extends StatelessWidget {
 
         _buildDetailRow(localizations.petitioner, petition.petitionerName),
         if (petition.phoneNumber != null)
-          _buildDetailRow(localizations.phone, petition.phoneNumber!),
+          _buildDetailRow(
+            localizations.phone,
+            petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+          ),
         if (petition.address != null)
           _buildDetailRow(localizations.address, petition.address!),
         if (petition.firNumber != null)

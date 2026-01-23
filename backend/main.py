@@ -27,7 +27,7 @@ from routers.chargesheet_vetting import router as chargesheet_vetting_router
 # Initialize Firebase Admin SDK
 try:
     # Check for service account key file
-    cred_filename = "dharma-cms-5cc89-firebase-adminsdk-fbsvc-23d34944fd.json"
+    cred_filename = "dharma-cms-5cc89-b74e10595572.json"
     cred_path = Path(__file__).parent / cred_filename
     
     if cred_path.exists():

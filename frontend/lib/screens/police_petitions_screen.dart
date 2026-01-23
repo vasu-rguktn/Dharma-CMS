@@ -657,7 +657,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     _buildDetailRow('Petition Type', petition.type.displayName),
                     _buildDetailRow('Status', petition.status.displayName),
                     _buildDetailRow('Petitioner Name', petition.petitionerName),
-                    _buildDetailRow('Phone Number', petition.phoneNumber ?? '-'),
+                    _buildDetailRow(
+                      'Phone Number',
+                      petition.phoneNumber == null
+                          ? '-'
+                          : (petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!),
+                    ),
                     if (petition.address != null && petition.address!.isNotEmpty)
                       _buildDetailRow('Address', petition.address!),
                     if (petition.district != null && petition.district!.isNotEmpty)
