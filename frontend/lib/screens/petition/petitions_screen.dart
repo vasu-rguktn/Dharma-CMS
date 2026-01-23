@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -44,6 +45,11 @@ class _PetitionsScreenState extends State<PetitionsScreen>
     final petition = Provider.of<PetitionProvider>(context, listen: false);
     if (auth.user != null) {
       await petition.fetchPetitions(auth.user!.uid);
+      // Fetch saved complaints to know which petitions are saved
+      if (mounted) {
+        await Provider.of<ComplaintProvider>(context, listen: false)
+            .fetchComplaints(userId: auth.user!.uid);
+      }
     }
   }
 

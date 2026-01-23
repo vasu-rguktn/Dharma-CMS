@@ -381,7 +381,7 @@ class _PoliceRegistrationScreenState
         SnackBar(content: Text(AppLocalizations.of(context)!.policeRegisteredSuccessfully)),
       );
 
-      context.go('/police-login');
+      context.go('/police-dashboard');
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.toString())));

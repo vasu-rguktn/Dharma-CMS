@@ -2079,7 +2079,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               }
             },
           ),
-          title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
+          title: Text(
+            localizations.aiLegalAssistant ?? 'AI Legal Assistant',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           backgroundColor: const Color(0xFFFC633C),
           foregroundColor: Colors.white,
         ),

@@ -61,7 +61,10 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
       appBar: AppBar(
-        title: Text(localizations.aiChatbotDetails),
+        title: Text(
+          localizations.aiChatbotDetails,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
         elevation: 0,

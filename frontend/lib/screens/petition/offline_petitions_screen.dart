@@ -12,6 +12,8 @@ import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 
 /// Offline Petitions Screen with "Sent" and "Assigned" tabs
 /// Shows different tabs based on officer rank:
@@ -69,6 +71,13 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
     if (mounted) {
       setState(() => _isLoading = false);
+    }
+
+    // Fetch saved complaints to enable the "Save" feature
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.user != null) {
+      Provider.of<ComplaintProvider>(context, listen: false)
+          .fetchComplaints(userId: auth.user!.uid);
     }
   }
 
@@ -167,52 +176,81 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (petition.isEscalated) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.red.shade300),
-                            ),
-                            child: const Text(
-                              'ESCALATED',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ),
-                        ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (petition.isEscalated)
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getPoliceStatusColor(petition.policeStatus)
-                                .withValues(alpha: 0.1),
+                            color: Colors.red.shade100,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: _getPoliceStatusColor(petition.policeStatus),
-                              width: 1,
-                            ),
+                            border: Border.all(color: Colors.red.shade300),
                           ),
-                          child: Text(
-                            petition.policeStatus?.toUpperCase() ?? 'RECEIVED',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: _getPoliceStatusColor(petition.policeStatus),
+                          child: const Text(
+                            'ESCALATED',
+                            style: TextStyle(
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
-                              fontSize: 11,
+                              color: Colors.red,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getPoliceStatusColor(petition.policeStatus)
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _getPoliceStatusColor(petition.policeStatus),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          petition.policeStatus?.toUpperCase() ?? 'RECEIVED',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: _getPoliceStatusColor(petition.policeStatus),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      // SAVE BUTTON
+                      Consumer<ComplaintProvider>(
+                        builder: (context, complaintProvider, _) {
+                          final isSaved =
+                              complaintProvider.isPetitionSaved(petition.id);
+                          return InkWell(
+                            onTap: () async {
+                              final auth = Provider.of<AuthProvider>(context,
+                                  listen: false);
+                              final userId = auth.user?.uid;
+                              if (userId == null) return;
+
+                              await complaintProvider.toggleSaveComplaint(
+                                  petition.toMap(), userId);
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Icon(
+                                isSaved
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: isSaved ? Colors.orange : Colors.grey,
+                                size: 24,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -916,7 +954,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Offline Petitions'),
+        title: const Text(
+          'Offline Petitions',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         bottom: _isHighLevelOfficer
