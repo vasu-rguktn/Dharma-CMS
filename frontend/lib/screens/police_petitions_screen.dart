@@ -13,6 +13,8 @@ import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/police_auth_provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:Dharma/data/station_data_constants.dart';
@@ -86,6 +88,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadProfile();
+      // Fetch saved complaints to enable the "Save" feature
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.user != null) {
+        Provider.of<ComplaintProvider>(context, listen: false)
+            .fetchComplaints(userId: auth.user!.uid);
+      }
     });
   }
 
@@ -445,7 +453,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     }
   }
 
-  String _formatTimestamp(Timestamp t) {
+  String _formatTimestamp(Timestamp? t) {
+    if (t == null) return 'N/A';
     final d = t.toDate();
     return '${d.day}/${d.month}/${d.year}';
   }
@@ -1605,91 +1614,164 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
-                                                      if (p.policeStatus != null)
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                            vertical: 4,
-                                                          ),
-                                                          decoration: BoxDecoration(
-                                                            color: _getPoliceStatusColor(
-                                                                    p.policeStatus!)
-                                                                .withOpacity(0.12),
-                                                            borderRadius: BorderRadius.circular(20),
-                                                          ),
-                                                          child: Text(
-                                                            p.policeStatus!,
-                                                            style: TextStyle(
-                                                              fontSize: 11,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: _getPoliceStatusColor(
-                                                                  p.policeStatus!),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment.end,
+                                                      children: [
+                                                        if (p.policeStatus != null)
+                                                          Container(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                    bottom: 4),
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 4,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  _getPoliceStatusColor(
+                                                                          p.policeStatus!),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                            ),
+                                                            child: Text(
+                                                              p.policeStatus!,
+                                                              style: const TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight.w600,
+                                                                color: Colors.white,
+                                                              ),
                                                             ),
                                                           ),
-                                                        ),
-                                                      if (p.isEscalated) ...[
-                                                        const SizedBox(width: 8),
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(
-                                                              horizontal: 8, vertical: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.red.shade100,
-                                                            borderRadius: BorderRadius.circular(20),
-                                                            border: Border.all(color: Colors.red.shade300),
+                                                        if (p.isEscalated)
+                                                          Container(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                    bottom: 4),
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors.red,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                            ),
+                                                            child: const Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize.min,
+                                                              children: [
+                                                                Icon(Icons.trending_up,
+                                                                    size: 10,
+                                                                    color:
+                                                                        Colors.white),
+                                                                SizedBox(width: 4),
+                                                                Text(
+                                                                  'ESCALATED',
+                                                                  style: TextStyle(
+                                                                    fontSize: 9,
+                                                                    fontWeight:
+                                                                        FontWeight.bold,
+                                                                    color: Colors.white,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
                                                           ),
-                                                          child: Row(
-                                                            mainAxisSize: MainAxisSize.min,
-                                                            children: [
-                                                              Icon(Icons.trending_up,
-                                                                  size: 10, color: Colors.red.shade800),
-                                                              const SizedBox(width: 4),
-                                                              Text(
-                                                                'ESCALATED',
-                                                                style: TextStyle(
-                                                                  fontSize: 9,
-                                                                  fontWeight: FontWeight.bold,
-                                                                  color: Colors.red.shade900,
+                                                        if (p.escalationLevel == 3)
+                                                          Container(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                    bottom: 4),
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  Colors.deepPurple,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                            ),
+                                                            child: const Text(
+                                                              'DGP LEVEL',
+                                                              style: TextStyle(
+                                                                fontSize: 9,
+                                                                fontWeight:
+                                                                    FontWeight.bold,
+                                                                color: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        // SAVE BUTTON
+                                                        Consumer<ComplaintProvider>(
+                                                          builder: (context,
+                                                              complaintProvider, _) {
+                                                            final isSaved =
+                                                                complaintProvider
+                                                                    .isPetitionSaved(
+                                                                        p.id);
+                                                            return InkWell(
+                                                              onTap: () async {
+                                                                final auth = Provider
+                                                                    .of<AuthProvider>(
+                                                                        context,
+                                                                        listen: false);
+                                                                final userId =
+                                                                    auth.user?.uid;
+                                                                if (userId == null)
+                                                                  return;
+
+                                                                await complaintProvider
+                                                                    .toggleSaveComplaint(
+                                                                        p.toMap(),
+                                                                        userId);
+                                                              },
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                              child: Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(4.0),
+                                                                child: Icon(
+                                                                  isSaved
+                                                                      ? Icons.bookmark
+                                                                      : Icons
+                                                                          .bookmark_border,
+                                                                  color: isSaved
+                                                                      ? Colors.orange
+                                                                      : Colors.grey,
+                                                                  size: 24,
                                                                 ),
                                                               ),
-                                                            ],
-                                                          ),
+                                                            );
+                                                          },
                                                         ),
                                                       ],
-                                                      if (p.escalationLevel == 3) ...[
-                                                        const SizedBox(width: 8),
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(
-                                                              horizontal: 8, vertical: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.deepPurple.shade100,
-                                                            borderRadius: BorderRadius.circular(20),
-                                                            border: Border.all(color: Colors.deepPurple.shade300),
-                                                          ),
-                                                          child: Text(
-                                                            'DGP LEVEL',
-                                                            style: TextStyle(
-                                                              fontSize: 9,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Colors.deepPurple.shade900,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ],
-                                                  ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  p.petitionerName,
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.grey[600],
-                                                  ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    p.petitionerName,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        ),
                                       const SizedBox(height: 12),
                                       Row(
                                         children: [
@@ -1765,6 +1847,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       ),
     );
   }
+
 
   /* ================= FILTER UI WIDGETS ================= */
 

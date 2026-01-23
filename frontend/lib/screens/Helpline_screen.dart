@@ -36,11 +36,16 @@ class HelplineScreen extends StatelessWidget {
 
       appBar: AppBar(
         backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         title: Text(
           localization.emergencyHelplines,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
         ),
       ),
 

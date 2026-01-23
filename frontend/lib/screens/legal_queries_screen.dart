@@ -360,10 +360,14 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: orange,
-        title: Text(AppLocalizations.of(context)?.legalQueries ?? 'Legal Queries'),
+        foregroundColor: Colors.white,
+        title: Text(
+          AppLocalizations.of(context)?.legalQueries ?? 'Legal Queries',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         automaticallyImplyLeading: false, // Disable automatic hamburger menu
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           tooltip: 'Back to Dashboard',
           onPressed: () {
             print('⬅️ [LEGAL_QUERIES] Back button pressed - navigating to dashboard');

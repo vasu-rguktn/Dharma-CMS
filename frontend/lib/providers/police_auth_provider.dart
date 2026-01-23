@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,45 +29,63 @@ class PoliceAuthProvider with ChangeNotifier {
     String? district,
     String? stationName,
   }) async {
+    FirebaseApp? secondaryApp;
     try {
-      // 1️⃣ Create Auth account
-      final credential = await _auth.createUserWithEmailAndPassword(
+      // 1️⃣ Initialize a secondary app with a unique name
+      final String appName = 'SecondaryApp_${DateTime.now().millisecondsSinceEpoch}';
+      secondaryApp = await Firebase.initializeApp(
+        name: appName,
+        options: Firebase.app().options,
+      );
+      
+      // 2️⃣ Get a secondary auth instance
+      final FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      
+      // 3️⃣ Create the new account using the secondary instance
+      final credential = await secondaryAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       final uid = credential.user!.uid;
 
-      // 2️⃣ Prepare data based on rank
+      // 4️⃣ Prepare data
       final Map<String, dynamic> policeData = {
         'uid': uid,
         'displayName': name,
         'email': email,
         'rank': rank,
         'role': 'police',
-        'state': 'Andhra Pradesh', // ✅ Always AP
-        'isApproved': true, // later admin controlled
+        'state': 'Andhra Pradesh',
+        'isApproved': true,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // 3️⃣ Add optional fields based on rank hierarchy
-      if (range != null && range.isNotEmpty) {
-        policeData['range'] = range;
-      }
-      if (district != null && district.isNotEmpty) {
-        policeData['district'] = district;
-      }
-      if (stationName != null && stationName.isNotEmpty) {
-        policeData['stationName'] = stationName;
-      }
+      if (range != null && range.isNotEmpty) policeData['range'] = range;
+      if (district != null && district.isNotEmpty) policeData['district'] = district;
+      if (stationName != null && stationName.isNotEmpty) policeData['stationName'] = stationName;
 
-      // 4️⃣ Save in police collection
-      await _firestore.collection('police').doc(uid).set(policeData);
+      // 5️⃣ Save to Firestore (using secondary firestore instance)
+      // This is the CRITICAL fix: since we are on the secondary app, 
+      // request.auth.uid will match the new user's uid in Firestore rules.
+      final secondaryFirestore = FirebaseFirestore.instanceFor(app: secondaryApp);
+      await secondaryFirestore.collection('police').doc(uid).set(policeData);
+      
+      // 6️⃣ Sign out the secondary instance to be safe
+      await secondaryAuth.signOut();
+      debugPrint('✅ New police officer created on secondary instance. Original session preserved.');
+      
     } on FirebaseAuthException catch (e) {
       throw Exception(_mapAuthError(e));
-    } catch (_) {
-      throw Exception('Police registration failed');
+    } catch (e) {
+      debugPrint('❌ Error in registerPolice: $e');
+      throw Exception('Police registration failed: $e');
+    } finally {
+      // 7️⃣ Delete the secondary app to clean up resources
+      if (secondaryApp != null) {
+        await secondaryApp.delete();
+      }
     }
   }
 
