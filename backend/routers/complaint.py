@@ -89,6 +89,8 @@ class ChatStepRequest(BaseModel):
 
     chat_history: list[ChatMessage] = []
 
+    is_anonymous: bool = False
+
 
 
 # Forward declaration for recursive reference if needed, though here we can likely just use string forward ref or separate class.
@@ -1448,6 +1450,17 @@ async def chat_step(payload: ChatStepRequest):
                 "5. TERMINATION: If you have the Who, What, When, Where, and How, output 'DONE'.\n"
                 "6. FOCUS: Do not ask for Name/Address/Phone yet. Focus on the incident details first.\n"
             )
+            
+            # --- ANONYMOUS MODE OVERRIDE ---
+            if payload.is_anonymous:
+                anonymous_instruction = (
+                    "\n\n*** ANONYMOUS PETITION MODE ACTIVE ***\n"
+                    "1. DO NOT ask for the user's Name or Address.\n"
+                    "2. YOU MUST ASK for the user's Mobile Number (10 digits) if not already provided.\n"
+                    "3. Once you have the Mobile Number and Incident Details, output 'DONE'.\n"
+                    "4. Ignore any rules above that conflict with this. Specifically, prioritize asking for Mobile Number."
+                )
+                system_prompt += anonymous_instruction
             
             # Convert Pydantic chat history to LLM format
             messages = [{"role": "system", "content": system_prompt}]

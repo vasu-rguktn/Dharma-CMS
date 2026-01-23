@@ -97,7 +97,45 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   // Local state
   bool _inputError = false;
   bool _isDynamicMode = false;
+  bool _isAnonymous = false; // Track anonymous petition state
   List<Map<String, String>> _dynamicHistory = [];
+
+  Future<void> _showPetitionTypeDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Select Petition Type'),
+          content: const Text(
+              'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isAnonymous = true;
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('Anonymous Petition',
+                  style: TextStyle(color: orange, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isAnonymous = false;
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('Normal Petition',
+                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   // STT (Speech-to-Text) variables
   late final stt.SpeechToText _speech;
@@ -721,6 +759,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   }
 
   Future<void> _startChatFlow() async {
+    // Show petition type selection first
+    await Future.delayed(Duration.zero); // Ensure context is ready
+    if (!mounted) return;
+    
+    await _showPetitionTypeDialog();
+
+    if (!mounted) return;
+
     final localizations = AppLocalizations.of(context)!;
 
     setState(() {
@@ -732,7 +778,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _setAllowInput(false);
       _setErrored(false);
     });
-    _addBot(localizations.welcomeToDharma);
+    
+    // Customize welcome message based on selection
+    if (_isAnonymous) {
+      _addBot("You have selected Anonymous Petition Mode. Your name and address will not be recorded.");
+    } else {
+      _addBot(localizations.welcomeToDharma);
+    }
+    
     await Future.delayed(const Duration(seconds: 1));
     _addBot(localizations.letUsBegin);
     await Future.delayed(const Duration(seconds: 1)); // Small delay for flow
@@ -822,6 +875,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     }
 
+    // baseUrl="http://127.0.0.1:8000";
     final localeCode = Localizations.localeOf(context).languageCode;
 
     // Construct Payload
@@ -835,6 +889,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       'initial_details': _ChatStateHolder.answers['details'] ?? '',
       'language': localeCode,
       'chat_history': _dynamicHistory,
+      'is_anonymous': _isAnonymous,
     };
     
     print('🚀 Sending to backend:');
