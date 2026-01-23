@@ -15,7 +15,15 @@ import 'package:Dharma/providers/auth_provider.dart';class ChargesheetVettingScr
 
 class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
   final _chargesheetContentController = TextEditingController();
-  final _dio = Dio();
+  final _dio = Dio(
+    BaseOptions(
+      // Local backend (FastAPI) for development
+      baseUrl: "http://127.0.0.1:8080",
+      headers: {"Content-Type": "application/json"},
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 60), // AI processing can take time
+    ),
+  );
 
   bool _isLoading = false;
   Map<String, dynamic>? _suggestions;
