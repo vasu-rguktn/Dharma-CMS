@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
-import 'dart:html' as html show AnchorElement;
+import '../utils/web_stub.dart' if (dart.library.html) 'dart:html' as html;
 
 class ChargesheetGenerationScreen extends StatefulWidget {
   const ChargesheetGenerationScreen({super.key});
