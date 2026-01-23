@@ -15,7 +15,9 @@ import google.generativeai as genai
 import re
 from loguru import logger
 import json
+import json
 import sys
+from services.legal_rag import rag_enabled, retrieve_context
 
 logger.remove()
 logger.add(
@@ -543,14 +545,28 @@ def get_official_complaint_label(complaint_type: str, details: str) -> Optional[
     try:
         model = genai.GenerativeModel(LLM_MODEL)
 
+
+        context_block = ""
+        if rag_enabled():
+            try:
+                # Retrieve relevant BNS context
+                query = f"{complaint_type} {details}"
+                context_text, _ = retrieve_context(query, top_k=3)
+                if context_text:
+                    context_block = f"\nRelevant New Laws (BNS/BNSS) Context:\n{context_text}\n"
+            except Exception as e:
+                logger.warning(f"RAG lookup failed in label generation: {e}")
+
         prompt = (
-            "You are an expert in Indian criminal law. From the fields below, provide a concise official offence"
-            " name and IPC section(s) if clearly applicable. Output exactly one short line like:\n"
-            "Theft — IPC 378\nAttempted murder — IPC 307\nNot applicable\n\n"
+            "You are an expert in Indian criminal law, specifically Bharatiya Nyaya Sanhita (BNS). "
+            "From the fields below, provide a concise official offence"
+            " name and BNS section(s) if clearly applicable. Output exactly one short line like:\n"
+            "Theft — BNS 303(2)\nAttempted murder — BNS 109\nNot applicable\n\n"
+            f"{context_block}\n"
             f"Complaint Type: {complaint_type}\n"
             f"Details: {details}\n\n"
-            "If unsure or not applicable, reply with 'Not applicable'. DO NOT invent IPC numbers.\n"
-            "Be concise and do not hallucinate IPCs unless clearly applicable."
+            "If unsure or not applicable, reply with 'Not applicable'. DO NOT use IPC numbers. USE BNS SECTIONS ONLY.\n"
+            "Be concise and do not hallucinate BNS numbers unless clearly applicable."
         )
 
         response = model.generate_content(
@@ -571,7 +587,7 @@ def get_official_complaint_label(complaint_type: str, details: str) -> Optional[
         if re.match(r"(?i)not applicable", first_line):
             return None
 
-        if re.search(r"\bIPC\b", first_line, flags=re.IGNORECASE) or re.search(r"\bsection\s*\d{2,4}\b", first_line, flags=re.IGNORECASE):
+        if re.search(r"\b(IPC|BNS|BNSS)\b", first_line, flags=re.IGNORECASE) or re.search(r"\bsection\s*\d+\b", first_line, flags=re.IGNORECASE):
             cleaned = re.sub(r"[\(\[\{](.*?)[\)\]\}]", r"\1", first_line).strip()
             return cleaned
 
