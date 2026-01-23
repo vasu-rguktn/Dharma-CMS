@@ -727,7 +727,7 @@ class _FaceCaptureTabState extends State<FaceCaptureTab> {
 
     // Hardcode to localhost for local development as requested
     // This prevents accidental fallback to the cloud URL which might be outdated
-    const String localUrl = 'http://127.0.0.1:8000';
+    const String localUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
     
     print("Forcing backend URL to: $localUrl");
 
