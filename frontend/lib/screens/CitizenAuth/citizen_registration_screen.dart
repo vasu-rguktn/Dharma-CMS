@@ -401,7 +401,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         }
                        if (!Validators.isValidDOB(value)) {
 
-                          return localizations?.enterValidDateFormat ?? 'Age must be between 18 and 120 years';;
+                          return localizations?.enterValidDateFormat ?? 'You must be at least 18 years old to register';
                         }
                         return null;
                       },

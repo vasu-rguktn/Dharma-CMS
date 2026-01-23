@@ -88,6 +88,12 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
     }
   }
 
+  /// Helper method to get localized label based on current locale
+  String _getLocalizedLabel(String english, String telugu) {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'te' ? telugu : english;
+  }
+
   // ───────── COMMON CARD ─────────
   Widget _cardWrapper(String title, IconData icon, Widget child) {
     return Card(
@@ -126,11 +132,14 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
   Widget _buildSectionsTimeline() {
     if (_sectionsText == null || _sectionsText!.isEmpty) {
       return _cardWrapper(
-        "Suggested Legal Sections",
+        _getLocalizedLabel("Suggested Legal Sections", "సూచించబడిన చట్ట ధారలు"),
         Icons.gavel,
-        const Text(
-          "No applicable sections found.",
-          style: TextStyle(color: Colors.grey),
+        Text(
+          _getLocalizedLabel(
+            "No applicable sections found.",
+            "వర్తించే ధారలు కనుగొనబడలేదు.",
+          ),
+          style: const TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -139,7 +148,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
         _sectionsText!.split('\n').where((s) => s.trim().isNotEmpty).toList();
 
     return _cardWrapper(
-      "Suggested Legal Sections",
+      _getLocalizedLabel("Suggested Legal Sections", "సూచించబడిన చట్ట ధారలు"),
       Icons.gavel,
       Stack(
         children: [
@@ -237,13 +246,15 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
     );
   }
 
-// ───────── REASONING ─────────
   Widget _buildReasoning() {
     return _cardWrapper(
-      "Reasoning",
+      _getLocalizedLabel("Reasoning", "కారణం"),
       Icons.lightbulb_outline,
       Text(
-        _reasoning ?? "Reasoning not available.",
+        _reasoning ?? _getLocalizedLabel(
+          "Reasoning not available.",
+          "కారణం అందుబాటులో లేదు.",
+        ),
         style: const TextStyle(fontSize: 15, height: 1.6),
       ),
     );
@@ -277,8 +288,8 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                     },
                   ),
                   const SizedBox(width: 6),
-                  const Text(
-                    "Legal Section Suggester",
+                  Text(
+                    loc.legalSuggestion,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -316,9 +327,12 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                   ),
                   child: _loading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Get Legal Suggestions",
-                          style: TextStyle(fontSize: 16),
+                      : Text(
+                          _getLocalizedLabel(
+                            "Get Legal Suggestions",
+                            "చట్ట సూచనలను పొందండి",
+                          ),
+                          style: const TextStyle(fontSize: 16),
                         ),
                 ),
               ),
@@ -333,7 +347,10 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                       const CircularProgressIndicator(color: orange),
                       const SizedBox(height: 16),
                       Text(
-                        "Analyzing incident and generating legal suggestions...",
+                        _getLocalizedLabel(
+                          "Analyzing incident and generating legal suggestions...",
+                          "సంఘటనను విశ్లేషించి చట్ట సూచనలను రూపొందిస్తోంది...",
+                        ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade600,
@@ -358,14 +375,17 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.amber),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.amber),
-                      SizedBox(width: 10),
+                      const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          "This is informational only, not legal advice.",
-                          style: TextStyle(fontSize: 13),
+                          _getLocalizedLabel(
+                            "This is informational only, not legal advice.",
+                            "ఇది కేవలం సమాచారం మాత్రమే, చట్ట సలహా కాదు.",
+                          ),
+                          style: const TextStyle(fontSize: 13),
                         ),
                       ),
                     ],

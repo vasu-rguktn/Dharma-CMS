@@ -4,25 +4,59 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class UserActivity {
   final String title;
-  final IconData icon;
+  final int iconCode;
+  final String? iconFontFamily;
+  final String? iconFontPackage;
   final String route;
   final DateTime timestamp;
   final Color? color;
 
   UserActivity({
     required this.title,
-    required this.icon,
+    required this.iconCode,
+    this.iconFontFamily,
+    this.iconFontPackage,
     required this.route,
     required this.timestamp,
     this.color,
   });
 
+  IconData get icon {
+    // We must return constant IconData instances to satisfy Flutter's icon tree-shaking.
+    // Dynamic IconData(iconCode, ...) calls with variables are not allowed in release builds.
+    if (iconCode == Icons.chat.codePoint) return Icons.chat;
+    if (iconCode == Icons.psychology.codePoint) return Icons.psychology;
+    if (iconCode == Icons.phone.codePoint) return Icons.phone;
+    if (iconCode == Icons.gavel.codePoint) return Icons.gavel;
+    if (iconCode == Icons.call_received.codePoint) return Icons.call_received;
+    if (iconCode == Icons.sync.codePoint) return Icons.sync;
+    if (iconCode == Icons.task_alt.codePoint) return Icons.task_alt;
+    if (iconCode == Icons.report_problem.codePoint) return Icons.report_problem;
+    if (iconCode == Icons.edit_document.codePoint) return Icons.edit_document;
+    if (iconCode == Icons.file_present.codePoint) return Icons.file_present;
+    if (iconCode == Icons.fact_check.codePoint) return Icons.fact_check;
+    if (iconCode == Icons.archive.codePoint) return Icons.archive;
+    if (iconCode == Icons.book.codePoint) return Icons.book;
+    if (iconCode == Icons.rule.codePoint) return Icons.rule;
+    if (iconCode == Icons.file_copy_rounded.codePoint) return Icons.file_copy_rounded;
+    if (iconCode == Icons.camera_alt.codePoint) return Icons.camera_alt;
+    if (iconCode == Icons.person_add.codePoint) return Icons.person_add;
+    if (iconCode == Icons.post_add.codePoint) return Icons.post_add;
+    if (iconCode == Icons.assignment.codePoint) return Icons.assignment;
+    if (iconCode == Icons.image_search.codePoint) return Icons.image_search;
+    if (iconCode == Icons.history.codePoint) return Icons.history;
+    if (iconCode == Icons.arrow_forward_ios.codePoint) return Icons.arrow_forward_ios;
+    
+    // Fallback to a safe constant
+    return Icons.help_outline;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'title': title,
-      'iconCode': icon.codePoint,
-      'iconFontFamily': icon.fontFamily,
-      'iconFontPackage': icon.fontPackage,
+      'iconCode': iconCode,
+      'iconFontFamily': iconFontFamily,
+      'iconFontPackage': iconFontPackage,
       'route': route,
       'timestamp': timestamp.toIso8601String(),
       'colorValue': color?.value,
@@ -32,11 +66,9 @@ class UserActivity {
   factory UserActivity.fromJson(Map<String, dynamic> json) {
     return UserActivity(
       title: json['title'],
-      icon: IconData(
-        json['iconCode'],
-        fontFamily: json['iconFontFamily'],
-        fontPackage: json['iconFontPackage'],
-      ),
+      iconCode: json['iconCode'],
+      iconFontFamily: json['iconFontFamily'],
+      iconFontPackage: json['iconFontPackage'],
       route: json['route'],
       timestamp: DateTime.parse(json['timestamp']),
       color: json['colorValue'] != null ? Color(json['colorValue']) : null,
@@ -93,21 +125,27 @@ class ActivityProvider with ChangeNotifier {
     _activities.addAll([
       UserActivity(
         title: "AI Chat",
-        icon: Icons.chat,
+        iconCode: Icons.chat.codePoint,
+        iconFontFamily: Icons.chat.fontFamily,
+        iconFontPackage: Icons.chat.fontPackage,
         route: "/ai-legal-chat",
         timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
         color: Colors.blue,
       ),
       UserActivity(
         title: "Legal Queries",
-        icon: Icons.psychology,
+        iconCode: Icons.psychology.codePoint,
+        iconFontFamily: Icons.psychology.fontFamily,
+        iconFontPackage: Icons.psychology.fontPackage,
         route: "/legal-queries",
         timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
         color: Colors.purple,
       ),
       UserActivity(
         title: "Helpline",
-        icon: Icons.phone,
+        iconCode: Icons.phone.codePoint,
+        iconFontFamily: Icons.phone.fontFamily,
+        iconFontPackage: Icons.phone.fontPackage,
         route: "/helpline",
         timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
         color: Colors.red.shade800,
@@ -156,7 +194,9 @@ class ActivityProvider with ChangeNotifier {
     // Insert at the top as the most recent
     _activities.insert(0, UserActivity(
       title: title,
-      icon: icon,
+      iconCode: icon.codePoint,
+      iconFontFamily: icon.fontFamily,
+      iconFontPackage: icon.fontPackage,
       route: route,
       timestamp: DateTime.now(),
       color: color,
