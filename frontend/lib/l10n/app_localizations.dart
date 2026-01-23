@@ -2624,6 +2624,34 @@ String get submitOfflinePetition;
 String get offlinePetitions;
 String get assignedPetitions;
 String get escalated;
+String get viewDetails;
+String get filterCasesUsingFilters;
+String get yourAccessLevel;
+String get ok;
+
+  /// Filters section label in cases screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filters:'**
+  String get filters;
+
+  /// Police range filter label
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get range;
+
+  /// Age filter label
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get age;
+
+  /// Description for cases screen subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Manage and view details of FIRs / Cases you are involved in.'**
+  String get casesScreenSubtitle;
 
 }
 

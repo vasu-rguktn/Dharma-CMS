@@ -1575,5 +1575,33 @@
   "chooseFromGallery": "Choose from Gallery",
   "uploadPdf": "Upload PDF",
   "noPreviousChats": "No previous chats",
-  "askYourLegalQuestion": "Ask your legal question"
+  "askYourLegalQuestion": "Ask your legal question",
+  "filters": "Filters:",
+  "@filters": {
+    "description": "Label for filters section in cases screen"
+  },
+  "range": "Range",
+  "@range": {
+    "description": "Filter label for police range in cases screen"
+  },
+  "age": "Age",
+  "@age": {
+    "description": "Filter label for age in cases screen"
+  },
+  "viewDetails": "View Details",
+  "@viewDetails": {
+    "description": "Button label to view case details"
+  },
+  "yourAccessLevel": "Your Access Level",
+  "@yourAccessLevel": {
+    "description": "Dialog title showing police officer's access level"
+  },
+  "filterCasesUsingFilters": "Filter cases using the dropdown filters.",
+  "@filterCasesUsingFilters": {
+    "description": "Instruction text in access level dialog"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  }
 }

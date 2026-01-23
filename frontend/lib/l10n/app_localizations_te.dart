@@ -1535,9 +1535,35 @@ String get assignedPetitions => 'కేటాయించిన పిటిష�
 @override
 String get escalated => 'ఎస్కలేట్ చేయబడింది';
 
+@override
+String get viewDetails => 'వివరాలను చూడండి';
 
+@override
+String get assignToOfficer => 'అధికారికి కేటాయించండి';
+
+@override
+String get filters => 'ఫిల్టర్‌లు:';
+
+@override
+String get range => 'పరిధి';
+
+@override
+String get age => 'వయస్సు';
+
+@override
+String get yourAccessLevel => 'మీ యాక్సెస్ స్థాయి';
+
+@override
+String get filterCasesUsingFilters => 'డ్రాప్‌డౌన్ ఫిల్టర్‌లను ఉపయోగించి కేసులను ఫిల్టర్ చేయండి.';
+
+@override
+String get casesScreenSubtitle => 'మీకు సంబంధించిన FIR ల / కేసుల వివరాలను నిర్వహించండి మరియు చూడండి.';
 
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();
+  
+  @override
+  // TODO: implement ok
+  String get ok => 'సరే';
 }

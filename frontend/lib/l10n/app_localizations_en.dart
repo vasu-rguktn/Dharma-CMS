@@ -1559,9 +1559,32 @@ String get assignedPetitions => 'Assigned Petitions';
 @override
 String get escalated => 'Escalated';
 
+@override
+String get filters => 'Filters:';
 
+@override
+String get range => 'Range';
+
+@override
+String get age => 'Age';
+
+@override
+String get viewDetails => 'View Details';
+
+@override
+String get yourAccessLevel => 'Your Access Level';
+
+@override
+String get filterCasesUsingFilters => 'Filter cases using the dropdown filters.';
+
+@override
+String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you are involved in.';
 
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();
+  
+  @override
+  // TODO: implement ok
+  String get ok => 'ok';
 }
