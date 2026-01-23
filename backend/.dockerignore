@@ -37,6 +37,7 @@ README.md
 .env.local
 *.json
 !package.json
+!dharma-cms-5cc89-b74e10595572.json
 
 # Logs
 *.log

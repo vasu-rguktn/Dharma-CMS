@@ -89,6 +89,8 @@ class ChatStepRequest(BaseModel):
 
     chat_history: list[ChatMessage] = []
 
+    is_anonymous: bool = False
+
 
 
 # Forward declaration for recursive reference if needed, though here we can likely just use string forward ref or separate class.
@@ -138,6 +140,7 @@ class ComplaintRequest(BaseModel):
     incident_address: Optional[str] = None
 
     language: Optional[str] = Field(default="en", description="ISO code such as en or te")
+    is_anonymous: bool = False
 
 
 
@@ -613,6 +616,10 @@ def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
     full_name = req.full_name.strip()
     address = req.address.strip()
     phone = req.phone.strip()
+    
+    # Mask phone if anonymous (Keep first 3 digits, mask the rest)
+    if req.is_anonymous and len(phone) >= 3:
+        phone = phone[:3] + "x" * (len(phone) - 3)
     
     # "Incident Details" -> Short summary (1-2 lines, location/time)
     # Using 'short_incident_summary' from request if available, falling back to details
@@ -1201,6 +1208,14 @@ async def chat_step(payload: ChatStepRequest):
 
         # 1. Resolve Language
         language = resolve_language(payload.language)
+        logger.info(f"Is Anonymous: {payload.is_anonymous}")
+
+        if payload.is_anonymous:
+             if not payload.full_name:
+                 payload.full_name = "Anonymous"
+             if not payload.address:
+                 payload.address = "Not Recorded (Anonymous Petition)"
+             logger.info("Anonymous Mode: Auto-filled Name/Address to prevent probing.")
 
         # --- STATE RECOVERY START ---
         # Recover identity fields from history to fix "Not Provided" bug
@@ -1378,7 +1393,21 @@ async def chat_step(payload: ChatStepRequest):
 
             # system_prompt = SYSTEM_PROMPT_TE if language == "te" else SYSTEM_PROMPT_EN
 
+            # Define the Anonymous Instruction Header
+            anon_header = ""
+            if payload.is_anonymous:
+                anon_header = (
+                    "MODE: ANONYMOUS PETITION\n"
+                    "INSTRUCTIONS:\n"
+                    "- Skip Name and Address questions.\n"
+                    "- Collect the Mobile Number (10 digits).\n"
+                    "- Collect COMPREHENSIVE Incident Details (Who, What, Where, When, How).\n"
+                    "- ASK FOLLOW-UP QUESTIONS if the details are vague.\n"
+                    "- Output 'DONE' ONLY when you have the Mobile Number AND a clear, detailed picture of the incident.\n\n"
+                )
+
             system_prompt = (
+                f"{anon_header}"
                 f"You are an expert Police Officer conducting an investigation in {display_lang}.\n\n"
 
                 "GOAL: Ask relevant questions to understand the crime (Who, What, Where, When, How).\n"
@@ -1491,7 +1520,13 @@ async def chat_step(payload: ChatStepRequest):
                         generation_config=genai.types.GenerationConfig(
                             temperature=0.3,
                             max_output_tokens=2048,
-                        )
+                        ),
+                        safety_settings=[
+                            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+                            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+                            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+                            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+                        ]
                     )
                     
                     raw_content = response.text or ""
@@ -1550,13 +1585,18 @@ async def chat_step(payload: ChatStepRequest):
             final_phone_confirmed = payload.phone and validate_phone(payload.phone)
 
             if not final_name_confirmed:
-                msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
-                return ChatStepResponse(status="question", message=msg)
+                # If anonymous, we skip name check (it should be set to "Anonymous" anyway)
+                if not payload.is_anonymous:
+                     msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
+                     return ChatStepResponse(status="question", message=msg)
 
             if not final_address_confirmed:
-                msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
-                return ChatStepResponse(status="question", message=msg)
+                # If anonymous, we skip address check
+                if not payload.is_anonymous:
+                    msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
+                    return ChatStepResponse(status="question", message=msg)
 
+            # Phone is MANDATORY for both Normal and Anonymous
             if not final_phone_confirmed:
                 msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
                 return ChatStepResponse(status="question", message=msg)

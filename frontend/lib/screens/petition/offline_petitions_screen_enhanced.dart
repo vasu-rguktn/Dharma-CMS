@@ -378,7 +378,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                           _buildDetailRow('Type', petition.type.displayName),
                           _buildDetailRow('Petitioner', petition.petitionerName),
                           if (petition.phoneNumber != null)
-                            _buildDetailRow('Phone', petition.phoneNumber!),
+                            _buildDetailRow(
+                              'Phone',
+                              petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                            ),
                           if (petition.district != null)
                             _buildDetailRow('District', petition.district!),
                           if (petition.stationName != null)

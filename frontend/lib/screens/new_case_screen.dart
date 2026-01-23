@@ -651,9 +651,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       if (_policeHierarchyData?['districts'] != null) {
-        final districts = _policeHierarchyData!['districts'] as List;
+        final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+        // Use loose matching (trim + lowercase)
         final districtData = districts.firstWhere(
-          (d) => d['name'] == _selectedDistrict,
+          (d) => d['name'].toString().trim().toLowerCase() == 
+                 _selectedDistrict!.trim().toLowerCase(),
           orElse: () => null,
         );
 
@@ -683,12 +685,20 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     });
 
     try {
-      final districts = _policeHierarchyData!['districts'] as List;
-      final districtData = districts.firstWhere((d) => d['name'] == _selectedDistrict, orElse: () => null);
+      final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+      final districtData = districts.firstWhere(
+        (d) => d['name'].toString().trim().toLowerCase() == 
+               _selectedDistrict!.trim().toLowerCase(),
+        orElse: () => null
+      );
 
       if (districtData != null && districtData['sdpos'] != null) {
-        final sdpos = districtData['sdpos'] as List;
-        final sdpoData = sdpos.firstWhere((s) => s['name'] == _selectedSubDivision, orElse: () => null);
+        final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
+        final sdpoData = sdpos.firstWhere(
+          (s) => s['name'].toString().trim().toLowerCase() == 
+                 _selectedSubDivision!.trim().toLowerCase(),
+          orElse: () => null
+        );
 
         if (sdpoData != null && sdpoData['circles'] != null) {
           final circles = sdpoData['circles'] as List;
@@ -714,16 +724,28 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     });
 
     try {
-      final districts = _policeHierarchyData!['districts'] as List;
-      final districtData = districts.firstWhere((d) => d['name'] == _selectedDistrict, orElse: () => null);
+      final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+      final districtData = districts.firstWhere(
+        (d) => d['name'].toString().trim().toLowerCase() == 
+               _selectedDistrict!.trim().toLowerCase(),
+        orElse: () => null
+      );
 
       if (districtData != null && districtData['sdpos'] != null) {
-        final sdpos = districtData['sdpos'] as List;
-        final sdpoData = sdpos.firstWhere((s) => s['name'] == _selectedSubDivision, orElse: () => null);
+        final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
+        final sdpoData = sdpos.firstWhere(
+          (s) => s['name'].toString().trim().toLowerCase() == 
+                 _selectedSubDivision!.trim().toLowerCase(),
+          orElse: () => null
+        );
 
         if (sdpoData != null && sdpoData['circles'] != null) {
-          final circles = sdpoData['circles'] as List;
-          final circleData = circles.firstWhere((c) => c['name'] == _selectedCircle, orElse: () => null);
+          final circles = (sdpoData['circles'] as List).cast<dynamic>();
+          final circleData = circles.firstWhere(
+            (c) => c['name'].toString().trim().toLowerCase() == 
+                   _selectedCircle!.trim().toLowerCase(),
+            orElse: () => null
+          );
 
           if (circleData != null && circleData['police_stations'] != null) {
             final stations = (circleData['police_stations'] as List).cast<String>().toList()..sort();
@@ -768,41 +790,92 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
       
       try {
-        List<String> stations = [];
-        
-        if (_policeHierarchyData != null && _policeHierarchyData!['districts'] != null) {
-           final districts = _policeHierarchyData!['districts'] as List;
-           final districtData = districts.firstWhere(
-             (d) => d['name'] == _selectedDistrict, 
-             orElse: () => null
-           );
-           
-           if (districtData != null && districtData['sdpos'] != null) {
-             final sdpos = districtData['sdpos'] as List;
-             for (var sdpo in sdpos) {
-               if (sdpo['circles'] != null) {
-                 final circles = sdpo['circles'] as List;
-                 for (var circle in circles) {
-                    if (circle['police_stations'] != null) {
-                      final psList = (circle['police_stations'] as List).cast<String>();
-                      stations.addAll(psList);
-                    }
+        final Set<String> stationsSet = {};
+        final searchDistrict = _selectedDistrict!.trim().toLowerCase();
+        debugPrint('🔍 Searching stations for district: "$searchDistrict"');
+
+        // STRATEGY 1: Search in FIR Hierarchy (Complex, Nested)
+        // This is prioritized to ensure SDPOs and Circles are available/consistent
+        try {
+          if (_policeHierarchyData != null && _policeHierarchyData!['districts'] != null) {
+             final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+             
+             final districtData = districts.firstWhere(
+               (d) {
+                 if (d is Map && d['name'] != null) {
+                   return d['name'].toString().trim().toLowerCase() == searchDistrict;
+                 }
+                 return false;
+               },
+               orElse: () => null
+             );
+             
+             if (districtData != null && districtData is Map && districtData['sdpos'] != null) {
+               final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
+               for (var sdpo in sdpos) {
+                 if (sdpo is Map && sdpo['circles'] != null) {
+                   final circles = (sdpo['circles'] as List).cast<dynamic>();
+                   for (var circle in circles) {
+                      if (circle is Map && circle['police_stations'] != null) {
+                        final rawList = circle['police_stations'] as List;
+                        stationsSet.addAll(rawList.map((e) => e.toString()));
+                      }
+                   }
                  }
                }
              }
-           }
+          }
+          if (stationsSet.isNotEmpty) {
+             debugPrint('✅ Strategy 1 (FIR) found ${stationsSet.length} stations.');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Strategy 1 (FIR) failed: $e');
         }
+
+        // STRATEGY 2: Search in Complete Hierarchy (Reliable, Flat)
+        // Fallback if FIR hierarchy parsing fails
+        if (stationsSet.isEmpty) {
+          debugPrint('⚠️ Strategy 1 returned 0 stations. Trying Strategy 2 (Complete)...');
+          try {
+            final completeData = kPoliceHierarchyComplete;
+            bool foundInStrategy2 = false;
+            
+            for (final rangeVal in completeData.values) {
+              if (rangeVal is Map) {
+                 // Iterate keys to handle potential casing differences manually if needed
+                 for (final districtKey in rangeVal.keys) {
+                   if (districtKey.toString().trim().toLowerCase() == searchDistrict) {
+                      final rawStations = rangeVal[districtKey];
+                      if (rawStations is List) {
+                        stationsSet.addAll(rawStations.map((e) => e.toString()));
+                        foundInStrategy2 = true;
+                      }
+                   }
+                 }
+              }
+              if (foundInStrategy2) break;
+            }
+            if (stationsSet.isNotEmpty) {
+               debugPrint('✅ Strategy 2 (Complete) found ${stationsSet.length} stations.');
+            }
+          } catch (e) {
+            debugPrint('⚠️ Strategy 2 (Complete) failed: $e');
+          }
+        }
+
+        final List<String> finalStations = stationsSet.toList()..sort();
 
         // Stations are returned in English for storage
         setState(() {
-          // Remove duplicates if any and sort
-          _policeStationsEnglish = stations.toSet().toList()..sort();
+          _policeStationsEnglish = finalStations;
           _isLoadingPoliceStations = false;
-          if (stations.isEmpty) {
+          if (finalStations.isEmpty) {
+            // Include the district name in the error for debugging context
             _policeStationLoadError = _getLocalizedLabel(
-              'No police stations found for this district',
-              'ఈ జిల్లా కోసం పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+              'No stations found for $_selectedDistrict',
+              '$_selectedDistrict కోసం స్టేషన్లు దొరకలేదు',
             );
+            debugPrint('❌ FATAL: No stations found in either hierarchy for "$_selectedDistrict"');
           }
         });
       } catch (e) {
@@ -810,8 +883,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         setState(() {
           _isLoadingPoliceStations = false;
           _policeStationLoadError = _getLocalizedLabel(
-            'Failed to load police stations. Please try again.',
-            'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.',
+            'Failed to load police stations: $e', 
+            'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది',
           );
         });
       }

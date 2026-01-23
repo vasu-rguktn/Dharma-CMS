@@ -216,7 +216,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      petition.phoneNumber!,
+                      petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -308,7 +308,10 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                 const Divider(height: 32),
                 _buildDetailRow('Petitioner', petition.petitionerName),
                 if (petition.phoneNumber != null)
-                  _buildDetailRow('Phone', petition.phoneNumber!),
+                  _buildDetailRow(
+                    'Phone',
+                    petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                  ),
                 if (petition.address != null)
                   _buildDetailRow('Address', petition.address!),
                 if (petition.firNumber != null)

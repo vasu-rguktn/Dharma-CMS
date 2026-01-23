@@ -170,7 +170,7 @@ class PetitionCard extends StatelessWidget {
                     Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      petition.phoneNumber!,
+                      petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
                       style: theme.textTheme.bodySmall
                           ?.copyWith(color: Colors.grey[600]),
                     ),

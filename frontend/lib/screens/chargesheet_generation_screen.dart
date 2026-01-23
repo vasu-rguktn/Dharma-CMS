@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
-import '../utils/web_stub.dart' if (dart.library.html) 'dart:html' as html;
+// import 'dart:html' as html show AnchorElement; // REMOVED for APK build compatibility
 
 class ChargesheetGenerationScreen extends StatefulWidget {
   const ChargesheetGenerationScreen({super.key});
@@ -229,14 +229,15 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
       final chargesheetText = _chargeSheet!['chargeSheet'] ?? '';
       
       if (kIsWeb) {
-        // For web: Create download link
-        final bytes = utf8.encode(chargesheetText);
-        final base64Data = base64Encode(bytes);
-        final anchor = html.AnchorElement(
-          href: 'data:text/plain;charset=utf-8;base64,$base64Data',
-        )
-          ..setAttribute('download', 'chargesheet_${DateTime.now().millisecondsSinceEpoch}.txt')
-          ..click();
+        // For web: Create download link (DISABLED for APK build)
+        // final bytes = utf8.encode(chargesheetText);
+        // final base64Data = base64Encode(bytes);
+        // final anchor = html.AnchorElement(
+        //   href: 'data:text/plain;charset=utf-8;base64,$base64Data',
+        // )
+        //   ..setAttribute('download', 'chargesheet_${DateTime.now().millisecondsSinceEpoch}.txt')
+        //   ..click();
+        print("Web download triggered but disabled for APK build compatibility.");
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
