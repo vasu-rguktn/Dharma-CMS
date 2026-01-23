@@ -111,9 +111,9 @@
   "@pleaseSelectDOB": {
     "description": "Date of birth required validation message"
   },
-  "enterValidDateFormat": "Enter date in YYYY-MM-DD format",
+  "enterValidDateFormat": "You must be at least 18 years old to register",
   "@enterValidDateFormat": {
-    "description": "Date format validation message"
+    "description": "Age validation message for registration"
   },
   "pleaseSelectGender": "Please select your gender",
   "@pleaseSelectGender": {
@@ -1534,8 +1534,16 @@
   "vijayawadaSdpo": "Vijayawada SDPO",
   "@vijayawadaSdpo": {
     "description": "Vijayawada SDPO sub-division"
-  }
-
-  
-
+  },
+  "aiThinking": "AI is thinking...",
+  "legalQuestionHint": "Ask a legal question...",
+  "getLegalSuggestions": "Get Legal Suggestions",
+  "analyzingIncident": "Analyzing incident and generating legal suggestions...",
+  "legalDisclaimer": "This is informational only, not legal advice.",
+  "chatHistory": "Chat History",
+  "takePhoto": "Take Photo",
+  "chooseFromGallery": "Choose from Gallery",
+  "uploadPdf": "Upload PDF",
+  "noPreviousChats": "No previous chats",
+  "askYourLegalQuestion": "Ask your legal question"
 }
