@@ -18,7 +18,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
   final _dio = Dio(
     BaseOptions(
       // Local backend (FastAPI) for development
-      baseUrl: "http://127.0.0.1:8080",
+      // baseUrl: "http://127.0.0.1:8080",
+      baseUrl: "https://fastapi-app-335340524683.asia-south1.run.app",
       headers: {"Content-Type": "application/json"},
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 60), // AI processing can take time

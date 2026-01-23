@@ -2038,39 +2038,98 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      return Align(
-                        alignment: msg.isUser
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: msg.isUser ? orange : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: msg.isUser
-                                ? null
-                                : Border.all(
-                                    color: Colors.grey.shade300, width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 3,
-                                offset: const Offset(0, 1),
+                      // Different layout based on sender
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: msg.isUser
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            // AI Avatar (Left)
+                            if (!msg.isUser) ...[
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                    width: 1,
+                                  ),
+                                  image: const DecorationImage(
+                                    image: AssetImage('assets/avatar.png'),
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+
+                            // Message Bubble
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width *
+                                      0.70, // Slightly reduced max width to account for avatars
+                                ),
+                                decoration: BoxDecoration(
+                                  color: msg.isUser ? orange : Colors.white,
+                                  // Add different border radius for "chat bubble" effect
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(18),
+                                    topRight: const Radius.circular(18),
+                                    bottomLeft: Radius.circular(
+                                        msg.isUser ? 18 : 4), // Square corner near avatar
+                                    bottomRight: Radius.circular(
+                                        msg.isUser ? 4 : 18), // Square corner near avatar
+                                  ),
+                                  border: msg.isUser
+                                      ? null
+                                      : Border.all(
+                                          color: Colors.grey.shade300, width: 1),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  msg.content,
+                                  style: TextStyle(
+                                    color: msg.isUser
+                                        ? Colors.white
+                                        : Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // User Avatar (Right)
+                            if (msg.isUser) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.grey.shade600,
+                                  size: 20,
+                                ),
                               ),
                             ],
-                          ),
-                          child: Text(
-                            msg.content,
-                            style: TextStyle(
-                              color: msg.isUser ? Colors.white : Colors.black87,
-                              fontSize: 16,
-                            ),
-                          ),
+                          ],
                         ),
                       );
                     },
