@@ -1517,6 +1517,26 @@ String get listening => 'వింటుంది';
 @override
 String get tapToStopRecording => 'రికార్డింగ్ ఆపడానికి మైక్రోఫోన్ చిహ్నంపై టాప్ చేయండి';
 
+@override
+String get imageLab => 'ఇమేజ్ ల్యాబ్';
+
+@override
+String get addPolice => 'పోలీసును జోడించండి';
+
+@override
+String get submitOfflinePetition => 'ఆఫ్లైన్ పిటిషన్ సమర్పించండి';
+
+@override
+String get offlinePetitions => 'ఆఫ్లైన్ పిటిషన్లు';
+
+@override
+String get assignedPetitions => 'కేటాయించిన పిటిషన్లు';
+
+@override
+String get escalated => 'ఎస్కలేట్ చేయబడింది';
+
+
+
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();

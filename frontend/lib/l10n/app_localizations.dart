@@ -2618,6 +2618,13 @@ String get map;
 String get viewMap;
 String get listening;
 String get tapToStopRecording;
+String get imageLab;
+String get addPolice;
+String get submitOfflinePetition;
+String get offlinePetitions;
+String get assignedPetitions;
+String get escalated;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

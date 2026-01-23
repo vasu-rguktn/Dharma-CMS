@@ -1535,6 +1535,36 @@
   "@vijayawadaSdpo": {
     "description": "Vijayawada SDPO sub-division"
   },
+  
+"imageLab": "Image Lab",
+  "@imageLab": {
+    "description": "Title for image lab feature"
+  },
+
+  "addPolice": "Add Police",
+  "@addPolice": {
+    "description": "Button to add police"
+  },
+
+  "submitOfflinePetition": "Submit Offline Petition",
+  "@submitOfflinePetition": {
+    "description": "Button to submit offline petition"
+  },
+
+  "offlinePetitions": "Offline Petitions",
+  "@offlinePetitions": {
+    "description": "List of offline petitions"
+  },
+
+  "assignedPetitions": "Assigned Petitions",
+  "@assignedPetitions": {
+    "description": "List of petitions assigned to officer"
+  },
+  "escalated": "Escalated",
+    "@escalated": {
+      "description": "Status label for escalated petition or case"
+    },
+
   "aiThinking": "AI is thinking...",
   "legalQuestionHint": "Ask a legal question...",
   "getLegalSuggestions": "Get Legal Suggestions",

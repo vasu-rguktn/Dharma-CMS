@@ -170,7 +170,7 @@ class DashboardBody extends StatelessWidget {
               Expanded(
                 child: _statCard(
                   ctx,
-                  'Escalated',
+                  localizations.escalated,
                   '${stats['escalated'] ?? 0}',
                   Icons.report_problem,
                   Colors.red.shade700,
@@ -359,9 +359,9 @@ class DashboardBody extends StatelessWidget {
           '/complaints', Colors.orange.shade700),
 
       _quickActionCard(
-          ctx, "Image Lab", Icons.camera_alt, '/image-lab', Colors.deepPurple),
+          ctx, localizations.imageLab, Icons.camera_alt, '/image-lab', Colors.deepPurple),
       _quickActionCard(
-          ctx, "Add Police", Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
+          ctx, localizations.addPolice, Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
     ];
     
     // Add offline petition submission if officer is SP-level or above
@@ -370,7 +370,7 @@ class DashboardBody extends StatelessWidget {
         0, // Add at the beginning for prominence
         _quickActionCard(
           ctx,
-          'Submit Offline Petition',
+          localizations.submitOfflinePetition,
           Icons.post_add,
           '/submit-offline-petition',
           Colors.teal.shade600,
@@ -382,7 +382,7 @@ class DashboardBody extends StatelessWidget {
         1, // Add right after Submit Offline Petition
         _quickActionCard(
           ctx,
-          'Offline Petitions',
+          localizations.offlinePetitions,
           Icons.assignment,
           '/offline-petitions',
           Colors.purple.shade600,
@@ -394,7 +394,7 @@ class DashboardBody extends StatelessWidget {
         0,
         _quickActionCard(
           ctx,
-          'Assigned Petitions',
+          localizations.assignedPetitions,
           Icons.assignment,
           '/offline-petitions',
           Colors.purple.shade600,
@@ -468,7 +468,7 @@ class DashboardBody extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        activity.title,
+                        _getLocalizedActivityTitle(ctx, activity.title),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -535,6 +535,42 @@ class DashboardBody extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getLocalizedActivityTitle(BuildContext context, String title) {
+    final localizations = AppLocalizations.of(context)!;
+    
+    // Map activity titles to localization keys
+    switch (title) {
+      case "AI Chat":
+        return localizations.aiChat;
+      case "Legal Queries":
+        return localizations.legalQueries;
+      case "Helpline":
+        return localizations.helpline;
+      case "Legal Suggestion":
+        return localizations.legalSuggestion;
+      case "Document Drafting":
+        return localizations.documentDrafting;
+      case "Chargesheet Gen":
+        return localizations.chargesheetGen;
+      case "Chargesheet Vetting":
+        return localizations.chargesheetVetting;
+      case "Witness Prep":
+        return localizations.witnessPrep;
+      case "Media Analysis":
+        return localizations.mediaAnalysis;
+      case "Crime Scene":
+        return localizations.mediaAnalysis;
+      case "Cases":
+        return localizations.cases;
+      case "Complaints":
+        return localizations.complaints;
+      case "Petitions":
+        return localizations.petitions;
+      default:
+        return title;
+    }
   }
 
   String _formatDate(DateTime date) {

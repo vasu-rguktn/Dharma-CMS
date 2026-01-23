@@ -1540,6 +1540,27 @@ String get listening => 'Listening...';
 @override
 String get tapToStopRecording => 'Tap the microphone icon to stop recording';
 
+@override
+String get imageLab => 'Image Lab';
+
+@override
+String get addPolice => 'Add Police';
+
+@override
+String get submitOfflinePetition => 'Submit Offline Petition';
+
+@override
+String get offlinePetitions => 'Offline Petitions';
+
+@override
+String get assignedPetitions => 'Assigned Petitions';
+
+
+@override
+String get escalated => 'Escalated';
+
+
+
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();

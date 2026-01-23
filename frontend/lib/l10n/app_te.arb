@@ -1582,6 +1582,36 @@
   "vijayawadaSdpo": "విజయవాడ SDPO",
   "@vijayawadaSdpo": {
     "description": "విజయవాడ SDPO ఉప-విభాగం"
+  },
+
+  "imageLab": "ఇమేజ్ ల్యాబ్",
+  "@imageLab": {
+    "description": "ఇమేజ్ ల్యాబ్ ఫీచర్ శీర్షిక"
+  },
+
+  "addPolice": "పోలీసును జోడించండి",
+  "@addPolice": {
+    "description": "పోలీసును జోడించడానికి బటన్"
+  },
+
+  "submitOfflinePetition": "ఆఫ్లైన్ పిటిషన్ సమర్పించండి",
+  "@submitOfflinePetition": {
+    "description": "ఆఫ్లైన్ పిటిషన్ సమర్పించడానికి బటన్"
+  },
+
+  "offlinePetitions": "ఆఫ్లైన్ పిటిషన్లు",
+  "@offlinePetitions": {
+    "description": "ఆఫ్లైన్ పిటిషన్ల జాబితా"
+  },
+
+  "assignedPetitions": "కేటాయించిన పిటిషన్లు",
+  "@assignedPetitions": {
+    "description": "అధికారికి కేటాయించిన పిటిషన్లు"
+  },
+
+  "escalated": "ఎస్కలేట్ చేయబడింది",
+  "@escalated": {
+    "description": "ఎస్కలేట్ చేయబడిన పిటిషన్ లేదా కేసు స్థితి"
   }
   
 }
