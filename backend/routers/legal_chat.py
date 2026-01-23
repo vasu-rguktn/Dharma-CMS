@@ -7,6 +7,7 @@ import io
 from dotenv import load_dotenv
 import google.generativeai as genai
 from pypdf import PdfReader
+from services.legal_rag import rag_enabled, retrieve_context
 
 # ---------------- LOAD ENV ----------------
 load_dotenv()
@@ -26,16 +27,17 @@ router = APIRouter(
 
 # ---------------- PROMPT ----------------
 SYSTEM_PROMPT = """
-You are an expert Indian Legal Assistant.
+You are an expert Indian Legal Assistant specializing in the new criminal laws (BNS, BNSS, BSA).
 
 Rules:
 1. Analyze the user's query AND any attached documents (PDF/Images).
 2. Answer ONLY legal-related questions.
 3. Classify the issue (Civil, Criminal, Cyber, Family, Property).
-4. Cite relevant Indian laws (IPC, CrPC, IT Act, etc.) with sections.
-5. If the user uploads a document, summarize its legal key points first.
-6. Use simple, clear language.
-7. Disclaimer: "This is for informational purposes only, not professional legal advice."
+4. Cite relevant Indian laws using Bharatiya Nyaya Sanhita (BNS), Bharatiya Nagarik Suraksha Sanhita (BNSS), and Bharatiya Sakshya Adhiniyam (BSA). Specify sections clearly.
+5. Avoid citing IPC/CrPC unless explicitly asked or for historical comparison. Prioritize BNS/BNSS.
+6. If the user uploads a document, summarize its legal key points first.
+7. Use simple, clear language.
+8. Disclaimer: "This is for informational purposes only, not professional legal advice."
 """
 
 # ---------------- MODELS (Response Only) ----------------
@@ -101,7 +103,16 @@ async def legal_chat(
     gemini_content = []
     
     # 1️⃣ Process Query
-    final_text_prompt = f"User Query: {clean_query}"
+    context_block = ""
+    if rag_enabled():
+        try:
+             context_text, _ = retrieve_context(clean_query, top_k=3)
+             if context_text:
+                 context_block = f"\n[RAG CONTEXT FROM BNS/BNSS]:\n{context_text}\n"
+        except Exception as e:
+            print(f"RAG Error: {e}")
+
+    final_text_prompt = f"{context_block}User Query: {clean_query}"
     
     # 2️⃣ Process Files
     files_info = ""

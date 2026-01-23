@@ -113,6 +113,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           actions: [
             TextButton(
               onPressed: () {
+                Navigator.of(context).pop(); // Close dialog first
+                context.go('/dashboard');
+              },
+              child: const Text('Close',
+                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () {
                 setState(() {
                   _isAnonymous = true;
                 });

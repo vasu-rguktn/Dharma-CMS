@@ -128,43 +128,53 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               
                               // Show different buttons based on authentication state
                               if (authProvider.isAuthenticated) ...[
-                                // User is logged in - show "Go to Dashboard" button
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (authProvider.role == 'police') {
-                                        context.go('/police-dashboard');
-                                      } else {
-                                        // Go to dashboard first
-                                        context.go('/dashboard');
-                                        
-                                        // Check if onboarding is needed
-                                        // Use Future.microtask or just fire and forget, but here we are in onPressed so we can await
-                                        OnboardingService.shouldShowOnboarding().then((showOnboarding) {
-                                          if (!showOnboarding && context.mounted) {
-                                            // Only push AI chat if onboarding is NOT needed (returning user)
-                                            Future.delayed(const Duration(milliseconds: 50), () {
-                                              if (context.mounted) {
-                                                context.push('/ai-legal-chat');
-                                              }
-                                            });
-                                          }
-                                        });
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: WelcomeScreen.orange,
-                                      padding: const EdgeInsets.symmetric(vertical: 18),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                      elevation: 8,
-                                    ),
-                                    child: Text(
-                                      localizations?.goToDashboard ?? "Go to Dashboard",
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                if (authProvider.isProfileLoading) ...[
+                                   const Padding(
+                                     padding: EdgeInsets.symmetric(vertical: 20.0),
+                                     child: CircularProgressIndicator(color: WelcomeScreen.orange),
+                                   ),
+                                   Text(
+                                     "Loading Profile...",
+                                     style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                                   ),
+                                ] else ...[
+                                  // User is logged in & profile loaded - show "Go to Dashboard" button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        if (authProvider.role == 'police') {
+                                          context.go('/police-dashboard');
+                                        } else {
+                                          // Go to dashboard first
+                                          context.go('/dashboard');
+                                          
+                                          // Check if onboarding is needed
+                                          OnboardingService.shouldShowOnboarding().then((showOnboarding) {
+                                            if (!showOnboarding && context.mounted) {
+                                              // Only push AI chat if onboarding is NOT needed (returning user)
+                                              Future.delayed(const Duration(milliseconds: 50), () {
+                                                if (context.mounted) {
+                                                  context.push('/ai-legal-chat');
+                                                }
+                                              });
+                                            }
+                                          });
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: WelcomeScreen.orange,
+                                        padding: const EdgeInsets.symmetric(vertical: 18),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        elevation: 8,
+                                      ),
+                                      child: Text(
+                                        localizations?.goToDashboard ?? "Go to Dashboard",
+                                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                                 const SizedBox(height: 20),
                                 // Show logout option
                                 TextButton(

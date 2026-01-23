@@ -13,7 +13,7 @@ class GeoCameraService {
   Position? _cachedPosition;
   String? _cachedAddress;
   DateTime? _cacheTime;
-  static const _cacheDuration = Duration(minutes: 5);
+  static const _cacheDuration = Duration(seconds: 30);
 
   /// Request location permission
   Future<bool> requestLocationPermission() async {
@@ -38,10 +38,11 @@ class GeoCameraService {
   }
 
   /// Get current GPS location with high accuracy
-  Future<Position?> getCurrentLocation() async {
+  Future<Position?> getCurrentLocation({bool forceRefresh = false}) async {
     try {
       // Check if we have a recent cached position
-      if (_cachedPosition != null && 
+      if (!forceRefresh &&
+          _cachedPosition != null && 
           _cacheTime != null && 
           DateTime.now().difference(_cacheTime!) < _cacheDuration) {
         return _cachedPosition;
@@ -93,12 +94,9 @@ class GeoCameraService {
   /// Get address from coordinates using reverse geocoding
   Future<String?> getAddressFromCoordinates(double lat, double lon) async {
     try {
-      // Check cache
-      if (_cachedAddress != null && 
-          _cacheTime != null && 
-          DateTime.now().difference(_cacheTime!) < _cacheDuration) {
-        return _cachedAddress;
-      }
+      // Intentionally removed simple caching here because we can't easily verify
+      // if the cached address matches the Requested lat/lon without storing more state.
+      // Relying on fresh fetch guarantees accuracy.
 
       final placemarks = await placemarkFromCoordinates(lat, lon);
       if (placemarks.isNotEmpty) {

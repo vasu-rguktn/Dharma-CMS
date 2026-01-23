@@ -234,10 +234,10 @@ class _AppScaffoldState extends State<AppScaffold> {
               
               // Offline Petitions Section
               if (canSubmitOffline)
-                _buildDrawerItem(context, Icons.post_add, 'Submit Offline Petition',
+                _buildDrawerItem(context, Icons.post_add, localizations.submitOfflinePetition,
                     '/submit-offline-petition', isDark),
               
-              _buildDrawerItem(context, Icons.assignment, offlinePetitionsTitle,
+              _buildDrawerItem(context, Icons.assignment, localizations.offlinePetitions,
                   '/offline-petitions', isDark),
 
                _buildDrawerItem(context, Icons.file_copy_rounded,

@@ -74,7 +74,8 @@ STRICT RULES:
 - DO NOT explain yourself
 - DO NOT add markdown
 - OUTPUT VALID JSON ONLY
-- FOLLOW Indian police investigation procedure
+- FOLLOW Indian police investigation procedure under the new laws (BNS, BNSS, BSA).
+- CITING LAWS: Use Bharatiya Nyaya Sanhita (BNS) sections preferentially. Use IPC only if explicitly historic.
 - Assume this output will be parsed by software
 
 OUTPUT FORMAT (JSON ONLY):

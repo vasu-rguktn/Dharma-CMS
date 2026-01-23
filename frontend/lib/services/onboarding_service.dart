@@ -46,8 +46,9 @@ class OnboardingService {
       final completed = prefs.getBool(_onboardingKey) ?? false;
       final version = prefs.getInt(_onboardingVersionKey) ?? 0;
 
-      // Show onboarding if not completed or version changed
-      return !completed || version < currentVersion;
+      // Show onboarding if not completed
+      // Removed version check to prevent showing again on updates unless forced
+      return !completed;
     } catch (e) {
       print('Error checking onboarding version: $e');
       return true; // Show onboarding on error to be safe

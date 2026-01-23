@@ -581,7 +581,7 @@ class _CasesScreenState extends State<CasesScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Manage and view details of FIRs / Cases you are involved in.',
+                  localizations.casesScreenSubtitle,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[700],
@@ -629,7 +629,7 @@ class _CasesScreenState extends State<CasesScreen> {
                           const Icon(Icons.filter_list, size: 18, color: Colors.grey),
                           const SizedBox(width: 6),
                           Text(
-                            'Filters:',
+                            localizations.filters,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade700,
@@ -642,7 +642,7 @@ class _CasesScreenState extends State<CasesScreen> {
                           if (Provider.of<AuthProvider>(context).role == 'police' && !_hierarchyLoading) ...[
                              if (_canFilterByRange()) ...[
                                 _buildFilterDropdown(
-                                  label: 'Range',
+                                  label: localizations.range,
                                   value: _selectedRange,
                                   items: _getAvailableRanges(),
                                   onChanged: _onRangeChanged,
@@ -651,7 +651,7 @@ class _CasesScreenState extends State<CasesScreen> {
                              ],
                              if (_canFilterByDistrict()) ...[
                                 _buildFilterDropdown(
-                                  label: 'District',
+                                  label: localizations.district,
                                   value: _selectedDistrict,
                                   items: _getAvailableDistricts(),
                                   onChanged: _onDistrictChanged,
@@ -660,7 +660,7 @@ class _CasesScreenState extends State<CasesScreen> {
                              ],
                              if (_canFilterByStation()) ...[
                                 _buildFilterDropdown(
-                                  label: 'Station',
+                                  label: localizations.policeStation,
                                   value: _selectedStation,
                                   items: _getAvailableStations(),
                                   onChanged: _onStationChanged,
@@ -672,7 +672,7 @@ class _CasesScreenState extends State<CasesScreen> {
                           // Only show Station chip if NOT police (since police use hierarchy above)
                           if (Provider.of<AuthProvider>(context).role != 'police') ...[
                             _buildFilterChip<String>(
-                              label: 'Station',
+                              label: localizations.policeStation,
                               value: _selectedStation,
                               options: {
                                 for (final c in caseProvider.cases)
@@ -686,7 +686,7 @@ class _CasesScreenState extends State<CasesScreen> {
                             const SizedBox(width: 8),
                           ],
                           _buildFilterChip<String>(
-                            label: 'Status',
+                            label: localizations.status,
                             value: _selectedStatus,
                             options: CaseStatus.values
                                 .map((s) => s.displayName)
@@ -697,7 +697,7 @@ class _CasesScreenState extends State<CasesScreen> {
                           ),
                           const SizedBox(width: 8),
                           _buildFilterChip<String>(
-                            label: 'Age',
+                            label: localizations.age,
                             value: _selectedAgeRange,
                             options: const [
                               'Below 18',
@@ -1006,9 +1006,9 @@ class _CasesScreenState extends State<CasesScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.arrow_forward, size: 16),
-                        label: const Text(
-                          'View Details',
-                          style: TextStyle(fontSize: 13),
+                        label: Text(
+                          localizations.viewDetails,
+                          style: const TextStyle(fontSize: 13),
                         ),
                       ),
                     ],
@@ -1023,10 +1023,11 @@ class _CasesScreenState extends State<CasesScreen> {
   }
 
   void _showAccessLevelDialog() {
+    final localizations = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Your Access Level', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(localizations.yourAccessLevel, style: const TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,16 +1040,16 @@ class _CasesScreenState extends State<CasesScreen> {
             const SizedBox(height: 8),
             _buildAccessInfoRow('Station', _policeStation),
             const SizedBox(height: 16),
-            const Text(
-              'Filter cases using the dropdown filters.',
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+            Text(
+              localizations.filterCasesUsingFilters,
+              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Color(0xFFFC633C))),
+            child: Text(localizations.ok, style: const TextStyle(color: Color(0xFFFC633C))),
           ),
         ],
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
