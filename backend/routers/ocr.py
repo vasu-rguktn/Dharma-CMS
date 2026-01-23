@@ -24,8 +24,15 @@ else:
 router = APIRouter(prefix="/api/ocr", tags=["OCR"])
 
 # === Supported types & limits ===
-SUPPORTED_MIME_TYPES: Set[str] = {"image/jpeg", "image/png", "image/webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+SUPPORTED_MIME_TYPES: Set[str] = {
+    "image/jpeg", 
+    "image/png", 
+    "image/webp",
+    "application/pdf",
+    "application/msword",  # .doc
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB (increased for documents)
 
 
 def _guess_mime_type(filename: str) -> str:
@@ -35,6 +42,9 @@ def _guess_mime_type(filename: str) -> str:
         "jpeg": "image/jpeg",
         "png": "image/png",
         "webp": "image/webp",
+        "pdf": "application/pdf",
+        "doc": "application/msword",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }.get(ext, "application/octet-stream")
 
 
@@ -121,6 +131,64 @@ async def _extract_text_gemini(image_bytes: bytes, mime_type: str) -> str:
     return raw or ""
 
 
+async def _extract_document_text(file_bytes: bytes, content_type: str, filename: str) -> str:
+    """Extract text from documents (PDF, DOC, DOCX) or images using Gemini LLM"""
+    
+    if not API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+    
+    encoded = base64.b64encode(file_bytes).decode("utf-8")
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    
+    # Handle PDF files - use Gemini LLM to extract text
+    if content_type == "application/pdf":
+        prompt = "Extract all text content from this PDF document. Return ONLY the extracted text, nothing else. Preserve the structure and formatting as much as possible."
+        mime_type = "application/pdf"
+        
+    # Handle DOC/DOCX files - use Gemini LLM to extract text
+    elif content_type in ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
+        prompt = "Extract all text content from this Word document. Return ONLY the extracted text, nothing else. Preserve the structure and formatting as much as possible."
+        mime_type = content_type
+        
+    # Handle images - use Gemini for OCR
+    elif content_type in ["image/jpeg", "image/png", "image/webp"]:
+        return await _extract_text_gemini(file_bytes, content_type)
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {content_type}")
+    
+    # Use Gemini LLM for document extraction
+    try:
+        logger.info(f"[DOCUMENT EXTRACTION] Using Gemini LLM for {content_type}: {filename} ({len(file_bytes)} bytes)")
+        response = await asyncio.wait_for(
+            asyncio.to_thread(
+                model.generate_content,
+                [
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type,
+                            "data": encoded
+                        }
+                    },
+                    prompt
+                ]
+            ),
+            timeout=60.0,
+        )
+        
+        text = (getattr(response, "text", None) or "").strip()
+        if text:
+            logger.info(f"[DOCUMENT EXTRACTION] Successfully extracted {len(text)} characters")
+            return text
+        else:
+            raise ValueError("No text extracted from document")
+            
+    except Exception as e:
+        logger.error(f"[DOCUMENT EXTRACTION ERROR] {type(e).__name__}: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Document extraction failed: {str(e)}")
+
+
 @router.get("/health")
 async def health_check():
     return {
@@ -139,7 +207,10 @@ async def ocr_extract(file: UploadFile = File(...)):
     logger.info(f"[OCR REQUEST] filename={file.filename} content_type={content_type}")
     if content_type not in SUPPORTED_MIME_TYPES:
         logger.error(f"[OCR ERROR] Unsupported media type: {content_type}")
-        raise HTTPException(status_code=400, detail=f"Unsupported file type: {content_type}. Use JPEG, PNG, or WebP.")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported file type: {content_type}. Supported: JPEG, PNG, WebP, PDF, DOC, DOCX."
+        )
 
     try:
         contents = await file.read(MAX_FILE_SIZE + 1)
@@ -148,17 +219,20 @@ async def ocr_extract(file: UploadFile = File(...)):
 
     logger.info(f"[OCR REQUEST] bytes_received={len(contents) if contents else 0}")
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+        raise HTTPException(status_code=400, detail=f"File too large (max {MAX_FILE_SIZE // (1024*1024)}MB)")
     if len(contents) == 0:
         raise HTTPException(status_code=400, detail="Empty file")
 
     try:
-        text = await _extract_text_gemini(contents, content_type)
+        text = await _extract_document_text(contents, content_type, file.filename or "unknown")
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error("[OCR ERROR] Unhandled exception in ocr_extract")
         logger.error(f"{type(e).__name__}: {e}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="OCR processing failed")
+        raise HTTPException(status_code=500, detail=f"Document processing failed: {str(e)}")
 
     preview = (text or "").strip()
     if not preview:
