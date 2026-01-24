@@ -18,19 +18,22 @@ class OcrService {
       final uri = Uri.base;
       final scheme = uri.scheme.isNotEmpty ? uri.scheme : 'http';
       final host = uri.host.isNotEmpty ? uri.host : 'localhost';
+      candidates.add('$scheme://$host:8080');
       candidates.add('$scheme://$host:8000');
       candidates.add('$scheme://$host');
     }
 
     final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
+      // candidates.add('http://10.0.2.2:8080');
       // candidates.add('http://10.0.2.2:8000');
-      // candidates.add('http://10.0.2.2');
       candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
 
     }
 
     candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
+    candidates.add('http://localhost:8080');
+    candidates.add('http://localhost:8000');
     candidates.add('http://localhost');
 
     String? resolved;

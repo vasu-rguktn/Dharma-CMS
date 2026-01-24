@@ -6,7 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:Dharma/providers/auth_provider.dart';class ChargesheetVettingScreen extends StatefulWidget {
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/screens/petition/ocr_service.dart';class ChargesheetVettingScreen extends StatefulWidget {
   const ChargesheetVettingScreen({super.key});
 
   @override
@@ -28,6 +29,13 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
 
   bool _isLoading = false;
   Map<String, dynamic>? _suggestions;
+  final OcrService _ocrService = OcrService();
+
+  @override
+  void initState() {
+    super.initState();
+    _ocrService.init();
+  }
 
   @override
   void dispose() {
@@ -39,24 +47,115 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['txt', 'doc', 'docx'],
+        allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+        withData: true, // Important for web support
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final content = await file.readAsString();
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.single;
+        final fileName = file.name.toLowerCase();
+        String content = '';
 
-        setState(() {
-          _chargesheetContentController.text = content;
-        });
-
+        // Show loading
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.fileContentLoaded(result.files.single.name)),
-              backgroundColor: Colors.green,
+              content: Text('Processing ${file.name}...'),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 2),
             ),
           );
+        }
+
+        // Use backend API for PDF, DOC, DOCX files
+        if (fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+          try {
+            await _ocrService.runOcr(file);
+            final ocrResult = _ocrService.result;
+            if (ocrResult != null && ocrResult['text'] != null) {
+              content = ocrResult['text'].toString().trim();
+            } else {
+              throw Exception('No text extracted from document');
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error extracting text: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+        } else {
+          // Handle plain text files (txt) - read directly
+          if (file.path != null) {
+            // Mobile/Desktop: read from file path
+            final fileObj = File(file.path!);
+            try {
+              content = await fileObj.readAsString();
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error reading file: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              return;
+            }
+          } else if (file.bytes != null) {
+            // Web: read from bytes
+            try {
+              content = String.fromCharCodes(file.bytes!);
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error reading file: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              return;
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Unable to read file: ${file.name}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        if (content.isNotEmpty) {
+          setState(() {
+            _chargesheetContentController.text = content;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.fileContentLoaded(file.name)),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No content extracted from ${file.name}'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
