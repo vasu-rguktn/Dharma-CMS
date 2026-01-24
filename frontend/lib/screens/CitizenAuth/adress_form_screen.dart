@@ -52,8 +52,57 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       setState(() {
         _districtStations =
             data.map((k, v) => MapEntry(k, List<String>.from(v)));
-        _pincodes =
+
+        final rawPincodes =
             pincodeData.map((k, v) => MapEntry(k, List<String>.from(v)));
+        _pincodes = {};
+
+        for (var district in _districtStations.keys) {
+          String? match;
+          final dLow = district.toLowerCase().trim();
+
+          // 1. Manual Mapping (Tricky cases where names differ significantly)
+          final mapping = {
+            'ananthapuram': 'ANANTAPUR',
+            'tirupathi': 'Tirupati',
+            'dr. b r ambedkar konaseema': 'Konaseema',
+            'sri potti sriramulu nellore': 'SPSR NELLORE',
+            'ysr': 'Y.S.R.',
+            'ntr commissionerate': 'NTR',
+            'visakhapatnam commissionerate': 'VISAKHAPATANAM',
+          };
+
+          if (mapping.containsKey(dLow)) {
+            match = mapping[dLow];
+          }
+
+          // 2. Exact match (case insensitive)
+          if (match == null) {
+            for (var pk in rawPincodes.keys) {
+              if (pk.toLowerCase().trim() == dLow) {
+                match = pk;
+                break;
+              }
+            }
+          }
+
+          // 3. Substring match (e.g., "Konaseema" in "Dr. B.R. Ambedkar Konaseema")
+          if (match == null) {
+            for (var pk in rawPincodes.keys) {
+              final pkLow = pk.toLowerCase().trim();
+              if (dLow.contains(pkLow) || pkLow.contains(dLow)) {
+                match = pk;
+                break;
+              }
+            }
+          }
+
+          if (match != null && rawPincodes.containsKey(match)) {
+            _pincodes[district] = rawPincodes[match]!;
+          } else {
+            debugPrint('⚠️ No pincode match found for district: $district');
+          }
+        }
         _dataLoading = false;
       });
       debugPrint('✅ District data loaded successfully! Districts: ${_districtStations.keys.length}');
