@@ -12,6 +12,9 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 // import 'dart:html' as html show AnchorElement; // REMOVED for APK build compatibility
+import 'package:Dharma/providers/case_provider.dart';
+import 'package:Dharma/providers/police_auth_provider.dart';
+import 'package:Dharma/data/station_data_constants.dart';
 
 class ChargesheetGenerationScreen extends StatefulWidget {
   const ChargesheetGenerationScreen({super.key});
@@ -39,18 +42,60 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
   PlatformFile? _incidentFile;
   
   // Case Fetching
-  List<Map<String, dynamic>> _availableCases = [];
   String? _selectedCaseId;
-  bool _isLoadingCases = false;
 
   bool _isLoading = false;
   bool _isDownloading = false;
   Map<String, dynamic>? _chargeSheet;
 
+  // Hierarchy & Filters
+  Map<String, Map<String, List<String>>> _policeHierarchy = {};
+  bool _hierarchyLoading = true;
+  
+  // Police Profile Data
+  String? _policeRank;
+  String? _policeRange;
+  String? _policeDistrict;
+  String? _policeStation;
+
+  // Filter selections
+  String? _selectedRange;
+  String? _selectedDistrict;
+  String? _selectedStation;
+
+  /* ================= RANK TIERS ================= */
+  
+  static const List<String> _stateLevelRanks = [
+    'Director General of Police',
+    'Additional Director General of Police',
+  ];
+
+  static const List<String> _rangeLevelRanks = [
+    'Inspector General of Police',
+    'Deputy Inspector General of Police',
+  ];
+
+  static const List<String> _districtLevelRanks = [
+    'Superintendent of Police',
+    'Additional Superintendent of Police',
+  ];
+
+  static const List<String> _stationLevelRanks = [
+    'Deputy Superintendent of Police',
+    'Inspector of Police',
+    'Sub Inspector of Police',
+    'Assistant Sub Inspector of Police',
+    'Head Constable',
+    'Police Constable',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _fetchCases();
+    _loadHierarchyData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProfileAndFetch();
+    });
   }
 
   @override
@@ -60,49 +105,233 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
     super.dispose();
   }
 
-  Future<void> _fetchCases() async {
-    setState(() => _isLoadingCases = true);
+  void _loadHierarchyData() {
     try {
-      print('Fetching cases from: ${_dio.options.baseUrl}/api/case-lookup/all');
-      final response = await _dio.get('/api/case-lookup/all');
+      Map<String, Map<String, List<String>>> hierarchy = {};
+      final data = kPoliceHierarchyComplete;
       
-      print('Response status: ${response.statusCode}');
-      print('Response data type: ${response.data.runtimeType}');
-      print('Response data: ${response.data}');
-      
-      if (response.data is List) {
-        final casesList = List<Map<String, dynamic>>.from(response.data);
-        print('Fetched ${casesList.length} cases');
-        
-        setState(() {
-          _availableCases = casesList;
-        });
-        
-        if (casesList.isEmpty && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No cases found in database. Please add cases first.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+      data.forEach((range, districts) {
+        if (districts is Map) {
+          Map<String, List<String>> districtMap = {};
+          districts.forEach((district, stations) {
+            final stationList = List<String>.from(stations ?? []);
+            districtMap[district.toString()] = stationList;
+          });
+          hierarchy[range] = districtMap;
         }
-      } else {
-        print('Unexpected response format: ${response.data}');
+      });
+      if (mounted) {
+        setState(() {
+          _policeHierarchy = hierarchy;
+          _hierarchyLoading = false;
+        });
       }
     } catch (e) {
-      print("Error fetching cases: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load cases: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    } finally {
-      setState(() => _isLoadingCases = false);
+      print('Error loading hierarchy: $e');
     }
+  }
+
+  Future<void> _loadProfileAndFetch() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.role == 'police') {
+      final policeProvider = context.read<PoliceAuthProvider>();
+      await policeProvider.loadPoliceProfileIfLoggedIn();
+      final profile = policeProvider.policeProfile;
+
+      if (profile != null && mounted) {
+        setState(() {
+          _policeRank = profile['rank']?.toString();
+          _policeRange = profile['range']?.toString();
+          _policeDistrict = profile['district']?.toString();
+          _policeStation = profile['stationName']?.toString();
+        });
+      }
+    }
+    if (mounted) _fetchCases();
+  }
+
+  Future<void> _fetchCases() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+    
+    // Determine effective filters
+    String? targetDistrict;
+    String? targetStation;
+
+    if (auth.role == 'police') {
+      // 1. Station Level
+      if (_isStationLevel() && _policeStation != null) {
+        targetStation = _policeStation;
+        targetDistrict = _policeDistrict; 
+      }
+      // 2. District Level
+      else if (_districtLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict ?? _policeDistrict;
+        } else {
+          targetStation = null;
+          targetDistrict = _policeDistrict;
+        }
+      }
+      // 3. Range Level
+      else if (_rangeLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict;
+        } else if (_selectedDistrict != null) {
+          targetStation = null;
+          targetDistrict = _selectedDistrict;
+        } else {
+           targetStation = null;
+           targetDistrict = null; // No default filter
+        }
+      }
+      // 4. State Level
+      else if (_stateLevelRanks.contains(_policeRank)) {
+        if (_selectedStation != null) {
+          targetStation = _selectedStation;
+          targetDistrict = _selectedDistrict;
+        } else if (_selectedDistrict != null) {
+          targetStation = null;
+          targetDistrict = _selectedDistrict;
+        }
+      }
+      else {
+         targetStation = _selectedStation;
+         targetDistrict = _selectedDistrict ?? _policeDistrict;
+      }
+    }
+
+    try {
+      await caseProvider.fetchCases(
+        userId: auth.user?.uid,
+        isAdmin: auth.role == 'police',
+        district: targetDistrict,
+        station: targetStation,
+      );
+    } catch (e) {
+      print("Error fetching cases: $e");
+    }
+  }
+
+  /* ================= RANK VISIBILITY HELPERS ================= */
+
+  bool _canFilterByRange() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByDistrict() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank);
+  }
+
+  bool _canFilterByStation() {
+    if (_policeRank == null) return false;
+    return _stateLevelRanks.contains(_policeRank) ||
+           _rangeLevelRanks.contains(_policeRank) ||
+           _districtLevelRanks.contains(_policeRank);
+  }
+
+  bool _isStationLevel() {
+    if (_policeRank == null) return false;
+    return _stationLevelRanks.contains(_policeRank);
+  }
+
+  /* ================= HIERARCHY HELPERS ================= */
+
+  List<String> _getAvailableRanges() {
+    return _policeHierarchy.keys.toList();
+  }
+
+  List<String> _getAvailableDistricts() {
+    if (_selectedRange != null) {
+      return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
+    }
+    if (_policeRange != null) {
+      return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
+    }
+    return [];
+  }
+
+  List<String> _getAvailableStations() {
+    String? targetRange;
+    String? targetDistrict;
+
+    if (_selectedDistrict != null) {
+      targetDistrict = _selectedDistrict;
+    } else if (_policeDistrict != null) {
+      targetDistrict = _policeDistrict;
+    }
+
+    if (_selectedRange != null) {
+      targetRange = _selectedRange;
+    } else if (_policeRange != null) {
+      targetRange = _policeRange;
+    } else if (targetDistrict != null) {
+      for (var range in _policeHierarchy.keys) {
+         final districtMap = _policeHierarchy[range] ?? {};
+         final matchedKey = districtMap.keys.firstWhere(
+           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+           orElse: () => '',
+         );
+         if (matchedKey.isNotEmpty) {
+           targetRange = range;
+           targetDistrict = matchedKey; 
+           break;
+         }
+      }
+    }
+
+    List<String> stations = [];
+    if (targetRange != null && targetDistrict != null) {
+      final districtMap = _policeHierarchy[targetRange] ?? {};
+      if (districtMap.containsKey(targetDistrict)) {
+        stations = List.from(districtMap[targetDistrict] ?? []);
+      } else {
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchedKey.isNotEmpty) {
+          stations = List.from(districtMap[matchedKey] ?? []);
+        }
+      }
+    }
+
+    stations.sort();
+    return stations;
+  }
+
+  /* ================= HANDLERS ================= */
+
+  void _onRangeChanged(String? range) {
+    setState(() {
+      _selectedRange = range;
+      _selectedDistrict = null;
+      _selectedStation = null;
+      _selectedCaseId = null;
+    });
+    _fetchCases();
+  }
+
+  void _onDistrictChanged(String? district) {
+    setState(() {
+      _selectedDistrict = district;
+      _selectedStation = null;
+      _selectedCaseId = null;
+    });
+    _fetchCases();
+  }
+
+  void _onStationChanged(String? station) {
+    setState(() {
+      _selectedStation = station;
+      _selectedCaseId = null;
+    });
+    _fetchCases();
   }
 
   Future<void> _pickFIRFile() async {
@@ -299,8 +528,43 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
     }
   }
 
+    Widget _buildFilterDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          hint: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+          isDense: true,
+          items: [
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text("All $label", style: const TextStyle(color: Colors.grey)),
+            ),
+            ...items.map((item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item, style: const TextStyle(fontSize: 13)),
+            )),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // ... existing build method start ...
     final localizations = AppLocalizations.of(context)!;
     const Color orange = Color(0xFFFC633C);
 
@@ -373,31 +637,38 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                             ),
                             const SizedBox(height: 16),
 
-                            // Toggle
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: RadioListTile<String>(
+                            // Toggle - Improved for Mobile
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  RadioListTile<String>(
                                     title: const Text("Upload Document"),
+                                    subtitle: const Text("Upload FIR PDF/Image"),
                                     value: 'file',
                                     groupValue: _inputMode,
                                     activeColor: orange,
+                                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12))),
                                     onChanged: (val) => setState(() => _inputMode = val!),
                                   ),
-                                ),
-                                Expanded(
-                                  child: RadioListTile<String>(
+                                  Divider(height: 1, color: Colors.grey.shade300),
+                                  RadioListTile<String>(
                                     title: const Text("Select Existing Case"),
+                                    subtitle: const Text("Choose from database"),
                                     value: 'case',
                                     groupValue: _inputMode,
                                     activeColor: orange,
+                                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12))),
                                     onChanged: (val) => setState(() => _inputMode = val!),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 24),
 
                             // Dynamic Input Area
                             if (_inputMode == 'file') ...[
@@ -430,42 +701,79 @@ class _ChargesheetGenerationScreenState extends State<ChargesheetGenerationScree
                                   ),
                                 ),
                               ),
-
-
                             ] else ...[
-                                if (_isLoadingCases)
-                                  const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
-                                else if (_availableCases.isEmpty)
-                                  const Text("No cases found in database.", style: TextStyle(color: Colors.grey))
-                                else
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey.withOpacity(0.5)),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        isExpanded: true,
-                                        hint: const Text("Select FIR Case to Analyze"),
-                                        value: _selectedCaseId,
-                                        items: _availableCases.map((c) {
-                                          final fir = c['firNumber'] ?? 'No FIR';
-                                          final title = c['title'] ?? 'No Title';
-                                          return DropdownMenuItem<String>(
-                                            value: c['id'].toString(),
-                                            child: Text("$fir - $title", overflow: TextOverflow.ellipsis),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) => setState(() => _selectedCaseId = val),
+                                // FILTERS
+                                if (Provider.of<AuthProvider>(context).role == 'police') ...[
+                                   Wrap(
+                                     spacing: 8,
+                                     runSpacing: 8,
+                                     children: [
+                                       if (_canFilterByRange())
+                                         _buildFilterDropdown(
+                                            label: "Range",
+                                            value: _selectedRange,
+                                            items: _getAvailableRanges(),
+                                            onChanged: _onRangeChanged
+                                         ),
+                                       if (_canFilterByDistrict())
+                                         _buildFilterDropdown(
+                                            label: "District", 
+                                            value: _selectedDistrict,
+                                            items: _getAvailableDistricts(),
+                                            onChanged: _onDistrictChanged
+                                         ),
+                                       if (_canFilterByStation())
+                                         _buildFilterDropdown(
+                                            label: "Station",
+                                            value: _selectedStation,
+                                            items: _getAvailableStations(),
+                                            onChanged: _onStationChanged
+                                         ),
+                                     ]
+                                   ),
+                                   const SizedBox(height: 16),
+                                ],
+
+                                // Case Dropdown
+                                Consumer<CaseProvider>(
+                                  builder: (context, caseProvider, child) {
+                                    if (caseProvider.isLoading) {
+                                      return const Center(child: CircularProgressIndicator());
+                                    }
+                                    if (caseProvider.cases.isEmpty) {
+                                       return const Text("No cases found matching filters.", style: TextStyle(color: Colors.grey));
+                                    }
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey.withOpacity(0.5)),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ),
-                                  ),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<String>(
+                                          isExpanded: true,
+                                          hint: const Text("Select FIR Case to Analyze"),
+                                          value: _selectedCaseId != null && caseProvider.cases.any((c) => c.id == _selectedCaseId) 
+                                              ? _selectedCaseId 
+                                              : null,
+                                          items: caseProvider.cases.map((c) {
+                                            return DropdownMenuItem<String>(
+                                              value: c.id,
+                                              child: Text("${c.firNumber} - ${c.title}", overflow: TextOverflow.ellipsis),
+                                            );
+                                          }).toList(),
+                                          onChanged: (val) => setState(() => _selectedCaseId = val),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                ),
                             ],
 
                             const SizedBox(height: 24),
 
                             // 2. Incident Details (Optional)
+                            // ... existing code ...
                             const Text("Incident Details / Evidence", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
                             const Text("Upload a file (Photo/PDF) OR write details below.", style: TextStyle(fontSize: 13, color: Colors.grey)),
