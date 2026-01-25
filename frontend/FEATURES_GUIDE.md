@@ -8,8 +8,8 @@ All the missing features from the Next.js web app have been successfully impleme
 
 ## 🎯 Implemented Features
 
-### 1. 📜 Legal Suggestion
-**Navigation**: Dashboard → Legal Suggestion (or Sidebar → Legal Suggestion)
+### 1. 📜 Legal Section Suggestions
+**Navigation**: Dashboard → Legal Section Suggestions (or Sidebar → Legal Section Suggestions)
 
 **What it does**:
 - Analyzes FIR and incident details
@@ -132,7 +132,7 @@ All features are accessible from two locations:
 
 ### 2. **Sidebar Navigation**
 Organized into sections:
-- **AI Tools**: Chat, Legal Queries, Legal Suggestion, Document Drafting, Chargesheet tools, Witness Prep, Media Analysis
+- **AI Tools**: Chat, Legal Queries, Legal Section Suggestions, Document Drafting, Chargesheet tools, Witness Prep, Media Analysis
 - **Case Management**: All Cases, My Saved Complaints
 
 ---
@@ -225,7 +225,7 @@ This applies to:
 
 | Feature | Next.js Web | Flutter Mobile | Status |
 |---------|------------|----------------|--------|
-| Legal Suggestion | ✅ | ✅ | **Implemented** |
+| Legal Section Suggestions | ✅ | ✅ | **Implemented** |
 | Document Drafting | ✅ | ✅ | **Implemented** |
 | Chargesheet Generation | ✅ | ✅ | **Implemented** |
 | Chargesheet Vetting | ✅ | ✅ | **Implemented** |

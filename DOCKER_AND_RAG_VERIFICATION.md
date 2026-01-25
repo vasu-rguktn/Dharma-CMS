@@ -119,7 +119,7 @@ docker-compose up --build \
 
 ### **Step 3: Verify RAG is Working**
 
-Check backend logs when making a legal suggestion request:
+Check backend logs when making a Legal Section Suggestions request:
 - ✅ If RAG enabled: You'll see context being retrieved
 - ❌ If RAG disabled: Falls back to plain Gemini generation
 

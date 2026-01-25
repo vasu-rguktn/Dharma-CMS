@@ -110,7 +110,7 @@ Dashboard
   ├─ Quick Actions:
   │   ├─ AI Chat → /ai-legal-chat
   │   ├─ Legal Queries → /legal-queries
-  │   ├─ Legal Suggestion → /legal-suggestion
+  │   ├─ Legal Section Suggestions → /legal-suggestion
   │   ├─ My Saved Complaints → /complaints
   │   ├─ Petitions → /petitions
   │   └─ Helpline → /helpline

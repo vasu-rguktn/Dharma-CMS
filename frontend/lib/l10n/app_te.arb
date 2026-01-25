@@ -373,9 +373,9 @@
   "@viewCases": {
     "description": "View cases action"
   },
-  "legalSuggestion": "చట్టపరమైన సూచన",
+  "legalSuggestion": "చట్ట విభాగ సూచనలు",
   "@legalSuggestion": {
-    "description": "Legal suggestion menu"
+    "description": "Legal Section Suggestions menu"
   },
   "documentDrafting": "పత్రం రూపకల్పన",
   "@documentDrafting": {

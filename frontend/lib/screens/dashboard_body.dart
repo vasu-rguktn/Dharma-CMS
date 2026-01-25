@@ -548,7 +548,7 @@ class DashboardBody extends StatelessWidget {
         return localizations.legalQueries;
       case "Helpline":
         return localizations.helpline;
-      case "Legal Suggestion":
+      case "Legal Section Suggestions":
         return localizations.legalSuggestion;
       case "Document Drafting":
         return localizations.documentDrafting;

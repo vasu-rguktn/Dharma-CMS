@@ -160,7 +160,7 @@ python test_ai_output.py
 
 ### Step 3: Test from Flutter App
 
-1. **Open Legal Suggestion Screen**
+1. **Open Legal Section Suggestions Screen**
 2. **Enter test incident**:
    ```
    When I was returning from college, a person stole my purse at the bus stop.

@@ -27,7 +27,7 @@ Enhanced both **Legal Section Suggester** and **AI Investigation Guidelines** fe
 
 ---
 
-### 2. **Frontend: Legal Suggestion Screen** (`frontend/lib/screens/legal_suggestion_screen.dart`)
+### 2. **Frontend: Legal Section Suggestions Screen** (`frontend/lib/screens/legal_suggestion_screen.dart`)
 
 #### 🎨 Visual Enhancements:
 
@@ -244,7 +244,7 @@ The AI report is now broken down into 10 distinct sections:
 ## 📝 Usage Instructions
 
 ### For Legal Section Suggester:
-1. Navigate to **Legal Suggestion** screen
+1. Navigate to **Legal Section Suggestions** screen
 2. Enter incident description
 3. Click "Get Legal Section Suggester"
 4. View results organized by:

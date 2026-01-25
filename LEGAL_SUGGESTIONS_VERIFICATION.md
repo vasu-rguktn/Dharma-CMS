@@ -281,7 +281,7 @@ _infoCard("Reasoning", Icons.lightbulb, data['reasoning'])
 - [ ] Check response time (should be < 10 seconds)
 
 ### Frontend Testing
-- [ ] Navigate to Legal Suggestion screen
+- [ ] Navigate to Legal Section Suggestions screen
 - [ ] Verify input field accepts multi-line text
 - [ ] Test with sample incident: "A person stole my mobile phone at a bus stop"
 - [ ] Verify loading indicator appears during API call

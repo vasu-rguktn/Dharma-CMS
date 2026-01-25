@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 
 from datetime import datetime, timedelta
 
@@ -1209,29 +1209,141 @@ def recover_identity_from_history(history: list) -> dict:
                      
     return found
 
+
+import asyncio
+
+# ---------------- HELPER FOR TEXT-FROM-FILE ----------------
+async def analyze_file_content(file: UploadFile) -> str:
+    """
+    Extract text or description from attached file.
+    For PDF: Extract text.
+    For Image: Use Gemini Vision to describe it (briefly).
+    """
+    try:
+        # 1. Read File with Timeout safety
+        content = await file.read() 
+        filename = file.filename.lower()
+        
+        if filename.endswith(".pdf"):
+            from routers.legal_chat import extract_pdf_text
+            text = extract_pdf_text(content)
+            return f"[ATTACHED PDF '{file.filename}']: {text[:500]}..." if text else f"[ATTACHED PDF '{file.filename}'] (Unreadable)"
+            
+        elif filename.endswith((".jpg", ".jpeg", ".png", ".webp")):
+            # Use Gemini Vision specifically for image analysis
+            try:
+                vision_model = genai.GenerativeModel("gemini-flash-latest")
+                import base64
+                b64_data = base64.b64encode(content).decode('utf-8')
+                
+                # Run Gemini with strict 15s timeout
+                response = await asyncio.wait_for(
+                    vision_model.generate_content_async([
+                         "Describe this image briefly for a police investigation. What does it show? Be factual.",
+                         {"mime_type": file.content_type or "image/jpeg", "data": b64_data}
+                    ]),
+                    timeout=15.0
+                )
+                return f"[ATTACHED IMAGE '{file.filename}']: {response.text.strip()}"
+            except asyncio.TimeoutError:
+                logger.error(f"Vision analysis timed out for {filename}")
+                return f"[ATTACHED IMAGE '{file.filename}'] (Analysis timed out)"
+            except Exception as e:
+                logger.error(f"Vision analysis failed: {e}")
+                return f"[ATTACHED IMAGE '{file.filename}'] (Analysis failed)"
+                
+        return f"[ATTACHED FILE '{file.filename}']"
+    except Exception as e:
+        logger.error(f"File analysis error: {e}")
+        return ""
+
 @router.post(
     "/chat-step",
     response_model=ChatStepResponse,
     status_code=status.HTTP_200_OK,
 )
-async def chat_step(payload: ChatStepRequest):
+async def chat_step(
+    # JSON Payload (Legacy/Text-only)
+    payload_json: Optional[ChatStepRequest] = None,
+    
+    # Form Fields (New/File-support)
+    # We use Optional because if JSON is sent, these won't be present
+    full_name: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    complaint_type: Optional[str] = Form(None),
+    initial_details: Optional[str] = Form(None),
+    language: Optional[str] = Form(None),
+    is_anonymous: Optional[bool] = Form(None),
+    chat_history_str: Optional[str] = Form(None, alias="chat_history"), # Client sends JSON string
+    
+    # Files
+    files: List[UploadFile] = File([], description="Optional evidence files"),
+):
     """
-    Dynamic chat turn.
+    Dynamic chat turn. Supports JSON body OR Multipart Form Data (for files).
     Decides whether to ask another question or finalize the complaint.
     """
     try:
-        logger.info(f"Chat Step Request: {payload}")
+        # 0. Unify Input (Form vs JSON)
+        if payload_json:
+            payload = payload_json
+        else:
+            # Construct from Form
+            try:
+                history_list = []
+                if chat_history_str:
+                    raw_hist = json.loads(chat_history_str)
+                    # Convert raw dicts to ChatMessage objects
+                    for item in raw_hist:
+                        history_list.append(ChatMessage(**item))
+                
+                payload = ChatStepRequest(
+                    full_name=full_name or "",
+                    address=address or "",
+                    phone=phone or "",
+                    complaint_type=complaint_type or "",
+                    initial_details=initial_details or "",
+                    language=language or "en",
+                    is_anonymous=is_anonymous if is_anonymous is not None else False,
+                    chat_history=history_list
+                )
+            except Exception as e:
+                logger.error(f"Form parsing error: {e}")
+                raise HTTPException(status_code=400, detail="Invalid Form Data or Chat History JSON")
+
+        logger.info(f"Chat Step Request (Form/JSON resolved). History len: {len(payload.chat_history)}")
+
+        # 0.5 Process Files (If any) using Gemini Vision / Text Extraction
+        file_context = ""
+        if files:
+            logger.info(f"Processing {len(files)} attached files...")
+            for f in files:
+                desc = await analyze_file_content(f)
+                file_context += f"\n{desc}"
+            
+            # Inject file context into the LAST USER MESSAGE or System Context
+            # Best allows the LLM to 'see' it immediately
+            if file_context:
+                logger.info(f"Generated File Context: {file_context[:100]}...")
+                # Hack: Append to initial_details or just append to the prompt context later?
+                # Let's append to the last user message in the History for this turn logic
+                if payload.chat_history and payload.chat_history[-1].role == 'user':
+                     payload.chat_history[-1].content += f"\n\n[SYSTEM: USER ATTACHED EVIDENCE]\n{file_context}"
+                else:
+                     # If essentially empty history or just starting
+                     payload.initial_details += f"\n\n[SYSTEM: USER ATTACHED EVIDENCE]\n{file_context}"
 
         # 1. Resolve Language
         language = resolve_language(payload.language)
-        logger.info(f"Is Anonymous: {payload.is_anonymous}")
+        # logger.info(f"Is Anonymous: {payload.is_anonymous}") # Reduced noise
 
         if payload.is_anonymous:
              if not payload.full_name:
                  payload.full_name = "Anonymous"
              if not payload.address:
                  payload.address = "Not Recorded (Anonymous Petition)"
-             logger.info("Anonymous Mode: Auto-filled Name/Address to prevent probing.")
+            #  logger.info("Anonymous Mode: Auto-filled Name/Address.") 
 
         # --- STATE RECOVERY START ---
         # Recover identity fields from history to fix "Not Provided" bug
@@ -1414,84 +1526,46 @@ async def chat_step(payload: ChatStepRequest):
             if payload.is_anonymous:
                 anon_header = (
                     "MODE: ANONYMOUS PETITION\n"
+                    "CRITICAL INSTRUCTION: 'Anonymous' ONLY means you skip Name/Address. YOU MUST STILL INVESTIGATE THE CRIME FULLY.\n"
                     "INSTRUCTIONS:\n"
-                    "- Skip Name and Address questions.\n"
-                    "- Collect the Mobile Number (10 digits).\n"
-                    "- Collect COMPREHENSIVE Incident Details (Who, What, Where, When, How).\n"
-                    "- ASK FOLLOW-UP QUESTIONS if the details are vague.\n"
-                    "- Output 'DONE' ONLY when you have the Mobile Number AND a clear, detailed picture of the incident.\n\n"
+                    "- Do NOT ask for Name or Address.\n"
+                    "- Verify Mobile Number (10 digits) is present.\n"
+                    "- INVESTIGATE: Ask Who, What, Where, When, How in detail. Do NOT stop after just one sentence.\n"
+                    "- Ask about Suspects, Witnesses like a real officer.\n"
+                    "- CRITICAL: BEFORE finishing, YOU MUST ASK: 'Do you have any photos, videos, or documents as evidence?'.\n"
+                    "- Output 'DONE' ONLY when you have a complete picture AND have asked about evidence.\n\n"
                 )
 
+            # System Prompt Definition
+
+            language_name = display_lang
             system_prompt = (
                 f"{anon_header}"
-                f"You are an expert Police Officer conducting an investigation in {display_lang}.\n\n"
+                f"You are a helpful and empathetic Police Officer assistant helping a citizen file a complaint in {language_name}.\n"
+                "Your goal is to gather a complete complaint summary for a formal petition.\n\n"
 
-                "GOAL: Ask relevant questions to understand the crime (Who, What, Where, When, How).\n"
-                "RULES:\n"
-                "NOTE : - NEVER assume the incident occurred at the complainant's residential address.\n"
-                "1. NEVER repeat facts the user already said. (If user said 'Stolen at market', DO NOT ask 'Where was it stolen?').\n"
-                "2. ASK SHORT, DIRECT QUESTIONS. One at a time.\n"
-                "3. START DIRECTLY. Do not say 'Okay', 'I understand', 'Good'. Just ask.\n"
-                "4. GRAMMAR: Ensure the sentence is complete and ends with '?'.\n"
-                "5. Ask only the case related question, donot ask the unnecessary questions\n"
-                "6. Ask the madatory questions like : for mobile theft: IMEI / model of the phone, for vehicle theft: model/ registration number,for missing: missing person details like age, name. like that need to ask the mandatory questions for the differt cases , i just provided the example ones, as you know for what type of cases what need to be asked. \n"
-                "7. Donot ask the repeated questions if they already answered.\n"
-                "8. NEVER ask the user 'What action should we take?' or 'How should we find it?'. YOU are the police. YOU investigate.\n"
-                "9. NEVER ask 'Were you there?' (It is offensive to victims). Assume they know the facts.\n"
-                "10. Focus ONLY on the present case. Ignore details from previous unrelated cases if any exist in history.\n"
-                "LANGUAGE INSTRUCTIONS:\n"
-                f"1. You MUST respond in: {language} only.\n"
-                "2. IF user selected 'en' (English): Speak ONLY English. Do NOT use Telugu text or script. Do not use 'Namaskaram'.\n"
-                "3. IF user selected 'te' (Telugu): Speak ONLY Telugu. Use formal 'Meeru/Tamaru'. Refer to user's items as 'Mee' (Your - e.g. 'Mee chain'), NEVER 'Naa' (My).\n"
-                "4. Do NOT mix languages if also the user did.\n"
-                "5. PERSPECTIVE: You are the Police Officer. The User is the Victim. Ask 'Where was YOUR bike stolen?', never 'Where was MY bike stolen?'.\n"
-                "6. Especially in telugu, NEVER repeat facts the user already said"
-                "- USE STANDARD QUESTIONS (Below):\n\n"
+                "GUIDELINES:\n"
+                "- Critically review the chat history to avoid repeating questions.\n"
+                "- Use a polite, respectful, and reassuring tone.\n"
+                "- Actively lead the conversation. Focus on ONE point per turn.\n"
+                "- KEEP QUESTIONS SHORT (Max 20 words). Do not lecture.\n"
+                "- Use Who, What, When, Where, How, and Why questions logically.\n"
+                "- Briefly summarize information back to the user for confirmation before moving to the next category.\n\n"
 
-                "GOLDEN EXAMPLES (Polite & Standard):\n"
-                "1. Location: 'ఘటన ఎక్కడ జరిగింది?' (Where did it happen?)\n"
-                "2. Time: 'ఇది ఎప్పుడు జరిగింది?' (When did it happen?)\n"
-                "3. Suspect: 'ఎవరైనా అనుమానంగా కనిపించారా?' (Did anyone look suspicious?)\n"
-                "4. Details: 'బైక్ నంబర్ ఏంటి?' (What is the bike number?)\n"
-                "5. Description: 'దాని రంగు లేదా గుర్తు ఏమిటి?' (What color or mark?)\n\n"
+                "INFORMATION TO GATHER (Systematically):\n"
+                "1. Incident Details: Date, time, location (specific), and detailed narration.\n"
+                "2. Accused Details: Name, description, address (if known).\n"
+                "3. Property/Vehicle: Description, value. (MANDATORY: If Vehicle/Mobile theft, ask for Reg No/IMEI/Model).\n"
+                "4. Witnesses: Names and contact details (if any).\n"
+                "5. Reason for delay in reporting (if any).\n"
+                "6. Complainant Details: Name/Address/Phone is ALREADY KNOWN. DO NOT ASK FOR THIS unless the user is reporting for someone else.\n\n"
 
-                "BAD EXAMPLES (Avoid these) in their choosen languages:\n"
-                "❌ 'మీరు చెప్పిన సమాచారం ప్రకారం...' (Do not summarize)\n"
-                "❌ 'నేను ఒక ప్రశ్న అడుగుతాను...' (Do not announce)\n"
-                "❌ 'నేను గమనించాను...' (I noted... - DO NOT SAY THIS)\n"
-                "❌ 'మీరు చెప్పారు కదా...' (As you said... - DO NOT SAY THIS)\n"
-                "❌ 'దయచేసి చెప్పండి...' (Too formal/begging) -> Use 'Cheppandi' (Tell me)\n"
-                "❌ 'May I know...' -> Use 'What is...'\n"
-                "❌ 'వాటిని ఎలా కనుగొనాలి?' (How to find it? - NEVER ASK THIS)\n"
-                "❌ 'మీరు అక్కడ ఉన్నారా?' (Were you there? - NEVER ASK THIS)\n"
-                "❌ Do NOT sound robotic or rude. But be authoritative.\n"
-                "❌ Do NOT ask 'Where did you park?' for small items (phones/wallets/Laptops, etc). Ask 'Where did you keep it?'. 'Park' is ONLY for vehicles.\n\n"
-
-                "CRITICAL INSTRUCTIONS:\n"
-                "- NO PREAMBLE. NO CONFIRMATION. JUST ASK.\n"
-                "- Do NOT say 'We have noted your details'.\n"
-                "- Do NOT say 'Okay, I understand'.\n"
-                "- Do NOT say 'Based on what you said...'.\n"
-                "- ASK MAX 5-7 QUESTIONS. if you think the information is not sufficient ask the questions in sweeet and short.\n"
-                "- IF USER PROVIDES Name/Address/Phone: OUTPUT 'DONE' IMMEDIATELY.\n"
-                "- If you have Incident, Time, Place, and Item: OUTPUT 'DONE'.\n"
-                "- Do NOT loop asking for 'more details'.\n"
-                "- Do NOT ask for 'Phone Number' inside the chat unless user offers it. The App handles it.\n"
-                "- Donot ask the repeated questions if they already answered.\n"
-                "-Ask the madatory questions like : for mobile theft: IMEI / model of the phone, for vehicle theft: model/ registration number,for missing: missing person details like age, name. like that need to ask the mandatory questions for the differt cases , i just provided the example ones, as you know for what type of cases what need to be asked. \n"
-                "- Donot ask the repeated questions if they already answered.\n"
-                "- Donot aks unnecessary questions especially in telugu conversation."
-                "- Do NOT ask for Name, Address, or Phone Number during the investigation. Focus ONLY on the incident details. We will ask them later.\n"
-                "- TELUGU SPECIFIC: Use direct phrasing like 'చెప్పండి' (Tell me) instead of 'దయచేసి' (Please). Do not use 'May I know'. Just ask the question directly.\n"
-
-
-                "STRICT RULES:\n"
-                "1. CHECK HISTORY FIRST: If the user has already mentioned a detail (Date, Time, Location, Vehicle Number, Phone), DO NOT ASK AGAIN.\n"
-                "2. ONE QUESTION ONLY: Ask exactly one question per turn.\n"
-                "3. NO REPETITION: If the user says 'I already told you', apologize and move to the next topic.\n"
-                "4. LANGUAGE: Speak in {language_name}. For Telugu, use direct, natural phrasing (e.g., 'మీ పేరు ఏమిటి?') and avoid excessive politeness or English transliteration.\n"
-                "5. TERMINATION: If you have the Who, What, When, Where, and How, output 'DONE'.\n"
-                "6. FOCUS: Do not ask for Name/Address/Phone yet. Focus on the incident details first.\n"
+                "STRICT RULES FOR FUNCTIONALITY:\n"
+                "1. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
+                "2. NO REPETITION: Check the history. If the user answered it, do NOT ask again.\n"
+                "3. EVIDENCE CHECK (MANDATORY): BEFORE saying 'DONE', you MUST ask: 'Do you have any photos, videos, or documents as evidence?'.\n"
+                "4. DOCUMENT AWARENESS: If you see '[SYSTEM: USER ATTACHED EVIDENCE]' or '[ATTACHED IMAGE...]', acknowledge it and use its content.\n"
+                "5. TERMINATION: When you have gathered all necessary details and the Evidence confirmation (Yes/No), output ONLY 'DONE'.\n"
             )
             
             # Convert Pydantic chat history to LLM format
@@ -1821,31 +1895,11 @@ INFORMATION:
                      return ChatStepResponse(status="question", message=msg)
 
             # Check for Vehicle Number if context suggests vehicle theft
-            vehicle_keywords = ["vehicle", "bike", "car", "scooter", "motorcycle", "registration number", "number plate", "license plate", "వాహనం", "బైక్", "కారు"]
-            if any(k in full_text_search for k in vehicle_keywords) and ("theft" in full_text_search or "lost" in full_text_search or "దొంగ" in full_text_search):
-                 # Look for pattern in EVERYTHING (Narrative + Initial + Last User Msg + History)
-                 combined_reg_search = (narrative or "") + " " + (initial_details_summary or "") + " " + (payload.initial_details or "")
-                 # Add last user message for freshness
-                 if payload.chat_history and payload.chat_history[-1].role == "user":
-                     combined_reg_search += " " + payload.chat_history[-1].content
-                 
-                 # Also check previous user messages just in case
-                 for m in payload.chat_history:
-                     if m.role == "user":
-                         combined_reg_search += " " + m.content
-
-                 found_valid_reg = validate_vehicle_number(combined_reg_search)
-                 if not found_valid_reg:
-                      # If explicit mention of "number" or "registration" missing, maybe ask?
-                      # But let's only block if they provided something looking like a reg but invalid?
-                      # Or strict: if vehicle theft, MANDATE reg number?
-                      # User asked: "Need to ask mandatory questions... for bike lost/theft : Registration Number"
-                      
-                      # If we haven't found a valid reg, ask for it.
-                      msg = "For vehicle cases, the Registration Number is mandatory. Please provide the Vehicle Registration Number (e.g., TS09AB1234)."
-                      if language == "te":
-                          msg = "వాహనం విషయంలో రిజిస్ట్రేషన్ నంబర్ తప్పనిసరి. దయచేసి మీ వాహన నంబర్ చెప్పండి (ఉదాహరణకు: TS09AB1234)."
-                      return ChatStepResponse(status="question", message=msg)
+            # DISABLED: Causing false positives (e.g., purse theft). LLM handles this via prompt rules.
+            # vehicle_keywords = ["vehicle", "bike", "car", "scooter", "motorcycle", "registration number", "number plate", "license plate", "వాహనం", "బైక్", "కారు"]
+            # if any(k in full_text_search for k in vehicle_keywords) and ("theft" in full_text_search or "lost" in full_text_search or "దొంగ" in full_text_search):
+            #      # ... logic removed ...
+            #      pass
 
             # Create final object (mapping fields)
             try:

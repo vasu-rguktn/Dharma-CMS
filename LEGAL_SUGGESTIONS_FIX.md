@@ -100,7 +100,7 @@ Expected output:
 ```
 
 ### Step 3: Test from Flutter App
-1. Open Legal Suggestion screen
+1. Open Legal Section Suggestions screen
 2. Enter: "When I was returning from college, a person stole my purse at the bus stop. The purse contained my mobile phone and ₹5000 cash."
 3. Click "Get Legal Section Suggester"
 4. Should see all sections displayed properly

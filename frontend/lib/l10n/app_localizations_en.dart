@@ -323,7 +323,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewCases => 'View Cases';
 
   @override
-  String get legalSuggestion => 'Legal Suggestion';
+  String get legalSuggestion => 'Legal Section Suggestions';
 
   @override
   String get documentDrafting => 'Document Drafting';

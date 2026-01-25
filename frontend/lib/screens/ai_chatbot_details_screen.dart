@@ -6,7 +6,8 @@ class AiChatbotDetailsScreen extends StatelessWidget {
   final Map<String, String> answers;
   final String summary;
   final String classification;
-  final String originalClassification; // New field
+  final String originalClassification;
+  final List<String> evidencePaths; // New field
 
   const AiChatbotDetailsScreen({
     super.key,
@@ -14,16 +15,23 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     required this.summary,
     required this.classification,
     required this.originalClassification,
+    this.evidencePaths = const [], // Default empty
   });
 
   static AiChatbotDetailsScreen fromRouteSettings(
       BuildContext context, GoRouterState state) {
     final q = state.extra as Map<String, dynamic>?;
+    
+    // Safely cast the nested map
+    final rawAnswers = q?['answers'] as Map<String, dynamic>?;
+    final safeAnswers = rawAnswers?.map((k, v) => MapEntry(k, v.toString())) ?? {};
+
     return AiChatbotDetailsScreen(
-      answers: q?['answers'] as Map<String, String>? ?? {},
+      answers: safeAnswers,
       summary: q?['summary'] as String? ?? '',
       classification: q?['classification'] as String? ?? '',
       originalClassification: q?['originalClassification'] as String? ?? '',
+      evidencePaths: (q?['evidencePaths'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -61,6 +69,16 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+             if (context.canPop()) {
+               context.pop();
+             } else {
+               context.go('/dashboard'); // Fallback to home
+             }
+          },
+        ),
         title: Text(
           localizations.aiChatbotDetails,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -156,6 +174,7 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                   'originalClassification':
                       originalClassification, // Pass it on
                   'complaintData': answers,
+                  'evidencePaths': evidencePaths, // FORWARD EVIDENCE
                 }),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),

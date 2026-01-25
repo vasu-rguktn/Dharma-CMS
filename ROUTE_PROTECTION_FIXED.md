@@ -6,7 +6,7 @@
 **Status**: ✅ **FIXED**
 - The `app_scaffold.dart` already had proper role-based menu separation using `if (authProvider.role == 'citizen')` and `if (authProvider.role == 'police')`
 - **Police Menu**: Document Drafting, Chargesheet Gen/Vetting, Media Analysis, Case Journal, Complaints, Petitions
-- **Citizen Menu**: AI Chat, Legal Queries, Legal Suggestion, My Saved Complaints, Witness Prep, Petitions, Helpline
+- **Citizen Menu**: AI Chat, Legal Queries, Legal Section Suggestions, My Saved Complaints, Witness Prep, Petitions, Helpline
 
 ### Issue 2: ❌ Citizens navigating to Police Dashboard
 **Status**: ✅ **FIXED**

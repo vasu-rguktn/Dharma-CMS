@@ -377,9 +377,9 @@
   "@viewCases": {
     "description": "View cases action"
   },
-  "legalSuggestion": "Legal Suggestion",
+  "legalSuggestion": "Legal Section Suggestions",
   "@legalSuggestion": {
-    "description": "Legal suggestion menu"
+    "description": "Legal Section Suggestions menu"
   },
   "documentDrafting": "Document Drafting",
   "@documentDrafting": {

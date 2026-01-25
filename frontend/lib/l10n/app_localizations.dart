@@ -713,10 +713,10 @@ abstract class AppLocalizations {
   /// **'View Cases'**
   String get viewCases;
 
-  /// Legal suggestion menu
+  /// Legal Section Suggestions menu
   ///
   /// In en, this message translates to:
-  /// **'Legal Suggestion'**
+  /// **'Legal Section Suggestions'**
   String get legalSuggestion;
 
   /// Document drafting menu
@@ -1525,7 +1525,7 @@ abstract class AppLocalizations {
   /// **'Failed to generate Legal Section Suggester: {error}'**
   String failedToGenerateSuggestions(String error);
 
-  /// Description for legal suggestion screen
+  /// Description for Legal Section Suggestions screen
   ///
   /// In en, this message translates to:
   /// **'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.'**
