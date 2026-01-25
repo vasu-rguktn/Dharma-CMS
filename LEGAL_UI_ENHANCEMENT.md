@@ -1,13 +1,13 @@
-# UI Enhancement for Legal Suggestions & AI Investigation Guidelines
+# UI Enhancement for Legal Section Suggester & AI Investigation Guidelines
 
 ## Overview
-Enhanced both **Legal Suggestions** and **AI Investigation Guidelines** features with premium UI design that displays each section in separate, beautifully styled cards with color-coding, icons, and proper visual hierarchy.
+Enhanced both **Legal Section Suggester** and **AI Investigation Guidelines** features with premium UI design that displays each section in separate, beautifully styled cards with color-coding, icons, and proper visual hierarchy.
 
 ---
 
 ## 🔄 Changes Made
 
-### 1. **Backend: Legal Suggestions** (`backend/routers/legal_suggestions.py`)
+### 1. **Backend: Legal Section Suggester** (`backend/routers/legal_suggestions.py`)
 
 #### ✨ New Features:
 - **Structured Response Model**: Changed from plain text to structured JSON with:
@@ -198,7 +198,7 @@ The AI report is now broken down into 10 distinct sections:
 
 ## 🧪 Testing Checklist
 
-### Legal Suggestions:
+### Legal Section Suggester:
 - [ ] Backend returns structured JSON
 - [ ] Fallback works if JSON parsing fails
 - [ ] Summary card displays correctly
@@ -243,10 +243,10 @@ The AI report is now broken down into 10 distinct sections:
 
 ## 📝 Usage Instructions
 
-### For Legal Suggestions:
+### For Legal Section Suggester:
 1. Navigate to **Legal Suggestion** screen
 2. Enter incident description
-3. Click "Get Legal Suggestions"
+3. Click "Get Legal Section Suggester"
 4. View results organized by:
    - Summary
    - Applicable Sections

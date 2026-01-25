@@ -79,7 +79,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Failed to generate legal suggestions"),
+          content: Text("Failed to generate Legal Section Suggester"),
           backgroundColor: Colors.red,
         ),
       );
@@ -329,7 +329,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
                           _getLocalizedLabel(
-                            "Get Legal Suggestions",
+                            "Get Legal Section Suggester",
                             "చట్ట సూచనలను పొందండి",
                           ),
                           style: const TextStyle(fontSize: 16),
@@ -348,7 +348,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                       const SizedBox(height: 16),
                       Text(
                         _getLocalizedLabel(
-                          "Analyzing incident and generating legal suggestions...",
+                          "Analyzing incident and generating Legal Section Suggester...",
                           "సంఘటనను విశ్లేషించి చట్ట సూచనలను రూపొందిస్తోంది...",
                         ),
                         textAlign: TextAlign.center,

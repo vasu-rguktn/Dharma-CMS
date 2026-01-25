@@ -19,7 +19,7 @@ All the missing features from the Next.js web app have been successfully impleme
 **How to use**:
 1. Enter FIR details in the first text field
 2. Enter incident details in the second text field
-3. Tap "Get Legal Suggestions"
+3. Tap "Get Legal Section Suggester"
 4. Review the suggested sections and reasoning
 
 ---
@@ -207,7 +207,7 @@ All AI-generated content includes a warning:
 > ⚠️ AI-generated content. Always consult with a legal expert for official advice.
 
 This applies to:
-- Legal suggestions
+- Legal Section Suggester
 - Document drafts
 - Charge sheets
 - Vetting suggestions

@@ -548,6 +548,7 @@ class AuthProvider with ChangeNotifier {
       final now = Timestamp.now();
       final Map<String, dynamic> data = {
         'updatedAt': now,
+        'uid': uid, // Ensure UID is present in the document
       };
 
       if (displayName != null) data['displayName'] = displayName;
@@ -565,7 +566,8 @@ class AuthProvider with ChangeNotifier {
       // Determine collection based on current role
       final collection = (_userProfile?.role == 'police') ? 'police' : 'users';
       
-      await _firestore.collection(collection).doc(uid).update(data);
+      // Use set with merge to create the document if it doesn't exist (fixing "not-found" error)
+      await _firestore.collection(collection).doc(uid).set(data, SetOptions(merge: true));
       
       // Reload profile to get fresh data
       await _loadUserProfile(uid);

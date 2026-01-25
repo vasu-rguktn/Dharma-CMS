@@ -1,5 +1,5 @@
 """
-Test script for Legal Suggestions API endpoint
+Test script for Legal Section Suggester API endpoint
 Tests the /api/legal-suggestions/ endpoint with sample incident data
 """
 
@@ -27,7 +27,7 @@ test_incidents = [
 ]
 
 def test_legal_suggestions(incident_description: str, test_name: str):
-    """Test the legal suggestions endpoint"""
+    """Test the Legal Section Suggester endpoint"""
     
     print(f"\n{'='*80}")
     print(f"🧪 {test_name}")
@@ -85,7 +85,7 @@ def test_legal_suggestions(incident_description: str, test_name: str):
 def main():
     """Run all test cases"""
     print("\n" + "="*80)
-    print("🚀 LEGAL SUGGESTIONS API TEST SUITE")
+    print("🚀 Legal Section Suggester API TEST SUITE")
     print("="*80)
     print(f"\n📡 Target: {BASE_URL}/api/legal-suggestions/")
     print(f"📊 Total Test Cases: {len(test_incidents)}")

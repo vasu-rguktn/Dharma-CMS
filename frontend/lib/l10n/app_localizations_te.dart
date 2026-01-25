@@ -1974,6 +1974,21 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
   String get evidenceRemoved => 'సాక్ష్యం తొలగించబడింది';
 
   @override
+  String get selectPetitionType => 'పిటిషన్ రకాన్ని ఎంచుకోండి';
+
+  @override
+  String get petitionTypeDescription => 'మీరు మీ ఫిర్యాదు ఎలా సమర్పించాలనుకుంటున్నారో ఎంచుకోండి.\n\nగోపనీయం: మీ పేరు మరియు చిరునామా రికార్డ్ చేయబడవు (కేవలం మొబైల్ నంబర్ అవసరం).\n\nసాధారణ: అన్ని వివరాలు రికార్డ్ చేయబడతాయి.';
+
+  @override
+  String get anonymousPetition => 'గోపనీయ పిటిషన్';
+
+  @override
+  String get normalPetition => 'సాధారణ పిటిషన్';
+
+  @override
+  String get anonymousPetitionConfirm => 'మీరు గోపనీయ పిటిషన్ మోడ్‌ను ఎంచుకున్నారు. మీ పేరు మరియు చిరునామా రికార్డ్ చేయబడవు.';
+
+  @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();
   

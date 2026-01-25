@@ -34,7 +34,7 @@ This document lists all available routes in the Dharma CMS backend API.
 ### 7. Document Drafting Router (`/api/document-drafting`)
 - `POST /api/document-drafting` - Draft legal documents
 
-### 8. Legal Suggestions Router (`/api/legal-suggestions`)
+### 8. Legal Section Suggester Router (`/api/legal-suggestions`)
 - `POST /api/legal-suggestions/` - Get legal section suggestions
 
 ### 9. Cases Router (`/api/cases`)
@@ -51,7 +51,7 @@ This document lists all available routes in the Dharma CMS backend API.
 
 - `GEMINI_API_KEY` - Main Gemini API key
 - `GEMINI_API_KEY_INVESTIGATION` - Investigation-specific Gemini API key
-- `GEMINI_API_KEY_LEGAL_SUGGESTIONS` - Legal suggestions Gemini API key
+- `GEMINI_API_KEY_LEGAL_SUGGESTIONS` - Legal Section Suggester Gemini API key
 - `HF_TOKEN` - Hugging Face token (optional, for complaint processing)
 
 ## Port Configuration

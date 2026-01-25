@@ -71,7 +71,7 @@ This guide explains how to run the Dharma backend using Docker.
 
 - `GEMINI_API_KEY`: Your Google Gemini API key for AI features
 - `GEMINI_API_KEY_INVESTIGATION`: Investigation-specific Gemini API key (optional, falls back to GEMINI_API_KEY)
-- `GEMINI_API_KEY_LEGAL_SUGGESTIONS`: Legal suggestions Gemini API key (optional, falls back to GEMINI_API_KEY)
+- `GEMINI_API_KEY_LEGAL_SUGGESTIONS`: Legal Section Suggester Gemini API key (optional, falls back to GEMINI_API_KEY)
 
 ### Optional
 

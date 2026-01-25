@@ -1,7 +1,7 @@
-# Legal Suggestions Error Fix
+# Legal Section Suggester Error Fix
 
 ## Issue
-When testing the legal suggestions feature with the incident:
+When testing the Legal Section Suggester feature with the incident:
 > "When I was returning from college, a person stole my purse at the bus stop. The purse contained my mobile phone and ₹5000 cash."
 
 The error "no sections suggested" was appearing.
@@ -88,7 +88,7 @@ python test_legal_suggestions.py
 
 Expected output:
 ```
-🧪 Testing Legal Suggestions Endpoint
+🧪 Testing Legal Section Suggester Endpoint
 ==================================================
 ✅ SUCCESS! Response:
 {
@@ -102,7 +102,7 @@ Expected output:
 ### Step 3: Test from Flutter App
 1. Open Legal Suggestion screen
 2. Enter: "When I was returning from college, a person stole my purse at the bus stop. The purse contained my mobile phone and ₹5000 cash."
-3. Click "Get Legal Suggestions"
+3. Click "Get Legal Section Suggester"
 4. Should see all sections displayed properly
 
 ## What to Check in Backend Logs

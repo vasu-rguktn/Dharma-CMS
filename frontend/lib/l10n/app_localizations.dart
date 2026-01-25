@@ -1513,16 +1513,16 @@ abstract class AppLocalizations {
   /// **'Please enter both FIR and incident details.'**
   String get enterFirAndIncidentDetails;
 
-  /// Success message for legal suggestions generation
+  /// Success message for Legal Section Suggester generation
   ///
   /// In en, this message translates to:
-  /// **'Legal suggestions generated.'**
+  /// **'Legal Section Suggester generated.'**
   String get legalSuggestionsGenerated;
 
   /// Error message for failed suggestions generation
   ///
   /// In en, this message translates to:
-  /// **'Failed to generate legal suggestions: {error}'**
+  /// **'Failed to generate Legal Section Suggester: {error}'**
   String failedToGenerateSuggestions(String error);
 
   /// Description for legal suggestion screen
@@ -1549,10 +1549,10 @@ abstract class AppLocalizations {
   /// **'Processing...'**
   String get processing;
 
-  /// Button text to get legal suggestions
+  /// Button text to get Legal Section Suggester
   ///
   /// In en, this message translates to:
-  /// **'Get Legal Suggestions'**
+  /// **'Get Legal Section Suggester'**
   String get getLegalSuggestions;
 
   /// Analyzing information message
@@ -1561,10 +1561,10 @@ abstract class AppLocalizations {
   /// **'Analyzing information and generating suggestions...'**
   String get analyzingInformation;
 
-  /// Title for AI legal suggestions result
+  /// Title for AI Legal Section Suggester result
   ///
   /// In en, this message translates to:
-  /// **'AI Legal Suggestions'**
+  /// **'AI Legal Section Suggester'**
   String get aiLegalSuggestions;
 
   /// Description for reviewing suggestions
@@ -3087,6 +3087,36 @@ String get ok;
 
   /// Label for evidenceRemoved
   String get evidenceRemoved;
+
+  /// Title for petition type selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Select Petition Type'**
+  String get selectPetitionType;
+
+  /// Description for petition type selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.'**
+  String get petitionTypeDescription;
+
+  /// Button text for anonymous petition option
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous Petition'**
+  String get anonymousPetition;
+
+  /// Button text for normal petition option
+  ///
+  /// In en, this message translates to:
+  /// **'Normal Petition'**
+  String get normalPetition;
+
+  /// Message confirming anonymous petition mode selection
+  ///
+  /// In en, this message translates to:
+  /// **'You have selected Anonymous Petition Mode. Your name and address will not be recorded.'**
+  String get anonymousPetitionConfirm;
 
 }
 

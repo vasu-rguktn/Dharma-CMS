@@ -605,48 +605,65 @@ class PetitionProvider with ChangeNotifier {
     List<PlatformFile>? documentFiles,
   }) async {
     try {
+      debugPrint('🚀 [PETITION_UPDATE] Creating update for petition: $petitionId');
       List<String> photoUrls = [];
       List<Map<String, String>> documents = [];
 
       // Upload photos
       if (photoFiles != null && photoFiles.isNotEmpty) {
-        final timestamp = DateTime.now()
-            .toString()
-            .split('.')
-            .first
-            .replaceAll(':', '-')
-            .replaceAll(' ', '_');
+        try {
+          debugPrint('📸 [PETITION_UPDATE] Uploading ${photoFiles.length} photos');
+          final timestamp = DateTime.now()
+              .toString()
+              .split('.')
+              .first
+              .replaceAll(':', '-')
+              .replaceAll(' ', '_');
 
-        final photoFolderPath = 'petition_updates/$petitionId/photos/Photos_$timestamp';
+          final photoFolderPath = 'petition_updates/$petitionId/photos/Photos_$timestamp';
 
-        photoUrls = await StorageService.uploadMultipleFiles(
-          files: photoFiles,
-          folderPath: photoFolderPath,
-        );
+          photoUrls = await StorageService.uploadMultipleFiles(
+            files: photoFiles,
+            folderPath: photoFolderPath,
+          );
+          debugPrint('✅ [PETITION_UPDATE] Photos uploaded: ${photoUrls.length} URLs');
+        } catch (photoError) {
+          debugPrint('⚠️ [PETITION_UPDATE] Photo upload error: $photoError');
+          // Continue without photos rather than failing completely
+        }
       }
 
       // Upload documents
       if (documentFiles != null && documentFiles.isNotEmpty) {
-        final timestamp = DateTime.now()
-            .toString()
-            .split('.')
-            .first
-            .replaceAll(':', '-')
-            .replaceAll(' ', '_');
+        try {
+          debugPrint('📄 [PETITION_UPDATE] Uploading ${documentFiles.length} documents');
+          final timestamp = DateTime.now()
+              .toString()
+              .split('.')
+              .first
+              .replaceAll(':', '-')
+              .replaceAll(' ', '_');
 
-        final docFolderPath = 'petition_updates/$petitionId/documents/Docs_$timestamp';
+          final docFolderPath = 'petition_updates/$petitionId/documents/Docs_$timestamp';
 
-        final documentUrls = await StorageService.uploadMultipleFiles(
-          files: documentFiles,
-          folderPath: docFolderPath,
-        );
+          // Upload individually to maintain mapping between file name and URL
+          for (var docFile in documentFiles) {
+            final fileName = 'Doc_${timestamp}_${docFile.name}';
+            final path = '$docFolderPath/$fileName';
 
-        // Create document objects with name and url
-        for (int i = 0; i < documentFiles.length; i++) {
-          documents.add({
-            'name': documentFiles[i].name,
-            'url': documentUrls[i],
-          });
+            final url = await StorageService.uploadFile(file: docFile, path: path);
+            
+            if (url != null) {
+              documents.add({
+                'name': docFile.name, // Display name
+                'url': url,
+              });
+            }
+          }
+          debugPrint('✅ [PETITION_UPDATE] Documents uploaded: ${documents.length} with URLs');
+        } catch (docError) {
+          debugPrint('⚠️ [PETITION_UPDATE] Document upload error: $docError');
+          // Continue without documents rather than failing completely
         }
       }
 
@@ -666,10 +683,10 @@ class PetitionProvider with ChangeNotifier {
           .collection('petition_updates')
           .add(update.toMap());
 
-      debugPrint('✅ Petition update created successfully');
+      debugPrint('✅ [PETITION_UPDATE] Petition update created successfully');
       return true;
     } catch (e) {
-      debugPrint('❌ Error creating petition update: $e');
+      debugPrint('❌ [PETITION_UPDATE] Error creating petition update: $e');
       return false;
     }
   }

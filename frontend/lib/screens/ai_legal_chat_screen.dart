@@ -101,23 +101,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   List<Map<String, String>> _dynamicHistory = [];
 
   Future<void> _showPetitionTypeDialog() async {
+    final localizations = AppLocalizations.of(context)!;
+    
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Select Petition Type'),
-          content: const Text(
-              'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.'),
+          title: Text(localizations.selectPetitionType),
+          content: Text(localizations.petitionTypeDescription),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog first
                 context.go('/dashboard');
               },
-              child: const Text('Close',
-                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              child: Text(localizations.close,
+                  style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
             ),
             TextButton(
               onPressed: () {
@@ -126,8 +127,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 });
                 Navigator.of(context).pop();
               },
-              child: const Text('Anonymous Petition',
-                  style: TextStyle(color: orange, fontWeight: FontWeight.bold)),
+              child: Text(localizations.anonymousPetition,
+                  style: const TextStyle(color: orange, fontWeight: FontWeight.bold)),
             ),
             TextButton(
               onPressed: () {
@@ -136,8 +137,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 });
                 Navigator.of(context).pop();
               },
-              child: const Text('Normal Petition',
-                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              child: Text(localizations.normalPetition,
+                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -789,7 +790,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     
     // Customize welcome message based on selection
     if (_isAnonymous) {
-      _addBot("You have selected Anonymous Petition Mode. Your name and address will not be recorded.");
+      _addBot(localizations.anonymousPetitionConfirm);
     } else {
       _addBot(localizations.welcomeToDharma);
     }

@@ -722,11 +722,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterFirAndIncidentDetails => 'Please enter both FIR and incident details.';
 
   @override
-  String get legalSuggestionsGenerated => 'Legal suggestions generated.';
+  String get legalSuggestionsGenerated => 'Legal Section Suggester generated.';
 
   @override
   String failedToGenerateSuggestions(String error) {
-    return 'Failed to generate legal suggestions: $error';
+    return 'Failed to generate Legal Section Suggester: $error';
   }
 
   @override
@@ -742,13 +742,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get processing => 'Processing...';
 
   @override
-  String get getLegalSuggestions => 'Get Legal Suggestions';
+  String get getLegalSuggestions => 'Get Legal Section Suggester';
 
   @override
   String get analyzingInformation => 'Analyzing information and generating suggestions...';
 
   @override
-  String get aiLegalSuggestions => 'AI Legal Suggestions';
+  String get aiLegalSuggestions => 'AI Legal Section Suggester';
 
   @override
   String get reviewSuggestionsDesc => 'Review the suggested legal sections and reasoning. This is for informational purposes only.';
@@ -1993,6 +1993,21 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   String get evidenceRemoved => 'Evidence removed';
+
+  @override
+  String get selectPetitionType => 'Select Petition Type';
+
+  @override
+  String get petitionTypeDescription => 'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.';
+
+  @override
+  String get anonymousPetition => 'Anonymous Petition';
+
+  @override
+  String get normalPetition => 'Normal Petition';
+
+  @override
+  String get anonymousPetitionConfirm => 'You have selected Anonymous Petition Mode. Your name and address will not be recorded.';
 
   @override
   // TODO: implement profileUpdated
