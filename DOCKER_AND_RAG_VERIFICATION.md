@@ -119,7 +119,7 @@ docker-compose up --build \
 
 ### **Step 3: Verify RAG is Working**
 
-Check backend logs when making a legal suggestion request:
+Check backend logs when making a Legal Section Suggestions request:
 - ✅ If RAG enabled: You'll see context being retrieved
 - ❌ If RAG disabled: Falls back to plain Gemini generation
 
@@ -186,6 +186,6 @@ The legal RAG system is:
 1. Ingest your legal documents: `python3 legal_rag/ingest.py`
 2. Set `LEGAL_RAG_ENABLED=true` in your environment
 3. Rebuild Docker container: `docker-compose up --build`
-4. Test the legal suggestions endpoint
+4. Test the Legal Section Suggester endpoint
 
 The RAG will work correctly once enabled and documents are ingested! 🎯

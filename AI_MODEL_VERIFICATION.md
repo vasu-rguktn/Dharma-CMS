@@ -1,7 +1,7 @@
 # AI Model Output Verification & Fix
 
 ## Problem
-The AI model for legal suggestions was not returning properly structured JSON output, resulting in fallback values being used instead of actual legal guidance.
+The AI model for Legal Section Suggester was not returning properly structured JSON output, resulting in fallback values being used instead of actual legal guidance.
 
 ## Root Cause Analysis
 
@@ -111,7 +111,7 @@ python test_ai_output.py
 
 ### Expected Output (GOOD):
 ```
-🧪 TESTING LEGAL SUGGESTIONS AI MODEL
+🧪 TESTING Legal Section Suggester AI MODEL
 ======================================================================
 ✅ Response received!
 📊 Status Code: 200
@@ -160,13 +160,13 @@ python test_ai_output.py
 
 ### Step 3: Test from Flutter App
 
-1. **Open Legal Suggestion Screen**
+1. **Open Legal Section Suggestions Screen**
 2. **Enter test incident**:
    ```
    When I was returning from college, a person stole my purse at the bus stop.
    The purse contained my mobile phone and ₹5000 cash.
    ```
-3. **Click "Get Legal Suggestions"**
+3. **Click "Get Legal Section Suggester"**
 4. **Verify sections appear**:
    - ✅ Summary card with meaningful text
    - ✅ Legal sections with BNS/BNSS numbers

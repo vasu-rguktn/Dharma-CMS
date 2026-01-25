@@ -1,4 +1,4 @@
-# Legal Suggestions Feature - Quick Reference Guide
+# Legal Section Suggester Feature - Quick Reference Guide
 
 **Status**: ✅ VERIFIED & FUNCTIONAL  
 **Date**: December 23, 2025
@@ -47,7 +47,7 @@ User Input → Frontend → Backend → Gemini AI → Backend → Frontend → 3
 
 **Step-by-Step**:
 1. User describes incident in text field
-2. Taps "Get Legal Suggestions" button
+2. Taps "Get Legal Section Suggester" button
 3. Flutter sends HTTP POST to backend
 4. Backend sends prompt to Gemini AI
 5. AI analyzes and returns sections + reasoning
@@ -87,7 +87,7 @@ python -c "import requests; print(requests.get('http://127.0.0.1:8000/api/health
 1. Run Flutter app
 2. Navigate to "Legal Section Suggester"
 3. Enter: "A person stole my phone at the bus stop"
-4. Tap "Get Legal Suggestions"
+4. Tap "Get Legal Section Suggester"
 5. Verify 3 separate boxes appear
 
 ---
@@ -156,7 +156,7 @@ python -c "import requests; print(requests.get('http://127.0.0.1:8000/api/health
 - Visual separation clear and distinct ✅
 - Ready for live testing (pending API key verification) ✅
 
-**Conclusion**: The Legal Suggestions feature meets all requirements. Each section (suggested acts and explanation) is displayed in a separate, visually distinct box using Flutter's Material Card widgets.
+**Conclusion**: The Legal Section Suggester feature meets all requirements. Each section (suggested acts and explanation) is displayed in a separate, visually distinct box using Flutter's Material Card widgets.
 
 ---
 

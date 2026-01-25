@@ -323,7 +323,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get viewCases => 'కేసులు చూడండి';
 
   @override
-  String get legalSuggestion => 'చట్టపరమైన సూచన';
+  String get legalSuggestion => 'చట్ట విభాగ సూచనలు';
 
   @override
   String get documentDrafting => 'పత్రం రూపకల్పన';
@@ -722,7 +722,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get enterFirAndIncidentDetails => 'దయచేసి FIR మరియు సంఘటన వివరాలు రెండూ నమోదు చేయండి.';
 
   @override
-  String get legalSuggestionsGenerated => 'చట్టపరమైన సూచనలు రూపొందించబడ్డాయి.';
+  String get legalSuggestionsGenerated => 'చట్ట విభాగ సూచనలు రూపొందించబడ్డాయి.';
 
   @override
   String failedToGenerateSuggestions(String error) {
@@ -742,13 +742,13 @@ class AppLocalizationsTe extends AppLocalizations {
   String get processing => 'ప్రాసెస్ చేస్తోంది...';
 
   @override
-  String get getLegalSuggestions => 'చట్టపరమైన సూచనలను పొందండి';
+  String get getLegalSuggestions => 'చట్ట విభాగ సూచనలు పొందండి';
 
   @override
   String get analyzingInformation => 'సమాచారాన్ని విశ్లేషించడం మరియు సూచనలను రూపొందించడం...';
 
   @override
-  String get aiLegalSuggestions => 'AI చట్టపరమైన సూచనలు';
+  String get aiLegalSuggestions => 'AI చట్ట విభాగ సూచనలు';
 
   @override
   String get reviewSuggestionsDesc => 'సూచించిన చట్టపరమైన విభాగాలు మరియు కారణాలను సమీక్షించండి. ఇది సమాచార ప్రయోజనాల కోసం మాత్రమే.';
@@ -1972,6 +1972,21 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
 
   @override
   String get evidenceRemoved => 'సాక్ష్యం తొలగించబడింది';
+
+  @override
+  String get selectPetitionType => 'పిటిషన్ రకాన్ని ఎంచుకోండి';
+
+  @override
+  String get petitionTypeDescription => 'మీరు మీ ఫిర్యాదు ఎలా సమర్పించాలనుకుంటున్నారో ఎంచుకోండి.\n\nగోపనీయం: మీ పేరు మరియు చిరునామా రికార్డ్ చేయబడవు (కేవలం మొబైల్ నంబర్ అవసరం).\n\nసాధారణ: అన్ని వివరాలు రికార్డ్ చేయబడతాయి.';
+
+  @override
+  String get anonymousPetition => 'గోపనీయ పిటిషన్';
+
+  @override
+  String get normalPetition => 'సాధారణ పిటిషన్';
+
+  @override
+  String get anonymousPetitionConfirm => 'మీరు గోపనీయ పిటిషన్ మోడ్‌ను ఎంచుకున్నారు. మీ పేరు మరియు చిరునామా రికార్డ్ చేయబడవు.';
 
   @override
   // TODO: implement profileUpdated

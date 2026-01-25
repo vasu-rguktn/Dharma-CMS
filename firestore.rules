@@ -17,26 +17,30 @@ service cloud.firestore {
     match /users/{userId} {
       // Allow read if:
       // 1. The document's uid field matches the authenticated user's uid
-      // 2. OR the user is authenticated (simplified for now to avoid nested get() calls)
-      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      // 2. OR the document ID matches the authenticated user's uid (Fallback)
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid);
       
-      // Allow create if the new document's 'uid' matches the logged-in user
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Allow create if:
+      // 1. The new document's 'uid' matches the logged-in user
+      // 2. OR the document ID matches the logged-in user
+      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || userId == request.auth.uid);
       
-      // Allow update if the existing document belongs to the user
-      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+      // Allow update if:
+      // 1. The existing document belongs to the user (uid field check)
+      // 2. OR the document ID matches the user's uid (Fallback for missing uid field)
+      allow update: if request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid);
     }
 
     // POLICE COLLECTION (for police-specific data)
     match /police/{policeId} {
-      // Allow read if authenticated and document's uid matches user's uid
-      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      // Allow read if authenticated and (uid field matches OR document ID matches)
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || policeId == request.auth.uid);
       
-      // Allow create if the new document's 'uid' matches the logged-in user
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Allow create if (uid field matches OR document ID matches)
+      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || policeId == request.auth.uid);
       
-      // Allow update if the existing document belongs to the user
-      allow update: if request.auth != null && resource.data.uid == request.auth.uid;
+      // Allow update if (uid field matches OR document ID matches)
+      allow update: if request.auth != null && (resource.data.uid == request.auth.uid || policeId == request.auth.uid);
     }
     
     // CASES COLLECTION (FIRs)

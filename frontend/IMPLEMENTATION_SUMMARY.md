@@ -5,7 +5,7 @@ This document summarizes the implementation of missing features from the Next.js
 
 ## Implemented Features
 
-### 1. Legal Suggestion Screen (`legal_suggestion_screen.dart`)
+### 1. Legal Section Suggestions Screen (`legal_suggestion_screen.dart`)
 - **Path**: `/legal-suggestion`
 - **Functionality**: AI-powered legal section suggester for BNS, BNSS, BSA, and other special acts
 - **Features**:
@@ -85,7 +85,7 @@ Updated routes to use actual screen implementations instead of `Placeholder` wid
 ## Dashboard Updates (`dashboard_screen.dart`)
 
 Added quick action cards for all new features:
-- Legal Suggestion (Indigo)
+- Legal Section Suggestions (Indigo)
 - Document Drafting (Green)
 - Chargesheet Gen (Deep Orange)
 - Chargesheet Vetting (Brown)
@@ -192,7 +192,7 @@ Create unit tests and widget tests for all new screens
 
 ```
 Dashboard
-├── Legal Suggestion → AI generates legal sections
+├── Legal Section Suggestions → AI generates legal sections
 ├── Document Drafting → Generate documents for recipients
 ├── Chargesheet Generation → Upload docs → Generate chargesheet
 ├── Chargesheet Vetting → Upload/paste → Get suggestions

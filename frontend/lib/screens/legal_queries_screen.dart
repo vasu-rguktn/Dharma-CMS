@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import '../providers/legal_queries_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/chat_message.dart';
 import '../screens/geo_camera_screen.dart';
 
@@ -70,7 +71,8 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return;
 
-    final lang = Localizations.localeOf(context).languageCode;
+    final settings = context.read<SettingsProvider>();
+    final lang = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
 
     context.read<LegalQueriesProvider>().sendMessage(text,
         attachments: List.from(_attachments), language: lang);

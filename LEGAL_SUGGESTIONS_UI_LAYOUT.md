@@ -1,4 +1,4 @@
-# Legal Suggestions Feature - UI Layout Specification
+# Legal Section Suggester Feature - UI Layout Specification
 
 ## Current Frontend UI Structure
 
@@ -17,7 +17,7 @@
 │  └────────────────────────────────────────────────────────┘│
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐│
-│  │         Get Legal Suggestions (Button)                  ││
+│  │         Get Legal Section Suggester (Button)                  ││
 │  └────────────────────────────────────────────────────────┘│
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐│
@@ -227,7 +227,7 @@ bool _loading = false;
 - User cannot interact
 
 // When false:
-- Submit button shows "Get Legal Suggestions" text
+- Submit button shows "Get Legal Section Suggester" text
 - Button is enabled
 ```
 
@@ -332,7 +332,7 @@ Hard-coded disclaimer        → Disclaimer box
 ```dart
 ScaffoldMessenger.of(context).showSnackBar(
   SnackBar(
-    content: Text("Failed to generate legal suggestions"),
+    content: Text("Failed to generate Legal Section Suggester"),
     backgroundColor: Colors.red,
   ),
 );
@@ -367,7 +367,7 @@ _data?['reasoning'] ?? "Reasoning not provided."
 
 ## Conclusion
 
-The Legal Suggestions frontend implements a **clean, card-based UI** where:
+The Legal Section Suggester frontend implements a **clean, card-based UI** where:
 1. ✅ Each section is displayed in a **separate Material Card widget**
 2. ✅ Cards have distinct visual separation (elevation, borders, spacing)
 3. ✅ Icons and colors provide visual hierarchy

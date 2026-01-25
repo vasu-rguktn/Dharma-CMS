@@ -118,7 +118,7 @@ Citizen users are stored in:
 ### Citizen Dashboard Features
 - AI Chat
 - Legal Queries
-- Legal Suggestion
+- Legal Section Suggestions
 - My Saved Complaints
 - Witness Prep
 - Petitions (Citizen View)
@@ -144,7 +144,7 @@ Both Police and Citizen dashboards use the same underlying component:
 ### Feature Visibility
 The system uses role-based access control:
 - **Police-only features**: Document Drafting, Chargesheet Generation/Vetting, Media Analysis, Case Journal
-- **Citizen-only features**: AI Legal Chat, Legal Queries, Legal Suggestion, Witness Preparation, Helpline
+- **Citizen-only features**: AI Legal Chat, Legal Queries, Legal Section Suggestions, Witness Preparation, Helpline
 
 ---
 

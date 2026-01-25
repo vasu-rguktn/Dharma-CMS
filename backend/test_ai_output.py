@@ -1,7 +1,7 @@
 import requests
 import json
 
-# Test the legal suggestions endpoint with detailed output
+# Test the Legal Section Suggester endpoint with detailed output
 url = "http://127.0.0.1:8000/api/legal-suggester/"
 
 test_incident = """When I was returning from college, a person stole my purse at the bus stop.
@@ -11,7 +11,7 @@ payload = {
     "incident_description": test_incident
 }
 
-print("🧪 TESTING LEGAL SUGGESTIONS AI MODEL")
+print("🧪 TESTING Legal Section Suggester AI MODEL")
 print("=" * 70)
 print(f"📝 Incident Description:")
 print(f"   {test_incident}")

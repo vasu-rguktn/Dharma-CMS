@@ -13,7 +13,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       # Optional: Investigation-specific Gemini API key (falls back to GEMINI_API_KEY if not set)
       - GEMINI_API_KEY_INVESTIGATION=${GEMINI_API_KEY_INVESTIGATION:-}
-      # Optional: Legal suggestions Gemini API key (falls back to GEMINI_API_KEY if not set)
+      # Optional: Legal Section Suggester Gemini API key (falls back to GEMINI_API_KEY if not set)
       - GEMINI_API_KEY_LEGAL_SUGGESTIONS=${GEMINI_API_KEY_LEGAL_SUGGESTIONS:-}
       # Optional: Sketch generation Gemini API key (falls back to GEMINI_API_KEY_INVESTIGATION if not set)
       - GEMINI_API_KEY_SKETCH=${GEMINI_API_KEY_SKETCH:-}

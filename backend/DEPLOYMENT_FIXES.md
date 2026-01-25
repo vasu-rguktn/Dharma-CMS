@@ -40,7 +40,7 @@ All routes are properly registered in `main.py`:
 - ✅ Legal Chat router (`/api/legal-chat`)
 - ✅ Investigation Report router (`/api`)
 - ✅ Document Drafting router (`/api/document-drafting`)
-- ✅ Legal Suggestions router (`/api/legal-suggestions`)
+- ✅ Legal Section Suggester router (`/api/legal-suggestions`)
 - ✅ Cases router (`/api/cases`)
 - ⚠️ STT Stream router (`/ws/stt`) - **Disabled** (frontend uses Flutter STT)
 

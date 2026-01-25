@@ -1,29 +1,7 @@
-// // lib/screens/ai_legal_chat_screen.dart
-// import 'dart:async';
-// import 'package:flutter/material.dart';
-// import 'package:go_router/go_router.dart';
-// import 'package:dio/dio.dart';
 
-// class AiLegalChatScreen extends StatefulWidget {
-//   const AiLegalChatScreen({super.key});
-
-//   @override
-//   State<AiLegalChatScreen> createState() => _AiLegalChatScreenState();
-// }
-
-// class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
-//   final TextEditingController _controller = TextEditingController();
-//   final FocusNode _inputFocus = FocusNode();
-//   final List<_ChatMessage> _messages = [];
-//   final Dio _dio = Dio();
-
-//   final List<_ChatQ> _questions = const [
-//     _ChatQ(key: 'full_name', question: 'What is your full name?'),
-//     _ChatQ(key: 'address', question: 'Where do you live (place / area)?'),
-//     _ChatQ(key: 'phone', question: 'What is your phone number?'),
-//     _ChatQ(
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart'
@@ -40,11 +18,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/native_speech_recognizer.dart';
 import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
   static final List<_ChatMessage> messages = [];
   static final Map<String, String> answers = {};
+  static final List<String> allAttachedFiles = []; // Cumulative evidence
   static int currentQ = -2;
   static bool hasStarted = false;
   static bool allowInput = false;
@@ -54,6 +35,7 @@ class _ChatStateHolder {
   static void reset() {
     messages.clear();
     answers.clear();
+    allAttachedFiles.clear();
     currentQ = -2;
     hasStarted = false;
     allowInput = false;
@@ -100,49 +82,52 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   bool _isAnonymous = false; // Track anonymous petition state
   List<Map<String, String>> _dynamicHistory = [];
 
-  Future<void> _showPetitionTypeDialog() async {
-    await showDialog(
+  Future<bool> _showPetitionTypeDialog() async {
+    final localizations = AppLocalizations.of(context)!;
+    
+    // Default to false (cancelled) if dismissed via back button
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Select Petition Type'),
-          content: const Text(
-              'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.'),
+          title: Text(localizations.selectPetitionType),
+          content: Text(localizations.petitionTypeDescription),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog first
-                context.go('/dashboard');
+                Navigator.of(context).pop(false); // Cancelled
               },
-              child: const Text('Close',
-                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              child: Text(localizations.close,
+                  style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
             ),
             TextButton(
               onPressed: () {
                 setState(() {
                   _isAnonymous = true;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true); // Confirmed
               },
-              child: const Text('Anonymous Petition',
-                  style: TextStyle(color: orange, fontWeight: FontWeight.bold)),
+              child: Text(localizations.anonymousPetition,
+                  style: const TextStyle(color: orange, fontWeight: FontWeight.bold)),
             ),
             TextButton(
               onPressed: () {
                 setState(() {
                   _isAnonymous = false;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true); // Confirmed
               },
-              child: const Text('Normal Petition',
-                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              child: Text(localizations.normalPetition,
+                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
             ),
           ],
         );
       },
     );
+    
+    return result ?? false;
   }
 
   // STT (Speech-to-Text) variables
@@ -179,6 +164,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   @override
   void initState() {
     super.initState();
+    
+    // SAFETY CHECK: If app was closed while loading, it might be stuck.
+    // Since we can't resume the network request easily, we reset the UI.
+    if (_ChatStateHolder.isLoading) {
+      _ChatStateHolder.isLoading = false;
+      _ChatStateHolder.allowInput = true;
+    }
+
     _speech = stt.SpeechToText();
     _nativeSpeech = NativeSpeechRecognizer();
     _flutterTts = FlutterTts();
@@ -747,22 +740,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Only start chat flow if we haven't started AND have no messages
-    // This preserves state when navigating back to the screen
+    
+    // Safety check: If we have no messages, we MUST treat it as a fresh start.
+    // This fixes the bug where navigating away without sending a message (empty state)
+    // would leave hasStarted=true, causing the next open to get stuck (modal wouldn't show).
+    if (_ChatStateHolder.messages.isEmpty) {
+      _ChatStateHolder.hasStarted = false;
+    }
+
+    // Only start chat flow if we haven't started
     if (!_ChatStateHolder.hasStarted) {
-      if (_ChatStateHolder.messages.isEmpty) {
-        // First time - start the chat flow
-        _ChatStateHolder.hasStarted = true;
-        _startChatFlow();
-      } else {
+      _ChatStateHolder.hasStarted = true;
+      _startChatFlow();
+    } else {
         // Returning to existing chat - preserve state
-        _ChatStateHolder.hasStarted = true;
         // Ensure input is enabled if we're in the middle of a dynamic turn
         if (!_isLoading && !_errored) {
           _setAllowInput(true);
           setState(() {});
         }
-      }
     }
   }
 
@@ -771,7 +767,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     await Future.delayed(Duration.zero); // Ensure context is ready
     if (!mounted) return;
     
-    await _showPetitionTypeDialog();
+    final bool proceed = await _showPetitionTypeDialog();
+    
+    if (!proceed) {
+      if (mounted) {
+         _ChatStateHolder.reset();
+         context.go('/dashboard');
+      }
+      return;
+    }
 
     if (!mounted) return;
 
@@ -789,7 +793,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     
     // Customize welcome message based on selection
     if (_isAnonymous) {
-      _addBot("You have selected Anonymous Petition Mode. Your name and address will not be recorded.");
+      _addBot(localizations.anonymousPetitionConfirm);
     } else {
       _addBot(localizations.welcomeToDharma);
     }
@@ -841,9 +845,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _scrollToEnd();
   }
 
-  void _addUser(String content) {
-    _ChatStateHolder.messages
-        .add(_ChatMessage(user: 'You', content: content, isUser: true));
+  void _addUser(String content, {List<String> files = const []}) {
+    _ChatStateHolder.messages.add(_ChatMessage(
+      user: 'You', 
+      content: content, 
+      isUser: true,
+      files: List.from(files), // Copy to prevent mutation issues
+    ));
     setState(() {});
     _scrollToEnd();
   }
@@ -882,39 +890,66 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // iOS simulator / other platforms
       baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     }
-
-    // baseUrl="http://127.0.0.1:8000";
-    final localeCode = Localizations.localeOf(context).languageCode;
-
-    // Construct Payload
-    final payload = {
-      'full_name': _ChatStateHolder.answers['full_name'] ?? '',
-      'address': _ChatStateHolder.answers['address'] ?? '',
-      'phone': _ChatStateHolder.answers['phone'] ??
-          _ChatStateHolder.answers['phone_number'] ??
-          '',
-      'complaint_type': _ChatStateHolder.answers['complaint_type'] ?? '',
-      'initial_details': _ChatStateHolder.answers['details'] ?? '',
-      'language': localeCode,
-      'chat_history': _dynamicHistory,
-      'is_anonymous': _isAnonymous,
-    };
     
-    print('🚀 Sending to backend:');
+    // baseUrl="http://127.0.0.1:8000";
+    final settings = context.read<SettingsProvider>();
+    final localeCode = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
+
+    // Construct Payload using FormData to support Files
+    final formData = FormData();
+    
+    // Add text fields
+    formData.fields.add(MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
+    formData.fields.add(MapEntry('address', _ChatStateHolder.answers['address'] ?? ''));
+    final phone = _ChatStateHolder.answers['phone'] ?? _ChatStateHolder.answers['phone_number'] ?? '';
+    formData.fields.add(MapEntry('phone', phone));
+    formData.fields.add(MapEntry('complaint_type', _ChatStateHolder.answers['complaint_type'] ?? ''));
+    formData.fields.add(MapEntry('initial_details', _ChatStateHolder.answers['details'] ?? ''));
+    formData.fields.add(MapEntry('language', localeCode));
+    formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
+    
+    // Serialize chat history
+    formData.fields.add(MapEntry('chat_history', jsonEncode(_dynamicHistory)));
+    
+    // Add Files IF present
+    if (_attachedFiles.isNotEmpty) {
+      print('📎 Attaching ${_attachedFiles.length} files...');
+      for (final path in _attachedFiles) {
+        // Track globally for final handover
+        if (!_ChatStateHolder.allAttachedFiles.contains(path)) {
+           _ChatStateHolder.allAttachedFiles.add(path);
+        }
+
+        final filename = path.split('/').last;
+        formData.files.add(MapEntry(
+          'files',
+          await MultipartFile.fromFile(path, filename: filename),
+        ));
+      }
+    }
+    
+    print('🚀 Sending to backend (FormData):');
     print('   History items: ${_dynamicHistory.length}');
-    print('   Payload: $payload');
+    print('   Files attached: ${_attachedFiles.length}');
 
     try {
       final resp = await _dio
           .post(
             '$baseUrl/complaint/chat-step',
-            data: payload,
-            options: Options(headers: {'Content-Type': 'application/json'}),
+            data: formData,
+            // Header content-type is auto-set by FormData
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 90)); // Increased timeout for file uploads coverage
 
       final data = resp.data;
       print("Backend Response: $data"); // DEBUG LOG
+      
+      // Clear attached files after successful send
+      if (_attachedFiles.isNotEmpty) {
+        setState(() {
+           _attachedFiles.clear();
+        });
+      }
 
       if (data['status'] == 'question') {
         String question = data['message'] ?? '';
@@ -1031,13 +1066,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // navigate to details screen
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
-      context.go(
+      context.push(
         '/ai-chatbot-details',
         extra: {
           'answers': Map<String, String>.from(_ChatStateHolder.answers),
           'summary': formalSummary,
           'classification': classification,
           'originalClassification': originalClassification,
+          'evidencePaths': List<String>.from(_ChatStateHolder.allAttachedFiles),
         },
       );
     });
@@ -1132,7 +1168,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
     
     // Add message to chat
-    _addUser(finalMessage);
+    _addUser(finalMessage, files: _attachedFiles);
 
     // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
     // AND we do NOT add it to history (because backend uses initial_details as context).
@@ -2166,14 +2202,75 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                                     ),
                                   ],
                                 ),
-                                child: Text(
-                                  msg.content,
-                                  style: TextStyle(
-                                    color: msg.isUser
-                                        ? Colors.white
-                                        : Colors.black87,
-                                    fontSize: 16,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      msg.content,
+                                      style: TextStyle(
+                                        color: msg.isUser
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    if (msg.files.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: msg.files.map((path) {
+                                          final filename = path.split('/').last;
+                                          final isImage = ['jpg', 'png', 'jpeg', 'webp'].any(
+                                              (ext) => filename.toLowerCase().endsWith(ext));
+                                          
+                                          if (isImage) {
+                                           return ClipRRect(
+                                             borderRadius: BorderRadius.circular(8),
+                                             child: Image.file(
+                                               File(path),
+                                               width: 100,
+                                               height: 100,
+                                               fit: BoxFit.cover,
+                                             ),
+                                           );
+                                          }    
+                                          
+                                          return Container(
+                                            margin: const EdgeInsets.only(right: 4, bottom: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: msg.isUser ? Colors.white.withOpacity(0.9) : Colors.grey[200],
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.black12,
+                                                width: 0.5,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.description, size: 16, color: Colors.black87),
+                                                const SizedBox(width: 6),
+                                                ConstrainedBox(
+                                                    constraints: const BoxConstraints(maxWidth: 160),
+                                                    child: Text(
+                                                      filename, 
+                                                      overflow: TextOverflow.ellipsis, 
+                                                      style: const TextStyle(
+                                                        fontSize: 13, 
+                                                        color: Colors.black87,
+                                                        fontWeight: FontWeight.w500
+                                                      )
+                                                    )
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ]
+                                  ],
                                 ),
                               ),
                             ),
@@ -2508,8 +2605,14 @@ class _ChatMessage {
   final String user;
   final String content;
   final bool isUser;
-  _ChatMessage(
-      {required this.user, required this.content, required this.isUser});
+  final List<String> files;
+
+  _ChatMessage({
+    required this.user, 
+    required this.content, 
+    required this.isUser,
+    this.files = const [],
+  });
 }
 
 // Animated wave widget for microphone button
