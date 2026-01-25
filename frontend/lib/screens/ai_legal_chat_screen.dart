@@ -40,6 +40,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/native_speech_recognizer.dart';
 import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -100,10 +102,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   bool _isAnonymous = false; // Track anonymous petition state
   List<Map<String, String>> _dynamicHistory = [];
 
-  Future<void> _showPetitionTypeDialog() async {
+  Future<bool> _showPetitionTypeDialog() async {
     final localizations = AppLocalizations.of(context)!;
     
-    await showDialog(
+    // Default to false (cancelled) if dismissed via back button
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -114,8 +117,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog first
-                context.go('/dashboard');
+                Navigator.of(context).pop(false); // Cancelled
               },
               child: Text(localizations.close,
                   style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
@@ -125,7 +127,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 setState(() {
                   _isAnonymous = true;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true); // Confirmed
               },
               child: Text(localizations.anonymousPetition,
                   style: const TextStyle(color: orange, fontWeight: FontWeight.bold)),
@@ -135,7 +137,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 setState(() {
                   _isAnonymous = false;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true); // Confirmed
               },
               child: Text(localizations.normalPetition,
                   style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
@@ -144,6 +146,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         );
       },
     );
+    
+    return result ?? false;
   }
 
   // STT (Speech-to-Text) variables
@@ -748,22 +752,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Only start chat flow if we haven't started AND have no messages
-    // This preserves state when navigating back to the screen
+    
+    // Safety check: If we have no messages, we MUST treat it as a fresh start.
+    // This fixes the bug where navigating away without sending a message (empty state)
+    // would leave hasStarted=true, causing the next open to get stuck (modal wouldn't show).
+    if (_ChatStateHolder.messages.isEmpty) {
+      _ChatStateHolder.hasStarted = false;
+    }
+
+    // Only start chat flow if we haven't started
     if (!_ChatStateHolder.hasStarted) {
-      if (_ChatStateHolder.messages.isEmpty) {
-        // First time - start the chat flow
-        _ChatStateHolder.hasStarted = true;
-        _startChatFlow();
-      } else {
+      _ChatStateHolder.hasStarted = true;
+      _startChatFlow();
+    } else {
         // Returning to existing chat - preserve state
-        _ChatStateHolder.hasStarted = true;
         // Ensure input is enabled if we're in the middle of a dynamic turn
         if (!_isLoading && !_errored) {
           _setAllowInput(true);
           setState(() {});
         }
-      }
     }
   }
 
@@ -772,7 +779,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     await Future.delayed(Duration.zero); // Ensure context is ready
     if (!mounted) return;
     
-    await _showPetitionTypeDialog();
+    final bool proceed = await _showPetitionTypeDialog();
+    
+    if (!proceed) {
+      if (mounted) {
+         _ChatStateHolder.reset();
+         context.go('/dashboard');
+      }
+      return;
+    }
 
     if (!mounted) return;
 
@@ -885,7 +900,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     // baseUrl="http://127.0.0.1:8000";
-    final localeCode = Localizations.localeOf(context).languageCode;
+    final settings = context.read<SettingsProvider>();
+    final localeCode = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
 
     // Construct Payload
     final payload = {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/settings_provider.dart';
 
 class LegalSuggestionScreen extends StatefulWidget {
   const LegalSuggestionScreen({super.key});
@@ -35,6 +37,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
     super.dispose();
   }
 
+
   // ───────── API CALL ─────────
   Future<void> _submit() async {
     if (_incidentController.text.trim().isEmpty) {
@@ -53,7 +56,8 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
       _reasoning = null;
     });
 
-    final lang = Localizations.localeOf(context).languageCode;
+    final settings = context.read<SettingsProvider>();
+    final lang = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
     String description = _incidentController.text.trim();
 
     // Prompt injection workaround
