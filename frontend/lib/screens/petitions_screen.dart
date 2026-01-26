@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -392,6 +393,130 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                       fontStyle: FontStyle.italic,
                     ),
                   ),
+                ],
+                ],
+                const SizedBox(height: 16),
+                // Documents Section
+                if (petition.proofDocumentUrls != null && petition.proofDocumentUrls!.isNotEmpty) ...[
+                   Text(
+                    'Uploaded Documents/Proofs',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 120, // Thumbnail strip
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: petition.proofDocumentUrls!.map((url) {
+                          // Determine file type
+                          final lowerUrl = url.toLowerCase();
+                          final isPdf = lowerUrl.contains('.pdf');
+                          final isDoc = lowerUrl.contains('.doc') || lowerUrl.contains('.docx');
+                          final isTxt = lowerUrl.contains('.txt');
+                          
+                          // Assume image ONLY if specific image extension is present
+                          // Removed 'alt=media' check as it causes PDFs to be treated as images
+                          final isImage = lowerUrl.contains('.jpg') || lowerUrl.contains('.png') || 
+                                          lowerUrl.contains('.jpeg') || lowerUrl.contains('.webp') || 
+                                          lowerUrl.contains('.heic');
+                          
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (isImage) {
+                                  // Opens expanded view for images
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      child: Stack(
+                                        children: [
+                                          InteractiveViewer(
+                                            child: Image.network(
+                                              url,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (c, o, s) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 10,
+                                            right: 10,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                              onPressed: () => Navigator.of(ctx).pop(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  // Launch URL for documents
+                                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                clipBehavior: Clip.hardEdge,
+                                child: isImage 
+                                ? Image.network(
+                                    url, 
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        isPdf ? Icons.picture_as_pdf : (isDoc ? Icons.description : Icons.insert_drive_file),
+                                        size: 32,
+                                        color: isPdf ? Colors.red : (isDoc ? Colors.blue : Colors.grey[700]),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        isPdf ? 'PDF' : (isDoc ? 'DOC' : 'FILE'),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  )
+                ] else ...[
+                   Padding(
+                     padding: const EdgeInsets.only(top: 16.0),
+                     child: Text(
+                      'Uploaded Documents/Proofs: None',
+                      style: TextStyle(
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.bold
+                          ),
+                    ),
+                   ),
+                    // DEBUG: Remove this later
+                    Builder(builder: (c) {
+                        print('DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
+                        return const SizedBox.shrink();
+                    }),
                 ],
               ],
             ),

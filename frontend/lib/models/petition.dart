@@ -309,7 +309,7 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       userId: data['userId'] ?? '',
@@ -370,7 +370,7 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       userId: data['userId'] ?? '',

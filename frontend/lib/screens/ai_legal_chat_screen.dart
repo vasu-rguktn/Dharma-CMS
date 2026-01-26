@@ -1416,6 +1416,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     type: FileType.custom,
                     allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'mp3', 'wav'],
                     allowMultiple: true,
+                    withData: true,
                   );
                   if (result != null && mounted) {
                     setState(() {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 
 class AiChatbotDetailsScreen extends StatelessWidget {
@@ -147,6 +149,11 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildSummaryRow(
                       'Date of Complaint', answers['date_of_complaint']),
+                  if (Provider.of<PetitionProvider>(context).tempEvidence.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: _buildSummaryRow('Attached Evidence', '${Provider.of<PetitionProvider>(context).tempEvidence.length} file(s) attached'),
+                    ),
                 ],
               ),
             ),
