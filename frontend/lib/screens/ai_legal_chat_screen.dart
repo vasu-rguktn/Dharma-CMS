@@ -20,12 +20,13 @@ import 'package:Dharma/services/native_speech_recognizer.dart';
 import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/petition_provider.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
   static final List<_ChatMessage> messages = [];
   static final Map<String, String> answers = {};
-  static final List<String> allAttachedFiles = []; // Cumulative evidence
+  static final List<PlatformFile> allAttachedFiles = []; // Cumulative evidence
   static int currentQ = -2;
   static bool hasStarted = false;
   static bool allowInput = false;
@@ -61,7 +62,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   final ScrollController _scrollController = ScrollController();
   final Dio _dio = Dio();
   final ImagePicker _imagePicker = ImagePicker();
-  List<String> _attachedFiles = []; // Store paths of attached files
+  List<PlatformFile> _attachedFiles = []; // Store attached files
 
   List<_ChatQ> _questions = [];
 
@@ -845,7 +846,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _scrollToEnd();
   }
 
-  void _addUser(String content, {List<String> files = const []}) {
+  void _addUser(String content, {List<PlatformFile> files = const []}) {
     _ChatStateHolder.messages.add(_ChatMessage(
       user: 'You', 
       content: content, 
@@ -898,35 +899,61 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Construct Payload using FormData to support Files
     final formData = FormData();
     
+    // PROCESS FILES (Optimization: Do not upload bytes, just pass reference)
+    String attachmentNote = "";
+    if (_attachedFiles.isNotEmpty) {
+      print('📎 Processing ${_attachedFiles.length} files (Reference Only)...');
+      for (final file in _attachedFiles) {
+        // Track globally for final handover to Petition Screen
+        // Check by name as simplistic dedup
+        if (!_ChatStateHolder.allAttachedFiles.any((f) => f.name == file.name && f.size == file.size)) {
+           _ChatStateHolder.allAttachedFiles.add(file);
+        }
+
+        final filename = file.name;
+        attachmentNote += "\n[System: User attached file '$filename' (Reference Only)]";
+      }
+      // NOTE: We do NOT add files to formData.files to avoid network latency.
+      // The backend will see the text note and acknowledge it.
+    }
+    
+    // START: Payload Construction with injected attachment note
+    List<Map<String, dynamic>> payloadHistory = [];
+    // Deep copy history to modify it
+    for (var item in _dynamicHistory) {
+      payloadHistory.add(Map<String, dynamic>.from(item));
+    }
+
+    String finalInitialDetails = _ChatStateHolder.answers['details'] ?? '';
+
+    if (attachmentNote.isNotEmpty) {
+      if (payloadHistory.isNotEmpty) {
+        // Append to last user message in history
+        var lastMsg = payloadHistory.last;
+        if (lastMsg['role'] == 'user') {
+           lastMsg['content'] = "${lastMsg['content']} $attachmentNote";
+        } else {
+           // Fallback if last msg was AI (rare)
+           finalInitialDetails += " $attachmentNote";
+        }
+      } else {
+        // First turn - append to initial details
+        finalInitialDetails += " $attachmentNote";
+      }
+    }
+
     // Add text fields
     formData.fields.add(MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
     formData.fields.add(MapEntry('address', _ChatStateHolder.answers['address'] ?? ''));
     final phone = _ChatStateHolder.answers['phone'] ?? _ChatStateHolder.answers['phone_number'] ?? '';
     formData.fields.add(MapEntry('phone', phone));
     formData.fields.add(MapEntry('complaint_type', _ChatStateHolder.answers['complaint_type'] ?? ''));
-    formData.fields.add(MapEntry('initial_details', _ChatStateHolder.answers['details'] ?? ''));
+    formData.fields.add(MapEntry('initial_details', finalInitialDetails));
     formData.fields.add(MapEntry('language', localeCode));
     formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
     
     // Serialize chat history
-    formData.fields.add(MapEntry('chat_history', jsonEncode(_dynamicHistory)));
-    
-    // Add Files IF present
-    if (_attachedFiles.isNotEmpty) {
-      print('📎 Attaching ${_attachedFiles.length} files...');
-      for (final path in _attachedFiles) {
-        // Track globally for final handover
-        if (!_ChatStateHolder.allAttachedFiles.contains(path)) {
-           _ChatStateHolder.allAttachedFiles.add(path);
-        }
-
-        final filename = path.split('/').last;
-        formData.files.add(MapEntry(
-          'files',
-          await MultipartFile.fromFile(path, filename: filename),
-        ));
-      }
-    }
+    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
     
     print('🚀 Sending to backend (FormData):');
     print('   History items: ${_dynamicHistory.length}');
@@ -1064,8 +1091,23 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     // navigate to details screen
+    // navigate to details screen
+    if (_ChatStateHolder.allAttachedFiles.isNotEmpty) {
+      print('💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
+      try {
+        Provider.of<PetitionProvider>(context, listen: false)
+            .setTempEvidence(_ChatStateHolder.allAttachedFiles);
+        print('✅ [DEBUG] Chat Screen: Successfully stashed files in Provider');
+      } catch (e) {
+        print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
+      }
+    } else {
+       print('⚠️ [DEBUG] Chat Screen: No files to stash (list empty)');
+    }
+
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
+      print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen...');
       context.push(
         '/ai-chatbot-details',
         extra: {
@@ -1073,7 +1115,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           'summary': formalSummary,
           'classification': classification,
           'originalClassification': originalClassification,
-          'evidencePaths': List<String>.from(_ChatStateHolder.allAttachedFiles),
+          'evidencePaths': [], // We use Provider for file transfer now
         },
       );
     });
@@ -1255,13 +1297,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   );
                   
                   if (geoTaggedImage != null && mounted) {
+                    Uint8List? bytes;
+                    if (kIsWeb) bytes = await geoTaggedImage.readAsBytes();
+                    
                     setState(() {
-                      _attachedFiles.add(geoTaggedImage.path);
+                      _attachedFiles.add(PlatformFile(
+                        name: geoTaggedImage.name,
+                        size: 0, // Not critical
+                        bytes: bytes,
+                        path: geoTaggedImage.path,
+                      ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              'Photo attached: ${geoTaggedImage.path.split('/').last}')),
+                      SnackBar(content: Text('Photo attached: ${geoTaggedImage.name}')),
                     );
                   }
                 },
@@ -1287,14 +1335,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   // Note: pickMultiImage returns List<XFile>, we need paths
                   final List<XFile> images = await _imagePicker.pickMultiImage();
                   if (images.isNotEmpty && mounted) {
-                     setState(() {
-                        for (var img in images) {
-                          _attachedFiles.add(img.path);
-                        }
-                     });
+                     for (var img in images) {
+                       Uint8List? bytes;
+                       if (kIsWeb) bytes = await img.readAsBytes();
+                       
+                       setState(() {
+                          _attachedFiles.add(PlatformFile(
+                            name: img.name,
+                            size: 0,
+                            bytes: bytes,
+                            path: img.path,
+                          ));
+                       });
+                     }
                      ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('${images.length} photos selected')),
+                      SnackBar(content: Text('${images.length} photos selected')),
                     );
                   }
                 },
@@ -1324,13 +1379,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     ),
                   );
                   if (geoTaggedVideo != null && mounted) {
+                    Uint8List? bytes;
+                    if (kIsWeb) bytes = await geoTaggedVideo.readAsBytes();
+                    
                     setState(() {
-                      _attachedFiles.add(geoTaggedVideo.path);
+                      _attachedFiles.add(PlatformFile(
+                        name: geoTaggedVideo.name,
+                        size: 0,
+                        bytes: bytes,
+                        path: geoTaggedVideo.path,
+                      ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              'Video attached: ${geoTaggedVideo.path.split('/').last}')),
+                      SnackBar(content: Text('Video attached: ${geoTaggedVideo.name}')),
                     );
                   }
                 },
@@ -1355,16 +1416,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     type: FileType.custom,
                     allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'mp3', 'wav'],
                     allowMultiple: true,
+                    withData: true,
                   );
                   if (result != null && mounted) {
                     setState(() {
-                      _attachedFiles
-                          .addAll(result.files.map((f) => f.path ?? f.name));
+                      _attachedFiles.addAll(result.files);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('${result.files.length} file(s) attached')),
+                      SnackBar(content: Text('${result.files.length} file(s) attached')),
                     );
                   }
                 },
@@ -2024,8 +2083,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         scrollDirection: Axis.horizontal,
         itemCount: _attachedFiles.length,
         itemBuilder: (context, index) {
-          final path = _attachedFiles[index];
-          final name = path.split('/').last;
+          final file = _attachedFiles[index];
+          final name = file.name;
           final isImage = name.toLowerCase().endsWith('.jpg') ||
               name.toLowerCase().endsWith('.jpeg') ||
               name.toLowerCase().endsWith('.png');
@@ -2039,9 +2098,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: orange.withOpacity(0.3)),
-              image: (isImage && !kIsWeb) 
+              image: (isImage) 
                   ? DecorationImage(
-                      image: FileImage(File(path)),
+                      image: (kIsWeb && file.bytes != null) 
+                          ? MemoryImage(file.bytes!) 
+                          : FileImage(File(file.path!)) as ImageProvider,
                       fit: BoxFit.cover,
                     ) 
                   : null,
@@ -2219,20 +2280,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                                       Wrap(
                                         spacing: 8,
                                         runSpacing: 4,
-                                        children: msg.files.map((path) {
-                                          final filename = path.split('/').last;
+                                        children: msg.files.map((file) {
+                                          final filename = file.name;
                                           final isImage = ['jpg', 'png', 'jpeg', 'webp'].any(
                                               (ext) => filename.toLowerCase().endsWith(ext));
                                           
                                           if (isImage) {
                                            return ClipRRect(
                                              borderRadius: BorderRadius.circular(8),
-                                             child: Image.file(
-                                               File(path),
-                                               width: 100,
-                                               height: 100,
-                                               fit: BoxFit.cover,
-                                             ),
+                                             child: (kIsWeb && file.bytes != null)
+                                                 ? Image.memory(
+                                                     file.bytes!,
+                                                     width: 100,
+                                                     height: 100,
+                                                     fit: BoxFit.cover,
+                                                   )
+                                                 : Image.file(
+                                                     File(file.path!),
+                                                     width: 100,
+                                                     height: 100,
+                                                     fit: BoxFit.cover,
+                                                   ),
                                            );
                                           }    
                                           
@@ -2605,7 +2673,7 @@ class _ChatMessage {
   final String user;
   final String content;
   final bool isUser;
-  final List<String> files;
+  final List<PlatformFile> files;
 
   _ChatMessage({
     required this.user, 

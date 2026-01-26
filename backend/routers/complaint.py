@@ -34,9 +34,15 @@ router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 
 # === Env & Client ===
 
-load_dotenv()
+load_dotenv(override=True)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# DEBUG: Print loaded keys to confirm switch
+inv_key = os.getenv("GEMINI_API_KEY_INVESTIGATION")
+main_key = os.getenv("GEMINI_API_KEY")
+print(f"DEBUG: INV_KEY starts with: {inv_key[:10] if inv_key else 'None'}")
+print(f"DEBUG: MAIN_KEY starts with: {main_key[:10] if main_key else 'None'}")
+
+GEMINI_API_KEY = inv_key or main_key
 
 if not GEMINI_API_KEY:
     # Allow server start; LLM features will be skipped if missing
@@ -1230,27 +1236,10 @@ async def analyze_file_content(file: UploadFile) -> str:
             return f"[ATTACHED PDF '{file.filename}']: {text[:500]}..." if text else f"[ATTACHED PDF '{file.filename}'] (Unreadable)"
             
         elif filename.endswith((".jpg", ".jpeg", ".png", ".webp")):
-            # Use Gemini Vision specifically for image analysis
-            try:
-                vision_model = genai.GenerativeModel("gemini-flash-latest")
-                import base64
-                b64_data = base64.b64encode(content).decode('utf-8')
-                
-                # Run Gemini with strict 15s timeout
-                response = await asyncio.wait_for(
-                    vision_model.generate_content_async([
-                         "Describe this image briefly for a police investigation. What does it show? Be factual.",
-                         {"mime_type": file.content_type or "image/jpeg", "data": b64_data}
-                    ]),
-                    timeout=15.0
-                )
-                return f"[ATTACHED IMAGE '{file.filename}']: {response.text.strip()}"
-            except asyncio.TimeoutError:
-                logger.error(f"Vision analysis timed out for {filename}")
-                return f"[ATTACHED IMAGE '{file.filename}'] (Analysis timed out)"
-            except Exception as e:
-                logger.error(f"Vision analysis failed: {e}")
-                return f"[ATTACHED IMAGE '{file.filename}'] (Analysis failed)"
+            # FAST MODE: Skip deep analysis as per user request to avoid latency.
+            # Just acknowledge the file.
+            logger.info(f"Fast Mode: Skipping vision analysis for {filename}")
+            return f"[ATTACHED IMAGE '{file.filename}'] (Reference Only)"
                 
         return f"[ATTACHED FILE '{file.filename}']"
     except Exception as e:
@@ -1318,9 +1307,9 @@ async def chat_step(
         file_context = ""
         if files:
             logger.info(f"Processing {len(files)} attached files...")
-            for f in files:
-                desc = await analyze_file_content(f)
-                file_context += f"\n{desc}"
+            # Parallel Processing
+            results = await asyncio.gather(*[analyze_file_content(f) for f in files])
+            file_context = "\n".join(results)
             
             # Inject file context into the LAST USER MESSAGE or System Context
             # Best allows the LLM to 'see' it immediately
@@ -1563,6 +1552,7 @@ async def chat_step(
                 "STRICT RULES FOR FUNCTIONALITY:\n"
                 "1. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
                 "2. NO REPETITION: Check the history. If the user answered it, do NOT ask again.\n"
+                "3. MANDATORY STEP - EVIDENCE: Before concluding, you MUST explicitly ask: 'Do you have any photos, videos, or documents to upload as evidence?'. Do NOT output 'DONE' until the user answers this specific question (Yes/No).\n"
                 "3. EVIDENCE CHECK (MANDATORY): BEFORE saying 'DONE', you MUST ask: 'Do you have any photos, videos, or documents as evidence?'.\n"
                 "4. DOCUMENT AWARENESS: If you see '[SYSTEM: USER ATTACHED EVIDENCE]' or '[ATTACHED IMAGE...]', acknowledge it and use its content.\n"
                 "5. TERMINATION: When you have gathered all necessary details and the Evidence confirmation (Yes/No), output ONLY 'DONE'.\n"
@@ -1603,7 +1593,7 @@ async def chat_step(
                         role = "Police" if msg.role == "assistant" else "User" # or "Model" / "User"
                         full_prompt += f"{role}: {msg.content}\n"
                     
-                    full_prompt += "\nPolice (You):"
+                    logger.info(f"--- LLM Prompt Start ---\n{full_prompt}\n--- LLM Prompt End ---")
 
                     response = model.generate_content(
                         full_prompt,
@@ -1620,6 +1610,8 @@ async def chat_step(
                     )
                     
                     raw_content = response.text or ""
+                    logger.info(f"--- LLM Raw Response ---\n{raw_content}\n--- End Response ---")
+                    
                     reply = raw_content.strip()
                     decision_upper = reply.upper().replace('"', '').replace("'", "")
 
@@ -1645,12 +1637,15 @@ async def chat_step(
                     logger.info(f"LLM Reply: {reply}")
 
                 except Exception as e:
+                    import traceback
+                    print(f"!!! GEMINI ERROR: {e}", flush=True)
+                    traceback.print_exc()
                     logger.error(f"Gemini Chat Generation Error: {e}")
-                    reply = "Could you please provide more details?"
+                    reply = f"Could you please provide more details? (Debug: {str(e)[:50]})"
 
 
             if not reply:
-                reply = "Could you please provide more details?"
+                reply = "Could you please provide more details? (Debug: Empty)"
 
             # SAFETY NET: Check if LLM leaked validation error
             if re.search(r"(invalid|valid)\s+(number|phone)", reply, re.IGNORECASE) and not re.search(r"\bDONE\b", reply, re.IGNORECASE):

@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/services/local_storage_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 
 import 'dart:convert';
 
@@ -57,12 +58,69 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   List<PlatformFile> _proofFiles = []; // Related proof documents
 
   final _ocrService = OcrService();
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkAndConsumeEvidence();
+  }
+
+  void _checkAndConsumeEvidence() {
+     if (!mounted) return;
+     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+     if (petitionProvider.tempEvidence.isNotEmpty) {
+       debugPrint('📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
+       setState(() {
+         // Avoid duplicates in case of re-entry
+         final existingNames = _proofFiles.map((e) => e.name).toSet();
+         final newFiles = petitionProvider.tempEvidence.where((e) => !existingNames.contains(e.name)).toList();
+         
+           if (newFiles.isNotEmpty) {
+             // Validate Web Bytes to prevent silent upload failure
+             if (kIsWeb && newFiles.any((f) => f.bytes == null)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                 if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_getLocalizedLabel(
+                          'Error: Evidence from chat is missing data. Please attach files manually.',
+                          'లోపం: చాట్ నుండి రుజువు డేటా లేదు. దయచేసి ఫైళ్లను మాన్యువల్‌గా జోడించండి.'
+                        )),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                 }
+               });
+             } else {
+               _proofFiles.addAll(newFiles);
+               WidgetsBinding.instance.addPostFrameCallback((_) {
+                 if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(_getLocalizedLabel(
+                        'Auto-attached ${newFiles.length} proofs from chat',
+                        'చాట్ నుండి ${newFiles.length} రుజువులు జోడించబడ్డాయి'
+                      ))),
+                    );
+                 }
+               });
+             }
+           }
+       });
+       petitionProvider.clearTempEvidence();
+     }
+  }
 
   @override
   void initState() {
     super.initState();
     _ocrService.init();
     _loadDistrictStations();
+
+    // Check for stashed evidence from AI Chat (on first load)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndConsumeEvidence();
+    });
 
     final data = widget.initialData;
     if (data != null) {

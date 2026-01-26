@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -107,82 +108,67 @@ class DashboardBody extends StatelessWidget {
     final stats =
         isPolice ? petitionProvider.globalStats : petitionProvider.userStats;
 
-    // For Citizen, if stats are 0, it might mean they haven't loaded yet OR they have 0.
-    // We display whatever is in the provider. Authentication check logic resides in the Screen.
+    // Define all cards
+    final cards = [
+      _statCard(ctx, localizations.totalPetitions, '${stats['total']}', Icons.gavel, Colors.deepPurple, PetitionFilter.all),
+      _statCard(ctx, localizations.received, '${stats['received']}', Icons.call_received, Colors.blue.shade700, PetitionFilter.received),
+      _statCard(ctx, localizations.inProgress, '${stats['inProgress']}', Icons.sync, Colors.orange.shade700, PetitionFilter.inProgress),
+      _statCard(ctx, localizations.closed, '${stats['closed']}', Icons.task_alt, Colors.green.shade700, PetitionFilter.closed),
+    ];
 
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.totalPetitions,
-                '${stats['total']}',
-                Icons.gavel,
-                Colors.deepPurple,
-                PetitionFilter.all,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.received,
-                '${stats['received']}',
-                Icons.call_received,
-                Colors.blue.shade700,
-                PetitionFilter.received,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.inProgress,
-                '${stats['inProgress']}',
-                Icons.sync,
-                Colors.orange.shade700,
-                PetitionFilter.inProgress,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.closed,
-                '${stats['closed']}',
-                Icons.task_alt,
-                Colors.green.shade700,
-                PetitionFilter.closed,
-              ),
-            ),
-          ],
-        ),
-        if (isPolice) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _statCard(
-                  ctx,
-                  localizations.escalated,
-                  '${stats['escalated'] ?? 0}',
-                  Icons.report_problem,
-                  Colors.red.shade700,
-                  PetitionFilter.escalated,
+    if (isPolice) {
+      cards.add(_statCard(ctx, localizations.escalated, '${stats['escalated'] ?? 0}', Icons.report_problem, Colors.red.shade700, PetitionFilter.escalated));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Desktop Web View: Render in a single row (4 or 5 columns)
+        if (kIsWeb && constraints.maxWidth > 900) {
+          return Row(
+            children: cards.asMap().entries.map((entry) {
+              final index = entry.key;
+              final card = entry.value;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: index < cards.length - 1 ? 12.0 : 0),
+                  child: card,
                 ),
+              );
+            }).toList(),
+          );
+        }
+
+        // Mobile/Default View: 2 Columns (Preserve original structure)
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: 12),
+                Expanded(child: cards[1]),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: cards[2]),
+                const SizedBox(width: 12),
+                Expanded(child: cards[3]),
+              ],
+            ),
+            if (isPolice) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: cards[4]),
+                  const SizedBox(width: 12),
+                  const Spacer(),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Spacer(),
             ],
-          ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 

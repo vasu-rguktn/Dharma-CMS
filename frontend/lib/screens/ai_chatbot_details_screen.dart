@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 
 class AiChatbotDetailsScreen extends StatelessWidget {
@@ -147,6 +149,11 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildSummaryRow(
                       'Date of Complaint', answers['date_of_complaint']),
+                  if (Provider.of<PetitionProvider>(context).tempEvidence.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: _buildSummaryRow('Attached Evidence', '${Provider.of<PetitionProvider>(context).tempEvidence.length} file(s) attached'),
+                    ),
                 ],
               ),
             ),
@@ -168,14 +175,16 @@ class AiChatbotDetailsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => context
-                    .push('/cognigible-non-cognigible-separation', extra: {
+                onPressed: () {
+                  print('🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
+                  context.push('/cognigible-non-cognigible-separation', extra: {
                   'classification': classification,
                   'originalClassification':
                       originalClassification, // Pass it on
                   'complaintData': answers,
                   'evidencePaths': evidencePaths, // FORWARD EVIDENCE
-                }),
+                });
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),
                   padding: const EdgeInsets.symmetric(vertical: 18),

@@ -41,6 +41,20 @@ class PetitionProvider with ChangeNotifier {
   // Legacy getter for backward compatibility (returns global)
   Map<String, int> get stats => _globalStats;
 
+  // Staging for Evidence from AI Chat
+  List<PlatformFile> _tempEvidence = [];
+  List<PlatformFile> get tempEvidence => _tempEvidence;
+
+  void setTempEvidence(List<PlatformFile> files) {
+    _tempEvidence = List.from(files);
+    notifyListeners();
+  }
+
+  void clearTempEvidence() {
+    _tempEvidence = [];
+    notifyListeners();
+  }
+
   /// Fetch petitions belonging to a single user
   Future<void> fetchPetitions(String userId) async {
     _isLoading = true;
@@ -331,7 +345,19 @@ class PetitionProvider with ChangeNotifier {
     String? handwrittenUrl;
     List<String>? proofUrls;
 
-    // ✅ GENERATE CASE ID ONCE
+    // ✅ GENERATE CUSTOM ID FIRST (Needed for Storage Path)
+    final safeName =
+        petition.petitionerName.replaceAll(' ', '_');
+    final safeDate = DateTime.now()
+        .toString()
+        .replaceAll(' ', '_')
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+
+    final petitionCustomId = "Petition_${safeName}_$safeDate";
+
+    // ✅ GENERATE CASE ID
     final caseId = generateCaseId(
       district: petition.district ?? 'UnknownDistrict',
       stationName: petition.stationName ?? 'UnknownStation',
@@ -347,7 +373,8 @@ class PetitionProvider with ChangeNotifier {
           .replaceAll(' ', '_');
 
       final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
-      final path = 'petitions/${petition.userId}/handwritten/$fileName';
+      // Fix: Use 'petition-documents' bucket which is allowed in storage.rules
+      final path = 'petition-documents/$petitionCustomId/$fileName';
 
       handwrittenUrl =
           await StorageService.uploadFile(file: handwrittenFile, path: path);
@@ -355,38 +382,24 @@ class PetitionProvider with ChangeNotifier {
 
     // Upload Proof Documents
     if (proofFiles != null && proofFiles.isNotEmpty) {
-      final timestamp = DateTime.now()
-          .toString()
-          .split('.')
-          .first
-          .replaceAll(':', '-')
-          .replaceAll(' ', '_');
-
-      final folderPath =
-          'petitions/${petition.userId}/proofs/Proofs_$timestamp';
+      // Fix: Use 'petition-documents' bucket
+      // Note: storage.rules 'match /{filename}' implies single level, no sub-folders allowed deep inside
+      final folderPath = 'petition-documents/$petitionCustomId';
 
       proofUrls = await StorageService.uploadMultipleFiles(
         files: proofFiles,
         folderPath: folderPath,
       );
+      
+      if (proofUrls.isEmpty) {
+        throw Exception('Failed to upload proof documents. Please check your connection and try again.');
+      }
     }
-
-    // Custom Petition ID
-    final safeName =
-        petition.petitionerName.replaceAll(' ', '_');
-    final safeDate = DateTime.now()
-        .toString()
-        .replaceAll(' ', '_')
-        .replaceAll(':', '-')
-        .split('.')
-        .first;
-
-    final petitionCustomId = "Petition_${safeName}_$safeDate";
 
     // ✅ FINAL PETITION OBJECT
     final newPetition = Petition(
       id: petitionCustomId,
-      caseId: caseId, // ✅ NOW WORKS
+      caseId: caseId, 
       title: petition.title,
       type: petition.type,
       status: petition.status,
