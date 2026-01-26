@@ -57,12 +57,51 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   List<PlatformFile> _proofFiles = []; // Related proof documents
 
   final _ocrService = OcrService();
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkAndConsumeEvidence();
+  }
+
+  void _checkAndConsumeEvidence() {
+     if (!mounted) return;
+     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+     if (petitionProvider.tempEvidence.isNotEmpty) {
+       debugPrint('📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
+       setState(() {
+         // Avoid duplicates in case of re-entry
+         final existingNames = _proofFiles.map((e) => e.name).toSet();
+         final newFiles = petitionProvider.tempEvidence.where((e) => !existingNames.contains(e.name)).toList();
+         
+           if (newFiles.isNotEmpty) {
+             _proofFiles.addAll(newFiles);
+             WidgetsBinding.instance.addPostFrameCallback((_) {
+               if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(_getLocalizedLabel(
+                      'Auto-attached ${newFiles.length} proofs from chat',
+                      'చాట్ నుండి ${newFiles.length} రుజువులు జోడించబడ్డాయి'
+                    ))),
+                  );
+               }
+             });
+           }
+       });
+       petitionProvider.clearTempEvidence();
+     }
+  }
 
   @override
   void initState() {
     super.initState();
     _ocrService.init();
     _loadDistrictStations();
+
+    // Check for stashed evidence from AI Chat (on first load)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndConsumeEvidence();
+    });
 
     final data = widget.initialData;
     if (data != null) {

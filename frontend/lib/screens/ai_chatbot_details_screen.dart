@@ -168,14 +168,16 @@ class AiChatbotDetailsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => context
-                    .push('/cognigible-non-cognigible-separation', extra: {
+                onPressed: () {
+                  print('🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
+                  context.push('/cognigible-non-cognigible-separation', extra: {
                   'classification': classification,
                   'originalClassification':
                       originalClassification, // Pass it on
                   'complaintData': answers,
                   'evidencePaths': evidencePaths, // FORWARD EVIDENCE
-                }),
+                });
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),
                   padding: const EdgeInsets.symmetric(vertical: 18),

@@ -433,7 +433,10 @@ class _PetitionsScreenState extends State<PetitionsScreen>
 }
 
 class CreatePetitionForm extends StatefulWidget {
-  const CreatePetitionForm({super.key, this.onCreatedSuccess});
+  const CreatePetitionForm({
+    super.key, 
+    this.onCreatedSuccess
+  });
 
   final VoidCallback? onCreatedSuccess;
 
@@ -464,6 +467,93 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void initState() {
     super.initState();
     _initBackend();
+    
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkAndConsumeEvidence();
+  }
+
+  void _checkAndConsumeEvidence() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+     print('🔍 [DEBUG] Petition Screen: Checking for evidence...');
+      final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+      
+      // 1. Try Provider (Best for Web/Bytes & Mobile Stashing)
+      if (petitionProvider.tempEvidence.isNotEmpty) {
+         debugPrint('📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
+         setState(() {
+           // Avoid adding duplicates if already added
+           final existingNames = _proofFiles.map((e) => e.name).toSet();
+           final newFiles = petitionProvider.tempEvidence.where((e) => !existingNames.contains(e.name)).toList();
+           
+           if (newFiles.isNotEmpty) {
+             _proofFiles.addAll(newFiles);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Auto-attached ${newFiles.length} proofs from chat')),
+              );
+           }
+         });
+         // Clear temp evidence to prevent processing again
+         petitionProvider.clearTempEvidence();
+      } 
+      // 2. Fallback to Router 'extra' (Legacy/Android Paths)
+      else {
+        final extra = GoRouterState.of(context).extra;
+        if (extra is Map && extra['evidencePaths'] is List) {
+           final paths = extra['evidencePaths'] as List;
+           if (paths.isNotEmpty) {
+             // Only process if we haven't already (simple check)
+             if (_proofFiles.isEmpty) {
+                setState(() {
+                   _proofFiles = paths.map((p) {
+                      final name = p.toString().split('/').last;
+                      return PlatformFile(
+                        name: name, 
+                        size: 0, 
+                        path: p.toString()
+                      );
+                   }).toList();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Auto-attached ${paths.length} proofs from chat')),
+                );
+             }
+           }
+        }
+      }
+      
+      // Also check for auto-fill fields from Router
+      final extra = GoRouterState.of(context).extra;
+      if (extra is Map) {
+          if (extra.containsKey('complaintType') && _titleController.text.isEmpty) {
+             _titleController.text = extra['complaintType'].toString();
+          }
+          if (extra.containsKey('fullName') && _petitionerNameController.text.isEmpty) {
+             _petitionerNameController.text = extra['fullName'].toString();
+          }
+          if (extra.containsKey('phone') && _phoneNumberController.text.isEmpty) {
+             _phoneNumberController.text = extra['phone'].toString();
+          }
+          if (extra.containsKey('address') && _addressController.text.isEmpty) {
+             _addressController.text = extra['address'].toString();
+          }
+          
+          if (_groundsController.text.isEmpty && (extra.containsKey('details') || extra.containsKey('incident_details'))) {
+             String combined = "";
+             if (extra['incident_address'] != null && extra['incident_address'].toString().isNotEmpty) {
+                combined += "Location: ${extra['incident_address']}\n\n";
+             }
+             combined += extra['details']?.toString() ?? extra['incident_details']?.toString() ?? '';
+             _groundsController.text = combined;
+          }
+          
+          if (_prayerReliefController.text.isEmpty && _titleController.text.isNotEmpty) {
+             _prayerReliefController.text = "I request the police authorities to register an FIR and take necessary action to trace and recover my stolen belongings.";
+          }
+       }
+    });
   }
 
   Future<void> _initBackend() async {

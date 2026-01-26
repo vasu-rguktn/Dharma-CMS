@@ -41,6 +41,20 @@ class PetitionProvider with ChangeNotifier {
   // Legacy getter for backward compatibility (returns global)
   Map<String, int> get stats => _globalStats;
 
+  // Staging for Evidence from AI Chat
+  List<PlatformFile> _tempEvidence = [];
+  List<PlatformFile> get tempEvidence => _tempEvidence;
+
+  void setTempEvidence(List<PlatformFile> files) {
+    _tempEvidence = List.from(files);
+    notifyListeners();
+  }
+
+  void clearTempEvidence() {
+    _tempEvidence = [];
+    notifyListeners();
+  }
+
   /// Fetch petitions belonging to a single user
   Future<void> fetchPetitions(String userId) async {
     _isLoading = true;
