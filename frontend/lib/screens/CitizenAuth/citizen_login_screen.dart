@@ -36,7 +36,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
       final authProvider =
           Provider.of<custom_auth.AuthProvider>(context, listen: false);
       final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-      final selectedUserType = args?['userType'] as String? ?? 'citizen';
+      // CITIZEN-ONLY APP: Always force citizen role
+      final selectedUserType = 'citizen';
 
       final userCredential = await authProvider.signInWithEmail(
         _emailController.text.trim(),
@@ -45,8 +46,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
 
       final uid = userCredential!.user!.uid;
 
-      // Check profile exists in Firestore and get user role
-      // FIXED: search by 'uid' field instead of document ID
+      // Check profile exists in Firestore
       final querySnapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('uid', isEqualTo: uid)
@@ -63,30 +63,12 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
         return;
       }
 
-      final docSnapshot = querySnapshot.docs.first;
-
-      // Get the user's role from the database
-      final userRole = docSnapshot.data()['role'] as String? ?? 'citizen';
-
-      // Validate that the user is logging in with the correct role
-      if (userRole != selectedUserType) {
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  "You are registered as a $userRole, but trying to login as a $selectedUserType. Please select the correct option."),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-        return;
-      }
+      // CITIZEN-ONLY APP: Skip role validation, always proceed as citizen
 
       // Wait for profile to fully load from Firestore
       await authProvider.loadUserProfile(uid);
 
-      // Route based on user role
+      // CITIZEN-ONLY APP: Always route to citizen dashboard
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -94,26 +76,20 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                   Text(localizations?.loginSuccessful ?? 'Login successful')),
         );
 
-        // Navigate based on role: police/admin goes to different screen
-        if (userRole == 'police') {
-          context.go('/police-dashboard');
-        } else {
-          // citizen or other roles go to citizen dashboard
-          // Go to dashboard first
-          context.go('/dashboard');
-          
-          // Check if onboarding is needed
-          final showOnboarding = await OnboardingService.shouldShowOnboarding();
-          
-          // Only push AI chat if onboarding is NOT needed (returning user)
-          if (!showOnboarding) {
-            // Wait a moment for dashboard to load, then push to AI chat
-            Future.delayed(const Duration(milliseconds: 50), () {
-              if (context.mounted) {
-                context.push('/ai-legal-chat');
-              }
-            });
-          }
+        // Go to dashboard first
+        context.go('/dashboard');
+        
+        // Check if onboarding is needed
+        final showOnboarding = await OnboardingService.shouldShowOnboarding();
+        
+        // Only push AI chat if onboarding is NOT needed (returning user)
+        if (!showOnboarding) {
+          // Wait a moment for dashboard to load, then push to AI chat
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (context.mounted) {
+              context.push('/ai-legal-chat');
+            }
+          });
         }
       }
     } on FirebaseAuthException catch (e) {

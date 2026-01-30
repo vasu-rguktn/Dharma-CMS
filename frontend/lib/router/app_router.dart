@@ -18,6 +18,7 @@ import 'package:Dharma/screens/otp_verification_screen.dart';
 
 // ───────────────── DASHBOARDS ─────────────────
 import 'package:Dharma/screens/dashboard_screen.dart';
+// Police dashboard import kept but route is blocked
 import 'package:Dharma/screens/police_dashboard_screen.dart';
 
 
@@ -76,7 +77,7 @@ class AppRouter {
     initialLocation: '/',
     debugLogDiagnostics: true,
 
-    // 🔐 AUTH + ROLE BASED REDIRECT
+    // 🔐 CITIZEN-ONLY APP - All police routes blocked
     redirect: (context, state) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final path = state.uri.path;
@@ -85,119 +86,68 @@ class AppRouter {
       final publicRoutes = [
         '/',
         '/login',
-        '/police-login',
         '/phone-login',
         '/signup/citizen',
         '/address',
         '/login_details',
         '/otp_verification',
-        '/onboarding', // Onboarding screen
+        '/onboarding',
       ];
 
-      // List of routes that require authentication
-      final protectedRoutes = [
-        '/dashboard',
+      // Police routes - BLOCKED in citizen-only app
+      final policeOnlyRoutes = [
+        '/police-login',
         '/police-dashboard',
-        '/ai-legal-guider',
-        '/ai-legal-chat',
-        '/cases',
-        '/complaints',
-        '/chat',
-        '/ai-investigation-guidelines',
-        '/petitions',
-        '/settings',
-        '/profile', // Added Profile
-        '/legal-queries',
-        '/legal-suggestion',
-        '/witness-preparation',
-        '/helpline',
         '/document-drafting',
         '/chargesheet-generation',
         '/chargesheet-vetting',
         '/media-analysis',
         '/case-journal',
-        '/ai-chatbot-details',
-        '/contact-officer',
-        '/cognigible-non-cognigible-separation',
+        '/cases',
+        '/ai-investigation-guidelines',
+        '/image-lab',
         '/signup/police',
+        '/submit-offline-petition',
         '/offline-petitions',
       ];
 
+      // Citizen routes that require authentication
+      final protectedCitizenRoutes = [
+        '/dashboard',
+        '/ai-legal-guider',
+        '/ai-legal-chat',
+        '/petitions',
+        '/settings',
+        '/profile',
+        '/legal-queries',
+        '/legal-suggestion',
+        '/witness-preparation',
+        '/helpline',
+        '/complaints',
+        '/chat',
+        '/ai-chatbot-details',
+        '/contact-officer',
+        '/cognigible-non-cognigible-separation',
+      ];
+
+      // BLOCK ALL POLICE ROUTES - redirect to citizen dashboard
+      if (policeOnlyRoutes.any((route) => path.startsWith(route))) {
+        return '/dashboard';
+      }
+
       // During loading, block access to protected routes
-      // This prevents unauthorized access while auth state is being determined
       if (auth.isLoading || auth.isProfileLoading) {
-        // Allow public routes during loading
         if (publicRoutes.contains(path) ||
             publicRoutes.any((route) => path.startsWith(route))) {
           return null;
         }
-        // Block all protected routes during loading - redirect to login
-        return '/login';
+        return '/phone-login';
       }
-
-      // Logged-in users should not see welcome again
-      // UNLESS they explicitly navigated to it (e.g., via back button from login screens)
-      // We allow '/' to be shown to authenticated users to fix cross-role navigation issues
-      // The Welcome screen itself will handle showing appropriate options
-      // Note: Direct navigation to '/' is allowed, auto-redirect removed to fix back button issues
 
       // Redirect unauthenticated users to login
       if (!auth.isAuthenticated &&
-          protectedRoutes.any((route) => path.startsWith(route))) {
-        return '/login';
-      }
-
-      // ROLE-BASED ROUTE PROTECTION
-      if (auth.isAuthenticated) {
-        // Check if citizen needs onboarding (first-time user)
-        if (auth.role == 'citizen' && path != '/onboarding') {
-          // This will be checked asynchronously, so we use a FutureBuilder approach
-          // For now, we'll let the dashboard handle showing onboarding
-        }
-
-        // Police should never see the citizen AI guider screen
-        if (auth.role == 'police' && path == '/ai-legal-guider') {
-          return '/police-dashboard';
-        }
-
-        // Police-only routes
-        final policeOnlyRoutes = [
-          '/police-dashboard',
-          '/document-drafting',
-          '/chargesheet-generation',
-          '/chargesheet-vetting',
-          '/media-analysis',
-          '/case-journal',
-          '/cases',
-          '/ai-investigation-guidelines',
-          '/image-lab',
-          '/signup/police',
-          '/submit-offline-petition',
-          '/offline-petitions',
-        ];
-
-        // Citizen-only routes
-        final citizenOnlyRoutes = [
-          '/dashboard',
-          '/ai-legal-guider',
-          '/ai-legal-chat',
-          '/legal-queries',
-          '/legal-suggestion',
-          '/witness-preparation',
-          '/helpline',
-        ];
-
-        // Prevent citizens from accessing police routes
-        if (auth.role == 'citizen' &&
-            policeOnlyRoutes.any((route) => path.startsWith(route))) {
-          return '/ai-legal-chat'; // Redirect to citizen dashboard
-        }
-
-        // Prevent police from accessing citizen routes
-        if (auth.role == 'police' &&
-            citizenOnlyRoutes.any((route) => path.startsWith(route))) {
-          return '/police-dashboard'; // Redirect to police dashboard
-        }
+          protectedCitizenRoutes.any((route) => path.startsWith(route))) {
+        return '/phone-login';
       }
 
       return null;

@@ -192,7 +192,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
-                                    onPressed: () => _showLoginBottomSheet(context),
+                                    onPressed: () => context.go('/phone-login'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: WelcomeScreen.orange,
                                       padding: const EdgeInsets.symmetric(vertical: 18),
@@ -214,7 +214,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                       style: const TextStyle(fontSize: 18, color: Colors.black),
                                     ),
                                     GestureDetector(
-                                      onTap: () => _showRegisterBottomSheet(context),
+                                      onTap: () => context.go('/signup/citizen'),
                                       child: Text(
                                         localizations?.register ?? "Register",
                                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: WelcomeScreen.orange),
@@ -251,111 +251,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  void _showLoginBottomSheet(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (_) => _BottomSheetContent(
-      title: localizations.loginAs ?? "Login as",
-      orangeColor: WelcomeScreen.orange,
-      options: [
-        // ✅ Citizen → Phone Login
-        _OptionItem(
-          label: localizations.citizen ?? "Citizen",
-          onTap: () {
-            Navigator.pop(context);
-            context.go('/phone-login'); // ✅ citizen phone login
-          },
-        ),
-
-        // ✅ Police → Police Login
-        _OptionItem(
-          label: localizations.police ?? "Police",
-          onTap: () {
-            Navigator.pop(context);
-            context.go('/police-login'); // ✅ police login
-          },
-        ),
-      ],
-    ),
-  );
+  // Removed role selection - app is citizen-only
+  // Login flows directly to phone login for citizens
 }
-
-
-  void _showRegisterBottomSheet(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  // Navigate directly to citizen registration
-  context.go('/signup/citizen');
-}
-}
-// Beautiful bottom sheet — only added orangeColor parameter
-class _BottomSheetContent extends StatelessWidget {
-  final String title;
-  final List<_OptionItem> options;
-  final Color orangeColor;   // ← only addition
-
-  const _BottomSheetContent({
-    required this.title,
-    required this.options,
-    required this.orangeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.42,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(42), topRight: Radius.circular(42)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))],
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Container(width: 60, height: 6, decoration: BoxDecoration(color: Colors.grey[350], borderRadius: BorderRadius.circular(20))),
-          const SizedBox(height: 24),
-          Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 36),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36),
-            child: Column(
-              children: options.asMap().entries.map((e) => Padding(
-                padding: EdgeInsets.only(bottom: e.key == options.length - 1 ? 0 : 18),
-                child: _buildButton(e.value),
-              )).toList(),
-            ),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButton(_OptionItem item) {
-    return SizedBox(
-      height: 68,
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: item.onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: item.backgroundColor ?? orangeColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          elevation: item.onTap == null ? 0 : 12,
-          shadowColor: orangeColor.withOpacity(0.5),
-        ),
-        child: Text(item.label, style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: item.textColor ?? Colors.white)),
-      ),
-    );
-  }
-}
-
-class _OptionItem {
-  final String label;
-  final VoidCallback? onTap;
-  final Color? backgroundColor;
-  final Color? textColor;
-  _OptionItem({required this.label, this.onTap, this.backgroundColor, this.textColor});
-}
+// Bottom sheet classes removed - app is citizen-only, no role selection needed
