@@ -131,6 +131,11 @@ flutter:
     - assets/data/ap_police_hierarchy_complete.json
     - assets/data/ap_police_hierarchy_fir.json
     - assets/data/pincodes.json
+    - assets/CM.png
+    - assets/DGP.jpg
+    - assets/DyCM.png
+    - assets/HomeMinister.jpg
+    
 
 
 
