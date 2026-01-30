@@ -21,6 +21,7 @@ import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/petition_provider.dart';
+import '../widgets/petition_type_card.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -86,44 +87,90 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   Future<bool> _showPetitionTypeDialog() async {
     final localizations = AppLocalizations.of(context)!;
     
-    // Default to false (cancelled) if dismissed via back button
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(localizations.selectPetitionType),
-          content: Text(localizations.petitionTypeDescription),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // Cancelled
-              },
-              child: Text(localizations.close,
-                  style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                Row(
+                  children: [
+                    Icon(Icons.gavel, color: orange, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        localizations.selectPetitionType,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Description
+                Text(
+                  localizations.petitionTypeDescription,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Anonymous Option
+                PetitionTypeCard(
+                  icon: Icons.shield_outlined,
+                  iconColor: orange,
+                  title: localizations.anonymousPetition,
+                  borderColor: orange,
+                  onTap: () {
+                    setState(() => _isAnonymous = true);
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Normal Option
+                PetitionTypeCard(
+                  icon: Icons.person_outline,
+                  iconColor: Colors.blue,
+                  title: localizations.normalPetition,
+                  borderColor: Colors.blue,
+                  onTap: () {
+                    setState(() => _isAnonymous = false);
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Cancel button
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    localizations.close,
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _isAnonymous = true;
-                });
-                Navigator.of(context).pop(true); // Confirmed
-              },
-              child: Text(localizations.anonymousPetition,
-                  style: const TextStyle(color: orange, fontWeight: FontWeight.bold)),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _isAnonymous = false;
-                });
-                Navigator.of(context).pop(true); // Confirmed
-              },
-              child: Text(localizations.normalPetition,
-                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-            ),
-          ],
+          ),
         );
       },
     );
