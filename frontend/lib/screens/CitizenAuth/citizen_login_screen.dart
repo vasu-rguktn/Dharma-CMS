@@ -1,4 +1,5 @@
 // screens/CitizenAuth/citizen_login_screen.dart
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -23,6 +24,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
   bool _obscureText = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  Timer? _delayedNavigationTimer;
 
   static const Color orange = Color(0xFFFC633C);
 
@@ -85,8 +87,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
         // Only push AI chat if onboarding is NOT needed (returning user)
         if (!showOnboarding) {
           // Wait a moment for dashboard to load, then push to AI chat
-          Future.delayed(const Duration(milliseconds: 50), () {
-            if (context.mounted) {
+          _delayedNavigationTimer = Timer(const Duration(milliseconds: 50), () {
+            if (mounted) {
               context.push('/ai-legal-chat');
             }
           });
@@ -156,8 +158,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
           // Only push AI chat if onboarding is NOT needed (returning user)
           if (!showOnboarding) {
             // Wait a moment for dashboard to load, then push to AI chat
-            Future.delayed(const Duration(milliseconds: 50), () {
-              if (context.mounted) {
+            _delayedNavigationTimer = Timer(const Duration(milliseconds: 50), () {
+              if (mounted) {
                 context.push('/ai-legal-chat');
               }
             });
@@ -425,6 +427,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
 
   @override
   void dispose() {
+    _delayedNavigationTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();

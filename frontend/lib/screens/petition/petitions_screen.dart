@@ -33,6 +33,12 @@ class _PetitionsScreenState extends State<PetitionsScreen>
     // Safe fetch after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPetitions());
   }
+  
+  // Get petition ID from query params (for notification deep-linking)
+  String? _getPetitionIdFromRoute() {
+    final uri = GoRouterState.of(context).uri;
+    return uri.queryParameters['petitionId'];
+  }
 
   @override
   void dispose() {
@@ -104,6 +110,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
           PetitionsListTab(
             onRefresh: _fetchPetitions,
             formatTimestamp: _formatTimestamp,
+            initialPetitionId: _getPetitionIdFromRoute(), // Pass for auto-open
           ),
           CreatePetitionForm(
             onCreatedSuccess: () => _tabController.index = 0,

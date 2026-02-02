@@ -107,6 +107,11 @@ app.include_router(cases_router)
 from routers.case_lookup import router as case_lookup_router
 app.include_router(case_lookup_router)
 
+from routers.fcm import router as fcm_router
+app.include_router(fcm_router)
+
+from routers.petition_updates import router as petition_updates_router
+app.include_router(petition_updates_router)
 
 
 @app.get("/")
