@@ -121,8 +121,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               const SizedBox(height: 24),
                               
                               // Leadership Images Row
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8, // Minimal spacing to fit all 4 images in one row
                                 children: [
                                   _buildLeaderItem('assets/CM.png', 'CM'),
                                   _buildLeaderItem('assets/DyCM.png', 'DyCM'),
@@ -268,45 +269,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // Login flows directly to phone login for citizens
 
   Widget _buildLeaderItem(String assetPath, String role) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: WelcomeScreen.orange.withOpacity(0.5), width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                spreadRadius: 1,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Container(
+      width: 65, // Reduced from 70 to fit all 4 in one row
+      height: 65,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: WelcomeScreen.orange.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
-          child: ClipOval(
-            child: Image.asset(
-              assetPath,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey[200],
-                child: const Icon(Icons.person, size: 40, color: Colors.grey),
-              ),
-            ),
+        ],
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: Colors.grey[200],
+            child: const Icon(Icons.person, size: 40, color: Colors.grey),
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          role,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

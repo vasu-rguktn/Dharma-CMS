@@ -22,12 +22,26 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:Dharma/widgets/session_lifecycle_observer.dart';
 
+// FCM Background Message Handler (must be top-level function)
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:Dharma/services/notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('[FCM Background] Message received: ${message.notification?.title}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Register FCM background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('6LfUh1AsAAAAAPOY30pIf00IzpmIYRCWV4ZNhIQ-'),
     androidProvider: AndroidProvider.playIntegrity, // or debug for now
