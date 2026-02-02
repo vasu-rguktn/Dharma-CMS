@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -32,6 +33,12 @@ class _PetitionsScreenState extends State<PetitionsScreen>
     // Safe fetch after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPetitions());
   }
+  
+  // Get petition ID from query params (for notification deep-linking)
+  String? _getPetitionIdFromRoute() {
+    final uri = GoRouterState.of(context).uri;
+    return uri.queryParameters['petitionId'];
+  }
 
   @override
   void dispose() {
@@ -44,6 +51,11 @@ class _PetitionsScreenState extends State<PetitionsScreen>
     final petition = Provider.of<PetitionProvider>(context, listen: false);
     if (auth.user != null) {
       await petition.fetchPetitions(auth.user!.uid);
+      // Fetch saved complaints to know which petitions are saved
+      if (mounted) {
+        await Provider.of<ComplaintProvider>(context, listen: false)
+            .fetchComplaints(userId: auth.user!.uid);
+      }
     }
   }
 
@@ -98,6 +110,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
           PetitionsListTab(
             onRefresh: _fetchPetitions,
             formatTimestamp: _formatTimestamp,
+            initialPetitionId: _getPetitionIdFromRoute(), // Pass for auto-open
           ),
           CreatePetitionForm(
             onCreatedSuccess: () => _tabController.index = 0,

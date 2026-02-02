@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/services/local_storage_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 
 import 'dart:convert';
 
@@ -57,12 +58,69 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   List<PlatformFile> _proofFiles = []; // Related proof documents
 
   final _ocrService = OcrService();
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkAndConsumeEvidence();
+  }
+
+  void _checkAndConsumeEvidence() {
+     if (!mounted) return;
+     final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+     if (petitionProvider.tempEvidence.isNotEmpty) {
+       debugPrint('📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
+       setState(() {
+         // Avoid duplicates in case of re-entry
+         final existingNames = _proofFiles.map((e) => e.name).toSet();
+         final newFiles = petitionProvider.tempEvidence.where((e) => !existingNames.contains(e.name)).toList();
+         
+           if (newFiles.isNotEmpty) {
+             // Validate Web Bytes to prevent silent upload failure
+             if (kIsWeb && newFiles.any((f) => f.bytes == null)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                 if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_getLocalizedLabel(
+                          'Error: Evidence from chat is missing data. Please attach files manually.',
+                          'లోపం: చాట్ నుండి రుజువు డేటా లేదు. దయచేసి ఫైళ్లను మాన్యువల్‌గా జోడించండి.'
+                        )),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                 }
+               });
+             } else {
+               _proofFiles.addAll(newFiles);
+               WidgetsBinding.instance.addPostFrameCallback((_) {
+                 if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(_getLocalizedLabel(
+                        'Auto-attached ${newFiles.length} proofs from chat',
+                        'చాట్ నుండి ${newFiles.length} రుజువులు జోడించబడ్డాయి'
+                      ))),
+                    );
+                 }
+               });
+             }
+           }
+       });
+       petitionProvider.clearTempEvidence();
+     }
+  }
 
   @override
   void initState() {
     super.initState();
     _ocrService.init();
     _loadDistrictStations();
+
+    // Check for stashed evidence from AI Chat (on first load)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndConsumeEvidence();
+    });
 
     final data = widget.initialData;
     if (data != null) {
@@ -131,10 +189,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Search...',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: _getLocalizedLabel('Search...', 'శోధించండి...'),
+                        prefixIcon: const Icon(Icons.search),
+                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (value) {
                         setModalState(() {
@@ -443,6 +501,12 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     }
   }
 
+  /// Helper method to get localized label based on current locale
+  String _getLocalizedLabel(String english, String telugu) {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'te' ? telugu : english;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -525,7 +589,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                   children: [
                     // ================= INCIDENT DETAILS =================
                     Text(
-                      'Incident Details',
+                      _getLocalizedLabel('Incident Details', 'సంఘటన వివరాలు'),
                       style: theme.textTheme.titleLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
@@ -535,12 +599,12 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     TextFormField(
                       controller: _incidentAddressController,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Incident Address',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: _getLocalizedLabel('Incident Address', 'సంఘటన చిరునామా'),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (v) => v == null || v.isEmpty
-                          ? 'Enter incident address'
+                          ? _getLocalizedLabel('Enter incident address', 'సంఘటన చిరునామా నమోదు చేయండి')
                           : null,
                     ),
 
@@ -550,13 +614,13 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                     InkWell(
                       onTap: _pickIncidentDate,
                       child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Incident Date',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: _getLocalizedLabel('Incident Date', 'సంఘటన తేదీ'),
+                          border: const OutlineInputBorder(),
                         ),
                         child: Text(
                           _incidentDate == null
-                              ? 'Select date'
+                              ? _getLocalizedLabel('Select date', 'తేదీని ఎంచుకోండి')
                               : _incidentDate!
                                   .toLocal()
                                   .toString()
@@ -569,7 +633,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
                     // ================= JURISDICTION DETAILS =================
                     Text(
-                      'Jurisdiction for Filing Complaint',
+                      _getLocalizedLabel('Jurisdiction for Filing Complaint', 'ఫిర్యాదు దాఖలు చేయడానికి అధికార పరిధి'),
                       style: theme.textTheme.titleLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
@@ -577,13 +641,13 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
                     // District
                     _picker(
-                      label: 'District',
+                      label: _getLocalizedLabel('District', 'జిల్లా'),
                       value: _districtController.text.isEmpty
                           ? null
                           : _districtController.text,
                       onTap: () {
                         _openSearchableDropdown(
-                          title: 'Select District',
+                          title: _getLocalizedLabel('Select District', 'జిల్లాను ఎంచుకోండి'),
                           items: _districtStations.keys.toList(),
                           selectedValue: _districtController.text,
                           onSelected: (v) {
@@ -600,7 +664,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
                     // Police Station
                     _picker(
-                      label: 'Police Station',
+                      label: _getLocalizedLabel('Police Station', 'పోలీస్ స్టేషన్'),
                       value: _stationController.text.isEmpty
                           ? null
                           : _stationController.text,
@@ -608,7 +672,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                           ? null
                           : () {
                               _openSearchableDropdown(
-                                title: 'Select Police Station',
+                                title: _getLocalizedLabel('Select Police Station', 'పోలీస్ స్టేషన్‌ను ఎంచుకోండి'),
                                 items: _districtStations[
                                         _districtController.text] ??
                                     [],
@@ -710,7 +774,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
                     // === RELATED DOCUMENT PROOFS ===
                     Text(
-                      'Related Document Proofs (Optional)',
+                      _getLocalizedLabel('Related Document Proofs (Optional)', 'సంబంధిత పత్ర రుజువులు (ఐచ్ఛికం)'),
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
@@ -722,7 +786,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                       children: [
                         ElevatedButton.icon(
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Proofs'),
+                          label: Text(_getLocalizedLabel('Upload Proofs', 'రుజువులను అప్‌లోడ్ చేయండి')),
                           onPressed: _isSubmitting
                               ? null
                               : () async {
@@ -741,7 +805,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                                 },
                         ),
                         if (_proofFiles.isNotEmpty)
-                          Text('${_proofFiles.length} file(s) selected'),
+                          Text(_getLocalizedLabel(
+                            '${_proofFiles.length} file(s) selected',
+                            '${_proofFiles.length} ఫైల్(లు) ఎంచుకోబడ్డాయి',
+                          )),
                       ],
                     ),
                     if (_proofFiles.isNotEmpty) ...[

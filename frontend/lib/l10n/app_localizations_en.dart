@@ -323,7 +323,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewCases => 'View Cases';
 
   @override
-  String get legalSuggestion => 'Legal Suggestion';
+  String get legalSuggestion => 'Legal Section Suggestions';
 
   @override
   String get documentDrafting => 'Document Drafting';
@@ -722,11 +722,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterFirAndIncidentDetails => 'Please enter both FIR and incident details.';
 
   @override
-  String get legalSuggestionsGenerated => 'Legal suggestions generated.';
+  String get legalSuggestionsGenerated => 'Legal Section Suggester generated.';
 
   @override
   String failedToGenerateSuggestions(String error) {
-    return 'Failed to generate legal suggestions: $error';
+    return 'Failed to generate Legal Section Suggester: $error';
   }
 
   @override
@@ -742,13 +742,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get processing => 'Processing...';
 
   @override
-  String get getLegalSuggestions => 'Get Legal Suggestions';
+  String get getLegalSuggestions => 'Get Legal Section Suggester';
 
   @override
   String get analyzingInformation => 'Analyzing information and generating suggestions...';
 
   @override
-  String get aiLegalSuggestions => 'AI Legal Suggestions';
+  String get aiLegalSuggestions => 'AI Legal Section Suggester';
 
   @override
   String get reviewSuggestionsDesc => 'Review the suggested legal sections and reasoning. This is for informational purposes only.';
@@ -1540,7 +1540,488 @@ String get listening => 'Listening...';
 @override
 String get tapToStopRecording => 'Tap the microphone icon to stop recording';
 
+@override
+String get imageLab => 'Image Lab';
+
+@override
+String get addPolice => 'Add Police';
+
+@override
+String get submitOfflinePetition => 'Submit Offline Petition';
+
+@override
+String get offlinePetitions => 'Offline Petitions';
+
+@override
+String get assignedPetitions => 'Assigned Petitions';
+
+
+@override
+String get escalated => 'Escalated';
+
+@override
+String get filters => 'Filters:';
+
+@override
+String get range => 'Range';
+
+@override
+String get age => 'Age';
+
+@override
+String get viewDetails => 'View Details';
+
+@override
+String get yourAccessLevel => 'Your Access Level';
+
+@override
+String get filterCasesUsingFilters => 'Filter cases using the dropdown filters.';
+
+@override
+String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you are involved in.';
+
+
+  @override
+  String get crimeScene => 'Crime Scene';
+
+  @override
+  String get investigation => 'Investigation';
+
+  @override
+  String get evidence => 'Evidence';
+
+  @override
+  String get finalReport => 'Final Report';
+
+  @override
+  String get editCase => 'Edit Case';
+
+  @override
+  String get caseInformation => 'Case Information';
+
+
+  @override
+  String get year => 'Year';
+
+  @override
+  String get complaintId => 'Complaint ID';
+
+  @override
+  String get firDate => 'FIR Date';
+
+  @override
+  String get firFiledAt => 'FIR Filed At';
+
+
+  @override
+  String get occurrenceOfOffence => 'Occurrence of Offence';
+
+  @override
+  String get distanceFromPS => 'Distance from PS';
+
+  @override
+  String get directionFromPS => 'Direction from PS';
+
+  @override
+  String get outsideJurisdiction => 'Outside Jurisdiction';
+
+  @override
+  String get informationReceivedAtPS => 'Information Received at PS';
+
+  @override
+  String get dateTimeReceived => 'Date & Time Received';
+
+  @override
+  String get gdEntryNo => 'GD Entry No.';
+
+  @override
+  String get typeOfInformation => 'Type of Information';
+
+  @override
+  String get complainantInformantDetails => 'Complainant / Informant Details';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get fatherHusbandName => 'Father/Husband Name';
+
+  @override
+  String get dob => 'Date of Birth';
+
+  @override
+  String get nationality => 'Nationality';
+
+  @override
+  String get caste => 'Caste';
+
+  @override
+  String get occupation => 'Occupation';
+
+  @override
+  String get passportNo => 'Passport No.';
+
+  @override
+  String get passportPlaceOfIssue => 'Passport Place of Issue';
+
+  @override
+  String get passportDateOfIssue => 'Passport Date of Issue';
+
+  @override
+  String get victimDetails => 'Victim Details';
+
+  @override
+  String get religion => 'Religion';
+
+  @override
+  String get complainantAlsoVictim => 'Complainant is also the Victim';
+
+  @override
+  String get accusedDetails => 'Accused Details';
+
+  @override
+  String get accused => 'Accused';
+
+  @override
+  String get propertiesDelayInquest => 'Properties / Delay / Inquest';
+
+  @override
+  String get propertiesInvolved => 'Properties Involved';
+
+  @override
+  String get totalValueINR => 'Total Value (Rs.)';
+
+  @override
+  String get delayInReporting => 'Delay in Reporting';
+
+  @override
+  String get inquestReportCaseNo => 'Inquest Report Case No.';
+
+  @override
+  String get actsStatement => 'Acts & Statement';
+
+  @override
+  String get actsAndSectionsInvolved => 'Acts & Sections Involved:';
+
+  @override
+  String get complaintStatement => 'Complaint / Statement:';
+
+  @override
+  String get briefIncidentDetails => 'Brief Incident Details:';
+
+  @override
+  String get actionTakenAndConfirmation => 'Action Taken & Confirmation';
+
+  @override
+  String get actionTaken => 'Action Taken';
+
+  @override
+  String get investigatingOfficer => 'Investigating Officer';
+
+  @override
+  String get dispatchToCourtDateTime => 'Dispatch to Court Date & Time';
+
+  @override
+  String get dispatchingOfficer => 'Dispatching Officer';
+
+  @override
+  String get dispatchingOfficerRank => 'Dispatching Officer Rank';
+
+  @override
+  String get firReadAndAdmittedCorrect => 'FIR Read and Admitted Correct';
+
+  @override
+  String get copyGivenFreeOfCost => 'Copy Given Free of Cost';
+
+  @override
+  String get roacRecorded => 'ROAC Recorded';
+
+  @override
+  String get signatureThumbImpression => 'Signature / Thumb Impression';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get crimeScenes => 'Crime Scenes';
+
+  @override
+  String get addScene => 'Add Scene';
+
+  @override
+  String get noCrimeScenesLinked => 'No crime scenes linked to this case yet.';
+
+  @override
+  String get unknownType => 'Unknown Type';
+
+  @override
+  String get deleteScene => 'Delete Scene';
+
+  @override
+  String get areSureDeleteScene => 'Are you sure you want to delete this scene?';
+
+  @override
+  String get place => 'Place';
+
+  @override
+  String get physicalEvidence => 'Physical Evidence';
+
+  @override
+  String get recorded => 'Recorded:';
+
+  @override
+  String get captureCrimeSceneEvidence => 'Capture Crime Scene Evidence';
+
+  @override
+  String get photo => 'Photo';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get upload => 'Upload';
+
+  @override
+  String get evidenceFiles => 'Evidence Files';
+
+  @override
+  String get analyzeSceneWithAI => 'Analyze Scene with AI';
+
+
+  @override
+  String get aiSceneAnalysis => 'AI Scene Analysis';
+
+  @override
+  String get crimeSceneAnalysisReports => 'Crime Scene Analysis Reports';
+
+  @override
+  String get noAnalysisReportsFound => 'No analysis reports found.';
+
+  @override
+  String get caseJournalIOsDiary => 'Case Journal (IO\'s Diary)';
+
+  @override
+  String get noJournalEntriesYet => 'No journal entries yet for this case.';
+
+  @override
+  String get crimeSceneCaptures => 'Crime Scene Captures';
+
+  @override
+  String get fromInvestigationDiary => 'From Investigation Diary';
+
+  @override
+  String get fromPetitions => 'From Petitions';
+
+  @override
+  String get forensicAnalysisReports => 'Forensic Analysis Reports';
+
+  @override
+  String get noEvidenceDocumentsFound => 'No evidence documents found';
+
+  @override
+  String get attachedDocumentsWillAppearHere => 'Attached documents from case journal, petitions and crime scene captures will appear here.';
+
+  @override
+  String get noDocumentsAttachedJournal => 'No documents attached to investigation diary yet.';
+
+  @override
+  String get noPetitionDocumentsLinked => 'No petition documents linked to this case yet.';
+
+  @override
+  String get finalInvestigationReport => 'Final Investigation Report / Court Document';
+
+  @override
+  String get generatedOn => 'Generated On:';
+
+  @override
+  String get noFinalReportAttached => 'No final investigation report attached to this case yet.';
+
+  @override
+  String get onceSomeoneGeneratesReport => 'Once the Investigating Officer generates and confirms an AI-assisted investigation report from the Case Journal screen, the final PDF will be linked here.';
+
+  @override
+  String get courtReadyReportGenerated => 'Court-ready investigation report PDF has been generated and attached to this case.';
+
+  @override
+  String get downloadViewFinalReportPDF => 'Download / View Final Report PDF';
+
+  @override
+  String get loadingEvidenceFromAllSources => 'Loading evidence from all sources...';
+
+  @override
+  String get addCrimeScene => 'Add Crime Scene';
+
+  @override
+  String get editCrimeScene => 'Edit Crime Scene';
+
+  @override
+  String get crimeType => 'Crime Type';
+
+  @override
+  String get placeDescription => 'Place Description';
+
+  @override
+  String get physicalEvidenceDescription => 'Physical Evidence Description';
+
+
+
+  @override
+  String get crimeSceneAdded => 'Crime scene added';
+
+  @override
+  String get crimeSceneUpdated => 'Crime scene updated';
+
+  @override
+  String get errorSavingCrimeScene => 'Error:';
+
+
+  @override
+  String get uploadingCapturedEvidence => 'Uploading captured evidence...';
+
+  @override
+  String get failedUploadEvidence => 'Failed to upload evidence';
+
+  @override
+  String get geoTaggedPhotoCaptured => 'Geo-tagged photo captured';
+
+  @override
+  String get geoTaggedVideoCaptured => 'Geo-tagged video captured';
+
+  @override
+  String get uploadEvidence => 'Upload Evidence';
+
+  @override
+  String get chooseFileType => 'Choose File Type:';
+
+  @override
+  String get image => 'Image';
+
+  @override
+  String get document => 'Document';
+
+  @override
+  String get uploadingDocument => 'Uploading document...';
+
+  @override
+  String get failedUploadDocument => 'Failed to upload document';
+
+  @override
+  String get documentUploaded => 'Document uploaded';
+
+  @override
+  String get imageUploaded => 'Image uploaded';
+
+  @override
+  String get videoUploaded => 'Video uploaded';
+
+  @override
+  String get errorUploadingFile => 'Error uploading file:';
+
+  @override
+  String get pleaseCapturUploadEvidenceFirst => 'Please capture or upload evidence first';
+
+  @override
+  String get sceneAnalysisComplete => 'Scene analysis complete!';
+
+  @override
+  String get analysisError => 'Analysis error:';
+
+  @override
+  String get downloadEvidence => 'Download Evidence';
+
+  @override
+  String get saveToDeviceDownloads => 'Save to device downloads folder';
+
+  @override
+  String get analyzeWithAI => 'Analyze with AI';
+
+  @override
+  String get getForensicAnalysis => 'Get forensic analysis';
+
+  @override
+  String get downloadReport => 'Download Report';
+
+  @override
+  String get deleteReport => 'Delete Report';
+
+  @override
+  String get deleteReportConfirmation => 'Are you sure you want to delete this analysis report? This cannot be undone.';
+
+  @override
+  String get reportDeleted => 'Report deleted';
+
+  @override
+  String get errorDeletingReport => 'Error deleting report:';
+
+  @override
+  String get generatingPDF => 'Generating PDF...';
+
+  @override
+  String get errorDownloadingPDF => 'Error downloading PDF:';
+
+  @override
+  String get analyzedOn => 'Analyzed On';
+
+
+  @override
+  String get sceneNarrative => 'Scene Narrative:';
+
+  @override
+  String get caseFileSummary => 'Case File Summary:';
+
+  @override
+  String get filedOn => 'Filed On:';
+
+  @override
+  String get accessViaFileManager => 'Access via File Manager → Dharma → Evidence';
+
+  @override
+  String get evidenceDownloaded => 'Evidence downloaded!';
+
+  @override
+  String get savedTo => 'Saved to:';
+
+  @override
+  String get downloadFailed => 'Download failed:';
+
+
+  @override
+  String get analysisErrorEvidence => 'Error analyzing evidence:';
+
+  @override
+  String get evidenceRemoved => 'Evidence removed';
+
+  @override
+  String get selectPetitionType => 'Select Petition Type';
+
+  @override
+  String get petitionTypeDescription => 'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.';
+
+  @override
+  String get anonymousPetition => 'Anonymous Petition';
+
+  @override
+  String get normalPetition => 'Normal Petition';
+
+  @override
+  String get anonymousPetitionConfirm => 'You have selected Anonymous Petition Mode. Your name and address will not be recorded.';
+
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => throw UnimplementedError();
+  
+  @override
+  // TODO: implement ok
+  String get ok => 'ok';
+  
+  @override
+  // TODO: implement from
+  String get from => throw UnimplementedError();
+  
+  @override
+  // TODO: implement to
+  String get to => throw UnimplementedError();
 }

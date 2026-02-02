@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:Dharma/models/user_profile.dart';
 import 'package:Dharma/utils/validators.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:Dharma/services/notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -250,6 +251,9 @@ class AuthProvider with ChangeNotifier {
       _userProfile = UserProfile.fromFirestore(userQuery.docs.first);
 
       debugPrint('AuthProvider: citizen profile loaded for uid=$uid');
+      
+      // Register FCM token for citizens ONLY (not for police)
+      _registerNotificationToken(uid);
     } else {
       debugPrint('AuthProvider: no profile found for uid=$uid');
       _userProfile = null;
@@ -263,6 +267,23 @@ class AuthProvider with ChangeNotifier {
   _isProfileLoading = false;
   notifyListeners();
 }
+
+/// Register FCM notification token for citizen users
+/// This runs in the background and won't block the UI if it fails
+Future<void> _registerNotificationToken(String userId) async {
+  try {
+    final notificationService = NotificationService();
+    
+    // Initialize FCM for citizen users only (isCitizen: true)
+    await notificationService.initialize(userId, isCitizen: true);
+    
+    debugPrint('AuthProvider: ✅ FCM token registered for citizen user');
+  } catch (e) {
+    // Don't crash - notifications are optional
+    debugPrint('AuthProvider: FCM token registration failed (non-critical): $e');
+  }
+}
+
 
  
  
@@ -548,6 +569,7 @@ class AuthProvider with ChangeNotifier {
       final now = Timestamp.now();
       final Map<String, dynamic> data = {
         'updatedAt': now,
+        'uid': uid, // Ensure UID is present in the document
       };
 
       if (displayName != null) data['displayName'] = displayName;
@@ -565,7 +587,8 @@ class AuthProvider with ChangeNotifier {
       // Determine collection based on current role
       final collection = (_userProfile?.role == 'police') ? 'police' : 'users';
       
-      await _firestore.collection(collection).doc(uid).update(data);
+      // Use set with merge to create the document if it doesn't exist (fixing "not-found" error)
+      await _firestore.collection(collection).doc(uid).set(data, SetOptions(merge: true));
       
       // Reload profile to get fresh data
       await _loadUserProfile(uid);

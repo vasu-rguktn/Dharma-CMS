@@ -1,5 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Utility function to mask phone numbers for anonymous petitions
+/// Format: Takes first 3 digits and masks the rest with 'x'
+/// Example: 9876543210 -> 987xxxxxxx
+String maskPhoneNumber(String? phoneNumber) {
+  if (phoneNumber == null || phoneNumber.isEmpty) return 'N/A';
+  
+  // Remove any non-digit characters
+  final digitsOnly = phoneNumber.replaceAll(RegExp(r'\D'), '');
+  
+  if (digitsOnly.length < 3) return digitsOnly;
+  
+  // Get first 3 digits and replace the rest with 'x'
+  final firstThree = digitsOnly.substring(0, 3);
+  final remaining = 'x' * (digitsOnly.length - 3);
+  return firstThree + remaining;
+}
+
 enum PetitionType {
   bail,
   anticipatoryBail,
@@ -134,6 +151,9 @@ class Petition {
   final String? policeStatus;
   final String? policeSubStatus;
 
+  /// 🔐 Anonymous submission field
+  final bool isAnonymous;
+
   /// 📱 Offline submission fields
   final String? submissionType; // 'online' or 'offline'
   final String? submittedBy; // Officer UID who submitted offline
@@ -241,6 +261,7 @@ class Petition {
     required this.userId,
     required this.createdAt,
     required this.updatedAt,
+    this.isAnonymous = false,
   });
 
   factory Petition.fromFirestore(DocumentSnapshot doc) {
@@ -288,12 +309,14 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
+      isAnonymous: (data['is_anonymous'] ?? data['isAnonymous'] ?? false) ||
+          (data['petitionerName'] == 'Anonymous'),
     );
   }
 
@@ -347,7 +370,7 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: (data['proofDocumentUrls'] as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       userId: data['userId'] ?? '',
@@ -355,6 +378,8 @@ class Petition {
           data['createdAt'] is Timestamp ? data['createdAt'] : Timestamp.now(),
       updatedAt:
           data['updatedAt'] is Timestamp ? data['updatedAt'] : Timestamp.now(),
+      isAnonymous: (data['is_anonymous'] ?? data['isAnonymous'] ?? false) ||
+          (data['petitionerName'] == 'Anonymous'),
     );
   }
 
@@ -407,6 +432,7 @@ class Petition {
       'userId': userId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'is_anonymous': isAnonymous,
     };
   }
 }

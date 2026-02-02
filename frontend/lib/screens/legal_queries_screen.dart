@@ -8,8 +8,9 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-
+import 'package:Dharma/l10n/app_localizations.dart';
 import '../providers/legal_queries_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/chat_message.dart';
 import '../screens/geo_camera_screen.dart';
 
@@ -59,12 +60,19 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     setState(() => _isListening = false);
   }
 
+  /// Helper method to get localized label based on current locale
+  String _getLocalizedLabel(String english, String telugu) {
+    final locale = Localizations.localeOf(context);
+    return locale.languageCode == 'te' ? telugu : english;
+  }
+
   /* ---------------- SEND ---------------- */
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return;
 
-    final lang = Localizations.localeOf(context).languageCode;
+    final settings = context.read<SettingsProvider>();
+    final lang = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
 
     context.read<LegalQueriesProvider>().sendMessage(text,
         attachments: List.from(_attachments), language: lang);
@@ -148,7 +156,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: orange),
-                title: const Text("Take Photo"),
+                title: Text(_getLocalizedLabel("Take Photo", "ఫోటో తీయండి")),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImages(ImageSource.camera);
@@ -156,7 +164,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo, color: orange),
-                title: const Text("Choose from Gallery"),
+                title: Text(_getLocalizedLabel("Choose from Gallery", "గ్యాలరీ నుండి ఎంచుకోండి")),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImages(ImageSource.gallery);
@@ -164,7 +172,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.picture_as_pdf, color: orange),
-                title: const Text("Upload PDF"),
+                title: Text(_getLocalizedLabel("Upload PDF", "PDF అప్‌లోడ్ చేయండి")),
                 onTap: () {
                   Navigator.pop(context);
                   _pickDocument();
@@ -325,7 +333,10 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              "AI is thinking...",
+              _getLocalizedLabel(
+                "AI is thinking...",
+                "AI ఆలోచిస్తోంది...",
+              ),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -351,10 +362,14 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: orange,
-        title: const Text("Legal Assistant"),
+        foregroundColor: Colors.white,
+        title: Text(
+          AppLocalizations.of(context)?.legalQueries ?? 'Legal Queries',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         automaticallyImplyLeading: false, // Disable automatic hamburger menu
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           tooltip: 'Back to Dashboard',
           onPressed: () {
             print('⬅️ [LEGAL_QUERIES] Back button pressed - navigating to dashboard');
@@ -387,10 +402,10 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "Chat History",
+                    Text(
+                      _getLocalizedLabel("Chat History", "చాట్ చరిత్ర"),
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     IconButton(
                       icon: const Icon(Icons.add),
@@ -432,8 +447,8 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                     print('   - sessions count: ${sessions.length}');
                     
                     if (sessions.isEmpty) {
-                      return const Center(
-                        child: Text("No previous chats"),
+                      return Center(
+                        child: Text(_getLocalizedLabel("No previous chats", "మునుపటి చాట్‌లు లేవు")),
                       );
                     }
 
@@ -470,8 +485,11 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
               stream: provider.messagesStream(),
               builder: (_, snap) {
                 if (!snap.hasData) {
-                  return const Center(
-                    child: Text("Ask your legal question"),
+                  return Center(
+                    child: Text(_getLocalizedLabel(
+                      "Ask your legal question",
+                      "మీ చట్టపరమైన ప్రశ్న అడగండి",
+                    )),
                   );
                 }
 
@@ -547,8 +565,11 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                         maxLines: 5,
                         textInputAction: TextInputAction.send, // TRY THIS
                         onSubmitted: (_) => _send(),
-                        decoration: const InputDecoration(
-                          hintText: "Ask a legal question...",
+                        decoration: InputDecoration(
+                          hintText: _getLocalizedLabel(
+                            "Ask a legal question...",
+                            "చట్టపరమైన ప్రశ్న అడగండి...",
+                          ),
                           border: InputBorder.none,
                           isDense: true,
                         ),

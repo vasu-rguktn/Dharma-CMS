@@ -7,12 +7,14 @@ class CognigibleNonCognigibleSeparationScreen extends StatefulWidget {
   final String classification;
   final String originalClassification;
   final Map<String, dynamic>? complaintData;
+  final List<String> evidencePaths;
 
   const CognigibleNonCognigibleSeparationScreen({
     super.key,
     required this.classification,
     required this.originalClassification,
     this.complaintData,
+    this.evidencePaths = const [],
   });
 
   static CognigibleNonCognigibleSeparationScreen fromRouteSettings(
@@ -22,6 +24,7 @@ class CognigibleNonCognigibleSeparationScreen extends StatefulWidget {
       classification: q?['classification'] as String? ?? '',
       originalClassification: q?['originalClassification'] as String? ?? '',
       complaintData: q?['complaintData'] as Map<String, dynamic>?,
+      evidencePaths: (q?['evidencePaths'] as List?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -122,6 +125,7 @@ class _CognigibleNonCognigibleSeparationScreenState
       // New Fields for Auto-fill
       'incident_address': widget.complaintData?['incident_address'] ?? '',
       'incident_details': widget.complaintData?['incident_details'] ?? '',
+      'evidencePaths': widget.evidencePaths,
     };
 
     return Scaffold(
@@ -224,8 +228,10 @@ class _CognigibleNonCognigibleSeparationScreenState
                         label: localizations.fileACase,
                         icon: LucideIcons.fileText,
                         color: const Color(0xFFFC633C), // App Orange
-                        onPressed: () => context.go('/petitions/create',
-                            extra: petitionData),
+                        onPressed: () {
+                           print('🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
+                           context.go('/petitions/create', extra: petitionData);
+                        },
                       )
                     else ...[
                       _buildPrimaryButton(

@@ -6,6 +6,8 @@ import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/widgets/full_screen_image_viewer.dart';
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 
 class PetitionDetailBottomSheet {
   static void show(BuildContext context, Petition petition) {
@@ -300,6 +302,26 @@ class _DetailContent extends StatelessWidget {
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.pop(context),
             ),
+            // SAVE BUTTON
+            Consumer<ComplaintProvider>(
+              builder: (context, complaintProvider, _) {
+                final isSaved = complaintProvider.isPetitionSaved(petition.id);
+                return IconButton(
+                  icon: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_border,
+                    color: isSaved ? Colors.orange : Colors.grey,
+                  ),
+                  onPressed: () async {
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    final userId = auth.user?.uid;
+                    if (userId == null) return;
+
+                    await complaintProvider.toggleSaveComplaint(
+                        petition.toMap(), userId);
+                  },
+                );
+              },
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -322,7 +344,10 @@ class _DetailContent extends StatelessWidget {
 
         _buildDetailRow(localizations.petitioner, petition.petitionerName),
         if (petition.phoneNumber != null)
-          _buildDetailRow(localizations.phone, petition.phoneNumber!),
+          _buildDetailRow(
+            localizations.phone,
+            petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+          ),
         if (petition.address != null)
           _buildDetailRow(localizations.address, petition.address!),
         if (petition.firNumber != null)

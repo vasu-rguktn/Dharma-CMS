@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
+import 'package:flutter/foundation.dart';
 
 class AddPetitionUpdateDialog extends StatefulWidget {
   final Petition petition;
@@ -39,7 +40,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: true,
-        withData: true,
+        withData: kIsWeb, // Only load bytes on Web to avoid OOM on Android
       );
 
       if (result != null) {
@@ -63,9 +64,9 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+        allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'],
         allowMultiple: true,
-        withData: true,
+        withData: kIsWeb, // Only load bytes on Web to avoid OOM on Android
       );
 
       if (result != null) {
@@ -97,6 +98,9 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
     try {
       final provider = context.read<PetitionProvider>();
       
+      debugPrint('📤 [UPDATE] Starting petition update submission');
+      debugPrint('📸 Photos: ${_selectedPhotos.length}, 📄 Documents: ${_selectedDocuments.length}');
+      
       final success = await provider.createPetitionUpdate(
         petitionId: widget.petition.id!,
         updateText: _updateTextController.text.trim(),
@@ -108,28 +112,34 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
 
       if (mounted) {
         if (success) {
+          debugPrint('✅ [UPDATE] Petition update created successfully');
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Update added successfully!'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
             ),
           );
         } else {
+          debugPrint('❌ [UPDATE] Failed to create petition update');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Failed to add update. Please try again.'),
               backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
             ),
           );
         }
       }
     } catch (e) {
+      debugPrint('❌ [UPDATE] Exception during update submission: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Error: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

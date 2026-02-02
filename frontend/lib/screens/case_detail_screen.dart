@@ -241,7 +241,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
       if (kIsWeb) {
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Uploading captured evidence...')),
+             SnackBar(content: Text(AppLocalizations.of(context)!.uploadingCapturedEvidence)),
            );
         }
         try {
@@ -256,7 +256,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           if (url != null) {
             finalPath = url;
           } else {
-             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload evidence'), backgroundColor: Colors.red));
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.failedUploadEvidence), backgroundColor: Colors.red));
              return;
           }
         } catch (e) {
@@ -286,25 +286,26 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   Future<void> _uploadSceneFile() async {
     try {
       final ImagePicker picker = ImagePicker();
+      final loc = AppLocalizations.of(context)!;
       
       // Show options: Image or Video
       final result = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Upload Evidence'),
-          content: const Text('Choose file type to upload:'),
+          title: Text(loc.uploadEvidence),
+          content: Text('Choose file type to upload:'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, 'image'),
-              child: const Text('Image'),
+              child: Text(loc.image),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, 'video'),
-              child: const Text('Video'),
+              child: Text(loc.video),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, 'file'),
-              child: const Text('Document'),
+              child: Text(loc.document),
             ),
           ],
         ),
@@ -331,7 +332,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
              // Web: Must upload to Storage to get a usable URL
              if (mounted) {
                ScaffoldMessenger.of(context).showSnackBar(
-                 const SnackBar(content: Text('Uploading document...')),
+                 SnackBar(content: Text(AppLocalizations.of(context)!.uploadingDocument)),
                );
              }
              
@@ -347,7 +348,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
              
              if (finalPath == null && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                 const SnackBar(content: Text('Failed to upload document'), backgroundColor: Colors.red),
+                 SnackBar(content: Text(AppLocalizations.of(context)!.failedUploadDocument), backgroundColor: Colors.red),
                );
              }
            } else {
@@ -365,8 +366,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
               
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Document uploaded'),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context)!.documentUploaded),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -406,8 +407,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
   Future<void> _analyzeSceneWithAI() async {
     if (_crimeSceneAttachments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please capture or upload evidence first'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseCapturUploadEvidenceFirst),
           backgroundColor: Colors.orange,
         ),
       );
@@ -510,8 +511,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Scene analysis complete!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.sceneAnalysisComplete),
             backgroundColor: Colors.green,
           ),
         );
@@ -583,8 +584,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     ),
                     child: const Icon(Icons.download, color: Colors.green),
                   ),
-                  title: const Text('Download Evidence'),
-                  subtitle: const Text('Save to device Downloads folder'),
+                  title: Text(AppLocalizations.of(context)!.downloadEvidence),
+                  subtitle: Text('Save to device Downloads folder'),
                   onTap: () {
                     Navigator.pop(context);
                     _downloadEvidence(filePath);
@@ -602,8 +603,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       ),
                       child: const Icon(Icons.auto_awesome, color: Colors.purple),
                     ),
-                    title: const Text('Analyze with AI'),
-                    subtitle: const Text('Get forensic analysis'),
+                    title: Text(AppLocalizations.of(context)!.analyzeWithAI),
+                    subtitle: Text(AppLocalizations.of(context)!.getForensicAnalysis),
                     onTap: () {
                       Navigator.pop(context);
                       _analyzeSingleEvidence(filePath);
@@ -672,7 +673,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Evidence Downloaded!',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -682,8 +683,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   style: const TextStyle(fontSize: 12),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Access via File Manager → Dharma → Evidence',
+                Text(
+                  AppLocalizations.of(context)!.accessViaFileManager,
                   style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
                 ),
               ],
@@ -775,8 +776,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Analysis complete!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.analysisComplete),
             backgroundColor: Colors.green,
           ),
         );
@@ -807,16 +808,16 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(existingScene == null ? 'Add Crime Scene' : 'Edit Crime Scene'),
+        title: Text(existingScene == null ? AppLocalizations.of(context)!.addCrimeScene : AppLocalizations.of(context)!.editCrimeScene),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: crimeTypeController,
-                decoration: const InputDecoration(
-                  labelText: 'Crime Type',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.crimeType,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -824,9 +825,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 height: 100,
                 child: TextField(
                   controller: placeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Place Description',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.placeDescription,
+                    border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
                   maxLines: null,
@@ -840,9 +841,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 height: 120,
                 child: TextField(
                   controller: evidenceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Physical Evidence Description',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.physicalEvidenceDescription,
+                    border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
                   maxLines: null,
@@ -857,7 +858,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -894,7 +895,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(existingScene == null ? 'Crime scene added' : 'Crime scene updated')),
+                    SnackBar(content: Text(existingScene == null ? AppLocalizations.of(context)!.crimeSceneAdded : AppLocalizations.of(context)!.crimeSceneUpdated)),
                   );
                 }
               } catch (e) {
@@ -906,7 +907,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 }
               }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -918,7 +919,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     try {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Generating PDF...')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.generatingPDF)),
         );
       }
       
@@ -1041,16 +1042,16 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Report'),
-        content: const Text('Are you sure you want to delete this analysis report? This cannot be undone.'),
+        title: Text(AppLocalizations.of(context)!.deleteReport),
+        content: Text(AppLocalizations.of(context)!.deleteReportConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1072,7 +1073,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report deleted')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.reportDeleted)),
         );
       }
     } catch (e) {
@@ -1110,7 +1111,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            tooltip: 'Edit Case',
+            tooltip: AppLocalizations.of(context)!.editCase,
             onPressed: () {
                context.push('/cases/new', extra: caseDoc);
             },
@@ -1126,40 +1127,40 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           indicator: const BoxDecoration(), // no underline
           dividerColor: Colors.transparent,
           labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-          tabs: const [
+          tabs: [
             Tab(
               icon: Icon(Icons.description, size: 20),
               child: Text(
-                'FIR Details',
-                style: TextStyle(fontSize: 12),
+                AppLocalizations.of(context)!.firDetails,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
             Tab(
               icon: Icon(Icons.search, size: 20),
               child: Text(
-                'Crime Scene',
-                style: TextStyle(fontSize: 12),
+                AppLocalizations.of(context)!.crimeScene,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
             Tab(
               icon: Icon(Icons.book, size: 20),
               child: Text(
-                'Investigation',
-                style: TextStyle(fontSize: 12),
+                AppLocalizations.of(context)!.investigation,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
             Tab(
               icon: Icon(Icons.archive, size: 20),
               child: Text(
-                'Evidence',
-                style: TextStyle(fontSize: 12),
+                AppLocalizations.of(context)!.evidence,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
             Tab(
               icon: Icon(Icons.gavel, size: 20),
               child: Text(
-                'Final Report',
-                style: TextStyle(fontSize: 12),
+                AppLocalizations.of(context)!.finalReport,
+                style: const TextStyle(fontSize: 12),
               ),
             ),
           ],
@@ -1179,7 +1180,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
   }
 
   Widget _buildFIRDetailsTab(CaseDoc caseDoc, ThemeData theme) {
-    String _boolText(bool? value) => value == true ? 'Yes' : 'No';
+    String _boolText(bool? value) => value == true ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -1273,23 +1274,23 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           // Case information
           _buildSection(
             theme,
-            'Case Information',
+            AppLocalizations.of(context)!.caseInformation,
             [
-              _buildInfoRow('FIR Number', caseDoc.firNumber),
-              if (caseDoc.year != null) _buildInfoRow('Year', caseDoc.year!),
+              _buildInfoRow(AppLocalizations.of(context)!.firNumber, caseDoc.firNumber),
+              if (caseDoc.year != null) _buildInfoRow(AppLocalizations.of(context)!.year, caseDoc.year!),
               if (caseDoc.originalComplaintId != null)
-                _buildInfoRow('Complaint ID', caseDoc.originalComplaintId!),
+                _buildInfoRow(AppLocalizations.of(context)!.complaintId, caseDoc.originalComplaintId!),
               if (caseDoc.date != null)
-                _buildInfoRow('FIR Date', caseDoc.date!),
+                _buildInfoRow(AppLocalizations.of(context)!.firDate, caseDoc.date!),
               if (caseDoc.firFiledTimestamp != null)
                 _buildInfoRow(
-                  'FIR Filed At',
+                  AppLocalizations.of(context)!.firFiledAt,
                   _formatTimestamp(caseDoc.firFiledTimestamp!),
                 ),
               if (caseDoc.district != null)
                 _buildInfoRow('District', caseDoc.district!),
               if (caseDoc.policeStation != null)
-                _buildInfoRow('Police Station', caseDoc.policeStation!),
+                _buildInfoRow(AppLocalizations.of(context)!.policeStation, caseDoc.policeStation!),
             ],
           ),
 
@@ -1303,42 +1304,42 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.placeOfOccurrenceCity != null)
             _buildSection(
               theme,
-              'Occurrence of Offence',
+              AppLocalizations.of(context)!.occurrenceOfOffence,
               [
                 if (caseDoc.occurrenceDay != null)
-                  _buildInfoRow('Day of Occurrence', caseDoc.occurrenceDay!),
+                  _buildInfoRow(AppLocalizations.of(context)!.dayOfOccurrence, caseDoc.occurrenceDay!),
                 if (caseDoc.occurrenceDateTimeFrom != null)
                   _buildInfoRow(
-                    'From',
+                    AppLocalizations.of(context)!.from,
                     caseDoc.occurrenceDateTimeFrom!,
                   ),
                 if (caseDoc.occurrenceDateTimeTo != null)
                   _buildInfoRow(
-                    'To',
+                    AppLocalizations.of(context)!.to,
                     caseDoc.occurrenceDateTimeTo!,
                   ),
                 if (caseDoc.timePeriod != null)
-                  _buildInfoRow('Time Period', caseDoc.timePeriod!),
+                  _buildInfoRow(AppLocalizations.of(context)!.timePeriod, caseDoc.timePeriod!),
                 if (caseDoc.priorToDateTimeDetails != null)
                   _buildInfoRow(
-                    'Prior to Date/Time Details',
+                    AppLocalizations.of(context)!.priorToDateTimeDetails,
                     caseDoc.priorToDateTimeDetails!,
                   ),
                 if (caseDoc.beatNumber != null)
-                  _buildInfoRow('Beat Number', caseDoc.beatNumber!),
+                  _buildInfoRow(AppLocalizations.of(context)!.beatNumber, caseDoc.beatNumber!),
                 if (caseDoc.placeOfOccurrenceStreet != null)
                   _buildInfoRow(
-                    'Street / Village',
+                    AppLocalizations.of(context)!.streetVillage,
                     caseDoc.placeOfOccurrenceStreet!,
                   ),
                 if (caseDoc.placeOfOccurrenceArea != null)
                   _buildInfoRow(
-                    'Area / Mandal',
+                    AppLocalizations.of(context)!.areaMandal,
                     caseDoc.placeOfOccurrenceArea!,
                   ),
                 if (caseDoc.placeOfOccurrenceCity != null)
                   _buildInfoRow(
-                    'City / District',
+                    AppLocalizations.of(context)!.cityDistrict,
                     caseDoc.placeOfOccurrenceCity!,
                   ),
                 if (caseDoc.placeOfOccurrenceState != null)
@@ -1347,30 +1348,30 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     caseDoc.placeOfOccurrenceState!,
                   ),
                 if (caseDoc.placeOfOccurrencePin != null)
-                  _buildInfoRow('PIN', caseDoc.placeOfOccurrencePin!),
+                  _buildInfoRow(AppLocalizations.of(context)!.pin, caseDoc.placeOfOccurrencePin!),
                 if (caseDoc.placeOfOccurrenceLatitude != null)
                   _buildInfoRow(
-                    'Latitude',
+                    AppLocalizations.of(context)!.latitude,
                     caseDoc.placeOfOccurrenceLatitude!,
                   ),
                 if (caseDoc.placeOfOccurrenceLongitude != null)
                   _buildInfoRow(
-                    'Longitude',
+                    AppLocalizations.of(context)!.longitude,
                     caseDoc.placeOfOccurrenceLongitude!,
                   ),
                 if (caseDoc.distanceFromPS != null)
                   _buildInfoRow(
-                    'Distance from PS',
+                    AppLocalizations.of(context)!.distanceFromPS,
                     caseDoc.distanceFromPS!,
                   ),
                 if (caseDoc.directionFromPS != null)
                   _buildInfoRow(
-                    'Direction from PS',
+                    AppLocalizations.of(context)!.directionFromPS,
                     caseDoc.directionFromPS!,
                   ),
                 if (caseDoc.isOutsideJurisdiction != null)
                   _buildInfoRow(
-                    'Outside Jurisdiction',
+                    AppLocalizations.of(context)!.outsideJurisdiction,
                     _boolText(caseDoc.isOutsideJurisdiction),
                   ),
               ],
@@ -1384,20 +1385,20 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.informationType != null)
             _buildSection(
               theme,
-              'Information Received at PS',
+              AppLocalizations.of(context)!.informationReceivedAtPS,
               [
                 if (caseDoc.informationReceivedDateTime != null)
                   _buildInfoRow(
-                    'Date & Time Received',
+                    AppLocalizations.of(context)!.dateTimeReceived,
                     caseDoc.informationReceivedDateTime!,
                   ),
                 if (caseDoc.generalDiaryEntryNumber != null)
                   _buildInfoRow(
-                    'GD Entry No.',
+                    AppLocalizations.of(context)!.gdEntryNo,
                     caseDoc.generalDiaryEntryNumber!,
                   ),
                 if (caseDoc.informationType != null)
-                  _buildInfoRow('Type of Information', caseDoc.informationType!),
+                  _buildInfoRow(AppLocalizations.of(context)!.typeOfInformation, caseDoc.informationType!),
               ],
             ),
 
@@ -1407,40 +1408,40 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           if (caseDoc.complainantName != null)
             _buildSection(
               theme,
-              'Complainant / Informant Details',
+              AppLocalizations.of(context)!.complainantInformantDetails,
               [
-                _buildInfoRow('Name', caseDoc.complainantName!),
+                _buildInfoRow(AppLocalizations.of(context)!.name, caseDoc.complainantName!),
                 if (caseDoc.complainantFatherHusbandName != null)
                   _buildInfoRow(
-                    'Father/Husband Name',
+                    AppLocalizations.of(context)!.fatherHusbandName,
                     caseDoc.complainantFatherHusbandName!,
                   ),
                 if (caseDoc.complainantGender != null)
                   _buildInfoRow('Gender', caseDoc.complainantGender!),
                 if (caseDoc.complainantDob != null)
-                  _buildInfoRow('Date of Birth', caseDoc.complainantDob!),
+                  _buildInfoRow(AppLocalizations.of(context)!.dob, caseDoc.complainantDob!),
                 if (caseDoc.complainantAge != null)
                   _buildInfoRow('Age', caseDoc.complainantAge!),
                 if (caseDoc.complainantNationality != null)
                   _buildInfoRow(
-                    'Nationality',
+                    AppLocalizations.of(context)!.nationality,
                     caseDoc.complainantNationality!,
                   ),
                 if (caseDoc.complainantCaste != null)
-                  _buildInfoRow('Caste', caseDoc.complainantCaste!),
+                  _buildInfoRow(AppLocalizations.of(context)!.caste, caseDoc.complainantCaste!),
                 if (caseDoc.complainantOccupation != null)
                   _buildInfoRow(
-                    'Occupation',
+                    AppLocalizations.of(context)!.occupation,
                     caseDoc.complainantOccupation!,
                   ),
                 if (caseDoc.complainantMobileNumber != null)
                   _buildInfoRow(
-                    'Mobile Number',
+                    AppLocalizations.of(context)!.mobileNumber,
                     caseDoc.complainantMobileNumber!,
                   ),
                 if (caseDoc.complainantAddress != null)
                   _buildInfoRow(
-                    'Address',
+                    AppLocalizations.of(context)!.address,
                     caseDoc.complainantAddress!,
                   ),
                 if (caseDoc.complainantPassportNumber != null ||
@@ -1449,17 +1450,17 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   const SizedBox(height: 8),
                 if (caseDoc.complainantPassportNumber != null)
                   _buildInfoRow(
-                    'Passport No.',
+                    AppLocalizations.of(context)!.passportNo,
                     caseDoc.complainantPassportNumber!,
                   ),
                 if (caseDoc.complainantPassportPlaceOfIssue != null)
                   _buildInfoRow(
-                    'Passport Place of Issue',
+                    AppLocalizations.of(context)!.passportPlaceOfIssue,
                     caseDoc.complainantPassportPlaceOfIssue!,
                   ),
                 if (caseDoc.complainantPassportDateOfIssue != null)
                   _buildInfoRow(
-                    'Passport Date of Issue',
+                    AppLocalizations.of(context)!.passportDateOfIssue,
                     caseDoc.complainantPassportDateOfIssue!,
                   ),
               ],
@@ -1472,37 +1473,37 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.isComplainantAlsoVictim != null)
             _buildSection(
               theme,
-              'Victim Details',
+              AppLocalizations.of(context)!.victimDetails,
               [
                 if (caseDoc.victimName != null)
-                  _buildInfoRow('Name', caseDoc.victimName!),
+                  _buildInfoRow(AppLocalizations.of(context)!.name, caseDoc.victimName!),
                 if (caseDoc.victimFatherHusbandName != null)
                   _buildInfoRow(
-                    'Father/Husband Name',
+                    AppLocalizations.of(context)!.fatherHusbandName,
                     caseDoc.victimFatherHusbandName!,
                   ),
                 if (caseDoc.victimGender != null)
                   _buildInfoRow('Gender', caseDoc.victimGender!),
                 if (caseDoc.victimDob != null)
-                  _buildInfoRow('Date of Birth', caseDoc.victimDob!),
+                  _buildInfoRow(AppLocalizations.of(context)!.dob, caseDoc.victimDob!),
                 if (caseDoc.victimAge != null)
                   _buildInfoRow('Age', caseDoc.victimAge!),
                 if (caseDoc.victimNationality != null)
-                  _buildInfoRow('Nationality', caseDoc.victimNationality!),
+                  _buildInfoRow(AppLocalizations.of(context)!.nationality, caseDoc.victimNationality!),
                 if (caseDoc.victimReligion != null)
-                  _buildInfoRow('Religion', caseDoc.victimReligion!),
+                  _buildInfoRow(AppLocalizations.of(context)!.religion, caseDoc.victimReligion!),
                 if (caseDoc.victimCaste != null)
-                  _buildInfoRow('Caste', caseDoc.victimCaste!),
+                  _buildInfoRow(AppLocalizations.of(context)!.caste, caseDoc.victimCaste!),
                 if (caseDoc.victimOccupation != null)
                   _buildInfoRow(
-                    'Occupation',
+                    AppLocalizations.of(context)!.occupation,
                     caseDoc.victimOccupation!,
                   ),
                 if (caseDoc.victimAddress != null)
-                  _buildInfoRow('Address', caseDoc.victimAddress!),
+                  _buildInfoRow(AppLocalizations.of(context)!.address, caseDoc.victimAddress!),
                 if (caseDoc.isComplainantAlsoVictim != null)
                   _buildInfoRow(
-                    'Complainant is also the Victim',
+                    AppLocalizations.of(context)!.complainantAlsoVictim,
                     _boolText(caseDoc.isComplainantAlsoVictim),
                   ),
               ],
@@ -1515,7 +1516,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.accusedPersons!.isNotEmpty)
             _buildSection(
               theme,
-              'Accused Details',
+              AppLocalizations.of(context)!.accusedDetails,
               [
                 ...caseDoc.accusedPersons!.asMap().entries.map((entry) {
                   final index = entry.key + 1;
@@ -1560,19 +1561,19 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                           ),
                         ),
                         const SizedBox(height: 8),
-                        _buildInfoRow('Name', valueOrEmpty('name')),
+                        _buildInfoRow(AppLocalizations.of(context)!.name, valueOrEmpty('name')),
                         _buildInfoRow(
-                          'Father/Husband Name',
+                          AppLocalizations.of(context)!.fatherHusbandName,
                           valueOrEmpty('fatherHusbandName'),
                         ),
                         _buildInfoRow('Gender', valueOrEmpty('gender')),
                         _buildInfoRow('Age', valueOrEmpty('age')),
-                        _buildInfoRow('Nationality', valueOrEmpty('nationality')),
-                        _buildInfoRow('Caste', valueOrEmpty('caste')),
-                        _buildInfoRow('Occupation', valueOrEmpty('occupation')),
+                        _buildInfoRow(AppLocalizations.of(context)!.nationality, valueOrEmpty('nationality')),
+                        _buildInfoRow(AppLocalizations.of(context)!.caste, valueOrEmpty('caste')),
+                        _buildInfoRow(AppLocalizations.of(context)!.occupation, valueOrEmpty('occupation')),
                         _buildInfoRow('Cell No.', valueOrEmpty('cellNo')),
                         _buildInfoRow('Email', valueOrEmpty('email')),
-                        _buildInfoRow('Address', valueOrEmpty('address')),
+                        _buildInfoRow(AppLocalizations.of(context)!.address, valueOrEmpty('address')),
                         _buildInfoRow(
                           'Physical Features',
                           physicalFeatures,
@@ -1593,11 +1594,11 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.inquestReportCaseNo != null)
             _buildSection(
               theme,
-              'Properties / Delay / Inquest',
+              AppLocalizations.of(context)!.propertiesDelayInquest,
               [
                 if (caseDoc.propertiesDetails != null)
                   _buildInfoRow(
-                    'Properties Involved',
+                    AppLocalizations.of(context)!.propertiesInvolved,
                     caseDoc.propertiesDetails!,
                   ),
                 if (caseDoc.propertiesTotalValueInr != null)
@@ -1607,7 +1608,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   ),
                 if (caseDoc.isDelayInReporting != null)
                   _buildInfoRow(
-                    'Delay in Reporting',
+                    AppLocalizations.of(context)!.delayInReporting,
                     _boolText(caseDoc.isDelayInReporting),
                   ),
                 if (caseDoc.inquestReportCaseNo != null)
@@ -1626,11 +1627,11 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.incidentDetails != null)
             _buildSection(
               theme,
-              'Acts & Statement',
+              AppLocalizations.of(context)!.actsStatement,
               [
                 if (caseDoc.actsAndSectionsInvolved != null) ...[
                   Text(
-                    'Acts & Sections Involved:',
+                    AppLocalizations.of(context)!.actsAndSectionsInvolved,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
@@ -1656,7 +1657,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 ],
                 if (caseDoc.incidentDetails != null) ...[
                   Text(
-                    'Brief Incident Details:',
+                    AppLocalizations.of(context)!.briefIncidentDetails,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
@@ -1677,21 +1678,21 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               caseDoc.isFirReadOverAndAdmittedCorrect != null)
             _buildSection(
               theme,
-              'Action Taken & Confirmation',
+              AppLocalizations.of(context)!.actionTakenAndConfirmation,
               [
                 if (caseDoc.actionTakenDetails != null)
                   _buildInfoRow(
-                    'Action Taken',
+                    AppLocalizations.of(context)!.actionTaken,
                     caseDoc.actionTakenDetails!,
                   ),
                 if (caseDoc.investigatingOfficerName != null)
                   _buildInfoRow(
-                    'Investigating Officer',
+                    AppLocalizations.of(context)!.investigatingOfficer,
                     caseDoc.investigatingOfficerName!,
                   ),
                 if (caseDoc.investigatingOfficerRank != null)
                   _buildInfoRow(
-                    'Rank',
+                    AppLocalizations.of(context)!.rank,
                     caseDoc.investigatingOfficerRank!,
                   ),
                 if (caseDoc.investigatingOfficerDistrict != null)
@@ -1706,12 +1707,12 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   ),
                 if (caseDoc.dispatchOfficerName != null)
                   _buildInfoRow(
-                    'Dispatching Officer',
+                    AppLocalizations.of(context)!.dispatchingOfficer,
                     caseDoc.dispatchOfficerName!,
                   ),
                 if (caseDoc.dispatchOfficerRank != null)
                   _buildInfoRow(
-                    'Dispatching Officer Rank',
+                    AppLocalizations.of(context)!.dispatchingOfficerRank,
                     caseDoc.dispatchOfficerRank!,
                   ),
                 if (caseDoc.isFirReadOverAndAdmittedCorrect != null)
@@ -1731,7 +1732,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   ),
                 if (caseDoc.complainantSignatureNote != null)
                   _buildInfoRow(
-                    'Signature / Thumb Impression',
+                    AppLocalizations.of(context)!.signatureThumbImpression,
                     caseDoc.complainantSignatureNote!,
                   ),
               ],
@@ -1768,7 +1769,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                            const Icon(Icons.location_on, color: Colors.blue),
                            const SizedBox(width: 8),
                            Text(
-                             'Crime Scenes',
+                             AppLocalizations.of(context)!.crimeScenes,
                              style: theme.textTheme.titleLarge?.copyWith(
                                fontWeight: FontWeight.bold,
                              ),
@@ -1777,7 +1778,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                        ),
                        IconButton(
                          icon: const Icon(Icons.add_location_alt, color: orange),
-                         tooltip: 'Add Scene',
+                         tooltip: AppLocalizations.of(context)!.addScene,
                          onPressed: () => _showEditCrimeDetailsDialog(theme),
                        ),
                     ],
@@ -1787,7 +1788,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   if (_isLoadingScenes)
                     const Center(child: CircularProgressIndicator())
                   else if (_crimeScenes.isEmpty)
-                    const Text('No crime scenes linked to this case yet.')
+                    Text(AppLocalizations.of(context)!.noCrimeScenesLinked)
                   else
                     ..._crimeScenes.map((scene) {
                        return Container(
@@ -1803,7 +1804,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                              Row(
                                children: [
                                  Text(
-                                   scene.crimeType ?? 'Unknown Type',
+                                   scene.crimeType ?? AppLocalizations.of(context)!.unknownType,
                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                  ),
                                  const Spacer(),
@@ -1818,11 +1819,11 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                       final confirm = await showDialog<bool>(
                                         context: context,
                                         builder: (c) => AlertDialog(
-                                          title: const Text('Delete Scene'),
-                                          content: const Text('Are you sure you want to delete this scene?'),
+                                          title: Text(AppLocalizations.of(context)!.deleteScene),
+                                          content: Text(AppLocalizations.of(context)!.areSureDeleteScene),
                                           actions: [
-                                            TextButton(onPressed: ()=>Navigator.pop(c, false), child: const Text('Cancel')),
-                                            TextButton(onPressed: ()=>Navigator.pop(c, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                            TextButton(onPressed: ()=>Navigator.pop(c, false), child: Text(AppLocalizations.of(context)!.cancel)),
+                                            TextButton(onPressed: ()=>Navigator.pop(c, true), child: Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red))),
                                           ],
                                         ),
                                       );
@@ -1843,9 +1844,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                              ),
                              const Divider(height: 12),
                              if (scene.placeOfOccurrenceDescription?.isNotEmpty == true)
-                               _buildInfoRow('Place', scene.placeOfOccurrenceDescription!),
+                               _buildInfoRow(AppLocalizations.of(context)!.place, scene.placeOfOccurrenceDescription!),
                              if (scene.physicalEvidenceDescription?.isNotEmpty == true)
-                               _buildInfoRow('Physical Evidence', scene.physicalEvidenceDescription!),
+                               _buildInfoRow(AppLocalizations.of(context)!.physicalEvidence, scene.physicalEvidenceDescription!),
                              
                              const SizedBox(height: 4),
                              Text(
@@ -1876,7 +1877,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Capture Crime Scene Evidence',
+                          AppLocalizations.of(context)!.captureCrimeSceneEvidence,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -1893,7 +1894,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                         child: ElevatedButton.icon(
                           onPressed: () => _captureSceneEvidence(CaptureMode.image),
                           icon: const Icon(Icons.camera),
-                          label: const Text('Photo'),
+                          label: Text(AppLocalizations.of(context)!.photo),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: orange,
                             foregroundColor: Colors.white,
@@ -1906,7 +1907,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                         child: ElevatedButton.icon(
                           onPressed: () => _captureSceneEvidence(CaptureMode.video),
                           icon: const Icon(Icons.videocam),
-                          label: const Text('Video'),
+                          label: Text(AppLocalizations.of(context)!.video),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: orange,
                             foregroundColor: Colors.white,
@@ -1919,7 +1920,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                         child: ElevatedButton.icon(
                           onPressed: _uploadSceneFile,
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload'),
+                          label: Text(AppLocalizations.of(context)!.upload),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey.shade700,
                             foregroundColor: Colors.white,
@@ -2049,8 +2050,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                         await _saveCrimeSceneEvidence();
                                         if (mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Evidence removed'),
+                                            SnackBar(
+                                              content: Text(AppLocalizations.of(context)!.evidenceRemoved),
                                               duration: Duration(seconds: 1),
                                             ),
                                           );
@@ -2128,8 +2129,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                             )
                           : const Icon(Icons.auto_awesome),
                       label: Text(_isAnalyzingScene
-                          ? 'Analyzing...'
-                          : 'Analyze Scene with AI'),
+                          ? AppLocalizations.of(context)!.analyzing
+                          : AppLocalizations.of(context)!.analyzeSceneWithAI),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
                         foregroundColor: Colors.white,
@@ -2157,7 +2158,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                               const Icon(Icons.auto_awesome, color: Colors.purple),
                               const SizedBox(width: 8),
                               Text(
-                                'AI Scene Analysis',
+                                AppLocalizations.of(context)!.aiSceneAnalysis,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.purple.shade900,
@@ -2193,7 +2194,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Crime Scene Analysis Reports',
+                          AppLocalizations.of(context)!.crimeSceneAnalysisReports,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -2205,7 +2206,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   if (_isLoadingMedia)
                     const Center(child: CircularProgressIndicator())
                   else if (_mediaAnalyses.isEmpty)
-                    const Text('No analysis reports found.')
+                    Text(AppLocalizations.of(context)!.noAnalysisReportsFound)
                   else
                     ..._mediaAnalyses.map((report) => _buildMediaReportCard(report, theme)).toList(),
                 ],
@@ -2231,12 +2232,12 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           children: [
             IconButton(
               icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
-              tooltip: 'Download Report',
+              tooltip: AppLocalizations.of(context)!.downloadReport,
               onPressed: () => _downloadAnalysisPdf(report),
             ),
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.grey),
-              tooltip: 'Delete Report',
+              tooltip: AppLocalizations.of(context)!.deleteReport,
               onPressed: () => _deleteAnalysisReport(report),
             ),
           ],
@@ -2249,7 +2250,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               children: [
                 if (report.identifiedElements.isNotEmpty) ...[
                   Text(
-                    'Identified Elements:',
+                    AppLocalizations.of(context)!.identifiedElements,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -2269,7 +2270,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   const SizedBox(height: 16),
                 ],
                 Text(
-                  'Scene Narrative:',
+                  AppLocalizations.of(context)!.sceneNarrative,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2282,7 +2283,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Case File Summary:',
+                  AppLocalizations.of(context)!.caseFileSummary,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2319,7 +2320,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Case Journal (IO\'s Diary)',
+                          AppLocalizations.of(context)!.caseJournalIOsDiary,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -2331,7 +2332,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   if (_isLoadingJournal)
                     const Center(child: CircularProgressIndicator())
                   else if (_journalEntries.isEmpty)
-                    const Text('No journal entries yet for this case.')
+                    Text(AppLocalizations.of(context)!.noJournalEntriesYet)
                   else
                     _buildJournalTimeline(theme),
                 ],
@@ -2446,7 +2447,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     const CircularProgressIndicator(),
                     const SizedBox(height: 12),
                     Text(
-                      'Loading evidence from all sources...',
+                      AppLocalizations.of(context)!.loadingEvidenceFromAllSources,
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: Colors.grey[700]),
                       textAlign: TextAlign.center,
@@ -2466,7 +2467,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     Icon(Icons.archive, size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
-                      'No evidence documents found',
+                      AppLocalizations.of(context)!.noEvidenceDocumentsFound,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -2487,28 +2488,28 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           if (hasCrimeSceneEvidence)
             _buildSection(
               theme,
-              'Crime Scene Captures',
+              AppLocalizations.of(context)!.crimeSceneCaptures,
               _buildCrimeSceneEvidenceWidgets(theme),
             ),
 
           if (hasJournalEvidence)
             _buildSection(
               theme,
-              'From Investigation Diary',
+              AppLocalizations.of(context)!.fromInvestigationDiary,
               _buildJournalEvidenceWidgets(theme),
             ),
 
           if (hasPetitionEvidence)
             _buildSection(
               theme,
-              'From Petitions',
+              AppLocalizations.of(context)!.fromPetitions,
               _buildPetitionEvidenceWidgets(theme),
             ),
 
           if (hasMediaAnalyses)
              _buildSection(
               theme,
-              'Forensic Analysis Reports',
+              AppLocalizations.of(context)!.forensicAnalysisReports,
               _buildMediaAnalysisWidgets(theme),
             ),
         ],
@@ -2715,7 +2716,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     if (widgets.isEmpty) {
       widgets.add(
         Text(
-          'No petition documents linked to this case yet.',
+          AppLocalizations.of(context)!.noPetitionDocumentsLinked,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: Colors.grey[600],
           ),
@@ -2743,7 +2744,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Final Investigation Report / Court Document',
+                      AppLocalizations.of(context)!.finalInvestigationReport,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -2795,7 +2796,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     }
                   },
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('Download / View Final Report PDF'),
+                  label: Text(AppLocalizations.of(context)!.downloadViewFinalReportPDF),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepOrange,
                     foregroundColor: Colors.white,

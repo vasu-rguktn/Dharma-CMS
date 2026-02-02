@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 
 class AiChatbotDetailsScreen extends StatelessWidget {
   final Map<String, String> answers;
   final String summary;
   final String classification;
-  final String originalClassification; // New field
+  final String originalClassification;
+  final List<String> evidencePaths; // New field
 
   const AiChatbotDetailsScreen({
     super.key,
@@ -14,16 +17,23 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     required this.summary,
     required this.classification,
     required this.originalClassification,
+    this.evidencePaths = const [], // Default empty
   });
 
   static AiChatbotDetailsScreen fromRouteSettings(
       BuildContext context, GoRouterState state) {
     final q = state.extra as Map<String, dynamic>?;
+    
+    // Safely cast the nested map
+    final rawAnswers = q?['answers'] as Map<String, dynamic>?;
+    final safeAnswers = rawAnswers?.map((k, v) => MapEntry(k, v.toString())) ?? {};
+
     return AiChatbotDetailsScreen(
-      answers: q?['answers'] as Map<String, String>? ?? {},
+      answers: safeAnswers,
       summary: q?['summary'] as String? ?? '',
       classification: q?['classification'] as String? ?? '',
       originalClassification: q?['originalClassification'] as String? ?? '',
+      evidencePaths: (q?['evidencePaths'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -61,7 +71,20 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FE),
       appBar: AppBar(
-        title: Text(localizations.aiChatbotDetails),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+             if (context.canPop()) {
+               context.pop();
+             } else {
+               context.go('/dashboard'); // Fallback to home
+             }
+          },
+        ),
+        title: Text(
+          localizations.aiChatbotDetails,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -126,6 +149,11 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildSummaryRow(
                       'Date of Complaint', answers['date_of_complaint']),
+                  if (Provider.of<PetitionProvider>(context).tempEvidence.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: _buildSummaryRow('Attached Evidence', '${Provider.of<PetitionProvider>(context).tempEvidence.length} file(s) attached'),
+                    ),
                 ],
               ),
             ),
@@ -147,13 +175,16 @@ class AiChatbotDetailsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => context
-                    .push('/cognigible-non-cognigible-separation', extra: {
+                onPressed: () {
+                  print('🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
+                  context.push('/cognigible-non-cognigible-separation', extra: {
                   'classification': classification,
                   'originalClassification':
                       originalClassification, // Pass it on
                   'complaintData': answers,
-                }),
+                  'evidencePaths': evidencePaths, // FORWARD EVIDENCE
+                });
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),
                   padding: const EdgeInsets.symmetric(vertical: 18),

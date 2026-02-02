@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -216,7 +217,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      petition.phoneNumber!,
+                      petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -308,7 +309,10 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                 const Divider(height: 32),
                 _buildDetailRow('Petitioner', petition.petitionerName),
                 if (petition.phoneNumber != null)
-                  _buildDetailRow('Phone', petition.phoneNumber!),
+                  _buildDetailRow(
+                    'Phone',
+                    petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                  ),
                 if (petition.address != null)
                   _buildDetailRow('Address', petition.address!),
                 if (petition.firNumber != null)
@@ -390,6 +394,130 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     ),
                   ),
                 ],
+                ],
+                const SizedBox(height: 16),
+                // Documents Section
+                if (petition.proofDocumentUrls != null && petition.proofDocumentUrls!.isNotEmpty) ...[
+                   Text(
+                    'Uploaded Documents/Proofs',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 120, // Thumbnail strip
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: petition.proofDocumentUrls!.map((url) {
+                          // Determine file type
+                          final lowerUrl = url.toLowerCase();
+                          final isPdf = lowerUrl.contains('.pdf');
+                          final isDoc = lowerUrl.contains('.doc') || lowerUrl.contains('.docx');
+                          final isTxt = lowerUrl.contains('.txt');
+                          
+                          // Assume image ONLY if specific image extension is present
+                          // Removed 'alt=media' check as it causes PDFs to be treated as images
+                          final isImage = lowerUrl.contains('.jpg') || lowerUrl.contains('.png') || 
+                                          lowerUrl.contains('.jpeg') || lowerUrl.contains('.webp') || 
+                                          lowerUrl.contains('.heic');
+                          
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (isImage) {
+                                  // Opens expanded view for images
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      child: Stack(
+                                        children: [
+                                          InteractiveViewer(
+                                            child: Image.network(
+                                              url,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (c, o, s) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 10,
+                                            right: 10,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                              onPressed: () => Navigator.of(ctx).pop(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  // Launch URL for documents
+                                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                clipBehavior: Clip.hardEdge,
+                                child: isImage 
+                                ? Image.network(
+                                    url, 
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        isPdf ? Icons.picture_as_pdf : (isDoc ? Icons.description : Icons.insert_drive_file),
+                                        size: 32,
+                                        color: isPdf ? Colors.red : (isDoc ? Colors.blue : Colors.grey[700]),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        isPdf ? 'PDF' : (isDoc ? 'DOC' : 'FILE'),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  )
+                ] else ...[
+                   Padding(
+                     padding: const EdgeInsets.only(top: 16.0),
+                     child: Text(
+                      'Uploaded Documents/Proofs: None',
+                      style: TextStyle(
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.bold
+                          ),
+                    ),
+                   ),
+                    // DEBUG: Remove this later
+                    Builder(builder: (c) {
+                        print('DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
+                        return const SizedBox.shrink();
+                    }),
+                ],
               ],
             ),
           );
@@ -430,7 +558,10 @@ class _PetitionsScreenState extends State<PetitionsScreen>
 }
 
 class CreatePetitionForm extends StatefulWidget {
-  const CreatePetitionForm({super.key, this.onCreatedSuccess});
+  const CreatePetitionForm({
+    super.key, 
+    this.onCreatedSuccess
+  });
 
   final VoidCallback? onCreatedSuccess;
 
@@ -461,6 +592,93 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void initState() {
     super.initState();
     _initBackend();
+    
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkAndConsumeEvidence();
+  }
+
+  void _checkAndConsumeEvidence() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+     print('🔍 [DEBUG] Petition Screen: Checking for evidence...');
+      final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
+      
+      // 1. Try Provider (Best for Web/Bytes & Mobile Stashing)
+      if (petitionProvider.tempEvidence.isNotEmpty) {
+         debugPrint('📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
+         setState(() {
+           // Avoid adding duplicates if already added
+           final existingNames = _proofFiles.map((e) => e.name).toSet();
+           final newFiles = petitionProvider.tempEvidence.where((e) => !existingNames.contains(e.name)).toList();
+           
+           if (newFiles.isNotEmpty) {
+             _proofFiles.addAll(newFiles);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Auto-attached ${newFiles.length} proofs from chat')),
+              );
+           }
+         });
+         // Clear temp evidence to prevent processing again
+         petitionProvider.clearTempEvidence();
+      } 
+      // 2. Fallback to Router 'extra' (Legacy/Android Paths)
+      else {
+        final extra = GoRouterState.of(context).extra;
+        if (extra is Map && extra['evidencePaths'] is List) {
+           final paths = extra['evidencePaths'] as List;
+           if (paths.isNotEmpty) {
+             // Only process if we haven't already (simple check)
+             if (_proofFiles.isEmpty) {
+                setState(() {
+                   _proofFiles = paths.map((p) {
+                      final name = p.toString().split('/').last;
+                      return PlatformFile(
+                        name: name, 
+                        size: 0, 
+                        path: p.toString()
+                      );
+                   }).toList();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Auto-attached ${paths.length} proofs from chat')),
+                );
+             }
+           }
+        }
+      }
+      
+      // Also check for auto-fill fields from Router
+      final extra = GoRouterState.of(context).extra;
+      if (extra is Map) {
+          if (extra.containsKey('complaintType') && _titleController.text.isEmpty) {
+             _titleController.text = extra['complaintType'].toString();
+          }
+          if (extra.containsKey('fullName') && _petitionerNameController.text.isEmpty) {
+             _petitionerNameController.text = extra['fullName'].toString();
+          }
+          if (extra.containsKey('phone') && _phoneNumberController.text.isEmpty) {
+             _phoneNumberController.text = extra['phone'].toString();
+          }
+          if (extra.containsKey('address') && _addressController.text.isEmpty) {
+             _addressController.text = extra['address'].toString();
+          }
+          
+          if (_groundsController.text.isEmpty && (extra.containsKey('details') || extra.containsKey('incident_details'))) {
+             String combined = "";
+             if (extra['incident_address'] != null && extra['incident_address'].toString().isNotEmpty) {
+                combined += "Location: ${extra['incident_address']}\n\n";
+             }
+             combined += extra['details']?.toString() ?? extra['incident_details']?.toString() ?? '';
+             _groundsController.text = combined;
+          }
+          
+          if (_prayerReliefController.text.isEmpty && _titleController.text.isNotEmpty) {
+             _prayerReliefController.text = "I request the police authorities to register an FIR and take necessary action to trace and recover my stolen belongings.";
+          }
+       }
+    });
   }
 
   Future<void> _initBackend() async {

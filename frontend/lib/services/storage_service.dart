@@ -27,8 +27,41 @@ class StorageService {
         case 'png':
           contentType = 'image/png';
           break;
+        case 'gif':
+          contentType = 'image/gif';
+          break;
+        case 'webp':
+          contentType = 'image/webp';
+          break;
+        case 'heic':
+          contentType = 'image/heic';
+          break;
         case 'pdf':
           contentType = 'application/pdf';
+          break;
+        case 'doc':
+          contentType = 'application/msword';
+          break;
+        case 'docx':
+          contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+        case 'xls':
+          contentType = 'application/vnd.ms-excel';
+          break;
+        case 'xlsx':
+          contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          break;
+        case 'ppt':
+          contentType = 'application/vnd.ms-powerpoint';
+          break;
+        case 'pptx':
+          contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+          break;
+        case 'csv':
+          contentType = 'text/csv';
+          break;
+        case 'txt':
+          contentType = 'text/plain';
           break;
         case 'mp3':
           contentType = 'audio/mpeg';
@@ -38,6 +71,12 @@ class StorageService {
           break;
         case 'mp4':
           contentType = 'video/mp4';
+          break;
+        case 'mov':
+          contentType = 'video/quicktime';
+          break;
+        case 'avi':
+          contentType = 'video/x-msvideo';
           break;
         default:
           break;

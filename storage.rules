@@ -88,6 +88,19 @@ service firebase.storage {
       // Only police can update/delete reports
       allow update, delete: if isPolice();
     }
+
+    // CASE JOURNAL / INVESTIGATION DIARY
+    // Path: case_journal/{caseId}/entries/{timestamp}/{filename}
+    match /case_journal/{caseId}/{allPaths=**} {
+      // Police can upload/write entries
+      allow create: if isPolice() && request.resource.size < 50 * 1024 * 1024;
+      
+      // Police can update/delete
+      allow update, delete: if isPolice();
+      
+      // Police and Case Owners (Citizens) can read attachments
+      allow read: if isPolice() || ownsCase(caseId);
+    }
     
     // PETITION DOCUMENTS
     // Path: petition-documents/{petitionId}/{filename}
@@ -130,6 +143,46 @@ service firebase.storage {
       allow read: if request.auth != null;
       
       // Police can update/delete
+      allow update, delete: if isPolice();
+    }
+    
+    // PETITION UPDATES PHOTOS
+    // Path: petition_updates/{petitionId}/photos/...
+    match /petition_updates/{petitionId}/photos/{allPaths=**} {
+      // Only approved police can upload photos for petition updates
+      allow create: if isPolice() && 
+                      request.resource.size < 50 * 1024 * 1024 && 
+                      (request.resource.contentType.matches('image/.*') ||
+                       request.resource.contentType.matches('video/.*'));
+      
+      // Read access:
+      // - Police can read all photos
+      // - Citizens can read photos for updates on their own petitions
+      allow read: if isPolice() || 
+                     (request.auth != null &&
+                      firestore.exists(/databases/(default)/documents/petitions/$(petitionId)) &&
+                      firestore.get(/databases/(default)/documents/petitions/$(petitionId)).data.userId == request.auth.uid);
+      
+      // Only police can update/delete
+      allow update, delete: if isPolice();
+    }
+    
+    // PETITION UPDATES DOCUMENTS
+    // Path: petition_updates/{petitionId}/documents/...
+    match /petition_updates/{petitionId}/documents/{allPaths=**} {
+      // Only approved police can upload documents for petition updates
+      allow create: if isPolice() && 
+                      request.resource.size < 50 * 1024 * 1024;
+      
+      // Read access:
+      // - Police can read all documents
+      // - Citizens can read documents for updates on their own petitions
+      allow read: if isPolice() || 
+                     (request.auth != null &&
+                      firestore.exists(/databases/(default)/documents/petitions/$(petitionId)) &&
+                      firestore.get(/databases/(default)/documents/petitions/$(petitionId)).data.userId == request.auth.uid);
+      
+      // Only police can update/delete
       allow update, delete: if isPolice();
     }
     

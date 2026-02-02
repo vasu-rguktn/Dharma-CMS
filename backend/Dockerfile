@@ -37,9 +37,12 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Create directories for generated reports and temporary videos
+# Create directories for generated reports, temporary videos, and legal RAG
 RUN mkdir -p generated_reports/investigation_reports && \
-    mkdir -p temp_videos
+    mkdir -p temp_videos && \
+    mkdir -p legal_rag/chroma_db && \
+    mkdir -p legal_rag/data && \
+    mkdir -p storage/persons
 
 # (Optional) Expose Cloud Run port (informational only)
 EXPOSE 8080

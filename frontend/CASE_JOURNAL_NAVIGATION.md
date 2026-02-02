@@ -59,7 +59,7 @@ GoRoute(
 ├── AI Tools (section)
 │   ├── AI Chat
 │   ├── Legal Queries
-│   ├── Legal Suggestion
+│   ├── Legal Section Suggestions
 │   ├── Document Drafting
 │   ├── Chargesheet Gen
 │   ├── Chargesheet Vetting

@@ -118,7 +118,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 style: const TextStyle(fontSize: 44, fontWeight: FontWeight.bold, color: Colors.black, letterSpacing: 1.2, height: 1.1),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
+                              
+                              // Leadership Images Row
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8, // Minimal spacing to fit all 4 images in one row
+                                children: [
+                                  _buildLeaderItem('assets/CM.png', 'CM'),
+                                  _buildLeaderItem('assets/DyCM.png', 'DyCM'),
+                                  _buildLeaderItem('assets/HomeMinister.jpg', 'HM'),
+                                  _buildLeaderItem('assets/DGP.jpg', 'DGP'),
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
                               Text(
                                 localizations?.welcomeDescription ?? "Digital hub for Andhra Pradesh police records, management and analytics",
                                 textAlign: TextAlign.center,
@@ -128,43 +142,53 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               
                               // Show different buttons based on authentication state
                               if (authProvider.isAuthenticated) ...[
-                                // User is logged in - show "Go to Dashboard" button
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (authProvider.role == 'police') {
-                                        context.go('/police-dashboard');
-                                      } else {
-                                        // Go to dashboard first
-                                        context.go('/dashboard');
-                                        
-                                        // Check if onboarding is needed
-                                        // Use Future.microtask or just fire and forget, but here we are in onPressed so we can await
-                                        OnboardingService.shouldShowOnboarding().then((showOnboarding) {
-                                          if (!showOnboarding && context.mounted) {
-                                            // Only push AI chat if onboarding is NOT needed (returning user)
-                                            Future.delayed(const Duration(milliseconds: 50), () {
-                                              if (context.mounted) {
-                                                context.push('/ai-legal-chat');
-                                              }
-                                            });
-                                          }
-                                        });
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: WelcomeScreen.orange,
-                                      padding: const EdgeInsets.symmetric(vertical: 18),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                      elevation: 8,
-                                    ),
-                                    child: Text(
-                                      localizations?.goToDashboard ?? "Go to Dashboard",
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                if (authProvider.isProfileLoading) ...[
+                                   const Padding(
+                                     padding: EdgeInsets.symmetric(vertical: 20.0),
+                                     child: CircularProgressIndicator(color: WelcomeScreen.orange),
+                                   ),
+                                   Text(
+                                     "Loading Profile...",
+                                     style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                                   ),
+                                ] else ...[
+                                  // User is logged in & profile loaded - show "Go to Dashboard" button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        if (authProvider.role == 'police') {
+                                          context.go('/police-dashboard');
+                                        } else {
+                                          // Go to dashboard first
+                                          context.go('/dashboard');
+                                          
+                                          // Check if onboarding is needed
+                                          OnboardingService.shouldShowOnboarding().then((showOnboarding) {
+                                            if (!showOnboarding && context.mounted) {
+                                              // Only push AI chat if onboarding is NOT needed (returning user)
+                                              Future.delayed(const Duration(milliseconds: 50), () {
+                                                if (context.mounted) {
+                                                  context.push('/ai-legal-chat');
+                                                }
+                                              });
+                                            }
+                                          });
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: WelcomeScreen.orange,
+                                        padding: const EdgeInsets.symmetric(vertical: 18),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        elevation: 8,
+                                      ),
+                                      child: Text(
+                                        localizations?.goToDashboard ?? "Go to Dashboard",
+                                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                                 const SizedBox(height: 20),
                                 // Show logout option
                                 TextButton(
@@ -182,7 +206,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
-                                    onPressed: () => _showLoginBottomSheet(context),
+                                    onPressed: () => context.go('/phone-login'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: WelcomeScreen.orange,
                                       padding: const EdgeInsets.symmetric(vertical: 18),
@@ -204,7 +228,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                       style: const TextStyle(fontSize: 18, color: Colors.black),
                                     ),
                                     GestureDetector(
-                                      onTap: () => _showRegisterBottomSheet(context),
+                                      onTap: () => context.go('/signup/citizen'),
                                       child: Text(
                                         localizations?.register ?? "Register",
                                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: WelcomeScreen.orange),
@@ -241,111 +265,36 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  void _showLoginBottomSheet(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
+  // Removed role selection - app is citizen-only
+  // Login flows directly to phone login for citizens
 
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (_) => _BottomSheetContent(
-      title: localizations.loginAs ?? "Login as",
-      orangeColor: WelcomeScreen.orange,
-      options: [
-        // ✅ Citizen → Phone Login
-        _OptionItem(
-          label: localizations.citizen ?? "Citizen",
-          onTap: () {
-            Navigator.pop(context);
-            context.go('/phone-login'); // ✅ citizen phone login
-          },
-        ),
-
-        // ✅ Police → Police Login
-        _OptionItem(
-          label: localizations.police ?? "Police",
-          onTap: () {
-            Navigator.pop(context);
-            context.go('/police-login'); // ✅ police login
-          },
-        ),
-      ],
-    ),
-  );
-}
-
-
-  void _showRegisterBottomSheet(BuildContext context) {
-  final localizations = AppLocalizations.of(context)!;
-  // Navigate directly to citizen registration
-  context.go('/signup/citizen');
-}
-}
-// Beautiful bottom sheet — only added orangeColor parameter
-class _BottomSheetContent extends StatelessWidget {
-  final String title;
-  final List<_OptionItem> options;
-  final Color orangeColor;   // ← only addition
-
-  const _BottomSheetContent({
-    required this.title,
-    required this.options,
-    required this.orangeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildLeaderItem(String assetPath, String role) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.42,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(42), topRight: Radius.circular(42)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))],
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Container(width: 60, height: 6, decoration: BoxDecoration(color: Colors.grey[350], borderRadius: BorderRadius.circular(20))),
-          const SizedBox(height: 24),
-          Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87)),
-          const SizedBox(height: 36),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36),
-            child: Column(
-              children: options.asMap().entries.map((e) => Padding(
-                padding: EdgeInsets.only(bottom: e.key == options.length - 1 ? 0 : 18),
-                child: _buildButton(e.value),
-              )).toList(),
-            ),
+      width: 65, // Reduced from 70 to fit all 4 in one row
+      height: 65,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: WelcomeScreen.orange.withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
-          const Spacer(),
         ],
       ),
-    );
-  }
-
-  Widget _buildButton(_OptionItem item) {
-    return SizedBox(
-      height: 68,
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: item.onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: item.backgroundColor ?? orangeColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          elevation: item.onTap == null ? 0 : 12,
-          shadowColor: orangeColor.withOpacity(0.5),
+      child: ClipOval(
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: Colors.grey[200],
+            child: const Icon(Icons.person, size: 40, color: Colors.grey),
+          ),
         ),
-        child: Text(item.label, style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: item.textColor ?? Colors.white)),
       ),
     );
   }
 }
-
-class _OptionItem {
-  final String label;
-  final VoidCallback? onTap;
-  final Color? backgroundColor;
-  final Color? textColor;
-  _OptionItem({required this.label, this.onTap, this.backgroundColor, this.textColor});
-}
+// Bottom sheet classes removed - app is citizen-only, no role selection needed

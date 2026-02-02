@@ -713,10 +713,10 @@ abstract class AppLocalizations {
   /// **'View Cases'**
   String get viewCases;
 
-  /// Legal suggestion menu
+  /// Legal Section Suggestions menu
   ///
   /// In en, this message translates to:
-  /// **'Legal Suggestion'**
+  /// **'Legal Section Suggestions'**
   String get legalSuggestion;
 
   /// Document drafting menu
@@ -1513,19 +1513,19 @@ abstract class AppLocalizations {
   /// **'Please enter both FIR and incident details.'**
   String get enterFirAndIncidentDetails;
 
-  /// Success message for legal suggestions generation
+  /// Success message for Legal Section Suggester generation
   ///
   /// In en, this message translates to:
-  /// **'Legal suggestions generated.'**
+  /// **'Legal Section Suggester generated.'**
   String get legalSuggestionsGenerated;
 
   /// Error message for failed suggestions generation
   ///
   /// In en, this message translates to:
-  /// **'Failed to generate legal suggestions: {error}'**
+  /// **'Failed to generate Legal Section Suggester: {error}'**
   String failedToGenerateSuggestions(String error);
 
-  /// Description for legal suggestion screen
+  /// Description for Legal Section Suggestions screen
   ///
   /// In en, this message translates to:
   /// **'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.'**
@@ -1549,10 +1549,10 @@ abstract class AppLocalizations {
   /// **'Processing...'**
   String get processing;
 
-  /// Button text to get legal suggestions
+  /// Button text to get Legal Section Suggester
   ///
   /// In en, this message translates to:
-  /// **'Get Legal Suggestions'**
+  /// **'Get Legal Section Suggester'**
   String get getLegalSuggestions;
 
   /// Analyzing information message
@@ -1561,10 +1561,10 @@ abstract class AppLocalizations {
   /// **'Analyzing information and generating suggestions...'**
   String get analyzingInformation;
 
-  /// Title for AI legal suggestions result
+  /// Title for AI Legal Section Suggester result
   ///
   /// In en, this message translates to:
-  /// **'AI Legal Suggestions'**
+  /// **'AI Legal Section Suggester'**
   String get aiLegalSuggestions;
 
   /// Description for reviewing suggestions
@@ -2618,6 +2618,506 @@ String get map;
 String get viewMap;
 String get listening;
 String get tapToStopRecording;
+String get imageLab;
+String get addPolice;
+String get submitOfflinePetition;
+String get offlinePetitions;
+String get assignedPetitions;
+String get escalated;
+String get viewDetails;
+String get filterCasesUsingFilters;
+String get yourAccessLevel;
+String get ok;
+
+  /// Filters section label in cases screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filters:'**
+  String get filters;
+
+  /// Police range filter label
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get range;
+
+  /// Age filter label
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get age;
+
+  /// Description for cases screen subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Manage and view details of FIRs / Cases you are involved in.'**
+  String get casesScreenSubtitle;
+
+
+
+  /// Label for crimeScene
+  String get crimeScene;
+
+  /// Label for investigation
+  String get investigation;
+
+  /// Label for evidence
+  String get evidence;
+
+  /// Label for finalReport
+  String get finalReport;
+
+  /// Label for editCase
+  String get editCase;
+
+  /// Label for caseInformation
+  String get caseInformation;
+
+ 
+
+  /// Label for year
+  String get year;
+
+  /// Label for complaintId
+  String get complaintId;
+
+  /// Label for firDate
+  String get firDate;
+
+  /// Label for firFiledAt
+  String get firFiledAt;
+
+
+
+  /// Label for occurrenceOfOffence
+  String get occurrenceOfOffence;
+
+
+
+  /// Label for from
+  String get from;
+
+  /// Label for to
+  String get to;
+ 
+
+  /// Label for distanceFromPS
+  String get distanceFromPS;
+
+  /// Label for directionFromPS
+  String get directionFromPS;
+
+  /// Label for outsideJurisdiction
+  String get outsideJurisdiction;
+
+  /// Label for informationReceivedAtPS
+  String get informationReceivedAtPS;
+
+  /// Label for dateTimeReceived
+  String get dateTimeReceived;
+
+  /// Label for gdEntryNo
+  String get gdEntryNo;
+
+  /// Label for typeOfInformation
+  String get typeOfInformation;
+
+  /// Label for complainantInformantDetails
+  String get complainantInformantDetails;
+
+  /// Label for name
+  String get name;
+
+  /// Label for fatherHusbandName
+  String get fatherHusbandName;
+
+  /// Label for dob
+  String get dob;
+
+  /// Label for nationality
+  String get nationality;
+
+  /// Label for caste
+  String get caste;
+
+  /// Label for occupation
+  String get occupation;
+
+  
+  /// Label for passportNo
+  String get passportNo;
+
+  /// Label for passportPlaceOfIssue
+  String get passportPlaceOfIssue;
+
+  /// Label for passportDateOfIssue
+  String get passportDateOfIssue;
+
+  /// Label for victimDetails
+  String get victimDetails;
+
+  /// Label for religion
+  String get religion;
+
+  /// Label for complainantAlsoVictim
+  String get complainantAlsoVictim;
+
+  /// Label for accusedDetails
+  String get accusedDetails;
+
+  /// Label for accused
+  String get accused;
+
+  /// Label for propertiesDelayInquest
+  String get propertiesDelayInquest;
+
+  /// Label for propertiesInvolved
+  String get propertiesInvolved;
+
+  /// Label for totalValueINR
+  String get totalValueINR;
+
+  /// Label for delayInReporting
+  String get delayInReporting;
+
+  /// Label for inquestReportCaseNo
+  String get inquestReportCaseNo;
+
+  /// Label for actsStatement
+  String get actsStatement;
+
+  /// Label for actsAndSectionsInvolved
+  String get actsAndSectionsInvolved;
+
+  /// Label for complaintStatement
+  String get complaintStatement;
+
+  /// Label for briefIncidentDetails
+  String get briefIncidentDetails;
+
+  /// Label for actionTakenAndConfirmation
+  String get actionTakenAndConfirmation;
+
+  /// Label for actionTaken
+  String get actionTaken;
+
+  /// Label for investigatingOfficer
+  String get investigatingOfficer;
+
+ 
+  /// Label for dispatchToCourtDateTime
+  String get dispatchToCourtDateTime;
+
+  /// Label for dispatchingOfficer
+  String get dispatchingOfficer;
+
+  /// Label for dispatchingOfficerRank
+  String get dispatchingOfficerRank;
+
+  /// Label for firReadAndAdmittedCorrect
+  String get firReadAndAdmittedCorrect;
+
+  /// Label for copyGivenFreeOfCost
+  String get copyGivenFreeOfCost;
+
+  /// Label for roacRecorded
+  String get roacRecorded;
+
+  /// Label for signatureThumbImpression
+  String get signatureThumbImpression;
+
+  /// Label for yes
+  String get yes;
+
+  /// Label for no
+  String get no;
+
+  /// Label for crimeScenes
+  String get crimeScenes;
+
+  /// Label for addScene
+  String get addScene;
+
+  /// Label for noCrimeScenesLinked
+  String get noCrimeScenesLinked;
+
+  /// Label for unknownType
+  String get unknownType;
+
+  /// Label for deleteScene
+  String get deleteScene;
+
+  /// Label for areSureDeleteScene
+  String get areSureDeleteScene;
+
+  /// Label for place
+  String get place;
+
+  /// Label for physicalEvidence
+  String get physicalEvidence;
+
+  /// Label for recorded
+  String get recorded;
+
+  /// Label for captureCrimeSceneEvidence
+  String get captureCrimeSceneEvidence;
+
+  /// Label for photo
+  String get photo;
+
+  /// Label for video
+  String get video;
+
+  /// Label for upload
+  String get upload;
+
+  /// Label for evidenceFiles
+  String get evidenceFiles;
+
+  /// Label for analyzeSceneWithAI
+  String get analyzeSceneWithAI;
+
+  /// Label for analyzing
+  
+
+  /// Label for aiSceneAnalysis
+  String get aiSceneAnalysis;
+
+  /// Label for crimeSceneAnalysisReports
+  String get crimeSceneAnalysisReports;
+
+  /// Label for noAnalysisReportsFound
+  String get noAnalysisReportsFound;
+
+  /// Label for caseJournalIOsDiary
+  String get caseJournalIOsDiary;
+
+  /// Label for noJournalEntriesYet
+  String get noJournalEntriesYet;
+
+  /// Label for crimeSceneCaptures
+  String get crimeSceneCaptures;
+
+  /// Label for fromInvestigationDiary
+  String get fromInvestigationDiary;
+
+  /// Label for fromPetitions
+  String get fromPetitions;
+
+  /// Label for forensicAnalysisReports
+  String get forensicAnalysisReports;
+
+  /// Label for noEvidenceDocumentsFound
+  String get noEvidenceDocumentsFound;
+
+  /// Label for attachedDocumentsWillAppearHere
+  String get attachedDocumentsWillAppearHere;
+
+  /// Label for noDocumentsAttachedJournal
+  String get noDocumentsAttachedJournal;
+
+  /// Label for noPetitionDocumentsLinked
+  String get noPetitionDocumentsLinked;
+
+  /// Label for finalInvestigationReport
+  String get finalInvestigationReport;
+
+  /// Label for generatedOn
+  String get generatedOn;
+
+  /// Label for noFinalReportAttached
+  String get noFinalReportAttached;
+
+  /// Label for onceSomeoneGeneratesReport
+  String get onceSomeoneGeneratesReport;
+
+  /// Label for courtReadyReportGenerated
+  String get courtReadyReportGenerated;
+
+  /// Label for downloadViewFinalReportPDF
+  String get downloadViewFinalReportPDF;
+
+  /// Label for loadingEvidenceFromAllSources
+  String get loadingEvidenceFromAllSources;
+
+  /// Label for addCrimeScene
+  String get addCrimeScene;
+
+  /// Label for editCrimeScene
+  String get editCrimeScene;
+
+  /// Label for crimeType
+  String get crimeType;
+
+  /// Label for placeDescription
+  String get placeDescription;
+
+  /// Label for physicalEvidenceDescription
+  String get physicalEvidenceDescription;
+
+ 
+
+  /// Label for crimeSceneAdded
+  String get crimeSceneAdded;
+
+  /// Label for crimeSceneUpdated
+  String get crimeSceneUpdated;
+
+  /// Label for errorSavingCrimeScene
+  String get errorSavingCrimeScene;
+
+  
+  
+
+  /// Label for uploadingCapturedEvidence
+  String get uploadingCapturedEvidence;
+
+  /// Label for failedUploadEvidence
+  String get failedUploadEvidence;
+
+  /// Label for geoTaggedPhotoCaptured
+  String get geoTaggedPhotoCaptured;
+
+  /// Label for geoTaggedVideoCaptured
+  String get geoTaggedVideoCaptured;
+
+  /// Label for uploadEvidence
+  String get uploadEvidence;
+
+  /// Label for chooseFileType
+  String get chooseFileType;
+
+  /// Label for image
+  String get image;
+
+  /// Label for document
+  String get document;
+
+  /// Label for uploadingDocument
+  String get uploadingDocument;
+
+  /// Label for failedUploadDocument
+  String get failedUploadDocument;
+
+  /// Label for documentUploaded
+  String get documentUploaded;
+
+  /// Label for imageUploaded
+  String get imageUploaded;
+
+  /// Label for videoUploaded
+  String get videoUploaded;
+
+  /// Label for errorUploadingFile
+  String get errorUploadingFile;
+
+  /// Label for pleaseCapturUploadEvidenceFirst
+  String get pleaseCapturUploadEvidenceFirst;
+
+  /// Label for sceneAnalysisComplete
+  String get sceneAnalysisComplete;
+
+  /// Label for analysisError
+  String get analysisError;
+
+  /// Label for downloadEvidence
+  String get downloadEvidence;
+
+  /// Label for saveToDeviceDownloads
+  String get saveToDeviceDownloads;
+
+  /// Label for analyzeWithAI
+  String get analyzeWithAI;
+
+  /// Label for getForensicAnalysis
+  String get getForensicAnalysis;
+
+  /// Label for downloadReport
+  String get downloadReport;
+
+  /// Label for deleteReport
+  String get deleteReport;
+
+  /// Label for deleteReportConfirmation
+  String get deleteReportConfirmation;
+
+  /// Label for reportDeleted
+  String get reportDeleted;
+
+  /// Label for errorDeletingReport
+  String get errorDeletingReport;
+
+  /// Label for generatingPDF
+  String get generatingPDF;
+
+  /// Label for errorDownloadingPDF
+  String get errorDownloadingPDF;
+
+  /// Label for analyzedOn
+  String get analyzedOn;
+
+  /// Label for identifiedElements
+
+  /// Label for sceneNarrative
+  String get sceneNarrative;
+
+  /// Label for caseFileSummary
+  String get caseFileSummary;
+
+  /// Label for filedOn
+  String get filedOn;
+
+  /// Label for accessViaFileManager
+  String get accessViaFileManager;
+
+  /// Label for evidenceDownloaded
+  String get evidenceDownloaded;
+
+  /// Label for savedTo
+  String get savedTo;
+
+  /// Label for downloadFailed
+  String get downloadFailed;
+
+  /// Label for analysisComplete
+  
+
+  /// Label for analysisErrorEvidence
+  String get analysisErrorEvidence;
+
+  /// Label for evidenceRemoved
+  String get evidenceRemoved;
+
+  /// Title for petition type selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Select Petition Type'**
+  String get selectPetitionType;
+
+  /// Description for petition type selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.'**
+  String get petitionTypeDescription;
+
+  /// Button text for anonymous petition option
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous Petition'**
+  String get anonymousPetition;
+
+  /// Button text for normal petition option
+  ///
+  /// In en, this message translates to:
+  /// **'Normal Petition'**
+  String get normalPetition;
+
+  /// Message confirming anonymous petition mode selection
+  ///
+  /// In en, this message translates to:
+  /// **'You have selected Anonymous Petition Mode. Your name and address will not be recorded.'**
+  String get anonymousPetitionConfirm;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

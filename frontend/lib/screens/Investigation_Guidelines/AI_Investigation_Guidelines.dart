@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
@@ -83,13 +84,17 @@ class _AiInvestigationGuidelinesScreenState
 
   /* ---------------- BUILD FIR DETAILS ---------------- */
   String _buildFirDetails(Petition p) {
+    final phoneDisplay = p.phoneNumber == null
+        ? 'N/A'
+        : (p.isAnonymous ? maskPhoneNumber(p.phoneNumber) : p.phoneNumber!);
+    
     return '''
 Case ID: ${p.caseId ?? 'N/A'}
 Petition Title: ${p.title}
 Petition Type: ${p.type.displayName}
 
 Petitioner Name: ${p.petitionerName}
-Phone Number: ${p.phoneNumber ?? 'N/A'}
+Phone Number: $phoneDisplay
 
 District: ${p.district ?? 'N/A'}
 Police Station: ${p.stationName ?? 'N/A'}
@@ -532,9 +537,16 @@ ${p.grounds}
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title:
-            Text(AppLocalizations.of(context)!.aiInvestigationGuidelines),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/police-dashboard'),
+        ),
+        title: Text(
+          AppLocalizations.of(context)!.aiInvestigationGuidelines,
+          style: const TextStyle(color: Colors.white),
+        ),
         backgroundColor: orange,
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
   padding: const EdgeInsets.all(16),

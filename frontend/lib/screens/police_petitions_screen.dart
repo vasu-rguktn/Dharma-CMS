@@ -1,17 +1,23 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/police_auth_provider.dart';
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
+import 'package:Dharma/data/station_data_constants.dart';
 
 class PolicePetitionsScreen extends StatefulWidget {
   const PolicePetitionsScreen({super.key});
@@ -44,6 +50,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   // Hierarchy data
   Map<String, Map<String, List<String>>> _policeHierarchy = {};
   bool _hierarchyLoading = true;
+  String? _hierarchyError; // Error message if loading fails
+  bool _usingFirestoreFallback = false; // Track if using Firestore fallback
 
   /* ================= RANK TIERS ================= */
   
@@ -80,6 +88,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadProfile();
+      // Fetch saved complaints to enable the "Save" feature
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.user != null) {
+        Provider.of<ComplaintProvider>(context, listen: false)
+            .fetchComplaints(userId: auth.user!.uid);
+      }
     });
   }
 
@@ -108,16 +122,16 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
   /* ================= LOAD HIERARCHY ================= */
 
-  Future<void> _loadHierarchyData() async {
+  void _loadHierarchyData({bool retry = false}) {
+    // Simplify loading by using hardcoded constants - 100% reliable
+    debugPrint('🔄 [Petitions] Loading police hierarchy data from constants...');
+    
     try {
-      debugPrint('🔄 [Petitions] Loading police hierarchy data...');
-      final jsonStr = await rootBundle
-          .loadString('assets/data/ap_police_hierarchy_complete.json');
-      final Map<String, dynamic> data = json.decode(jsonStr);
-
       Map<String, Map<String, List<String>>> hierarchy = {};
       int totalDistricts = 0;
       int totalStations = 0;
+      
+      final data = kPoliceHierarchyComplete;
       
       data.forEach((range, districts) {
         if (districts is Map) {
@@ -132,20 +146,30 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
         }
       });
 
-      setState(() {
-        _policeHierarchy = hierarchy;
-        _hierarchyLoading = false;
-      });
-      
-      debugPrint('✅ [Petitions] Hierarchy loaded successfully!');
-      debugPrint('   📊 Ranges: ${hierarchy.length}');
-      debugPrint('   📊 Districts: $totalDistricts');
-      debugPrint('   📊 Stations: $totalStations');
+      if (mounted) {
+        setState(() {
+          _policeHierarchy = hierarchy;
+          _hierarchyLoading = false;
+          _hierarchyError = null;
+          _usingFirestoreFallback = false;
+        });
+        
+        debugPrint('✅ [Petitions] Hierarchy loaded successfully from constants!');
+        debugPrint('   📊 Ranges: ${hierarchy.length}');
+        debugPrint('   📊 Districts: $totalDistricts');
+        debugPrint('   📊 Stations: $totalStations');
+      }
     } catch (e) {
-      debugPrint('❌ [Petitions] Error loading hierarchy data: $e');
-      setState(() => _hierarchyLoading = false);
+      debugPrint('❌ [Petitions] Error parsing hierarchy constants: $e');
+      if (mounted) {
+        setState(() {
+           _hierarchyError = 'Failed to parse station data: $e';
+        });
+      }
     }
   }
+
+  // Firestore fallback removed as it is no longer needed with hardcoded constants
 
   /* ================= RANK-BASED FILTER VISIBILITY ================= */
 
@@ -195,7 +219,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     return [];
   }
 
-  List<String> _getAvailableStations() {
+  List<String> _getAvailableStations({List<Petition>? extraPetitions}) {
     String? targetRange;
     String? targetDistrict;
 
@@ -206,25 +230,41 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       targetDistrict = _policeDistrict;
     }
 
+    List<String> stations = [];
+
     // Determine which range to use
     if (_selectedRange != null) {
       targetRange = _selectedRange;
     } else if (_policeRange != null) {
       targetRange = _policeRange;
     } else if (targetDistrict != null) {
-      // If we have a district but no range, search for the district across all ranges
-      // using case-insensitive match
+      // Search logic for district
+      final normalizedTarget = targetDistrict.trim().toLowerCase();
+      
       for (var range in _policeHierarchy.keys) {
         final districtMap = _policeHierarchy[range] ?? {};
-        // Check keys case-insensitively
-        final matchedKey = districtMap.keys.firstWhere(
-          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+        // 1. Exact case-insensitive match
+        // 2. Partial match (hierarchy key contains target, or target contains hierarchy key)
+        var matchedKey = districtMap.keys.firstWhere(
+          (k) {
+            final normalizedK = k.trim().toLowerCase();
+            return normalizedK == normalizedTarget;
+          },
           orElse: () => '',
         );
 
+        if (matchedKey.isEmpty) {
+           matchedKey = districtMap.keys.firstWhere(
+            (k) {
+              final normalizedK = k.trim().toLowerCase();
+              return normalizedK.contains(normalizedTarget) || normalizedTarget.contains(normalizedK);
+            },
+            orElse: () => '',
+          );
+        }
+
         if (matchedKey.isNotEmpty) {
           targetRange = range;
-          // Update targetDistrict to the exact key found in JSON for lookup
           targetDistrict = matchedKey;
           debugPrint('🔍 Found district "$targetDistrict" (matched from "${_policeDistrict ?? _selectedDistrict}") in range "$range"');
           break;
@@ -232,34 +272,39 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       }
     }
 
-    if (targetRange == null || targetDistrict == null) {
-      debugPrint('❌ Cannot get stations: targetRange=$targetRange, targetDistrict=$targetDistrict');
-      return [];
+    if (targetRange != null && targetDistrict != null) {
+      final districtMap = _policeHierarchy[targetRange] ?? {};
+      // Try exact or fuzzy match again for stations list
+      if (districtMap.containsKey(targetDistrict)) {
+        stations = List.from(districtMap[targetDistrict] ?? []);
+      } else {
+         final matchedKey = districtMap.keys.firstWhere(
+            (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+            orElse: () => '',
+         );
+         if (matchedKey.isNotEmpty) {
+            stations = List.from(districtMap[matchedKey] ?? []);
+         }
+      }
     }
 
-    // Final robust lookup using the exact keys
-    final districtMap = _policeHierarchy[targetRange] ?? {};
-    
-    // Try exact match first
-    if (districtMap.containsKey(targetDistrict)) {
-      final stations = districtMap[targetDistrict] ?? [];
-      debugPrint('✅ Found ${stations.length} stations in $targetRange > $targetDistrict');
-      return stations;
-    } 
-    
-    // Fallback: Try finding key again (redundant if we set it above, but safe)
-    final matchedKey = districtMap.keys.firstWhere(
-      (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
-      orElse: () => '',
-    );
-    
-    if (matchedKey.isNotEmpty) {
-      final stations = districtMap[matchedKey] ?? [];
-      debugPrint('✅ Found ${stations.length} stations via fuzzy match in $targetRange > $matchedKey');
-      return stations;
+    // Fallback: Populate from existing petitions (Dynamic Source)
+    if (extraPetitions != null) {
+      final dynamicStations = extraPetitions
+          .where((p) => p.stationName != null && p.stationName!.isNotEmpty)
+          .map((p) => p.stationName!)
+          .toSet();
+      
+      for (final s in dynamicStations) {
+        if (!stations.any((existing) => existing.toLowerCase() == s.toLowerCase())) {
+          stations.add(s);
+        }
+      }
     }
 
-    return [];
+    stations.sort();
+    debugPrint('✅ Final stations count: ${stations.length}');
+    return stations;
   }
 
   /* ================= FILTER RESET ================= */
@@ -408,7 +453,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     }
   }
 
-  String _formatTimestamp(Timestamp t) {
+  String _formatTimestamp(Timestamp? t) {
+    if (t == null) return 'N/A';
     final d = t.toDate();
     return '${d.day}/${d.month}/${d.year}';
   }
@@ -450,8 +496,24 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     required void Function(String?) onSelected,
   }) async {
     if (items.isEmpty) {
+      String message = 'No options available for $title';
+      if (_hierarchyError != null) {
+        message += '\n\nError: $_hierarchyError\nTap retry in the warning banner above to reload data.';
+      } else if (_policeHierarchy.isEmpty) {
+        message += '\n\nPolice station data is still loading. Please wait...';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No options available for $title')),
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 5),
+          action: _hierarchyError != null
+              ? SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () => _loadHierarchyData(retry: true),
+                )
+              : null,
+        ),
       );
       return;
     }
@@ -604,7 +666,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     _buildDetailRow('Petition Type', petition.type.displayName),
                     _buildDetailRow('Status', petition.status.displayName),
                     _buildDetailRow('Petitioner Name', petition.petitionerName),
-                    _buildDetailRow('Phone Number', petition.phoneNumber ?? '-'),
+                    _buildDetailRow(
+                      'Phone Number',
+                      petition.phoneNumber == null
+                          ? '-'
+                          : (petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!),
+                    ),
                     if (petition.address != null && petition.address!.isNotEmpty)
                       _buildDetailRow('Address', petition.address!),
                     if (petition.district != null && petition.district!.isNotEmpty)
@@ -683,6 +750,39 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     if (petition.orderDate != null && petition.orderDate!.isNotEmpty)
                       _buildDetailRow('Order Date', petition.orderDate!),
                     
+                    const SizedBox(height: 24),
+
+                    // Assignment Details Section (For Offline/Assigned Petitions)
+                    if (petition.assignmentType != null) ...[
+                      const Text(
+                        'Assignment Details',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      // Display assignment type-specific details
+                      if (petition.assignmentType == 'range' && petition.assignedToRange != null)
+                         _buildDetailRow('Assigned Range', petition.assignedToRange!),
+                      
+                      if (petition.assignmentType == 'district' && petition.assignedToDistrict != null)
+                         _buildDetailRow('Assigned District', petition.assignedToDistrict!),
+                      
+                      if (petition.assignmentType == 'station' && petition.assignedToStation != null)
+                         _buildDetailRow('Assigned Station', petition.assignedToStation!),
+
+                      // Display individual officer details if assigned to a specific person
+                      if (petition.assignedToName != null)
+                        _buildDetailRow('Assigned Officer', '${petition.assignedToName} (${petition.assignedToRank ?? "Rank Unknown"})'),
+
+                      // Display who made the assignment
+                      if (petition.assignedByName != null)
+                        _buildDetailRow('Assigned By', '${petition.assignedByName} (${petition.assignedByRank ?? "Rank Unknown"})'),
+                      
+                      if (petition.assignedAt != null)
+                        _buildDetailRow('Assigned Date', _formatTimestamp(petition.assignedAt!)),
+                      
+                      const SizedBox(height: 24),
+                    ],
+
                     const SizedBox(height: 24),
 
                     // ============= PETITION UPDATES TIMELINE ============= 
@@ -966,9 +1066,102 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state
     if (_hierarchyLoading || _policeRank == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Loading police hierarchy data...',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show error state with retry option
+    if (_hierarchyError != null && _policeHierarchy.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Police Petitions'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red[300],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to Load Police Stations',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _hierarchyError!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => _loadHierarchyData(retry: true),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                if (_usingFirestoreFallback) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Using fallback data from Firestore. Some stations may be missing.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -976,6 +1169,19 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       appBar: AppBar(
         title: Text('Petitions – ${_policeRank ?? "Loading..."}'),
         actions: [
+          if (_usingFirestoreFallback)
+            IconButton(
+              icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              tooltip: 'Using fallback data from Firestore',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Using fallback data. Some stations may be missing.'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
@@ -1019,6 +1225,32 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
           return Column(
             children: [
+              // Show warning if using Firestore fallback
+              if (_usingFirestoreFallback)
+                Container(
+                  width: double.infinity,
+                  color: Colors.orange.shade50,
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Using fallback data. Some stations may be missing. Tap retry to reload from asset.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _loadHierarchyData(retry: true),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
               // === RANK-BASED FILTERS ===
               Container(
                 color: Colors.blue.shade50,
@@ -1076,7 +1308,10 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                           debugPrint('   Selected Range: $_selectedRange');
                           debugPrint('   Selected District: $_selectedDistrict');
                           
-                          final availableStations = _getAvailableStations();
+                          debugPrint('   Selected District: $_selectedDistrict');
+                          
+                          // Pass allPetitions to use as fallback if hierarchy lookup fails
+                          final availableStations = _getAvailableStations(extraPetitions: allPetitions);
                           debugPrint('   Available Stations: ${availableStations.length}');
                           
                           _openSearchableDropdown(
@@ -1379,91 +1614,164 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
-                                                      if (p.policeStatus != null)
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                            vertical: 4,
-                                                          ),
-                                                          decoration: BoxDecoration(
-                                                            color: _getPoliceStatusColor(
-                                                                    p.policeStatus!)
-                                                                .withOpacity(0.12),
-                                                            borderRadius: BorderRadius.circular(20),
-                                                          ),
-                                                          child: Text(
-                                                            p.policeStatus!,
-                                                            style: TextStyle(
-                                                              fontSize: 11,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: _getPoliceStatusColor(
-                                                                  p.policeStatus!),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment.end,
+                                                      children: [
+                                                        if (p.policeStatus != null)
+                                                          Container(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                    bottom: 4),
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 4,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  _getPoliceStatusColor(
+                                                                          p.policeStatus!),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                            ),
+                                                            child: Text(
+                                                              p.policeStatus!,
+                                                              style: const TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight.w600,
+                                                                color: Colors.white,
+                                                              ),
                                                             ),
                                                           ),
-                                                        ),
-                                                      if (p.isEscalated) ...[
-                                                        const SizedBox(width: 8),
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(
-                                                              horizontal: 8, vertical: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.red.shade100,
-                                                            borderRadius: BorderRadius.circular(20),
-                                                            border: Border.all(color: Colors.red.shade300),
+                                                        if (p.isEscalated)
+                                                          Container(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                    bottom: 4),
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors.red,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                            ),
+                                                            child: const Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize.min,
+                                                              children: [
+                                                                Icon(Icons.trending_up,
+                                                                    size: 10,
+                                                                    color:
+                                                                        Colors.white),
+                                                                SizedBox(width: 4),
+                                                                Text(
+                                                                  'ESCALATED',
+                                                                  style: TextStyle(
+                                                                    fontSize: 9,
+                                                                    fontWeight:
+                                                                        FontWeight.bold,
+                                                                    color: Colors.white,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
                                                           ),
-                                                          child: Row(
-                                                            mainAxisSize: MainAxisSize.min,
-                                                            children: [
-                                                              Icon(Icons.trending_up,
-                                                                  size: 10, color: Colors.red.shade800),
-                                                              const SizedBox(width: 4),
-                                                              Text(
-                                                                'ESCALATED',
-                                                                style: TextStyle(
-                                                                  fontSize: 9,
-                                                                  fontWeight: FontWeight.bold,
-                                                                  color: Colors.red.shade900,
+                                                        if (p.escalationLevel == 3)
+                                                          Container(
+                                                            margin:
+                                                                const EdgeInsets.only(
+                                                                    bottom: 4),
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  Colors.deepPurple,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                            ),
+                                                            child: const Text(
+                                                              'DGP LEVEL',
+                                                              style: TextStyle(
+                                                                fontSize: 9,
+                                                                fontWeight:
+                                                                    FontWeight.bold,
+                                                                color: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        // SAVE BUTTON
+                                                        Consumer<ComplaintProvider>(
+                                                          builder: (context,
+                                                              complaintProvider, _) {
+                                                            final isSaved =
+                                                                complaintProvider
+                                                                    .isPetitionSaved(
+                                                                        p.id);
+                                                            return InkWell(
+                                                              onTap: () async {
+                                                                final auth = Provider
+                                                                    .of<AuthProvider>(
+                                                                        context,
+                                                                        listen: false);
+                                                                final userId =
+                                                                    auth.user?.uid;
+                                                                if (userId == null)
+                                                                  return;
+
+                                                                await complaintProvider
+                                                                    .toggleSaveComplaint(
+                                                                        p.toMap(),
+                                                                        userId);
+                                                              },
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                      20),
+                                                              child: Padding(
+                                                                padding:
+                                                                    const EdgeInsets
+                                                                        .all(4.0),
+                                                                child: Icon(
+                                                                  isSaved
+                                                                      ? Icons.bookmark
+                                                                      : Icons
+                                                                          .bookmark_border,
+                                                                  color: isSaved
+                                                                      ? Colors.orange
+                                                                      : Colors.grey,
+                                                                  size: 24,
                                                                 ),
                                                               ),
-                                                            ],
-                                                          ),
+                                                            );
+                                                          },
                                                         ),
                                                       ],
-                                                      if (p.escalationLevel == 3) ...[
-                                                        const SizedBox(width: 8),
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(
-                                                              horizontal: 8, vertical: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.deepPurple.shade100,
-                                                            borderRadius: BorderRadius.circular(20),
-                                                            border: Border.all(color: Colors.deepPurple.shade300),
-                                                          ),
-                                                          child: Text(
-                                                            'DGP LEVEL',
-                                                            style: TextStyle(
-                                                              fontSize: 9,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Colors.deepPurple.shade900,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ],
-                                                  ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  p.petitionerName,
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.grey[600],
-                                                  ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    p.petitionerName,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      color: Colors.grey[600],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        ),
                                       const SizedBox(height: 12),
                                       Row(
                                         children: [
@@ -1539,6 +1847,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       ),
     );
   }
+
 
   /* ================= FILTER UI WIDGETS ================= */
 

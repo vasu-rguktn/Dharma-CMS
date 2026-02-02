@@ -8,15 +8,48 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'petition_card.dart';
 import 'petition_detail_bottom_sheet.dart';
 
-class PetitionsListTab extends StatelessWidget {
+class PetitionsListTab extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final String Function(Timestamp) formatTimestamp;
+  final String? initialPetitionId; // For notification deep-linking
 
   const PetitionsListTab({
     super.key,
     required this.onRefresh,
     required this.formatTimestamp,
+    this.initialPetitionId,
   });
+
+  @override
+  State<PetitionsListTab> createState() => _PetitionsListTabState();
+}
+
+class _PetitionsListTabState extends State<PetitionsListTab> {
+  bool _hasAutoOpened = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Auto-open petition if coming from notification
+    if (!_hasAutoOpened && widget.initialPetitionId != null) {
+      _hasAutoOpened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoOpenPetition());
+    }
+  }
+
+  void _autoOpenPetition() {
+    final provider = Provider.of<PetitionProvider>(context, listen: false);
+    final petition = provider.petitions.firstWhere(
+      (p) => p.id == widget.initialPetitionId,
+      orElse: () => provider.petitions.first, // Fallback to first if not found
+    );
+    
+    if (petition.id != null) {
+      debugPrint('[PetitionsListTab] Auto-opening petition: ${petition.id}');
+      PetitionDetailBottomSheet.show(context, petition);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +84,7 @@ class PetitionsListTab extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          onRefresh: onRefresh,
+          onRefresh: widget.onRefresh,
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: provider.petitions.length,
@@ -59,7 +92,7 @@ class PetitionsListTab extends StatelessWidget {
               final petition = provider.petitions[i];
               return PetitionCard(
                 petition: petition,
-                formatTimestamp: formatTimestamp,
+                formatTimestamp: widget.formatTimestamp,
                 onTap: () => PetitionDetailBottomSheet.show(context, petition),
               );
             },

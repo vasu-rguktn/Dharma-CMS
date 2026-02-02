@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
@@ -107,82 +108,67 @@ class DashboardBody extends StatelessWidget {
     final stats =
         isPolice ? petitionProvider.globalStats : petitionProvider.userStats;
 
-    // For Citizen, if stats are 0, it might mean they haven't loaded yet OR they have 0.
-    // We display whatever is in the provider. Authentication check logic resides in the Screen.
+    // Define all cards
+    final cards = [
+      _statCard(ctx, localizations.totalPetitions, '${stats['total']}', Icons.gavel, Colors.deepPurple, PetitionFilter.all),
+      _statCard(ctx, localizations.received, '${stats['received']}', Icons.call_received, Colors.blue.shade700, PetitionFilter.received),
+      _statCard(ctx, localizations.inProgress, '${stats['inProgress']}', Icons.sync, Colors.orange.shade700, PetitionFilter.inProgress),
+      _statCard(ctx, localizations.closed, '${stats['closed']}', Icons.task_alt, Colors.green.shade700, PetitionFilter.closed),
+    ];
 
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.totalPetitions,
-                '${stats['total']}',
-                Icons.gavel,
-                Colors.deepPurple,
-                PetitionFilter.all,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.received,
-                '${stats['received']}',
-                Icons.call_received,
-                Colors.blue.shade700,
-                PetitionFilter.received,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.inProgress,
-                '${stats['inProgress']}',
-                Icons.sync,
-                Colors.orange.shade700,
-                PetitionFilter.inProgress,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _statCard(
-                ctx,
-                localizations.closed,
-                '${stats['closed']}',
-                Icons.task_alt,
-                Colors.green.shade700,
-                PetitionFilter.closed,
-              ),
-            ),
-          ],
-        ),
-        if (isPolice) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _statCard(
-                  ctx,
-                  'Escalated',
-                  '${stats['escalated'] ?? 0}',
-                  Icons.report_problem,
-                  Colors.red.shade700,
-                  PetitionFilter.escalated,
+    if (isPolice) {
+      cards.add(_statCard(ctx, localizations.escalated, '${stats['escalated'] ?? 0}', Icons.report_problem, Colors.red.shade700, PetitionFilter.escalated));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Desktop Web View: Render in a single row (4 or 5 columns)
+        if (kIsWeb && constraints.maxWidth > 900) {
+          return Row(
+            children: cards.asMap().entries.map((entry) {
+              final index = entry.key;
+              final card = entry.value;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: index < cards.length - 1 ? 12.0 : 0),
+                  child: card,
                 ),
+              );
+            }).toList(),
+          );
+        }
+
+        // Mobile/Default View: 2 Columns (Preserve original structure)
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: cards[0]),
+                const SizedBox(width: 12),
+                Expanded(child: cards[1]),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: cards[2]),
+                const SizedBox(width: 12),
+                Expanded(child: cards[3]),
+              ],
+            ),
+            if (isPolice) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: cards[4]),
+                  const SizedBox(width: 12),
+                  const Spacer(),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Spacer(),
             ],
-          ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -353,14 +339,15 @@ class DashboardBody extends StatelessWidget {
       ),
       _quickActionCard(ctx, localizations.allCases, Icons.file_copy_rounded,
           '/cases', Colors.blue.shade700),
-      _quickActionCard(ctx, localizations.complaints, Icons.archive,
-          '/complaints', Colors.orange.shade700),
       _quickActionCard(ctx, localizations.petitions, Icons.gavel, '/petitions',
           Colors.red.shade800),
+      _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
+          '/complaints', Colors.orange.shade700),
+
       _quickActionCard(
-          ctx, "Image Lab", Icons.camera_alt, '/image-lab', Colors.deepPurple),
+          ctx, localizations.imageLab, Icons.camera_alt, '/image-lab', Colors.deepPurple),
       _quickActionCard(
-          ctx, "Add Police", Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
+          ctx, localizations.addPolice, Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
     ];
     
     // Add offline petition submission if officer is SP-level or above
@@ -369,7 +356,7 @@ class DashboardBody extends StatelessWidget {
         0, // Add at the beginning for prominence
         _quickActionCard(
           ctx,
-          'Submit Offline Petition',
+          localizations.submitOfflinePetition,
           Icons.post_add,
           '/submit-offline-petition',
           Colors.teal.shade600,
@@ -381,7 +368,7 @@ class DashboardBody extends StatelessWidget {
         1, // Add right after Submit Offline Petition
         _quickActionCard(
           ctx,
-          'Offline Petitions',
+          localizations.offlinePetitions,
           Icons.assignment,
           '/offline-petitions',
           Colors.purple.shade600,
@@ -393,7 +380,7 @@ class DashboardBody extends StatelessWidget {
         0,
         _quickActionCard(
           ctx,
-          'Assigned Petitions',
+          localizations.assignedPetitions,
           Icons.assignment,
           '/offline-petitions',
           Colors.purple.shade600,
@@ -467,7 +454,7 @@ class DashboardBody extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        activity.title,
+                        _getLocalizedActivityTitle(ctx, activity.title),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -534,6 +521,42 @@ class DashboardBody extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getLocalizedActivityTitle(BuildContext context, String title) {
+    final localizations = AppLocalizations.of(context)!;
+    
+    // Map activity titles to localization keys
+    switch (title) {
+      case "AI Chat":
+        return localizations.aiChat;
+      case "Legal Queries":
+        return localizations.legalQueries;
+      case "Helpline":
+        return localizations.helpline;
+      case "Legal Section Suggestions":
+        return localizations.legalSuggestion;
+      case "Document Drafting":
+        return localizations.documentDrafting;
+      case "Chargesheet Gen":
+        return localizations.chargesheetGen;
+      case "Chargesheet Vetting":
+        return localizations.chargesheetVetting;
+      case "Witness Prep":
+        return localizations.witnessPrep;
+      case "Media Analysis":
+        return localizations.mediaAnalysis;
+      case "Crime Scene":
+        return localizations.mediaAnalysis;
+      case "Cases":
+        return localizations.cases;
+      case "Complaints":
+        return localizations.complaints;
+      case "Petitions":
+        return localizations.petitions;
+      default:
+        return title;
+    }
   }
 
   String _formatDate(DateTime date) {

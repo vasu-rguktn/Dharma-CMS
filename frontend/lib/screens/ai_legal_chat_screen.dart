@@ -1,29 +1,7 @@
-// // lib/screens/ai_legal_chat_screen.dart
-// import 'dart:async';
-// import 'package:flutter/material.dart';
-// import 'package:go_router/go_router.dart';
-// import 'package:dio/dio.dart';
 
-// class AiLegalChatScreen extends StatefulWidget {
-//   const AiLegalChatScreen({super.key});
-
-//   @override
-//   State<AiLegalChatScreen> createState() => _AiLegalChatScreenState();
-// }
-
-// class _AiLegalChatScreenState extends State<AiLegalChatScreen> {
-//   final TextEditingController _controller = TextEditingController();
-//   final FocusNode _inputFocus = FocusNode();
-//   final List<_ChatMessage> _messages = [];
-//   final Dio _dio = Dio();
-
-//   final List<_ChatQ> _questions = const [
-//     _ChatQ(key: 'full_name', question: 'What is your full name?'),
-//     _ChatQ(key: 'address', question: 'Where do you live (place / area)?'),
-//     _ChatQ(key: 'phone', question: 'What is your phone number?'),
-//     _ChatQ(
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart'
@@ -40,11 +18,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:Dharma/services/native_speech_recognizer.dart';
 import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/petition_provider.dart';
+import '../widgets/petition_type_card.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
   static final List<_ChatMessage> messages = [];
   static final Map<String, String> answers = {};
+  static final List<PlatformFile> allAttachedFiles = []; // Cumulative evidence
   static int currentQ = -2;
   static bool hasStarted = false;
   static bool allowInput = false;
@@ -54,6 +37,7 @@ class _ChatStateHolder {
   static void reset() {
     messages.clear();
     answers.clear();
+    allAttachedFiles.clear();
     currentQ = -2;
     hasStarted = false;
     allowInput = false;
@@ -79,7 +63,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   final ScrollController _scrollController = ScrollController();
   final Dio _dio = Dio();
   final ImagePicker _imagePicker = ImagePicker();
-  List<String> _attachedFiles = []; // Store paths of attached files
+  List<PlatformFile> _attachedFiles = []; // Store attached files
 
   List<_ChatQ> _questions = [];
 
@@ -97,7 +81,102 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   // Local state
   bool _inputError = false;
   bool _isDynamicMode = false;
+  bool _isAnonymous = false; // Track anonymous petition state
   List<Map<String, String>> _dynamicHistory = [];
+
+  Future<bool> _showPetitionTypeDialog() async {
+    final localizations = AppLocalizations.of(context)!;
+    
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                Row(
+                  children: [
+                    Icon(Icons.gavel, color: orange, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        localizations.selectPetitionType,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Description
+                Text(
+                  localizations.petitionTypeDescription,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Anonymous Option
+                PetitionTypeCard(
+                  icon: Icons.shield_outlined,
+                  iconColor: orange,
+                  title: localizations.anonymousPetition,
+                  borderColor: orange,
+                  onTap: () {
+                    setState(() => _isAnonymous = true);
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Normal Option
+                PetitionTypeCard(
+                  icon: Icons.person_outline,
+                  iconColor: Colors.blue,
+                  title: localizations.normalPetition,
+                  borderColor: Colors.blue,
+                  onTap: () {
+                    setState(() => _isAnonymous = false);
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Cancel button
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    localizations.close,
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    
+    return result ?? false;
+  }
 
   // STT (Speech-to-Text) variables
   late final stt.SpeechToText _speech;
@@ -133,6 +212,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   @override
   void initState() {
     super.initState();
+    
+    // SAFETY CHECK: If app was closed while loading, it might be stuck.
+    // Since we can't resume the network request easily, we reset the UI.
+    if (_ChatStateHolder.isLoading) {
+      _ChatStateHolder.isLoading = false;
+      _ChatStateHolder.allowInput = true;
+    }
+
     _speech = stt.SpeechToText();
     _nativeSpeech = NativeSpeechRecognizer();
     _flutterTts = FlutterTts();
@@ -701,26 +788,45 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Only start chat flow if we haven't started AND have no messages
-    // This preserves state when navigating back to the screen
+    
+    // Safety check: If we have no messages, we MUST treat it as a fresh start.
+    // This fixes the bug where navigating away without sending a message (empty state)
+    // would leave hasStarted=true, causing the next open to get stuck (modal wouldn't show).
+    if (_ChatStateHolder.messages.isEmpty) {
+      _ChatStateHolder.hasStarted = false;
+    }
+
+    // Only start chat flow if we haven't started
     if (!_ChatStateHolder.hasStarted) {
-      if (_ChatStateHolder.messages.isEmpty) {
-        // First time - start the chat flow
-        _ChatStateHolder.hasStarted = true;
-        _startChatFlow();
-      } else {
+      _ChatStateHolder.hasStarted = true;
+      _startChatFlow();
+    } else {
         // Returning to existing chat - preserve state
-        _ChatStateHolder.hasStarted = true;
         // Ensure input is enabled if we're in the middle of a dynamic turn
         if (!_isLoading && !_errored) {
           _setAllowInput(true);
           setState(() {});
         }
-      }
     }
   }
 
   Future<void> _startChatFlow() async {
+    // Show petition type selection first
+    await Future.delayed(Duration.zero); // Ensure context is ready
+    if (!mounted) return;
+    
+    final bool proceed = await _showPetitionTypeDialog();
+    
+    if (!proceed) {
+      if (mounted) {
+         _ChatStateHolder.reset();
+         context.go('/dashboard');
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
     final localizations = AppLocalizations.of(context)!;
 
     setState(() {
@@ -732,7 +838,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _setAllowInput(false);
       _setErrored(false);
     });
-    _addBot(localizations.welcomeToDharma);
+    
+    // Customize welcome message based on selection
+    if (_isAnonymous) {
+      _addBot(localizations.anonymousPetitionConfirm);
+    } else {
+      _addBot(localizations.welcomeToDharma);
+    }
+    
     await Future.delayed(const Duration(seconds: 1));
     _addBot(localizations.letUsBegin);
     await Future.delayed(const Duration(seconds: 1)); // Small delay for flow
@@ -780,9 +893,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _scrollToEnd();
   }
 
-  void _addUser(String content) {
-    _ChatStateHolder.messages
-        .add(_ChatMessage(user: 'You', content: content, isUser: true));
+  void _addUser(String content, {List<PlatformFile> files = const []}) {
+    _ChatStateHolder.messages.add(_ChatMessage(
+      user: 'You', 
+      content: content, 
+      isUser: true,
+      files: List.from(files), // Copy to prevent mutation issues
+    ));
     setState(() {});
     _scrollToEnd();
   }
@@ -821,37 +938,92 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // iOS simulator / other platforms
       baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     }
-
-    final localeCode = Localizations.localeOf(context).languageCode;
-
-    // Construct Payload
-    final payload = {
-      'full_name': _ChatStateHolder.answers['full_name'] ?? '',
-      'address': _ChatStateHolder.answers['address'] ?? '',
-      'phone': _ChatStateHolder.answers['phone'] ??
-          _ChatStateHolder.answers['phone_number'] ??
-          '',
-      'complaint_type': _ChatStateHolder.answers['complaint_type'] ?? '',
-      'initial_details': _ChatStateHolder.answers['details'] ?? '',
-      'language': localeCode,
-      'chat_history': _dynamicHistory,
-    };
     
-    print('🚀 Sending to backend:');
+    // baseUrl="http://127.0.0.1:8000";
+    final settings = context.read<SettingsProvider>();
+    final localeCode = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
+
+    // Construct Payload using FormData to support Files
+    final formData = FormData();
+    
+    // PROCESS FILES (Optimization: Do not upload bytes, just pass reference)
+    String attachmentNote = "";
+    if (_attachedFiles.isNotEmpty) {
+      print('📎 Processing ${_attachedFiles.length} files (Reference Only)...');
+      for (final file in _attachedFiles) {
+        // Track globally for final handover to Petition Screen
+        // Check by name as simplistic dedup
+        if (!_ChatStateHolder.allAttachedFiles.any((f) => f.name == file.name && f.size == file.size)) {
+           _ChatStateHolder.allAttachedFiles.add(file);
+        }
+
+        final filename = file.name;
+        attachmentNote += "\n[System: User attached file '$filename' (Reference Only)]";
+      }
+      // NOTE: We do NOT add files to formData.files to avoid network latency.
+      // The backend will see the text note and acknowledge it.
+    }
+    
+    // START: Payload Construction with injected attachment note
+    List<Map<String, dynamic>> payloadHistory = [];
+    // Deep copy history to modify it
+    for (var item in _dynamicHistory) {
+      payloadHistory.add(Map<String, dynamic>.from(item));
+    }
+
+    String finalInitialDetails = _ChatStateHolder.answers['details'] ?? '';
+
+    if (attachmentNote.isNotEmpty) {
+      if (payloadHistory.isNotEmpty) {
+        // Append to last user message in history
+        var lastMsg = payloadHistory.last;
+        if (lastMsg['role'] == 'user') {
+           lastMsg['content'] = "${lastMsg['content']} $attachmentNote";
+        } else {
+           // Fallback if last msg was AI (rare)
+           finalInitialDetails += " $attachmentNote";
+        }
+      } else {
+        // First turn - append to initial details
+        finalInitialDetails += " $attachmentNote";
+      }
+    }
+
+    // Add text fields
+    formData.fields.add(MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
+    formData.fields.add(MapEntry('address', _ChatStateHolder.answers['address'] ?? ''));
+    final phone = _ChatStateHolder.answers['phone'] ?? _ChatStateHolder.answers['phone_number'] ?? '';
+    formData.fields.add(MapEntry('phone', phone));
+    formData.fields.add(MapEntry('complaint_type', _ChatStateHolder.answers['complaint_type'] ?? ''));
+    formData.fields.add(MapEntry('initial_details', finalInitialDetails));
+    formData.fields.add(MapEntry('language', localeCode));
+    formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
+    
+    // Serialize chat history
+    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
+    
+    print('🚀 Sending to backend (FormData):');
     print('   History items: ${_dynamicHistory.length}');
-    print('   Payload: $payload');
+    print('   Files attached: ${_attachedFiles.length}');
 
     try {
       final resp = await _dio
           .post(
             '$baseUrl/complaint/chat-step',
-            data: payload,
-            options: Options(headers: {'Content-Type': 'application/json'}),
+            data: formData,
+            // Header content-type is auto-set by FormData
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 90)); // Increased timeout for file uploads coverage
 
       final data = resp.data;
       print("Backend Response: $data"); // DEBUG LOG
+      
+      // Clear attached files after successful send
+      if (_attachedFiles.isNotEmpty) {
+        setState(() {
+           _attachedFiles.clear();
+        });
+      }
 
       if (data['status'] == 'question') {
         String question = data['message'] ?? '';
@@ -966,15 +1138,31 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     // navigate to details screen
+    // navigate to details screen
+    if (_ChatStateHolder.allAttachedFiles.isNotEmpty) {
+      print('💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
+      try {
+        Provider.of<PetitionProvider>(context, listen: false)
+            .setTempEvidence(_ChatStateHolder.allAttachedFiles);
+        print('✅ [DEBUG] Chat Screen: Successfully stashed files in Provider');
+      } catch (e) {
+        print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
+      }
+    } else {
+       print('⚠️ [DEBUG] Chat Screen: No files to stash (list empty)');
+    }
+
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
-      context.go(
+      print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen...');
+      context.push(
         '/ai-chatbot-details',
         extra: {
           'answers': Map<String, String>.from(_ChatStateHolder.answers),
           'summary': formalSummary,
           'classification': classification,
           'originalClassification': originalClassification,
+          'evidencePaths': [], // We use Provider for file transfer now
         },
       );
     });
@@ -1069,7 +1257,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
     
     // Add message to chat
-    _addUser(finalMessage);
+    _addUser(finalMessage, files: _attachedFiles);
 
     // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
     // AND we do NOT add it to history (because backend uses initial_details as context).
@@ -1156,13 +1344,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   );
                   
                   if (geoTaggedImage != null && mounted) {
+                    Uint8List? bytes;
+                    if (kIsWeb) bytes = await geoTaggedImage.readAsBytes();
+                    
                     setState(() {
-                      _attachedFiles.add(geoTaggedImage.path);
+                      _attachedFiles.add(PlatformFile(
+                        name: geoTaggedImage.name,
+                        size: 0, // Not critical
+                        bytes: bytes,
+                        path: geoTaggedImage.path,
+                      ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              'Photo attached: ${geoTaggedImage.path.split('/').last}')),
+                      SnackBar(content: Text('Photo attached: ${geoTaggedImage.name}')),
                     );
                   }
                 },
@@ -1188,14 +1382,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   // Note: pickMultiImage returns List<XFile>, we need paths
                   final List<XFile> images = await _imagePicker.pickMultiImage();
                   if (images.isNotEmpty && mounted) {
-                     setState(() {
-                        for (var img in images) {
-                          _attachedFiles.add(img.path);
-                        }
-                     });
+                     for (var img in images) {
+                       Uint8List? bytes;
+                       if (kIsWeb) bytes = await img.readAsBytes();
+                       
+                       setState(() {
+                          _attachedFiles.add(PlatformFile(
+                            name: img.name,
+                            size: 0,
+                            bytes: bytes,
+                            path: img.path,
+                          ));
+                       });
+                     }
                      ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('${images.length} photos selected')),
+                      SnackBar(content: Text('${images.length} photos selected')),
                     );
                   }
                 },
@@ -1225,13 +1426,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     ),
                   );
                   if (geoTaggedVideo != null && mounted) {
+                    Uint8List? bytes;
+                    if (kIsWeb) bytes = await geoTaggedVideo.readAsBytes();
+                    
                     setState(() {
-                      _attachedFiles.add(geoTaggedVideo.path);
+                      _attachedFiles.add(PlatformFile(
+                        name: geoTaggedVideo.name,
+                        size: 0,
+                        bytes: bytes,
+                        path: geoTaggedVideo.path,
+                      ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              'Video attached: ${geoTaggedVideo.path.split('/').last}')),
+                      SnackBar(content: Text('Video attached: ${geoTaggedVideo.name}')),
                     );
                   }
                 },
@@ -1256,16 +1463,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     type: FileType.custom,
                     allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'mp3', 'wav'],
                     allowMultiple: true,
+                    withData: true,
                   );
                   if (result != null && mounted) {
                     setState(() {
-                      _attachedFiles
-                          .addAll(result.files.map((f) => f.path ?? f.name));
+                      _attachedFiles.addAll(result.files);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('${result.files.length} file(s) attached')),
+                      SnackBar(content: Text('${result.files.length} file(s) attached')),
                     );
                   }
                 },
@@ -1925,8 +2130,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         scrollDirection: Axis.horizontal,
         itemCount: _attachedFiles.length,
         itemBuilder: (context, index) {
-          final path = _attachedFiles[index];
-          final name = path.split('/').last;
+          final file = _attachedFiles[index];
+          final name = file.name;
           final isImage = name.toLowerCase().endsWith('.jpg') ||
               name.toLowerCase().endsWith('.jpeg') ||
               name.toLowerCase().endsWith('.png');
@@ -1940,9 +2145,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: orange.withOpacity(0.3)),
-              image: (isImage && !kIsWeb) 
+              image: (isImage) 
                   ? DecorationImage(
-                      image: FileImage(File(path)),
+                      image: (kIsWeb && file.bytes != null) 
+                          ? MemoryImage(file.bytes!) 
+                          : FileImage(File(file.path!)) as ImageProvider,
                       fit: BoxFit.cover,
                     ) 
                   : null,
@@ -2016,7 +2223,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               }
             },
           ),
-          title: Text(localizations.aiLegalAssistant ?? 'AI Legal Assistant'),
+          title: Text(
+            localizations.aiLegalAssistant ?? 'AI Legal Assistant',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           backgroundColor: const Color(0xFFFC633C),
           foregroundColor: Colors.white,
         ),
@@ -2038,39 +2248,166 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      return Align(
-                        alignment: msg.isUser
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: msg.isUser ? orange : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: msg.isUser
-                                ? null
-                                : Border.all(
-                                    color: Colors.grey.shade300, width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 3,
-                                offset: const Offset(0, 1),
+                      // Different layout based on sender
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: msg.isUser
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            // AI Avatar (Left)
+                            if (!msg.isUser) ...[
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                    width: 1,
+                                  ),
+                                  image: const DecorationImage(
+                                    image: AssetImage('assets/avatar.png'),
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+
+                            // Message Bubble
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width *
+                                      0.70, // Slightly reduced max width to account for avatars
+                                ),
+                                decoration: BoxDecoration(
+                                  color: msg.isUser ? orange : Colors.white,
+                                  // Add different border radius for "chat bubble" effect
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(18),
+                                    topRight: const Radius.circular(18),
+                                    bottomLeft: Radius.circular(
+                                        msg.isUser ? 18 : 4), // Square corner near avatar
+                                    bottomRight: Radius.circular(
+                                        msg.isUser ? 4 : 18), // Square corner near avatar
+                                  ),
+                                  border: msg.isUser
+                                      ? null
+                                      : Border.all(
+                                          color: Colors.grey.shade300, width: 1),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      msg.content,
+                                      style: TextStyle(
+                                        color: msg.isUser
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    if (msg.files.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: msg.files.map((file) {
+                                          final filename = file.name;
+                                          final isImage = ['jpg', 'png', 'jpeg', 'webp'].any(
+                                              (ext) => filename.toLowerCase().endsWith(ext));
+                                          
+                                          if (isImage) {
+                                           return ClipRRect(
+                                             borderRadius: BorderRadius.circular(8),
+                                             child: (kIsWeb && file.bytes != null)
+                                                 ? Image.memory(
+                                                     file.bytes!,
+                                                     width: 100,
+                                                     height: 100,
+                                                     fit: BoxFit.cover,
+                                                   )
+                                                 : Image.file(
+                                                     File(file.path!),
+                                                     width: 100,
+                                                     height: 100,
+                                                     fit: BoxFit.cover,
+                                                   ),
+                                           );
+                                          }    
+                                          
+                                          return Container(
+                                            margin: const EdgeInsets.only(right: 4, bottom: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: msg.isUser ? Colors.white.withOpacity(0.9) : Colors.grey[200],
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.black12,
+                                                width: 0.5,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.description, size: 16, color: Colors.black87),
+                                                const SizedBox(width: 6),
+                                                ConstrainedBox(
+                                                    constraints: const BoxConstraints(maxWidth: 160),
+                                                    child: Text(
+                                                      filename, 
+                                                      overflow: TextOverflow.ellipsis, 
+                                                      style: const TextStyle(
+                                                        fontSize: 13, 
+                                                        color: Colors.black87,
+                                                        fontWeight: FontWeight.w500
+                                                      )
+                                                    )
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ]
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // User Avatar (Right)
+                            if (msg.isUser) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.grey.shade600,
+                                  size: 20,
+                                ),
                               ),
                             ],
-                          ),
-                          child: Text(
-                            msg.content,
-                            style: TextStyle(
-                              color: msg.isUser ? Colors.white : Colors.black87,
-                              fontSize: 16,
-                            ),
-                          ),
+                          ],
                         ),
                       );
                     },
@@ -2383,8 +2720,14 @@ class _ChatMessage {
   final String user;
   final String content;
   final bool isUser;
-  _ChatMessage(
-      {required this.user, required this.content, required this.isUser});
+  final List<PlatformFile> files;
+
+  _ChatMessage({
+    required this.user, 
+    required this.content, 
+    required this.isUser,
+    this.files = const [],
+  });
 }
 
 // Animated wave widget for microphone button

@@ -23,8 +23,11 @@ class _AppScaffoldState extends State<AppScaffold> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final localizations = AppLocalizations.of(context)!;
 
-    final dashboardRoute =
-        authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+    // CITIZEN-ONLY APP: Always use citizen dashboard
+    final dashboardRoute = '/dashboard';
+
+    // CITIZEN-ONLY APP: Police features removed
+    // All users are citizens, no offline petition submission
 
     return Scaffold(
       key: _scaffoldKey,
@@ -123,9 +126,9 @@ class _AppScaffoldState extends State<AppScaffold> {
                 ),
                 onSelected: (value) {
                   if (value == 'signout') {
-                    final isPolice = authProvider.role == 'police';
+                    // CITIZEN-ONLY APP: Always redirect to phone login
                     authProvider.signOut();
-                    context.go(isPolice ? '/police-login' : '/phone-login');
+                    context.go('/phone-login');
                   }
                 },
                 itemBuilder: (context) => [
@@ -174,51 +177,22 @@ class _AppScaffoldState extends State<AppScaffold> {
             _buildDrawerItem(context, Icons.dashboard,
                 localizations.dashboard, dashboardRoute, isDark),
 
-            // Citizen Menu
-            if (authProvider.role == 'citizen') ...[
-              _buildDrawerSection(localizations.aiTools, isDark),
-              _buildDrawerItem(context, Icons.chat, localizations.aiChat,
-                  '/ai-legal-chat', isDark),
-              _buildDrawerItem(context, Icons.psychology,
-                  localizations.legalQueries, '/legal-queries', isDark),
-              _buildDrawerItem(context, Icons.gavel,
-                  localizations.legalSuggestion, '/legal-suggestion', isDark),
+            // CITIZEN-ONLY APP: Only citizen menu items shown
+            _buildDrawerSection(localizations.aiTools, isDark),
+            _buildDrawerItem(context, Icons.chat, localizations.aiChat,
+                '/ai-legal-chat', isDark),
+            _buildDrawerItem(context, Icons.psychology,
+                localizations.legalQueries, '/legal-queries', isDark),
+            _buildDrawerItem(context, Icons.gavel,
+                localizations.legalSuggestion, '/legal-suggestion', isDark),
 
-              _buildDrawerSection(localizations.caseManagement, isDark),
-              _buildDrawerItem(context, Icons.archive,
-                  localizations.mySavedComplaints, '/complaints', isDark),
-              // _buildDrawerItem(context, Icons.people,
-              //     localizations.witnessPrep, '/witness-preparation', isDark),
-              _buildDrawerItem(context, Icons.book, localizations.petitions,
-                  '/petitions', isDark),
-              _buildDrawerItem(context, Icons.phone, localizations.support,
-                  '/helpline', isDark),
-            ],
-
-            // Police Menu
-            if (authProvider.role == 'police') ...[
-              _buildDrawerSection(localizations.aiTools, isDark),
-              _buildDrawerItem(context, Icons.edit_document,
-                  localizations.documentDrafting, '/document-drafting', isDark),
-              _buildDrawerItem(context, Icons.file_present,
-                  localizations.chargesheetGen, '/chargesheet-generation', isDark),
-              _buildDrawerItem(context, Icons.fact_check,
-                  localizations.chargesheetVetting, '/chargesheet-vetting', isDark),
-              // _buildDrawerItem(context, Icons.image_search,
-              //     localizations.mediaAnalysis, '/media-analysis', isDark),
-              _buildDrawerItem(context, Icons.search,
-                  localizations.aiInvestigationGuidelines, '/ai-investigation-guidelines', isDark),
-              _buildDrawerItem(context, Icons.book,
-                  localizations.caseJournal, '/case-journal', isDark),
-
-              _buildDrawerSection(localizations.caseManagement, isDark),
-               _buildDrawerItem(context, Icons.file_copy_rounded,
-                  localizations.allCases, '/cases', isDark),
-              _buildDrawerItem(context, Icons.archive,
-                  localizations.mySavedComplaints, '/complaints', isDark),
-              _buildDrawerItem(context, Icons.gavel, localizations.petitions,
-                  '/petitions', isDark),
-            ],
+            _buildDrawerSection(localizations.caseManagement, isDark),
+            _buildDrawerItem(context, Icons.archive,
+                localizations.mySavedComplaints, '/complaints', isDark),
+            _buildDrawerItem(context, Icons.book, localizations.petitions,
+                '/petitions', isDark),
+            _buildDrawerItem(context, Icons.phone, localizations.support,
+                '/helpline', isDark),
 
             const Divider(),
             _buildDrawerItem(context, Icons.settings, localizations.settings,

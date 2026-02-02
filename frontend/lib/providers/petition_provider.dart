@@ -41,6 +41,20 @@ class PetitionProvider with ChangeNotifier {
   // Legacy getter for backward compatibility (returns global)
   Map<String, int> get stats => _globalStats;
 
+  // Staging for Evidence from AI Chat
+  List<PlatformFile> _tempEvidence = [];
+  List<PlatformFile> get tempEvidence => _tempEvidence;
+
+  void setTempEvidence(List<PlatformFile> files) {
+    _tempEvidence = List.from(files);
+    notifyListeners();
+  }
+
+  void clearTempEvidence() {
+    _tempEvidence = [];
+    notifyListeners();
+  }
+
   /// Fetch petitions belonging to a single user
   Future<void> fetchPetitions(String userId) async {
     _isLoading = true;
@@ -331,7 +345,19 @@ class PetitionProvider with ChangeNotifier {
     String? handwrittenUrl;
     List<String>? proofUrls;
 
-    // ✅ GENERATE CASE ID ONCE
+    // ✅ GENERATE CUSTOM ID FIRST (Needed for Storage Path)
+    final safeName =
+        petition.petitionerName.replaceAll(' ', '_');
+    final safeDate = DateTime.now()
+        .toString()
+        .replaceAll(' ', '_')
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+
+    final petitionCustomId = "Petition_${safeName}_$safeDate";
+
+    // ✅ GENERATE CASE ID
     final caseId = generateCaseId(
       district: petition.district ?? 'UnknownDistrict',
       stationName: petition.stationName ?? 'UnknownStation',
@@ -347,7 +373,8 @@ class PetitionProvider with ChangeNotifier {
           .replaceAll(' ', '_');
 
       final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
-      final path = 'petitions/${petition.userId}/handwritten/$fileName';
+      // Fix: Use 'petition-documents' bucket which is allowed in storage.rules
+      final path = 'petition-documents/$petitionCustomId/$fileName';
 
       handwrittenUrl =
           await StorageService.uploadFile(file: handwrittenFile, path: path);
@@ -355,38 +382,24 @@ class PetitionProvider with ChangeNotifier {
 
     // Upload Proof Documents
     if (proofFiles != null && proofFiles.isNotEmpty) {
-      final timestamp = DateTime.now()
-          .toString()
-          .split('.')
-          .first
-          .replaceAll(':', '-')
-          .replaceAll(' ', '_');
-
-      final folderPath =
-          'petitions/${petition.userId}/proofs/Proofs_$timestamp';
+      // Fix: Use 'petition-documents' bucket
+      // Note: storage.rules 'match /{filename}' implies single level, no sub-folders allowed deep inside
+      final folderPath = 'petition-documents/$petitionCustomId';
 
       proofUrls = await StorageService.uploadMultipleFiles(
         files: proofFiles,
         folderPath: folderPath,
       );
+      
+      if (proofUrls.isEmpty) {
+        throw Exception('Failed to upload proof documents. Please check your connection and try again.');
+      }
     }
-
-    // Custom Petition ID
-    final safeName =
-        petition.petitionerName.replaceAll(' ', '_');
-    final safeDate = DateTime.now()
-        .toString()
-        .replaceAll(' ', '_')
-        .replaceAll(':', '-')
-        .split('.')
-        .first;
-
-    final petitionCustomId = "Petition_${safeName}_$safeDate";
 
     // ✅ FINAL PETITION OBJECT
     final newPetition = Petition(
       id: petitionCustomId,
-      caseId: caseId, // ✅ NOW WORKS
+      caseId: caseId, 
       title: petition.title,
       type: petition.type,
       status: petition.status,
@@ -416,6 +429,7 @@ class PetitionProvider with ChangeNotifier {
       userId: petition.userId,
       createdAt: petition.createdAt,
       updatedAt: petition.updatedAt,
+      isAnonymous: petition.isAnonymous,
     );
 
     await _firestore
@@ -604,48 +618,65 @@ class PetitionProvider with ChangeNotifier {
     List<PlatformFile>? documentFiles,
   }) async {
     try {
+      debugPrint('🚀 [PETITION_UPDATE] Creating update for petition: $petitionId');
       List<String> photoUrls = [];
       List<Map<String, String>> documents = [];
 
       // Upload photos
       if (photoFiles != null && photoFiles.isNotEmpty) {
-        final timestamp = DateTime.now()
-            .toString()
-            .split('.')
-            .first
-            .replaceAll(':', '-')
-            .replaceAll(' ', '_');
+        try {
+          debugPrint('📸 [PETITION_UPDATE] Uploading ${photoFiles.length} photos');
+          final timestamp = DateTime.now()
+              .toString()
+              .split('.')
+              .first
+              .replaceAll(':', '-')
+              .replaceAll(' ', '_');
 
-        final photoFolderPath = 'petition_updates/$petitionId/photos/Photos_$timestamp';
+          final photoFolderPath = 'petition_updates/$petitionId/photos/Photos_$timestamp';
 
-        photoUrls = await StorageService.uploadMultipleFiles(
-          files: photoFiles,
-          folderPath: photoFolderPath,
-        );
+          photoUrls = await StorageService.uploadMultipleFiles(
+            files: photoFiles,
+            folderPath: photoFolderPath,
+          );
+          debugPrint('✅ [PETITION_UPDATE] Photos uploaded: ${photoUrls.length} URLs');
+        } catch (photoError) {
+          debugPrint('⚠️ [PETITION_UPDATE] Photo upload error: $photoError');
+          // Continue without photos rather than failing completely
+        }
       }
 
       // Upload documents
       if (documentFiles != null && documentFiles.isNotEmpty) {
-        final timestamp = DateTime.now()
-            .toString()
-            .split('.')
-            .first
-            .replaceAll(':', '-')
-            .replaceAll(' ', '_');
+        try {
+          debugPrint('📄 [PETITION_UPDATE] Uploading ${documentFiles.length} documents');
+          final timestamp = DateTime.now()
+              .toString()
+              .split('.')
+              .first
+              .replaceAll(':', '-')
+              .replaceAll(' ', '_');
 
-        final docFolderPath = 'petition_updates/$petitionId/documents/Docs_$timestamp';
+          final docFolderPath = 'petition_updates/$petitionId/documents/Docs_$timestamp';
 
-        final documentUrls = await StorageService.uploadMultipleFiles(
-          files: documentFiles,
-          folderPath: docFolderPath,
-        );
+          // Upload individually to maintain mapping between file name and URL
+          for (var docFile in documentFiles) {
+            final fileName = 'Doc_${timestamp}_${docFile.name}';
+            final path = '$docFolderPath/$fileName';
 
-        // Create document objects with name and url
-        for (int i = 0; i < documentFiles.length; i++) {
-          documents.add({
-            'name': documentFiles[i].name,
-            'url': documentUrls[i],
-          });
+            final url = await StorageService.uploadFile(file: docFile, path: path);
+            
+            if (url != null) {
+              documents.add({
+                'name': docFile.name, // Display name
+                'url': url,
+              });
+            }
+          }
+          debugPrint('✅ [PETITION_UPDATE] Documents uploaded: ${documents.length} with URLs');
+        } catch (docError) {
+          debugPrint('⚠️ [PETITION_UPDATE] Document upload error: $docError');
+          // Continue without documents rather than failing completely
         }
       }
 
@@ -665,10 +696,10 @@ class PetitionProvider with ChangeNotifier {
           .collection('petition_updates')
           .add(update.toMap());
 
-      debugPrint('✅ Petition update created successfully');
+      debugPrint('✅ [PETITION_UPDATE] Petition update created successfully');
       return true;
     } catch (e) {
-      debugPrint('❌ Error creating petition update: $e');
+      debugPrint('❌ [PETITION_UPDATE] Error creating petition update: $e');
       return false;
     }
   }

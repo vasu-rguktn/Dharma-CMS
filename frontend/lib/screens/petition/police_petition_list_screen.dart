@@ -12,6 +12,7 @@ import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 
 
 /// Police Petition List Screen
@@ -195,7 +196,12 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                     _buildDetailRow('Petition Type', petition.type.displayName),
                     _buildDetailRow('Status', petition.status.displayName),
                     _buildDetailRow('Petitioner Name', petition.petitionerName),
-                    _buildDetailRow('Phone Number', petition.phoneNumber ?? '-'),
+                    _buildDetailRow(
+                      'Phone Number',
+                      petition.phoneNumber == null
+                          ? '-'
+                          : (petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!),
+                    ),
                     if (petition.address != null && petition.address!.isNotEmpty)
                       _buildDetailRow('Address', petition.address!),
                     if (petition.district != null &&
@@ -633,9 +639,15 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: _getFilterColor(widget.filter),
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -735,6 +747,31 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    // SAVE BUTTON
+                                    Consumer<ComplaintProvider>(builder: (context, provider, _) {
+                                      final isSaved = provider.isPetitionSaved(petition.id);
+                                      return InkWell(
+                                        onTap: () async {
+                                          final auth =
+                                              Provider.of<AuthProvider>(context, listen: false);
+                                          final userId = auth.user?.uid;
+                                          if (userId == null) return;
+
+                                          await provider.toggleSaveComplaint(
+                                              petition.toMap(), userId);
+                                        },
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4.0),
+                                          child: Icon(
+                                            isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                            color: isSaved ? Colors.orange : Colors.grey,
+                                            size: 24,
+                                          ),
+                                        ),
+                                      );
+                                    }),
                                   ],
                                 ),
                                 const SizedBox(height: 12),

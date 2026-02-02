@@ -28,6 +28,10 @@ dependencies:
   google_sign_in: ^6.2.1
   firebase_app_check: 0.3.2+10
   
+  # FCM Push Notifications
+  firebase_messaging: ^15.0.0
+  flutter_local_notifications: ^17.0.0
+  
   # UI Components
   flutter_svg: ^2.2.1
   cached_network_image: ^3.3.1
@@ -124,11 +128,18 @@ flutter:
   assets:
     - assets/login_design.svg
     - assets/police_logo.png
+    - assets/avatar.png
     - assets/Frame.svg
     - assets/DashboardFrame.svg
     - assets/data/district_police_stations.json
     - assets/data/ap_police_hierarchy_complete.json
     - assets/data/ap_police_hierarchy_fir.json
+    - assets/data/pincodes.json
+    - assets/CM.png
+    - assets/DGP.jpg
+    - assets/DyCM.png
+    - assets/HomeMinister.jpg
+    
 
 
 
