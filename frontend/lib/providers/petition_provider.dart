@@ -468,8 +468,33 @@ class PetitionProvider with ChangeNotifier {
       notifyListeners();
 
       return true;
+      return true;
     } catch (e) {
       debugPrint("Error updating petition: $e");
+      return false;
+    }
+  }
+
+  /// Submit feedback for a petition (Rating & Comment)
+  Future<bool> submitFeedback(String petitionId, double rating, String comment) async {
+    try {
+      final feedback = {
+        'rating': rating,
+        'comment': comment,
+        'createdAt': Timestamp.now(),
+      };
+
+      await _firestore.collection('petitions').doc(petitionId).update({
+        'feedbacks': FieldValue.arrayUnion([feedback])
+      });
+      
+      // Update local state if needed (optional since we usually fetch again)
+      // await fetchPetitions(userId); 
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint("Error submitting feedback: $e");
       return false;
     }
   }

@@ -100,16 +100,6 @@ class _TimelineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateTime = update.createdAt.toDate();
 
-    // Color logic based on AI Status
-    Color dotColor = Colors.indigo;
-    if (update.aiStatus == 'green') {
-      dotColor = Colors.green;
-    } else if (update.aiStatus == 'amber') {
-      dotColor = Colors.orange;
-    } else if (update.aiStatus == 'red') {
-      dotColor = Colors.red;
-    }
-
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,9 +116,9 @@ class _TimelineItem extends StatelessWidget {
                   margin: const EdgeInsets.only(top: 4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: dotColor,
+                    color: Colors.indigo,
                     border: Border.all(
-                      color: dotColor.withOpacity(0.4),
+                      color: Colors.indigo.shade200,
                       width: 3,
                     ),
                   ),
@@ -144,8 +134,8 @@ class _TimelineItem extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            dotColor.withOpacity(0.5),
-                            dotColor.withOpacity(0.1),
+                            Colors.indigo.shade200,
+                            Colors.indigo.shade100,
                           ],
                         ),
                       ),
