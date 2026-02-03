@@ -10,9 +10,11 @@ import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/utils/petition_filter.dart';
 import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
+import 'package:Dharma/widgets/petition_feedback_timeline.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
+import 'petition_detail_bottom_sheet.dart';
 
 
 /// Police Petition List Screen
@@ -391,6 +393,23 @@ class _PolicePetitionListScreenState extends State<PolicePetitionListScreen> {
                         return PetitionUpdateTimeline(updates: updates);
                       },
                     ),
+
+                    // ============= CITIZEN FEEDBACK =============
+                    if (petition.feedbacks != null && petition.feedbacks!.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Citizen Feedback",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.brown,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      PetitionFeedbackTimeline(feedbacks: petition.feedbacks!),
+                    ],
 
                     const SizedBox(height: 24),
                     const Divider(),

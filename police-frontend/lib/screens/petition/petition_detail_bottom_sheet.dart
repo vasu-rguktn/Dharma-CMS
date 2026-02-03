@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/models/petition_update.dart';
@@ -20,10 +21,27 @@ class PetitionDetailBottomSheet {
         maxChildSize: 0.95,
         expand: false,
         builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(24),
-            child: _DetailContent(petition: petition),
+          // Refresh data to get latest feedbacks
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+             Provider.of<PetitionProvider>(context, listen: false)
+                .refreshSinglePetition(petition.id!);
+          });
+          
+          return Consumer<PetitionProvider>(
+            builder: (context, provider, child) {
+              // Use the petition from provider if available (which acts as source of truth)
+              // otherwise fall back to passed petition
+              final currentPetition = provider.petitions.firstWhere(
+                (p) => p.id == petition.id,
+                orElse: () => petition
+              );
+
+              return SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(24),
+                child: _DetailContent(petition: currentPetition),
+              );
+            }
           );
         },
       ),
@@ -598,6 +616,64 @@ class _DetailContent extends StatelessWidget {
               return PetitionUpdateTimeline(updates: allUpdates);
             },
           ),
+
+          // ================= FEEDBACK DISPLAY (POLICE) =================
+          if (petition.feedbacks != null && petition.feedbacks!.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+            const Text(
+              "Citizen Feedback",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.brown,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...petition.feedbacks!.map((f) {
+              final rating = (f['rating'] is int) ? (f['rating'] as int).toDouble() : (f['rating'] as double? ?? 0.0);
+              final comment = f['comment'] as String? ?? '';
+              final date = (f['createdAt'] as Timestamp?)?.toDate();
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          date != null ? "${date.day}/${date.month}/${date.year}" : "Unknown Date",
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < rating ? Icons.star : Icons.star_border,
+                              color: Colors.amber,
+                              size: 16,
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                    if (comment.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(comment, style: const TextStyle(fontSize: 14)),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
       ],
     );
   }

@@ -657,6 +657,23 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Refreshes a single petition in the list with latest data from Firestore
+  Future<void> refreshSinglePetition(String petitionId) async {
+    try {
+      final doc = await _firestore.collection('petitions').doc(petitionId).get();
+      if (doc.exists) {
+        final updatedPetition = Petition.fromFirestore(doc);
+        final index = _petitions.indexWhere((p) => p.id == petitionId);
+        if (index != -1) {
+          _petitions[index] = updatedPetition;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error refreshing single petition: $e");
+    }
+  }
+
   /* ================= PETITION UPDATES (TIMELINE) ================= */
 
   /// Create a new petition update with optional photos and documents

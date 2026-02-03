@@ -213,6 +213,8 @@ class Petition {
     return 0;
   }
 
+  final List<Map<String, dynamic>>? feedbacks;
+
   Petition({
     this.id,
     required this.title,
@@ -258,6 +260,7 @@ class Petition {
     this.extractedText,
     this.handwrittenDocumentUrl,
     this.proofDocumentUrls,
+    this.feedbacks,
     required this.userId,
     required this.createdAt,
     required this.updatedAt,
@@ -311,6 +314,9 @@ class Petition {
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
       proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
           ?.map((e) => e.toString())
+          .toList(),
+      feedbacks: (data['feedbacks'] as List<dynamic>?)
+          ?.map((e) => e as Map<String, dynamic>)
           .toList(),
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
@@ -373,6 +379,9 @@ class Petition {
       proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
+      feedbacks: (data['feedbacks'] as List<dynamic>?)
+          ?.map((e) => e as Map<String, dynamic>)
+          .toList(),
       userId: data['userId'] ?? '',
       createdAt:
           data['createdAt'] is Timestamp ? data['createdAt'] : Timestamp.now(),
@@ -429,6 +438,7 @@ class Petition {
       if (handwrittenDocumentUrl != null)
         'handwrittenDocumentUrl': handwrittenDocumentUrl,
       if (proofDocumentUrls != null) 'proofDocumentUrls': proofDocumentUrls,
+      if (feedbacks != null) 'feedbacks': feedbacks,
       'userId': userId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,

@@ -8,6 +8,7 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/widgets/full_screen_image_viewer.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
+import 'package:Dharma/screens/petition/feedback_input.dart';
 
 class PetitionDetailBottomSheet {
   static void show(BuildContext context, Petition petition) {
@@ -598,7 +599,44 @@ class _DetailContent extends StatelessWidget {
               return PetitionUpdateTimeline(updates: allUpdates);
             },
           ),
+          
+          // ================= FEEDBACK SECTION =================
+          if (_shouldShowFeedbackSection(petition)) ...[
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+             FeedbackInput(
+              petitionId: petition.id!,
+              onSuccess: () {
+                // Refresh or close? 
+                // Since this is inside a BottomSheet/Modal, maybe just show success message (handled in widget)
+                // and maybe refresh current view?
+                // The widget handles validation and UI state.
+                Navigator.pop(context);
+              },
+            ),
+          ],
       ],
     );
+  }
+
+  bool _shouldShowFeedbackSection(Petition petition) {
+    final status = (petition.policeStatus ?? '').toLowerCase();
+    
+    // 1. Must be resolved/closed
+    final isResolved = status.contains('closed') || 
+                       status.contains('resolved') || 
+                       status.contains('reject') ||
+                       petition.status == PetitionStatus.granted ||
+                       petition.status == PetitionStatus.rejected ||
+                       petition.status == PetitionStatus.withdrawn;
+
+    if (!isResolved) return false;
+
+    // 2. Limit to 5 feedbacks (or 1 if strict "rating" logic but users said "upto 5")
+    final feedbackCount = petition.feedbacks?.length ?? 0;
+    if (feedbackCount >= 5) return false;
+
+    return true;
   }
 }
