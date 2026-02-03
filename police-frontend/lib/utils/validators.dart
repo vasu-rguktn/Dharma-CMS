@@ -6,6 +6,13 @@ class Validators {
     ).hasMatch(email.trim());
   }
 
+  // Police Email validation
+  static bool isValidPoliceEmail(String email) {
+    return RegExp(
+      r'^[a-zA-Z][a-zA-Z0-9._%+-]*@(mail\.gov\.in|police\.gov\.in|nic\.in|.*\.gov\.in)$',
+    ).hasMatch(email.trim());
+  }
+
   // Indian phone number
   static bool isValidIndianPhone(String phone) {
     return RegExp(r'^(\+91)?[6-9]\d{9}$').hasMatch(phone.trim());
