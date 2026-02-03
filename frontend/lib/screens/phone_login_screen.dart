@@ -294,6 +294,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 
 // Fix name conflict: your own AuthProvider (not the one from firebase_auth)
 import 'package:Dharma/providers/auth_provider.dart' as MyAuth;
+import 'package:Dharma/screens/consent_pdf_viewer.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -309,6 +310,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   bool _isLoading = false;
   bool _otpSent = false;
   bool _isSendOtpDisabled = false;
+  bool _isConsentAccepted = false;
 
   int _countdown = 0;
   Timer? _timer;
@@ -641,16 +643,71 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
 
                     SizedBox(height: screenHeight * 0.03),
 
+                    // Consent Checkbox
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _isConsentAccepted,
+                          activeColor: const Color(0xFFFC633C),
+                          onChanged: (val) {
+                            setState(() => _isConsentAccepted = val ?? false);
+                          },
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              // Open PDF Viewer
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ConsentPdfViewer(
+                                    assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
+                                    title: 'Terms & Conditions',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: RichText(
+                              text: TextSpan(
+                                text: 'I agree to the ',
+                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                                children: [
+                                  TextSpan(
+                                    text: 'Terms & Conditions',
+                                    style: const TextStyle(
+                                      color: Color(0xFFFC633C),
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
                     // Main Button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isLoading || (!_otpSent && _isSendOtpDisabled)
+                        onPressed: (_isLoading || (!_otpSent && _isSendOtpDisabled))
                             ? null
-                            : _otpSent
-                                ? _verifyOtp
-                                : () => _sendOtp(),
+                            : () {
+                                if (!_isConsentAccepted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Please accept the Terms & Conditions')),
+                                  );
+                                  return;
+                                }
+                                if (_otpSent) {
+                                  _verifyOtp();
+                                } else {
+                                  _sendOtp();
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: (!_otpSent && _isSendOtpDisabled)
                               ? Colors.grey
