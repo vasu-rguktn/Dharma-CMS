@@ -60,7 +60,7 @@ async def _extract_text_gemini_generic(
     )
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         b64 = base64.b64encode(file_bytes).decode("utf-8")
         response = await asyncio.to_thread(
             model.generate_content,
@@ -258,7 +258,7 @@ Respond with STRICT JSON ONLY in this exact shape:
 """
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(
             prompt,
             generation_config=genai_types.GenerationConfig(
@@ -268,31 +268,38 @@ Respond with STRICT JSON ONLY in this exact shape:
             ),
         )
         raw = (getattr(response, "text", None) or "").strip()
-    except Exception:
+    except Exception as e:
+        print(f"❌ [AI CHECK] Server Error: {e}")
         return _fallback_response(
             "AI check failed due to a server error; please verify evidence manually."
         )
 
     if not raw:
+        print("❌ [AI CHECK] Empty response from Gemini")
         return _fallback_response(
             "AI did not return a response; please verify evidence manually."
         )
 
+    print(f"🤖 [AI CHECK] Raw Response: {raw}")
+
     try:
         # Primary attempt: direct JSON
         data = json.loads(raw)
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ [AI CHECK] JSON parse failed: {e}")
         # Fallback: extract the first {...} block from the text
         start = raw.find("{")
         end = raw.rfind("}")
         if start != -1 and end != -1 and end > start:
             try:
                 data = json.loads(raw[start : end + 1])
-            except Exception:
+            except Exception as e2:
+                print(f"❌ [AI CHECK] Extracted JSON parse failed: {e2}")
                 return _fallback_response(
                     "AI response could not be parsed; please verify evidence manually."
                 )
         else:
+            print("❌ [AI CHECK] No JSON object found in response")
             return _fallback_response(
                 "AI response could not be parsed; please verify evidence manually."
             )

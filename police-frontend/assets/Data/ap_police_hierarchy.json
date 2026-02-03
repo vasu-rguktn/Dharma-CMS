@@ -1,0 +1,46 @@
+{
+  "Ananthapuram Range": {
+    "Ananthapuram": [],
+    "Chittoor": [],
+    "Sri Sathya Sai": [],
+    "Tirupathi": []
+  },
+  "Eluru Range": {
+    "East Godavari": [],
+    "Eluru": [],
+    "Kakinada": [],
+    "Konaseema": [],
+    "Krishna": [],
+    "West Godavari": [],
+    "Polavaram": []
+  },
+  "Guntur Range": {
+    "Bapatla": [],
+    "Guntur": [],
+    "Palnadu": [],
+    "Prakasam": [],
+    "Sri Potti Sriramulu Nellore": [],
+    "Markapuram": []
+  },
+  "Kurnool Range": {
+    "Annamayya": [],
+    "Kurnool": [],
+    "Nandyal": [],
+    "YSR Kadapa": []
+  },
+  "Visakhapatnam Range": {
+    "Alluri Sitharama Raju": [],
+    "Anakapalli": [],
+    "Parvathipuram Manyam": [],
+    "Srikakulam": [],
+    "Vizianagaram": []
+  },
+  "Commissionerate": {
+    "NTR Commissionerate": [],
+    "Visakhapatnam Commissionerate": []
+  },
+  "GRP": {
+    "GTKL GRP": [],
+    "VJA GRP": []
+  }
+}
