@@ -1226,6 +1226,7 @@ ${p.grounds}
                                 icon: Icons.task_alt,
                                 color: Colors.blue,
                                 content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: (_aiReport!['investigation_tasks'] as List).map((task) {
                                     final priority = task['priority']?.toString() ?? 'Routine';
                                     final isUrgent = priority.toLowerCase().contains('urgent');
@@ -1268,6 +1269,7 @@ ${p.grounds}
                                 icon: Icons.gavel,
                                 color: Colors.green,
                                 content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: (_aiReport!['applicable_laws'] as List).map((law) {
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 8),
@@ -1281,7 +1283,7 @@ ${p.grounds}
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            law['law']?.toString() ?? '',
+                                            law['section']?.toString() ?? '',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
@@ -1290,7 +1292,7 @@ ${p.grounds}
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            law['description']?.toString() ?? '',
+                                            law['justification']?.toString() ?? '',
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         ],
@@ -1307,6 +1309,7 @@ ${p.grounds}
                                 icon: Icons.science,
                                 color: Colors.purple,
                                 content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: (_aiReport!['forensic_suggestions'] as List).map((suggestion) {
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 8),

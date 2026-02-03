@@ -6,6 +6,7 @@ import 'package:Dharma/l10n/app_localizations.dart';
 
 
 import 'package:Dharma/utils/validators.dart';
+import 'package:Dharma/screens/consent_pdf_viewer.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -23,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _gender = 'Male';
   bool _prefilledFromArgs = false;
   Map<String, dynamic>? _incomingAddress;
+  bool _isConsentAccepted = false;
 
   // Function to show the date picker
   Future<void> _selectDate(BuildContext context) async {
@@ -59,6 +61,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _submitForm() {
     final localizations = AppLocalizations.of(context);
+    if (!_isConsentAccepted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please accept the Terms & Conditions')),
+      );
+      return;
+    }
     if (_formKey.currentState!.validate()) {
       final personalData = {
         'name': _nameController.text.trim(),
@@ -463,6 +471,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     const SizedBox(height: 24),
+                    // Consent Checkbox
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _isConsentAccepted,
+                          activeColor: const Color(0xFFFC633C),
+                          onChanged: (val) {
+                            setState(() => _isConsentAccepted = val ?? false);
+                          },
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              // Open PDF Viewer
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ConsentPdfViewer(
+                                    assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
+                                    title: 'Terms & Conditions',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: RichText(
+                              text: TextSpan(
+                                text: 'I agree to the ',
+                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                                children: [
+                                  TextSpan(
+                                    text: 'Terms & Conditions',
+                                    style: const TextStyle(
+                                      color: Color(0xFFFC633C),
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     // Submit Button
                     SizedBox(
                       width: double.infinity,
