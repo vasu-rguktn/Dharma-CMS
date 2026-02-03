@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import 'package:Dharma/data/revised_police_hierarchy.dart'; // ✅ Use Revised Data
+import 'package:Dharma/data/revised_police_hierarchy.dart';
+import 'package:Dharma/utils/rank_utils.dart';
 
 class AssignPetitionDialog extends StatefulWidget {
   final String assigningOfficerRank;
@@ -25,713 +26,407 @@ class AssignPetitionDialog extends StatefulWidget {
   State<AssignPetitionDialog> createState() => _AssignPetitionDialogState();
 }
 
-class _AssignPetitionDialogState extends State<AssignPetitionDialog> {
-  // Rank hierarchy
-  static const List<String> _stateLevelRanks = [
-    'Director General of Police',
-    'Additional Director General of Police',
-  ];
+class _AssignPetitionDialogState extends State<AssignPetitionDialog>
+    with SingleTickerProviderStateMixin {
+  // Flattened Data Lists
+  List<Map<String, dynamic>> _districtsList = []; // For Range/State officers
+  List<Map<String, dynamic>> _sdposList = [];
+  List<Map<String, dynamic>> _circlesList = [];
+  List<Map<String, dynamic>> _stationsList = [];
 
-  static const List<String> _rangeLevelRanks = [
-    'Inspector General of Police',
-    'Deputy Inspector General of Police',
-  ];
+  // Filtered Lists for Search
+  List<Map<String, dynamic>> _filteredDistricts = [];
+  List<Map<String, dynamic>> _filteredSdpos = [];
+  List<Map<String, dynamic>> _filteredCircles = [];
+  List<Map<String, dynamic>> _filteredStations = [];
 
-  static const List<String> _districtLevelRanks = [
-    'Superintendent of Police',
-    'Additional Superintendent of Police',
-  ];
+  bool _isLoading = true;
+  late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
 
-  // Hierarchy data
-  Map<String, Map<String, List<String>>> _policeHierarchy = {};
-  List<dynamic> _deepDistricts = []; // ✅ New deep data
-  bool _hierarchyLoading = true;
-
-  // Assignment type: 'range', 'district', 'sdpo', 'circle', 'station'
-  String? _assignmentType;
-
-  // Location selections
-  String? _selectedRange;
-  String? _selectedDistrict;
-  String? _selectedSDPO; // ✅ New
-  String? _selectedCircle; // ✅ New
-  String? _selectedStation;
+  // Tabs configuration
+  List<String> _tabTitles = [];
 
   @override
   void initState() {
     super.initState();
-    _loadHierarchyData();
+    _loadAndFlattenData();
+    _searchController.addListener(_onSearchChanged);
   }
 
-  Future<void> _loadHierarchyData() async {
-    debugPrint('🔄 [AssignDialog] Loading Revised Hierarchy Data...');
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredDistricts = _filterList(_districtsList, query);
+      _filteredSdpos = _filterList(_sdposList, query);
+      _filteredCircles = _filterList(_circlesList, query);
+      _filteredStations = _filterList(_stationsList, query);
+    });
+  }
+
+  List<Map<String, dynamic>> _filterList(
+      List<Map<String, dynamic>> list, String query) {
+    if (query.isEmpty) return list;
+    return list.where((item) {
+      final name = item['name'].toString().toLowerCase();
+      return name.contains(query);
+    }).toList();
+  }
+
+  Future<void> _loadAndFlattenData() async {
+    // Simulate async if needed, but data is local const
+    await Future.delayed(Duration.zero);
+
     try {
-      // 1. Load Legacy (For Range Mapping if needed, or build it from revised)
-      final jsonStr = await rootBundle
-          .loadString('assets/data/ap_police_hierarchy_complete.json');
-      final Map<String, dynamic> data = json.decode(jsonStr);
+      final allDistricts =
+          kRevisedPoliceHierarchy['districts'] as List<dynamic>? ?? [];
+
+      _districtsList.clear();
+      _sdposList.clear();
+      _circlesList.clear();
+      _stationsList.clear();
+
+      // Determined Scope
+      bool isStateLevel =
+          ['DGP', 'ADGP'].contains(RankUtils.normalizeRank(widget.assigningOfficerRank)) ||
+          widget.assigningOfficerRank.contains('Director General');
       
-      Map<String, Map<String, List<String>>> hierarchy = {};
-      data.forEach((range, districts) {
-        if (districts is Map) {
-          Map<String, List<String>> districtMap = {};
-          districts.forEach((district, stations) {
-             districtMap[district.toString()] = [];
-          });
-          hierarchy[range] = districtMap;
+      bool isRangeLevel =
+          RankUtils.isRangeLevelOfficer(widget.assigningOfficerRank);
+      
+      bool isDistrictLevel =
+          RankUtils.isDistrictLevelOfficer(widget.assigningOfficerRank);
+
+      // Filter Districts based on Scope
+      for (var districtObj in allDistricts) {
+        String dName = districtObj['name'];
+        String dRange = districtObj['range'] ?? '';
+
+        // Scope Filters
+        if (isRangeLevel &&
+            widget.range != null &&
+            !dRange.toLowerCase().contains(widget.range!.toLowerCase())) {
+          continue;
         }
-      });
+        if (isDistrictLevel &&
+            widget.district != null &&
+            !_matchDistrictName(dName, widget.district!)) {
+          continue;
+        }
 
-      // 2. Load Deep Data from Revised Data
-      // ignore: undefined_identifier
-      final districtsList = kRevisedPoliceHierarchy['districts'] as List<dynamic>? ?? [];
-      debugPrint('✅ [AssignDialog] Revised Deep hierarchy loaded. Districts count: ${districtsList.length}');
-      
-      // Update local hierarchy map with ranges from deep data if possible
-      // (Optional: Rebuild _policeHierarchy from deep data for consistency)
+        // Add to Districts List (Only for State/Range officers)
+        if (isStateLevel || isRangeLevel) {
+          _districtsList.add({
+            'name': dName,
+            'range': dRange,
+            'type': 'district',
+            'role': 'Superintendent of Police',
+            'raw': districtObj,
+          });
+        }
 
+        // Drill down to SDPOs
+        final sdpos = districtObj['sdpos'] as List<dynamic>? ?? [];
+        for (var sdpoObj in sdpos) {
+          String sName = sdpoObj['name'];
+          
+          _sdposList.add({
+            'name': sName,
+            'district': dName,
+            'range': dRange,
+            'type': 'sdpo',
+            'role': 'Deputy Superintendent of Police',
+            'raw': sdpoObj,
+          });
+
+          // Drill down to Circles
+          final circles = sdpoObj['circles'] as List<dynamic>? ?? [];
+          for (var circleObj in circles) {
+            String cName = circleObj['name'];
+            
+             _circlesList.add({
+              'name': cName,
+              'sdpo': sName,
+              'district': dName,
+              'range': dRange,
+              'type': 'circle',
+              'role': 'Circle Inspector',
+              'raw': circleObj,
+            });
+
+            // Drill down to Stations
+            // Note: In kRevisedPoliceHierarchy, stations are just strings in a list
+            final stations = circleObj['police_stations'] as List<dynamic>? ?? [];
+            for (var stationName in stations) {
+              _stationsList.add({
+                'name': stationName.toString(),
+                'circle': cName,
+                'sdpo': sName,
+                'district': dName,
+                'range': dRange,
+                'type': 'station',
+                'role': 'Station House Officer',
+              });
+            }
+          }
+        }
+      }
+
+      // Configure Tabs based on populated lists
+      _setupTabs(isStateLevel, isRangeLevel, isDistrictLevel);
+
+      // Initial Filter
+      _onSearchChanged();
+
+    } catch (e) {
+      debugPrint('Error flattening assignment data: $e');
+    } finally {
       if (mounted) {
         setState(() {
-          _policeHierarchy = hierarchy;
-          _deepDistricts = districtsList;
-          _hierarchyLoading = false;
-          
-          // Pre-select based on officer's rank
-          if (_isStateLevelRank()) {
-            // DGP
-          } else if (_isRangeLevelRank()) {
-            if (widget.range != null) _selectedRange = widget.range;
-          } else if (_isDistrictLevelRank()) {
-            if (widget.range != null) _selectedRange = widget.range;
-            else if (widget.district != null) _selectedRange = _findRangeForDistrict(widget.district!);
-            _selectedDistrict = widget.district;
-          }
+          _isLoading = false;
         });
       }
-    } catch (e, stack) {
-      debugPrint('❌ [AssignDialog] Error loading hierarchy: $e');
-      debugPrint('❌ [AssignDialog] Stack trace: $stack');
-      if (mounted) setState(() => _hierarchyLoading = false);
     }
   }
 
-  bool _isStateLevelRank() =>
-      _stateLevelRanks.contains(widget.assigningOfficerRank);
-  bool _isRangeLevelRank() =>
-      _rangeLevelRanks.contains(widget.assigningOfficerRank);
-  bool _isDistrictLevelRank() =>
-      _districtLevelRanks.contains(widget.assigningOfficerRank);
+  bool _matchDistrictName(String dataName, String userDistrict) {
+    final d1 = dataName.toLowerCase().replaceAll('sp ', '').trim();
+    final d2 = userDistrict.toLowerCase().replaceAll('sp ', '').trim();
+    return d1 == d2 || d1.contains(d2) || d2.contains(d1);
+  }
 
-  String? _findRangeForDistrict(String district) {
-    for (final range in _policeHierarchy.keys) {
-      if (_policeHierarchy[range]?.containsKey(district) ?? false) {
-        return range;
-      }
+  void _setupTabs(bool isState, bool isRange, bool isDistrict) {
+    _tabTitles.clear();
+
+    if (isState || isRange) {
+      _tabTitles.add('Districts (SP)');
     }
-    return null;
+    
+    // Everyone sees these (filtered by their scope)
+    _tabTitles.add('Sub-Divisions (DSP)');
+    _tabTitles.add('Circles (CI)');
+    _tabTitles.add('Stations (SHO)');
+
+    // In case logic filtered everything out (edge case), add at least one
+    if (_tabTitles.isEmpty) _tabTitles.add('Stations');
+
+    _tabController = TabController(length: _tabTitles.length, vsync: this);
   }
 
-  List<String> _getAvailableRanges() => _policeHierarchy.keys.toList();
+  void _handleSelection(Map<String, dynamic> item) {
+    Map<String, dynamic> result = {};
 
-  List<String> _getAvailableDistricts() {
-    if (_selectedRange == null) return [];
-    return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
-  }
+    final type = item['type'];
+    final name = item['name'];
 
-  // Deep Data Getters
-  Map<String, dynamic>? _getCurrentDistrictObj() {
-    if (_selectedDistrict == null) return null;
-    try {
-      debugPrint('🔍 [AssignDialog] Looking for District: "$_selectedDistrict"');
-      
-      dynamic match;
-      for (var d in _deepDistricts) {
-          final dataName = d['name'].toString().toLowerCase().trim(); // e.g., "sp eluru"
-          final selected = _selectedDistrict!.toLowerCase().trim();   // e.g., "eluru"
-          
-          if (dataName == selected || 
-              dataName == "sp $selected" || 
-              dataName.toString().replaceFirst('sp ', '').trim() == selected) {
-            match = d;
-            break;
-          }
-      }
-
-      if (match != null) {
-        debugPrint('✅ [AssignDialog] Found District Match: "${match['name']}"');
-      } else {
-        debugPrint('❌ [AssignDialog] No District Match found for: "$_selectedDistrict" in ${_deepDistricts.length} districts.');
-      }
-      return match as Map<String, dynamic>?;
-    } catch (e) { 
-      debugPrint('❌ [AssignDialog] Error finding district: $e');
-      return null; 
-    }
-  }
-
-  List<String> _getAvailableSDPOs() {
-    final distObj = _getCurrentDistrictObj();
-    if (distObj == null) {
-      debugPrint('⚠️ [AssignDialog] Cannot load SDPOs because district object is null.');
-      return [];
-    }
-    final sdpos = distObj['sdpos'] as List<dynamic>? ?? [];
-    debugPrint('✅ [AssignDialog] Loaded ${sdpos.length} SDPOs for district.');
-    return sdpos.map((s) => s['name'] as String).toList();
-  }
-
-  Map<String, dynamic>? _getCurrentSDPOObj() {
-    final distObj = _getCurrentDistrictObj();
-    if (distObj == null || _selectedSDPO == null) return null;
-    final sdpos = distObj['sdpos'] as List<dynamic>? ?? [];
-    try {
-      debugPrint('🔍 [AssignDialog] Looking for SDPO: "$_selectedSDPO"');
-      for (var s in sdpos) {
-        if (s['name'].toString().trim() == _selectedSDPO!.trim()) {
-           debugPrint('✅ [AssignDialog] Found SDPO Match: "${s['name']}"');
-           return s;
-        }
-      }
-      debugPrint('❌ [AssignDialog] No SDPO Match found for "$_selectedSDPO"');
-      return null;
-    } catch (e) { return null; }
-  }
-
-  List<String> _getAvailableCircles() {
-    final sdpoObj = _getCurrentSDPOObj();
-    if (sdpoObj == null) {
-      debugPrint('⚠️ [AssignDialog] Cannot load Circles because SDPO object is null.');
-      return [];
-    }
-    final circles = sdpoObj['circles'] as List<dynamic>? ?? [];
-    debugPrint('✅ [AssignDialog] Loaded ${circles.length} Circles for SDPO.');
-    return circles.map((c) => c['name'] as String).toList();
-  }
-
-  Map<String, dynamic>? _getCurrentCircleObj() {
-    final sdpoObj = _getCurrentSDPOObj();
-    if (sdpoObj == null || _selectedCircle == null) return null;
-    final circles = sdpoObj['circles'] as List<dynamic>? ?? [];
-    try {
-       debugPrint('🔍 [AssignDialog] Looking for Circle: "$_selectedCircle"');
-       for (var c in circles) {
-         if (c['name'].toString().trim() == _selectedCircle!.trim()) {
-            debugPrint('✅ [AssignDialog] Found Circle Match: "${c['name']}"');
-            return c;
-         }
-       }
-       debugPrint('❌ [AssignDialog] No Circle Match found for "$_selectedCircle"');
-       return null;
-    } catch (e) { return null; }
-  }
-
-  List<String> _getAvailableStations() {
-    // Rely on Circle
-    final circleObj = _getCurrentCircleObj();
-    if (circleObj == null) {
-       debugPrint('⚠️ [AssignDialog] Cannot load Stations because Circle object is null.');
-       return [];
-    }
-    final stations = circleObj['police_stations'] as List<dynamic>? ?? [];
-    debugPrint('✅ [AssignDialog] Loaded ${stations.length} Stations for Circle.');
-    return stations.map((s) => s.toString()).toList();
-  }
-
-  void _handleAssignment() {
-    // Prepare assignment data based on type
-    Map<String, dynamic> assignmentData = {};
-
-    if (_assignmentType == 'range' && _selectedRange != null) {
-      assignmentData = {
-        'assignmentType': 'range',
-        'assignedToRange': _selectedRange,
-        'assignedToRangeName': _selectedRange,
-        'targetRole': 'Inspector General of Police', // Approximate
-        'targetUnit': _selectedRange,
-      };
-    } else if (_assignmentType == 'district' && _selectedDistrict != null) {
-      assignmentData = {
+    // Construct the result map expected by the parent
+    // Note: We include all higher-level context we have
+    if (type == 'district') {
+      result = {
         'assignmentType': 'district',
-        'assignedToDistrict': _selectedDistrict,
-        'assignedToDistrictName': _selectedDistrict,
-        'assignedToRange': _selectedRange,
-        'targetRole': 'Superintendent of Police',
-        'targetUnit': _selectedDistrict,
+        'assignedToDistrict': name,
+        'assignedToDistrictName': name, // Redundant but safe
+        'assignedToRange': item['range'],
+        'targetRole': item['role'],
+        'targetUnit': name,
       };
-    } else if (_assignmentType == 'sdpo' && _selectedSDPO != null) {
-      assignmentData = {
+    } else if (type == 'sdpo') {
+      result = {
         'assignmentType': 'sdpo',
-        'assignedToSDPO': _selectedSDPO, // New field
-        'assignedToDistrict': _selectedDistrict,
-        'assignedToRange': _selectedRange,
-        'targetRole': 'Deputy Superintendent of Police',
-        'targetUnit': _selectedSDPO,
+        'assignedToSDPO': name,
+        'assignedToDistrict': item['district'],
+        'assignedToRange': item['range'],
+        'targetRole': item['role'],
+        'targetUnit': name,
       };
-    } else if (_assignmentType == 'circle' && _selectedCircle != null) {
-      assignmentData = {
-        'assignmentType': 'circle',
-        'assignedToCircle': _selectedCircle, // New field
-        'assignedToSDPO': _selectedSDPO,
-        'assignedToDistrict': _selectedDistrict,
-        'assignedToRange': _selectedRange,
-        'targetRole': 'Inspector of Police',
-        'targetUnit': _selectedCircle,
+    } else if (type == 'circle') {
+      result = {
+         'assignmentType': 'circle',
+        'assignedToCircle': name,
+        'assignedToSDPO': item['sdpo'],
+        'assignedToDistrict': item['district'],
+        'assignedToRange': item['range'],
+        'targetRole': item['role'],
+        'targetUnit': name,
       };
-    } else if (_assignmentType == 'station' && _selectedStation != null) {
-      assignmentData = {
+    } else if (type == 'station') {
+      result = {
         'assignmentType': 'station',
-        'assignedToStation': _selectedStation,
-        'assignedToStationName': _selectedStation,
-        'assignedToCircle': _selectedCircle,
-        'assignedToSDPO': _selectedSDPO,
-        'assignedToDistrict': _selectedDistrict,
-        'assignedToRange': _selectedRange,
-        'targetRole': 'Station House Officer',
-        'targetUnit': _selectedStation,
+        'assignedToStation': name,
+        'assignedToStationName': name,
+        'assignedToCircle': item['circle'],
+        'assignedToSDPO': item['sdpo'],
+        'assignedToDistrict': item['district'],
+        'assignedToRange': item['range'],
+        'targetRole': item['role'],
+        'targetUnit': name,
       };
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please complete the selection')),
-      );
-      return;
     }
 
-    Navigator.pop(context, assignmentData);
+    Navigator.pop(context, result);
   }
 
-  void _showSearchableSelection({
-    required String title,
-    required List<String> items,
-    required String? selectedValue,
-    required Function(String) onSelected,
-  }) {
-    String searchQuery = '';
-    List<String> filteredItems = List.from(items);
+  @override
+  Widget build(BuildContext context) {
+    // If loading
+    if (_isLoading) {
+      return const Dialog(
+        child: SizedBox(
+          height: 200,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              title: Text(title),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Search...',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        setModalState(() {
-                          searchQuery = value.toLowerCase();
-                          filteredItems = items
-                              .where((item) =>
-                                  item.toLowerCase().contains(searchQuery))
-                              .toList();
-                        });
-                      },
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min, // Constrain height if possible
+        children: [
+           // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade700,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.assignment_ind, color: Colors.white),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Direct Assignment',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 12),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.4,
-                      ),
-                      child: filteredItems.isEmpty
-                          ? const Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Text('No matches found'),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: filteredItems.length,
-                              itemBuilder: (context, index) {
-                                final item = filteredItems[index];
-                                final isSelected = item == selectedValue;
-                                return ListTile(
-                                  title: Text(
-                                    item,
-                                    style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      color: isSelected
-                                          ? Colors.blue.shade700
-                                          : null,
-                                    ),
-                                  ),
-                                  trailing: isSelected
-                                      ? Icon(Icons.check,
-                                          color: Colors.blue.shade700)
-                                      : null,
-                                  onTap: () {
-                                    onSelected(item);
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              actions: [
-                TextButton(
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
                 ),
               ],
-            );
-          },
+            ),
+          ),
+
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search officer, station, or unit...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+            ),
+          ),
+
+          // Tab Bar
+          Container(
+            color: Colors.blue.shade50,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              labelColor: Colors.blue.shade800,
+              unselectedLabelColor: Colors.grey.shade700,
+              indicatorColor: Colors.blue.shade700,
+              tabs: _tabTitles.map((t) => Tab(text: t)).toList(),
+            ),
+          ),
+
+          // Tab View (List Content)
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: TabBarView(
+              controller: _tabController,
+              children: _tabTitles.map((title) {
+                if (title.contains('District')) return _buildList(_filteredDistricts, Icons.location_city);
+                if (title.contains('Sub-Division')) return _buildList(_filteredSdpos, Icons.security);
+                if (title.contains('Circle')) return _buildList(_filteredCircles, Icons.group_work);
+                if (title.contains('Station')) return _buildList(_filteredStations, Icons.local_police);
+                return const Center(child: Text('Unknown Tab'));
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(List<Map<String, dynamic>> items, IconData icon) {
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'No matching officers found',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(8),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.blue.shade50,
+            child: Icon(icon, color: Colors.blue.shade700, size: 20),
+          ),
+          title: Text(
+            item['name'],
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            // Show relevant parent info for context
+            _getContextSubtitle(item),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
+          trailing: ElevatedButton(
+            onPressed: () => _handleSelection(item),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade700,
+              foregroundColor: Colors.white,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: const Text('Assign'),
+          ),
+          onTap: () => _handleSelection(item),
         );
       },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: MediaQuery.of(context).size.height * 0.85,
-        child: Column(
-          children: [
-            // Header
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade700,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(4),
-                  topRight: Radius.circular(4),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.assignment, color: Colors.white),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Assign Petition V2', // Changed title
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content
-            if (_hierarchyLoading)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Loading hierarchy data...',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    // Info Card
-                    Card(
-                      color: Colors.blue.shade50,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                color: Colors.blue.shade700),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Assign this petition to a Range, District, or Police Station',
-                                style: TextStyle(color: Colors.blue.shade700),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Assignment Selection
-                    _buildAssignmentSection(),
-                  ],
-                ),
-              ),
-
-            // Footer with Assign Button
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _assignmentType != null ? _handleAssignment : null,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Assign Petition'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAssignmentSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Select Assignment Target',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 16),
-
-        // 1. Range Level
-        if (_isStateLevelRank()) ...[
-          _buildRangeAssignmentCard(),
-          const SizedBox(height: 12),
-        ],
-
-        // 2. District Level
-        if (_selectedRange != null && (_isStateLevelRank() || _isRangeLevelRank())) ...[
-           _buildDistrictAssignmentCard(),
-           const SizedBox(height: 12),
-        ],
-
-        // 3. SDPO Level (Show if District selected)
-        if (_selectedDistrict != null) ...[
-          if (_isDistrictLevelRank()) ...[
-             // SP sees SDPO card directly
-             Text(
-              'Your District: $_selectedDistrict',
-              style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic),
-            ),
-            const SizedBox(height: 12),
-          ],
-          _buildSDPOAssignmentCard(),
-          const SizedBox(height: 12),
-        ],
-
-        // 4. Circle Level (Show if SDPO selected)
-        if (_selectedSDPO != null) ...[
-          _buildCircleAssignmentCard(),
-          const SizedBox(height: 12),
-        ],
-
-        // 5. Station Level (Show if Circle selected - or just show if SDPO selected for direct?)
-        // Hierarchy is strict: Circle -> Station.
-        if (_selectedCircle != null) ...[
-          _buildStationAssignmentCard(),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildRangeAssignmentCard() {
-    return Card(
-      elevation: _assignmentType == 'range' ? 4 : 1,
-      color: _assignmentType == 'range' ? Colors.blue.shade50 : null,
-      child: Column(
-        children: [
-          RadioListTile<String>(
-            value: 'range',
-            groupValue: _assignmentType,
-            onChanged: (value) => setState(() {
-              _assignmentType = value;
-              _selectedDistrict = null;
-              _selectedSDPO = null;
-              _selectedCircle = null;
-              _selectedStation = null;
-            }),
-            title: const Text('Assign to Range', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Assign to IG/DIG of Range'),
-          ),
-          if (_assignmentType == 'range') ...[
-            const Divider(),
-            _buildSearchableField('Select Range', _selectedRange, _getAvailableRanges(), (val) {
-              setState(() => _selectedRange = val);
-            }),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDistrictAssignmentCard() {
-    return Card(
-      elevation: _assignmentType == 'district' ? 4 : 1,
-      color: _assignmentType == 'district' ? Colors.green.shade50 : null,
-      child: Column(
-        children: [
-          RadioListTile<String>(
-            value: 'district',
-            groupValue: _assignmentType,
-            onChanged: (value) => setState(() {
-              _assignmentType = value;
-               _selectedSDPO = null;
-              _selectedCircle = null;
-              _selectedStation = null;
-            }),
-            title: const Text('Assign to District', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Assign to SP of District'),
-          ),
-          if (_assignmentType == 'district') ...[
-            const Divider(),
-             _buildSearchableField('Select District (SP)', _selectedDistrict, _getAvailableDistricts(), (val) {
-              setState(() => _selectedDistrict = val);
-            }),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSDPOAssignmentCard() {
-    return Card(
-      elevation: _assignmentType == 'sdpo' ? 4 : 1,
-      color: _assignmentType == 'sdpo' ? Colors.purple.shade50 : null,
-      child: Column(
-        children: [
-          RadioListTile<String>(
-            value: 'sdpo',
-            groupValue: _assignmentType,
-            onChanged: (value) => setState(() {
-              _assignmentType = value;
-              _selectedCircle = null;
-              _selectedStation = null;
-            }),
-            title: const Text('Assign to DSP (Sub-Division)', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Assign to DSP of SDPO'),
-          ),
-          if (_assignmentType == 'sdpo') ...[
-            const Divider(),
-             _buildSearchableField('Select DSP (Sub-Division)', _selectedSDPO, _getAvailableSDPOs(), (val) {
-              setState(() => _selectedSDPO = val);
-            }),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCircleAssignmentCard() {
-    return Card(
-      elevation: _assignmentType == 'circle' ? 4 : 1,
-      color: _assignmentType == 'circle' ? Colors.teal.shade50 : null,
-      child: Column(
-        children: [
-          RadioListTile<String>(
-            value: 'circle',
-            groupValue: _assignmentType,
-            onChanged: (value) => setState(() {
-              _assignmentType = value;
-              _selectedStation = null;
-            }),
-            title: const Text('Assign to Circle Inspector', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Assign to CI of Circle'),
-          ),
-          if (_assignmentType == 'circle') ...[
-            const Divider(),
-             _buildSearchableField('Select Circle Inspector (Circle)', _selectedCircle, _getAvailableCircles(), (val) {
-              setState(() => _selectedCircle = val);
-            }),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStationAssignmentCard() {
-    return Card(
-      elevation: _assignmentType == 'station' ? 4 : 1,
-      color: _assignmentType == 'station' ? Colors.orange.shade50 : null,
-      child: Column(
-        children: [
-          RadioListTile<String>(
-            value: 'station',
-            groupValue: _assignmentType,
-            onChanged: (value) => setState(() => _assignmentType = value),
-            title: const Text('Assign to SHO (Station)', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Assign to SHO of Police Station'),
-          ),
-          if (_assignmentType == 'station') ...[
-            const Divider(),
-             _buildSearchableField('Select SHO (Station)', _selectedStation, _getAvailableStations(), (val) {
-              setState(() => _selectedStation = val);
-            }),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchableField(String label, String? value, List<String> items, Function(String) onSelect) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: InkWell(
-        onTap: () => _showSearchableSelection(
-          title: label,
-          items: items,
-          selectedValue: value,
-          onSelected: onSelect,
-        ),
-        child: IgnorePointer(
-          child: TextFormField(
-            controller: TextEditingController(text: value),
-            decoration: InputDecoration(
-              labelText: label,
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.check_circle_outline),
-              suffixIcon: const Icon(Icons.search),
-            ),
-          ),
-        ),
-      ),
-    );
+  String _getContextSubtitle(Map<String, dynamic> item) {
+    final type = item['type'];
+    if (type == 'district') return 'Range: ${item['range']}';
+    if (type == 'sdpo') return 'Dist: ${item['district']}';
+    if (type == 'circle') return 'SDPO: ${item['sdpo']}';
+    if (type == 'station') return 'Circle: ${item['circle']}';
+    return '';
   }
 }
