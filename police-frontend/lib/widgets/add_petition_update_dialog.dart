@@ -109,6 +109,12 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
     });
 
     try {
+      // 🤖 AUTO-RUN AI CHECK if officer forgot!
+      if (_aiColor == null && (_updateTextController.text.trim().isNotEmpty || _selectedPhotos.isNotEmpty || _selectedDocuments.isNotEmpty)) {
+        debugPrint('🤖 [UPDATE] Officer forgot AI check. Running automatically...');
+        await _runAiRelevanceCheck();
+      }
+
       final provider = context.read<PetitionProvider>();
       
       debugPrint('📤 [UPDATE] Starting petition update submission');

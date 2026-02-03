@@ -18,7 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dharmaPortal => 'Dharma Portal';
 
   @override
-  String get welcomeDescription => 'Digital hub for Andhra Pradesh police records, management and analytics';
+  String get welcomeDescription => 'Digital hub for Andhra Pradesh Police records, management and analytics';
 
   @override
   String get loginAs => 'Login as';

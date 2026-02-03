@@ -11,7 +11,7 @@
   "@dharma": {
     "description": "The main header on the app bar"
   },
-  "welcomeDescription": "Digital hub for Andhra Pradesh police records, management and analytics",
+  "welcomeDescription": "Digital hub for Andhra Pradesh Police records, management and analytics",
   "@welcomeDescription": {
     "description": "Description text on the welcome screen"
   },

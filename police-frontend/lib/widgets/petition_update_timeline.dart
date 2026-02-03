@@ -100,6 +100,27 @@ class _TimelineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateTime = update.createdAt.toDate();
 
+    Color statusColor = Colors.indigo;
+    Color statusLightColor = Colors.indigo.shade200;
+    Color statusVeryLightColor = Colors.indigo.shade100;
+
+    if (update.aiStatus != null) {
+      final status = update.aiStatus!.toLowerCase();
+      if (status == 'green') {
+        statusColor = Colors.green;
+        statusLightColor = Colors.green.shade200;
+        statusVeryLightColor = Colors.green.shade100;
+      } else if (status == 'amber' || status == 'orange') {
+        statusColor = Colors.orange;
+        statusLightColor = Colors.orange.shade200;
+        statusVeryLightColor = Colors.orange.shade100;
+      } else if (status == 'red') {
+        statusColor = Colors.red;
+        statusLightColor = Colors.red.shade200;
+        statusVeryLightColor = Colors.red.shade100;
+      }
+    }
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,9 +137,9 @@ class _TimelineItem extends StatelessWidget {
                   margin: const EdgeInsets.only(top: 4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.indigo,
+                    color: statusColor,
                     border: Border.all(
-                      color: Colors.indigo.shade200,
+                      color: statusLightColor,
                       width: 3,
                     ),
                   ),
@@ -134,8 +155,8 @@ class _TimelineItem extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.indigo.shade200,
-                            Colors.indigo.shade100,
+                            statusLightColor,
+                            statusVeryLightColor,
                           ],
                         ),
                       ),
@@ -201,15 +222,15 @@ class _TimelineItem extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: update.aiStatus != null ? statusVeryLightColor.withOpacity(0.3) : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.indigo.shade100,
+                        color: statusLightColor,
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.indigo.withOpacity(0.05),
+                          color: statusColor.withOpacity(0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
