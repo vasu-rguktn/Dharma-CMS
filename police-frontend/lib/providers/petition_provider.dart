@@ -111,20 +111,35 @@ class PetitionProvider with ChangeNotifier {
     try {
       debugPrint('🔍 Fetching petition with caseId: $caseId');
 
-      final snapshot = await _firestore
+      // 1. Try 'petitions' collection (Online)
+      final onlineSnapshot = await _firestore
           .collection('petitions')
           .where('case_id', isEqualTo: caseId)
           .limit(1)
           .get();
 
-      if (snapshot.docs.isEmpty) {
-        debugPrint('❌ No petition found with caseId: $caseId');
-        return null;
+      if (onlineSnapshot.docs.isNotEmpty) {
+        final petition = Petition.fromFirestore(onlineSnapshot.docs.first);
+        debugPrint('✅ Found online petition: ${petition.title}');
+        return petition;
       }
 
-      final petition = Petition.fromFirestore(snapshot.docs.first);
-      debugPrint('✅ Found petition: ${petition.title}');
-      return petition;
+      // 2. Try 'offlinepetitions' collection (Offline)
+      debugPrint('📂 CaseId not found in online petitions. Searching offlinepetitions...');
+      final offlineSnapshot = await _firestore
+          .collection('offlinepetitions')
+          .where('caseId', isEqualTo: caseId)
+          .limit(1)
+          .get();
+
+      if (offlineSnapshot.docs.isNotEmpty) {
+        final petition = Petition.fromFirestore(offlineSnapshot.docs.first);
+        debugPrint('✅ Found offline petition: ${petition.title}');
+        return petition;
+      }
+
+      debugPrint('❌ No petition found with caseId: $caseId in any collection');
+      return null;
     } catch (e) {
       debugPrint('❌ Error fetching petition by caseId: $e');
       return null;

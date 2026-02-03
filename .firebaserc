@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "dharma-cms-5cc89"
-  }
+  },
+  "targets": {
+    "dharma-cms-5cc89": {
+      "hosting": {
+        "citizen": [
+          "dharma-cms-citizen"
+        ],
+        "police": [
+          "dharma-cms-police"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

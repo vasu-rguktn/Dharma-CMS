@@ -1,5 +1,6 @@
 // screens/CitizenAuth/citizen_login_screen.dart
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -185,6 +186,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: Column(
@@ -192,28 +194,35 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
           // TOP LOGO + SVG
           Container(
             height: screenHeight * 0.3,
-            width: double.infinity,
+            width: screenWidth,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                SvgPicture.asset(
-                  'assets/Frame.svg',
-                  fit: BoxFit.fill,
-                  width: double.infinity,
+                SizedBox(
+                  width: screenWidth,
                   height: screenHeight * 0.3,
+                  child: SvgPicture.asset(
+                    'assets/Frame.svg',
+                    fit: BoxFit.fill,
+                    width: screenWidth,
+                    height: screenHeight * 0.3,
+                  ),
                 ),
                 // Back button positioned on top-left of the header SVG
                 Positioned(
-                  top: 8,
-                  left: 8,
+                  top: 0,
+                  left: 0,
                   child: SafeArea(
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () {
-                        // Always navigate to Welcome screen to avoid cross-role redirections
-                        context.go('/');
-                      },
-                      tooltip: 'Back',
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () {
+                          // Always navigate to Welcome screen to avoid cross-role redirections
+                          context.go('/');
+                        },
+                        tooltip: 'Back',
+                      ),
                     ),
                   ),
                 ),

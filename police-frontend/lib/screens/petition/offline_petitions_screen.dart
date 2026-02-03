@@ -1,5 +1,7 @@
 // lib/screens/petition/offline_petitions_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/offline_petition_provider.dart';
@@ -34,6 +36,9 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   String? _officerRank;
   String? _officerName;
   bool _isLoading = true;
+
+
+
 
   @override
   void initState() {
@@ -490,6 +495,11 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
                         const SizedBox(height: 20),
 
+                        // AI GUIDELINES SECTION
+                        _AiGuidelinesSection(petition: petition),
+
+                        const SizedBox(height: 20),
+
                         // Timeline Section
                         _buildTimelineSection(petition),
 
@@ -500,22 +510,26 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                 ),
 
                 // Action Buttons (Fixed at bottom)
-                if (!isSentTab) // Only show for assigned tab
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, -5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // AI Guidelines - Removed from here to move inline
+                      const SizedBox.shrink(),
+
+                      if (!isSentTab) ...[
+                        const SizedBox(height: 12),
                         Row(
                           children: [
                             Expanded(
@@ -565,8 +579,9 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                           ),
                         ],
                       ],
-                    ),
+                    ],
                   ),
+                ),
               ],
             ),
           );
@@ -806,6 +821,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     });
   }
 
+
   Widget _buildDetailSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1041,6 +1057,326 @@ class _StatusOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AiGuidelinesSection extends StatefulWidget {
+  final Petition petition;
+
+  const _AiGuidelinesSection({required this.petition});
+
+  @override
+  State<_AiGuidelinesSection> createState() => _AiGuidelinesSectionState();
+}
+
+class _AiGuidelinesSectionState extends State<_AiGuidelinesSection> {
+  bool _loadingAI = false;
+  Map<String, dynamic>? _aiReport;
+  bool _showAiGuidelines = false;
+  final String _apiUrl = "https://fastapi-app-335340524683.asia-south1.run.app/api/ai-investigation/";
+
+  String _buildFirDetails(Petition p) {
+    return '''
+Case ID: ${p.caseId ?? 'N/A'}
+Petition Title: ${p.title}
+Petition Type: ${p.type.displayName}
+
+Petitioner Name: ${p.petitionerName}
+Phone Number: ${p.phoneNumber ?? 'N/A'}
+
+District: ${p.district ?? 'N/A'}
+Police Station: ${p.stationName ?? 'N/A'}
+
+Complaint / Grounds:
+${p.grounds}
+''';
+  }
+
+  Future<void> _generateInvestigation() async {
+    if (mounted) {
+      setState(() {
+        _loadingAI = true;
+        _aiReport = null;
+      });
+    }
+
+    final firDetails = _buildFirDetails(widget.petition);
+
+    try {
+      final response = await http.post(
+        Uri.parse(_apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "fir_id": widget.petition.caseId,
+          "fir_details": firDetails,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _aiReport = data["report"];
+            _loadingAI = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _loadingAI = false);
+      }
+    } catch (e) {
+      debugPrint('Error generating investigation: $e');
+      if (mounted) setState(() => _loadingAI = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.deepPurple.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _showAiGuidelines = !_showAiGuidelines;
+              });
+              if (_showAiGuidelines && _aiReport == null) {
+                _generateInvestigation();
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(Icons.psychology, color: Colors.deepPurple),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'AI Investigation Guidelines',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _showAiGuidelines ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.deepPurple,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showAiGuidelines) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _loadingAI
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _aiReport == null
+                      ? const Text('Click to generate investigation steps.')
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_aiReport!['summary'] != null) ...[
+                              _buildSubSection(
+                                title: 'Investigation Summary',
+                                icon: Icons.summarize,
+                                color: Colors.orange,
+                                content: Text(
+                                  _aiReport!['summary'],
+                                  style: const TextStyle(fontSize: 14, height: 1.5),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_aiReport!['modus_operandi_tags'] != null) ...[
+                              _buildSubSection(
+                                title: 'Modus Operandi Tags',
+                                icon: Icons.visibility,
+                                color: Colors.indigo,
+                                content: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: (_aiReport!['modus_operandi_tags'] as List).map((tag) {
+                                    return Chip(
+                                      label: Text(tag.toString(), style: const TextStyle(fontSize: 12)),
+                                      backgroundColor: Colors.indigo.shade50,
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_aiReport!['investigation_tasks'] != null) ...[
+                              _buildSubSection(
+                                title: 'Investigation Tasks',
+                                icon: Icons.task_alt,
+                                color: Colors.blue,
+                                content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: (_aiReport!['investigation_tasks'] as List).map((task) {
+                                    final priority = task['priority']?.toString() ?? 'Routine';
+                                    final isUrgent = priority.toLowerCase().contains('urgent');
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: isUrgent ? Colors.red.shade50 : Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isUrgent ? Colors.red.shade200 : Colors.blue.shade200,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            isUrgent ? Icons.warning : Icons.info_outline,
+                                            size: 16,
+                                            color: isUrgent ? Colors.red.shade700 : Colors.blue.shade700,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              task['task']?.toString() ?? '',
+                                              style: const TextStyle(fontSize: 13),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_aiReport!['applicable_laws'] != null) ...[
+                              _buildSubSection(
+                                title: 'Applicable Laws',
+                                icon: Icons.gavel,
+                                color: Colors.green,
+                                content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: (_aiReport!['applicable_laws'] as List).map((law) {
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.green.shade200),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            law['section']?.toString() ?? '',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: Colors.green,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            law['justification']?.toString() ?? '',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_aiReport!['forensic_suggestions'] != null) ...[
+                              _buildSubSection(
+                                title: 'Forensic Suggestions',
+                                icon: Icons.science,
+                                color: Colors.purple,
+                                content: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: (_aiReport!['forensic_suggestions'] as List).map((suggestion) {
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.purple.shade200),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            suggestion['evidence_type']?.toString() ?? '',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: Colors.purple,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            suggestion['protocol']?.toString() ?? '',
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubSection({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required Widget content,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        content,
+      ],
     );
   }
 }

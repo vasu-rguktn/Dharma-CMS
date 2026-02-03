@@ -483,6 +483,27 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              if (petition.caseId != null) {
+                                context.push('/ai-investigation-guidelines?caseId=${petition.caseId}');
+                              }
+                            },
+                            icon: const Icon(Icons.psychology, color: Colors.deepPurple),
+                            label: const Text('AI Investigation Guidelines'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: const BorderSide(color: Colors.deepPurple),
+                              foregroundColor: Colors.deepPurple,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
                         if (_isHighLevelOfficer) ...[
                           const SizedBox(height: 12),
                           SizedBox(

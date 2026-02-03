@@ -540,26 +540,31 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // HEADER - Responsive height
-            Container(
-              height: headerHeight,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  SvgPicture.asset(
+      body: Column(
+        children: [
+          // HEADER - Responsive height
+          Container(
+            height: headerHeight,
+            width: screenWidth, // Explicit width
+            child: Stack(
+              children: [
+                SizedBox(
+                  width: screenWidth,
+                  height: headerHeight,
+                  child: SvgPicture.asset(
                     'assets/Frame.svg',
                     fit: BoxFit.fill,
+                    width: screenWidth, // Explicit width
                     height: headerHeight,
-                    width: double.infinity,
                   ),
-                  // Add back button
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: SafeArea(
+                ),
+                // Add back button with SafeArea logic
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.black),
                         onPressed: () {
@@ -570,20 +575,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
                       ),
                     ),
                   ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 10,
-                    child: Image.asset('assets/police_logo.png', height: logoSize),
-                  ),
-                ],
-              ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 10,
+                  child: Image.asset('assets/police_logo.png', height: logoSize),
+                ),
+              ],
             ),
+          ),
 
-            SizedBox(height: screenHeight * 0.02),
+          SizedBox(height: screenHeight * 0.02),
 
-            Expanded(
-              child: SingleChildScrollView(
+          Expanded(
+            child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
@@ -765,7 +771,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
             ),
           ],
         ),
-      ),
     );
   }
 }

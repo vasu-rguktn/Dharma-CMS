@@ -84,7 +84,7 @@ async def _summarize_files(files: Optional[List[UploadFile]]) -> str:
     For other formats we fall back to filename only.
     """
     if not files:
-        return "No files were attached."
+        return "No additional physical documents or photos were attached to this update. Evaluate based on text only."
 
     summaries: List[str] = []
 
@@ -224,8 +224,7 @@ Officer's Update Text:
     files_block = await _summarize_files(files)
 
     prompt = f"""
-You are assisting a police officer in checking whether uploaded investigation
-evidence files are actually related to a specific petition/case.
+You are assisting a police officer in checking whether a case update (text description and any attached files) is relevant and related to the specific petition/case.
 
 CASE CONTEXT:
 {case_context}
@@ -233,10 +232,9 @@ CASE CONTEXT:
 {files_block}
 
 TASK:
-1. Decide how strongly the uploaded files (as a set) appear to support or relate
-   to THIS case only. Consider the case title, type, petition description,
-   and the officer's update text.
-2. Return:
+1. Decide how strongly this update (the officer's text AND any uploaded files) supports or relates to THIS case.
+2. Consider procedural steps (like "FIR registered", "Statement recorded", "Summons issued") as HIGHLY RELEVANT even if no physical files are attached yet.
+3. Return:
    - overall_score: a number between 0.0 and 1.0 (1.0 = clearly related)
    - color:
        * "green"  -> clearly related / strong match (score >= 0.7)
@@ -245,7 +243,9 @@ TASK:
    - reason: a short explanation (1–3 sentences) in plain language.
 
 CRITICAL:
-- If there is very little information, prefer "amber" with a cautionary message.
+- If NO files are attached, evaluate the 'Officer's Update Text' against the 'Original Petition Description'.
+- If the text describes a valid step in a police investigation related to the case type, mark it as "green".
+- If there is very little information and no files, prefer "amber".
 - NEVER mention that you are an AI model in the reason.
 - DO NOT include any JSON comments.
 
