@@ -52,7 +52,7 @@ class _AnprDetectionTabState extends State<AnprDetectionTab> {
     final isAndroid =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     if (isAndroid) {
-      candidates.add('http://10.0.2.2:8000');
+      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
     }
 
     // Try to find a healthy backend
