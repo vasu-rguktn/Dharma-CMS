@@ -669,9 +669,9 @@ class _PoliceRegistrationScreenState
                             AppLocalizations.of(context)!.email,
                             Icons.email,
                             (v) =>
-                                Validators.isValidEmail(v ?? '')
+                                Validators.isValidPoliceEmail(v ?? '')
                                     ? null
-                                    : AppLocalizations.of(context)!.invalidEmailShort,
+                                    : 'Allowed domains: @mail.gov.in, @police.gov.in, @nic.in',
                           ),
 
                           const SizedBox(height: 20),
