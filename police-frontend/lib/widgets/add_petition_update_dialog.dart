@@ -39,7 +39,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
   //   --dart-define=DHARMA_CMS_URL=https://your-backend
   static const String _cmsBaseUrl = String.fromEnvironment(
     'DHARMA_CMS_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'https://fastapi-app-335340524683.asia-south1.run.app',
   );
 
   @override

@@ -12,7 +12,7 @@ import 'package:Dharma/router/app_router.dart';
 //   - Local testing (emulator): 'http://localhost:8000'
 //   - Local testing (physical device): 'http://192.168.1.5:8000' (your PC's IP)
 //   - Production: 'https://your-backend.onrender.com' or your deployed URL
-const String FCM_API_URL = 'http://10.5.47.114:8000';
+const String FCM_API_URL = 'https://fastapi-app-335340524683.asia-south1.run.app';
 // ============================================
 // 'http://10.5.47.114:8000'
 /// FCM Notification Service for Citizen Users

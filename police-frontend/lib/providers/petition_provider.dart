@@ -479,7 +479,7 @@ class PetitionProvider with ChangeNotifier {
           // TODO: Replace with your actual backend URL
           // For local testing on physical device, use your PC's IP (e.g., 'http://192.168.1.5:8000')
           // For production, use your deployed URL
-          const backendUrl = 'http://10.5.47.114:8000'; // Citizen backend URL
+          const backendUrl = 'https://fastapi-app-335340524683.asia-south1.run.app'; // Citizen backend URL
           
           debugPrint('📡 [PETITION_UPDATE] Calling backend to trigger notification...');
           debugPrint('📡 URL: $backendUrl/api/petitions/$petitionId/update-status');
@@ -761,7 +761,7 @@ class PetitionProvider with ChangeNotifier {
         
         if (userId != null) {
           final dio = Dio();
-          const backendUrl = 'http://10.5.47.114:8000';
+          const backendUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
           
           debugPrint('📲 [PETITION_UPDATE] Notifying citizen about case update...');
           
