@@ -161,6 +161,7 @@ class ComplaintResponse(BaseModel):
     localized_fields: Dict[str, str] = Field(default_factory=dict)
     incident_details: Optional[str] = None
     incident_address: Optional[str] = None
+    incident_date: Optional[str] = None  # New field for incident date
     
     # New top-level fields for user convenience
     full_name: Optional[str] = None
@@ -1521,8 +1522,8 @@ async def chat_step(
                     "- Verify Mobile Number (10 digits) is present.\n"
                     "- INVESTIGATE: Ask Who, What, Where, When, How in detail. Do NOT stop after just one sentence.\n"
                     "- Ask about Suspects, Witnesses like a real officer.\n"
-                    "- CRITICAL: BEFORE finishing, YOU MUST ASK: 'Do you have any photos, videos, or documents as evidence?'.\n"
-                    "- Output 'DONE' ONLY when you have a complete picture AND have asked about evidence.\n\n"
+                    "- EVIDENCE (ABSOLUTELY MANDATORY): Before finishing, you MUST ask: 'Do you have any photos, videos, or documents as evidence?'. Check the history - if you haven't asked this yet, ask it now.\n"
+                    "- Output 'DONE' ONLY when you have a complete picture AND have asked about evidence AND received a response.\n\n"
                 )
 
             # System Prompt Definition
@@ -1533,8 +1534,15 @@ async def chat_step(
                 f"You are a helpful and empathetic Police Officer assistant helping a citizen file a complaint in {language_name}.\n"
                 "Your goal is to gather a complete complaint summary for a formal petition.\n\n"
 
+                "CRITICAL MEMORY RULE - READ THE ENTIRE CONVERSATION HISTORY BEFORE ASKING:\n"
+                "- BEFORE asking ANY question, carefully review the ENTIRE conversation history above.\n"
+                "- If the user has ALREADY answered a question (even partially), DO NOT ask it again.\n"
+                "- If you see information about suspects, witnesses, dates, times, locations, or any other details in the history, DO NOT ask for them again.\n"
+                "- Example: If the user mentioned 'It happened yesterday at 8 PM', DO NOT ask 'When did this happen?'\n"
+                "- Example: If the user said 'A man in a blue shirt took my phone', DO NOT ask 'Can you describe the suspect?'\n"
+                "- ONLY ask for NEW information that is genuinely missing from the conversation.\n\n"
+
                 "GUIDELINES:\n"
-                "- Critically review the chat history to avoid repeating questions.\n"
                 "- Use a polite, respectful, and reassuring tone.\n"
                 "- Actively lead the conversation. Focus on ONE point per turn.\n"
                 "- KEEP QUESTIONS SHORT (Max 20 words). Do not lecture.\n"
@@ -1547,15 +1555,29 @@ async def chat_step(
                 "3. Property/Vehicle: Description, value. (MANDATORY: If Vehicle/Mobile theft, ask for Reg No/IMEI/Model).\n"
                 "4. Witnesses: Names and contact details (if any).\n"
                 "5. Reason for delay in reporting (if any).\n"
-                "6. Complainant Details: Name/Address/Phone is ALREADY KNOWN. DO NOT ASK FOR THIS unless the user is reporting for someone else.\n\n"
+                "6. Complainant Details: Name/Address/Phone is ALREADY KNOWN. DO NOT ASK FOR THIS unless the user is reporting for someone else.\n"
+                "7. EVIDENCE (ABSOLUTELY MANDATORY): You MUST ask about evidence before finishing.\n\n"
 
                 "STRICT RULES FOR FUNCTIONALITY:\n"
                 "1. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
-                "2. NO REPETITION: Check the history. If the user answered it, do NOT ask again.\n"
-                "3. MANDATORY STEP - EVIDENCE: Before concluding, you MUST explicitly ask: 'Do you have any photos, videos, or documents to upload as evidence?'. Do NOT output 'DONE' until the user answers this specific question (Yes/No).\n"
-                "3. EVIDENCE CHECK (MANDATORY): BEFORE saying 'DONE', you MUST ask: 'Do you have any photos, videos, or documents as evidence?'.\n"
+                "2. NO REPETITION (ABSOLUTELY CRITICAL):\n"
+                "   - Read the FULL conversation history before every response.\n"
+                "   - Create a mental checklist of what information you already have.\n"
+                "   - NEVER ask for information that was already provided in ANY previous message.\n"
+                "   - If you're unsure whether to ask something, check the history first - if it's there, don't ask.\n"
+                "   - Focus on filling GAPS in information, not re-asking what you know.\n"
+                "3. EVIDENCE QUESTION (CRITICAL - CANNOT BE SKIPPED):\n"
+                "   - Before you output 'DONE', you MUST ask: 'Do you have any photos, videos, or documents to upload as evidence?'\n"
+                "   - Check the conversation history - if you have NOT asked this exact question yet, you MUST ask it now.\n"
+                "   - Only output 'DONE' if:\n"
+                "     a) You have already asked about evidence in a previous turn, AND\n"
+                "     b) The user has responded (Yes/No/I don't have any)\n"
+                "   - If you see '[SYSTEM: USER ATTACHED EVIDENCE]' in the history, acknowledge it but still ask if they have MORE evidence.\n"
                 "4. DOCUMENT AWARENESS: If you see '[SYSTEM: USER ATTACHED EVIDENCE]' or '[ATTACHED IMAGE...]', acknowledge it and use its content.\n"
-                "5. TERMINATION: When you have gathered all necessary details and the Evidence confirmation (Yes/No), output ONLY 'DONE'.\n"
+                "5. TERMINATION: Output 'DONE' ONLY when:\n"
+                "   - You have gathered all necessary incident details, AND\n"
+                "   - You have explicitly asked about evidence, AND\n"
+                "   - The user has responded to the evidence question.\n"
             )
             
             # Convert Pydantic chat history to LLM format
@@ -1763,7 +1785,8 @@ OUTPUT FORMAT (STRICT JSON ONLY):
     "initial_details": "",
     "details": "COMPREHENSIVE NARRATIVE in FIRST PERSON ('I...'). Must be a detailed formal complaint text suitable for an FIR. Include EVERY fact mentioned (Who, What, Where, When, How, Vehicle details, Suspects, etc). NOT a chat summary.",
   
-    "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names."
+    "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names.",
+    "incident_date": "Extract the incident date in YYYY-MM-DD format if mentioned. Examples: '2026-01-06', '2025-12-25'. If not mentioned, leave empty."
 }}
 
 INFORMATION:
@@ -1923,6 +1946,11 @@ INFORMATION:
             localized_fields['incident_details'] = narrative
             localized_fields['incident_address'] = short_incident # Keep consistent
             
+            # Extract incident_date from LLM response
+            incident_date_str = n_data.get("incident_date", "")
+            if incident_date_str:
+                logger.info(f"Extracted incident_date from LLM: {incident_date_str}")
+            
             # Classification
             classification_context = _build_classification_context(
                 final_complaint_type,
@@ -1952,6 +1980,7 @@ INFORMATION:
                 localized_fields={k: safe_utf8(v) for k, v in localized_fields.items()},
                 incident_details=safe_utf8(narrative),
                 incident_address=None,
+                incident_date=incident_date_str if incident_date_str else None,  # Add incident date
                 
                 # New fields from user script logic
                 full_name=final_req.full_name,

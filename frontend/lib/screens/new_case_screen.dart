@@ -61,7 +61,8 @@ class _AccusedFormData {
 
   Map<String, dynamic> toMap() => {
         'name': name.text,
-        'fatherHusbandName': fatherName.text.isNotEmpty ? fatherName.text : null,
+        'fatherHusbandName':
+            fatherName.text.isNotEmpty ? fatherName.text : null,
         'gender': gender,
         'age': age.text.isNotEmpty ? age.text : null,
         'nationality': nationality.text.isNotEmpty ? nationality.text : null,
@@ -87,7 +88,7 @@ class _AccusedFormData {
 class NewCaseScreen extends StatefulWidget {
   final Map<String, dynamic>? initialData;
   final CaseDoc? existingCase;
-  
+
   const NewCaseScreen({super.key, this.initialData, this.existingCase});
 
   @override
@@ -99,10 +100,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _caseIdController = TextEditingController();
   final _titleController = TextEditingController();
   final _firNumberController = TextEditingController();
-  final _yearController = TextEditingController(text: DateTime.now().year.toString());
+  final _yearController =
+      TextEditingController(text: DateTime.now().year.toString());
   final _complainantNameController = TextEditingController();
   final _incidentDetailsController = TextEditingController();
-  
+
   // Occurrence fields (Step 2)
   final _occurrenceDayController = TextEditingController();
   final _timePeriodController = TextEditingController();
@@ -110,7 +112,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _beatNumberController = TextEditingController();
   final _streetVillageController = TextEditingController();
   final _areaMandalController = TextEditingController();
-  
+
   // Location fields
   final _cityDistrictController = TextEditingController();
   final _stateController = TextEditingController(text: 'Andhra Pradesh');
@@ -119,12 +121,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _longitudeController = TextEditingController();
   final _distanceFromPSController = TextEditingController();
   final _directionFromPSController = TextEditingController();
-  
+
   // Information received (Step 3)
   DateTime? _informationReceivedAtPs;
   final _generalDiaryEntryNumberController = TextEditingController();
   String? _selectedInformationType;
-  
+
   // Complainant / Informant extra details (Step 4)
   final _fatherHusbandNameController = TextEditingController();
   String? _selectedComplainantGender = 'Male'; // Default to Male
@@ -139,22 +141,23 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _complainantStreetController = TextEditingController();
   final _complainantAreaController = TextEditingController();
   final _complainantCityController = TextEditingController();
-  final _complainantStateController = TextEditingController(text: 'Andhra Pradesh');
+  final _complainantStateController =
+      TextEditingController(text: 'Andhra Pradesh');
   final _complainantPinController = TextEditingController();
   // Complainant passport (optional)
   final _complainantPassportNumberController = TextEditingController();
   final _complainantPassportPlaceController = TextEditingController();
   DateTime? _complainantPassportDateOfIssue;
-  
+
   // Accused details (Step 5 - dynamic list)
   final List<_AccusedFormData> _accusedList = [];
-  
+
   // Properties / delay / inquest (Step 6)
   final _propertiesDetailsController = TextEditingController();
   final _propertiesTotalValueController = TextEditingController();
   bool _isDelayInReporting = false;
   final _inquestReportCaseNoController = TextEditingController();
-  
+
   // Acts & sections + victim/complaint (next step)
   final _actsAndSectionsController = TextEditingController();
   final _complaintNarrativeController = TextEditingController();
@@ -174,7 +177,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   final _victimCityController = TextEditingController();
   final _victimStateController = TextEditingController(text: 'Andhra Pradesh');
   final _victimPinController = TextEditingController();
-  
+
   // Action taken / dispatch to court (final step)
   final _actionTakenDetailsController = TextEditingController();
   final _ioNameController = TextEditingController();
@@ -183,52 +186,54 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   DateTime? _dispatchDateTime;
   final _dispatchOfficerNameController = TextEditingController();
   final _dispatchOfficerRankController = TextEditingController();
-  
+
   // Confirmation (last step)
   bool? _isFirReadOverAndAdmittedCorrect = true;
   bool? _isFirCopyGivenFreeOfCost = true;
   bool? _isRoacRecorded = true;
   final _complainantSignatureNoteController = TextEditingController();
-  
+
   bool _isOutsideJurisdiction = false;
-  
+
   DateTime? _occurrenceDateTimeFrom;
   DateTime? _occurrenceDateTimeTo;
-  
+
   // Dropdown values - storing English names internally for data consistency
   String? _selectedDistrict; // English name
   String? _selectedSubDivision;
   String? _selectedCircle;
   String? _selectedPoliceStation; // English name
   DateTime? _firRegistrationDate;
-  
+
   bool _isLoading = false;
   int _currentStep = 0;
   final int _totalSteps = 9;
-  
+
   // District list (English names - will be displayed localized)
   List<String> _apDistrictsEnglish = [];
-  
+
   // Sub-Division list - will be loaded dynamically from JSON
   List<String> _subDivisions = [];
-  
+
   // Circle list - will be loaded dynamically from JSON
   List<String> _circles = [];
-  
+
   // Loading states
   bool _isLoadingSubDivisions = false;
   bool _isLoadingCircles = false;
-  
+
   // Police Station list - will be loaded dynamically from JSON
   List<String> _policeStationsEnglish = []; // English names
   bool _isLoadingPoliceStations = false; // Loading state for police stations
   String? _policeStationLoadError; // Error message if loading fails
 
   bool _hasPrefilled = false; // Flag to prevent multiple pre-fills
-  
+
   // Search controllers for dropdowns
-  final TextEditingController _districtSearchController = TextEditingController();
-  final TextEditingController _policeStationSearchController = TextEditingController();
+  final TextEditingController _districtSearchController =
+      TextEditingController();
+  final TextEditingController _policeStationSearchController =
+      TextEditingController();
 
   // Loaded hierarchy data
   Map<String, dynamic>? _policeHierarchyData;
@@ -250,7 +255,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       // Use hardcoded constant for reliability
       debugPrint('🔄 Loading police hierarchy (FIR) from constants...');
       final Map<String, dynamic> jsonData = kPoliceHierarchyFir;
-      
+
       if (mounted) {
         setState(() {
           _policeHierarchyData = jsonData;
@@ -260,12 +265,13 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 .map((d) => d['name'] as String)
                 .toList()
               ..sort();
-            debugPrint('✅ Loaded ${_apDistrictsEnglish.length} districts from hierarchy JSON');
+            debugPrint(
+                '✅ Loaded ${_apDistrictsEnglish.length} districts from hierarchy JSON');
           } else {
             debugPrint('❌ "districts" key missing or null in hierarchy JSON');
           }
         });
-        
+
         // If we have a selected district (e.g. from prefill), reload stations
         if (_selectedDistrict != null) {
           _loadSubDivisionsForDistrict();
@@ -280,7 +286,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Pre-fill from existing case if provided
     if (!_hasPrefilled && widget.existingCase != null) {
       _hasPrefilled = true;
@@ -309,11 +315,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       debugPrint('❌ No initial data provided for pre-filling');
       return;
     }
-    
+
     final data = widget.initialData!;
     debugPrint('✅ Pre-filling from petition data. Keys: ${data.keys.toList()}');
     debugPrint('✅ Full data: $data');
-    
+
     // Use setState to batch all updates
     setState(() {
       // Pre-fill case ID from petition case_id (not petition.id)
@@ -324,7 +330,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           debugPrint('✅ Pre-filled case ID: $caseId');
         }
       }
-      
+
       // Pre-fill case title from petition title
       if (data['title'] != null) {
         final title = data['title'].toString().trim();
@@ -333,7 +339,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           debugPrint('✅ Pre-filled title: $title');
         }
       }
-      
+
       // Pre-fill complainant name from petitioner name
       if (data['petitionerName'] != null) {
         final name = data['petitionerName'].toString().trim();
@@ -342,7 +348,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           debugPrint('✅ Pre-filled complainant name: $name');
         }
       }
-      
+
       // Pre-fill mobile number from phone number
       if (data['phoneNumber'] != null) {
         final phone = data['phoneNumber'].toString().trim();
@@ -351,16 +357,17 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           debugPrint('✅ Pre-filled mobile number: $phone');
         }
       }
-      
+
       // Pre-fill complaint narrative from grounds (grounds = complaint statement)
       if (data['grounds'] != null) {
         final grounds = data['grounds'].toString().trim();
         if (grounds.isNotEmpty && grounds != 'null') {
           _complaintNarrativeController.text = grounds;
-          debugPrint('✅ Pre-filled complaint narrative (length: ${grounds.length})');
+          debugPrint(
+              '✅ Pre-filled complaint narrative (length: ${grounds.length})');
         }
       }
-      
+
       // Pre-fill incident address if available
       if (data['incidentAddress'] != null) {
         final address = data['incidentAddress'].toString().trim();
@@ -369,7 +376,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           debugPrint('✅ Pre-filled incident address: $address');
         }
       }
-      
+
       // Pre-fill address if available (complainant address)
       if (data['address'] != null) {
         final address = data['address'].toString().trim();
@@ -378,7 +385,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           debugPrint('✅ Pre-filled complainant address: $address');
         }
       }
-      
+
       // Pre-fill district if available
       if (data['district'] != null) {
         final districtName = data['district'].toString().trim();
@@ -393,23 +400,28 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               if (mounted && data['stationName'] != null) {
                 final stationName = data['stationName'].toString().trim();
                 if (stationName.isNotEmpty && stationName != 'null') {
-                  debugPrint('🔍 Attempting to pre-fill police station: $stationName');
-                  debugPrint('🔍 Available stations count: ${_policeStationsEnglish.length}');
+                  debugPrint(
+                      '🔍 Attempting to pre-fill police station: $stationName');
+                  debugPrint(
+                      '🔍 Available stations count: ${_policeStationsEnglish.length}');
                   if (_policeStationsEnglish.contains(stationName)) {
                     setState(() {
                       _selectedPoliceStation = stationName;
                     });
                     debugPrint('✅ Pre-filled police station: $stationName');
                   } else {
-                    debugPrint('❌ Police station "$stationName" not found in list');
-                    debugPrint('🔍 First few stations: ${_policeStationsEnglish.take(3).toList()}');
+                    debugPrint(
+                        '❌ Police station "$stationName" not found in list');
+                    debugPrint(
+                        '🔍 First few stations: ${_policeStationsEnglish.take(3).toList()}');
                   }
                 }
               }
             });
           } else {
             debugPrint('❌ District "$districtName" not found in list');
-            debugPrint('🔍 Available districts: ${_apDistrictsEnglish.take(5).toList()}...');
+            debugPrint(
+                '🔍 Available districts: ${_apDistrictsEnglish.take(5).toList()}...');
           }
         }
       } else if (data['stationName'] != null) {
@@ -417,16 +429,17 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         final stationName = data['stationName'].toString().trim();
         if (stationName.isNotEmpty && stationName != 'null') {
           _selectedPoliceStation = stationName;
-          debugPrint('✅ Pre-filled police station (without district): $stationName');
+          debugPrint(
+              '✅ Pre-filled police station (without district): $stationName');
         }
       }
-      
+
       // Pre-fill occurrence date from incident date if available
       if (data['incidentDate'] != null) {
         try {
           final timestampData = data['incidentDate'];
           Timestamp? timestamp;
-          
+
           // Handle both Timestamp object and serialized Map format
           if (timestampData is Timestamp) {
             timestamp = timestampData;
@@ -438,24 +451,25 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               timestamp = Timestamp(seconds as int, nanoseconds as int);
             }
           }
-          
-        if (timestamp != null) {
-          final date = timestamp.toDate();
-          _occurrenceDateTimeFrom = date;
-          // Auto-fill day of occurrence based on the date
-          final dayName = DateFormat('EEEE').format(date);
-          _occurrenceDayController.text = dayName;
-          debugPrint('✅ Pre-filled occurrence date: $date');
-          debugPrint('✅ Pre-filled day of occurrence: $dayName');
-        } else {
-            debugPrint('❌ Could not parse incident date: $timestampData (type: ${timestampData.runtimeType})');
+
+          if (timestamp != null) {
+            final date = timestamp.toDate();
+            _occurrenceDateTimeFrom = date;
+            // Auto-fill day of occurrence based on the date
+            final dayName = DateFormat('EEEE').format(date);
+            _occurrenceDayController.text = dayName;
+            debugPrint('✅ Pre-filled occurrence date: $date');
+            debugPrint('✅ Pre-filled day of occurrence: $dayName');
+          } else {
+            debugPrint(
+                '❌ Could not parse incident date: $timestampData (type: ${timestampData.runtimeType})');
           }
         } catch (e) {
           debugPrint('❌ Error parsing incident date: $e');
         }
       }
     });
-    
+
     debugPrint('✅ Pre-fill completed. UI should update now.');
   }
 
@@ -469,7 +483,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _selectedDistrict = c.district;
       _selectedPoliceStation = c.policeStation;
       _firRegistrationDate = c.dateFiled.toDate();
-      
+
       _complainantNameController.text = c.complainantName ?? '';
       _fatherHusbandNameController.text = c.complainantFatherHusbandName ?? '';
       _selectedComplainantGender = c.complainantGender;
@@ -478,14 +492,17 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _casteController.text = c.complainantCaste ?? '';
       _occupationController.text = c.complainantOccupation ?? '';
       if (c.complainantDob != null) {
-        try { _complainantDob = DateFormat('yyyy-MM-dd').parse(c.complainantDob!); } catch (_) {}
+        try {
+          _complainantDob = DateFormat('yyyy-MM-dd').parse(c.complainantDob!);
+        } catch (_) {}
       }
       _ageController.text = c.complainantAge ?? '';
-      
+
       // Parse complainant address
       if (c.complainantAddress != null) {
         final parts = c.complainantAddress!.split(', ');
-        if (parts.isNotEmpty) _complainantHouseNoController.text = parts.length > 0 ? parts[0] : '';
+        if (parts.isNotEmpty)
+          _complainantHouseNoController.text = parts.length > 0 ? parts[0] : '';
         if (parts.length > 1) _complainantStreetController.text = parts[1];
         if (parts.length > 2) _complainantAreaController.text = parts[2];
         if (parts.length > 3) _complainantCityController.text = parts[3];
@@ -496,14 +513,20 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _ioNameController.text = c.investigatingOfficerName ?? '';
       _ioRankController.text = c.investigatingOfficerRank ?? '';
       _ioDistrictController.text = c.investigatingOfficerDistrict ?? '';
-      
+
       // Occurrence Details
       _occurrenceDayController.text = c.occurrenceDay ?? '';
       if (c.occurrenceDateTimeFrom != null) {
-         try { _occurrenceDateTimeFrom = DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeFrom!); } catch (_) {}
+        try {
+          _occurrenceDateTimeFrom =
+              DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeFrom!);
+        } catch (_) {}
       }
       if (c.occurrenceDateTimeTo != null) {
-         try { _occurrenceDateTimeTo = DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeTo!); } catch (_) {}
+        try {
+          _occurrenceDateTimeTo =
+              DateFormat('yyyy-MM-dd HH:mm').parse(c.occurrenceDateTimeTo!);
+        } catch (_) {}
       }
       _timePeriodController.text = c.timePeriod ?? '';
       _priorToDateTimeDetailsController.text = c.priorToDateTimeDetails ?? '';
@@ -521,16 +544,24 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
       // Information Received
       if (c.informationReceivedDateTime != null) {
-        try { _informationReceivedAtPs = DateFormat('yyyy-MM-dd HH:mm').parse(c.informationReceivedDateTime!); } catch (_) {}
+        try {
+          _informationReceivedAtPs = DateFormat('yyyy-MM-dd HH:mm')
+              .parse(c.informationReceivedDateTime!);
+        } catch (_) {}
       }
       _generalDiaryEntryNumberController.text = c.generalDiaryEntryNumber ?? '';
       _selectedInformationType = c.informationType;
 
       // Complainant Extra
-      _complainantPassportNumberController.text = c.complainantPassportNumber ?? '';
-      _complainantPassportPlaceController.text = c.complainantPassportPlaceOfIssue ?? '';
+      _complainantPassportNumberController.text =
+          c.complainantPassportNumber ?? '';
+      _complainantPassportPlaceController.text =
+          c.complainantPassportPlaceOfIssue ?? '';
       if (c.complainantPassportDateOfIssue != null) {
-        try { _complainantPassportDateOfIssue = DateFormat('yyyy-MM-dd').parse(c.complainantPassportDateOfIssue!); } catch (_) {}
+        try {
+          _complainantPassportDateOfIssue =
+              DateFormat('yyyy-MM-dd').parse(c.complainantPassportDateOfIssue!);
+        } catch (_) {}
       }
 
       // Incident & Complaint
@@ -548,16 +579,20 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _actionTakenDetailsController.text = c.actionTakenDetails ?? '';
       // io details already mapped
       if (c.dispatchDateTime != null) {
-        try { _dispatchDateTime = DateFormat('yyyy-MM-dd HH:mm').parse(c.dispatchDateTime!); } catch (_) {}
+        try {
+          _dispatchDateTime =
+              DateFormat('yyyy-MM-dd HH:mm').parse(c.dispatchDateTime!);
+        } catch (_) {}
       }
       _dispatchOfficerNameController.text = c.dispatchOfficerName ?? '';
       _dispatchOfficerRankController.text = c.dispatchOfficerRank ?? '';
-      
+
       // Confirmation
       _isFirReadOverAndAdmittedCorrect = c.isFirReadOverAndAdmittedCorrect;
       _isFirCopyGivenFreeOfCost = c.isFirCopyGivenFreeOfCost;
       _isRoacRecorded = c.isRoacRecorded;
-      _complainantSignatureNoteController.text = c.complainantSignatureNote ?? '';
+      _complainantSignatureNoteController.text =
+          c.complainantSignatureNote ?? '';
 
       // Victim Details
       _victimNameController.text = c.victimName ?? '';
@@ -569,14 +604,17 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _victimCasteController.text = c.victimCaste ?? '';
       _victimOccupationController.text = c.victimOccupation ?? '';
       if (c.victimDob != null) {
-         try { _victimDob = DateFormat('yyyy-MM-dd').parse(c.victimDob!); } catch (_) {}
+        try {
+          _victimDob = DateFormat('yyyy-MM-dd').parse(c.victimDob!);
+        } catch (_) {}
       }
       _isComplainantAlsoVictim = c.isComplainantAlsoVictim;
-      
+
       // Parse victim address
       if (c.victimAddress != null) {
         final parts = c.victimAddress!.split(', ');
-        if (parts.isNotEmpty) _victimHouseNoController.text = parts.length > 0 ? parts[0] : '';
+        if (parts.isNotEmpty)
+          _victimHouseNoController.text = parts.length > 0 ? parts[0] : '';
         if (parts.length > 1) _victimStreetController.text = parts[1];
         if (parts.length > 2) _victimAreaController.text = parts[2];
         if (parts.length > 3) _victimCityController.text = parts[3];
@@ -588,37 +626,38 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _accusedList.clear();
       if (c.accusedPersons != null && c.accusedPersons!.isNotEmpty) {
         for (var a in c.accusedPersons!) {
-             final accused = _AccusedFormData();
-             accused.name.text = a['name'] ?? '';
-             accused.fatherName.text = a['fatherHusbandName'] ?? '';
-             accused.gender = a['gender'];
-             accused.age.text = a['age'] ?? '';
-             accused.nationality.text = a['nationality'] ?? '';
-             accused.caste.text = a['caste'] ?? '';
-             accused.occupation.text = a['occupation'] ?? '';
-             accused.cellNo.text = a['cellNo'] ?? '';
-             accused.email.text = a['email'] ?? '';
-             accused.build.text = a['build'] ?? '';
-             accused.heightCms.text = a['heightCms'] ?? '';
-             accused.complexion.text = a['complexion'] ?? '';
-             accused.deformities.text = a['deformities'] ?? '';
-             
-            // Parse accused address
-            if (a['address'] != null) {
-              final parts = (a['address'] as String).split(', ');
-              if (parts.isNotEmpty) accused.houseNo.text = parts.length > 0 ? parts[0] : '';
-              if (parts.length > 1) accused.street.text = parts[1];
-              if (parts.length > 2) accused.area.text = parts[2];
-              if (parts.length > 3) accused.city.text = parts[3];
-              if (parts.length > 4) accused.state.text = parts[4];
-              if (parts.length > 5) accused.pin.text = parts[5];
-            }
-            _accusedList.add(accused);
+          final accused = _AccusedFormData();
+          accused.name.text = a['name'] ?? '';
+          accused.fatherName.text = a['fatherHusbandName'] ?? '';
+          accused.gender = a['gender'];
+          accused.age.text = a['age'] ?? '';
+          accused.nationality.text = a['nationality'] ?? '';
+          accused.caste.text = a['caste'] ?? '';
+          accused.occupation.text = a['occupation'] ?? '';
+          accused.cellNo.text = a['cellNo'] ?? '';
+          accused.email.text = a['email'] ?? '';
+          accused.build.text = a['build'] ?? '';
+          accused.heightCms.text = a['heightCms'] ?? '';
+          accused.complexion.text = a['complexion'] ?? '';
+          accused.deformities.text = a['deformities'] ?? '';
+
+          // Parse accused address
+          if (a['address'] != null) {
+            final parts = (a['address'] as String).split(', ');
+            if (parts.isNotEmpty)
+              accused.houseNo.text = parts.length > 0 ? parts[0] : '';
+            if (parts.length > 1) accused.street.text = parts[1];
+            if (parts.length > 2) accused.area.text = parts[2];
+            if (parts.length > 3) accused.city.text = parts[3];
+            if (parts.length > 4) accused.state.text = parts[4];
+            if (parts.length > 5) accused.pin.text = parts[5];
+          }
+          _accusedList.add(accused);
         }
       } else {
-         _accusedList.add(_AccusedFormData());
+        _accusedList.add(_AccusedFormData());
       }
-      
+
       // Load districts to ensure dropdown works
       if (_selectedDistrict != null) {
         _loadSubDivisionsForDistrict();
@@ -627,7 +666,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             setState(() {
               // Ensure the loaded station exists in the list
               if (_policeStationsEnglish.contains(c.policeStation)) {
-                 _selectedPoliceStation = c.policeStation;
+                _selectedPoliceStation = c.policeStation;
               }
             });
           }
@@ -651,18 +690,21 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       if (_policeHierarchyData?['districts'] != null) {
-        final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+        final districts =
+            (_policeHierarchyData!['districts'] as List).cast<dynamic>();
         // Use loose matching (trim + lowercase)
         final districtData = districts.firstWhere(
-          (d) => d['name'].toString().trim().toLowerCase() == 
-                 _selectedDistrict!.trim().toLowerCase(),
+          (d) =>
+              d['name'].toString().trim().toLowerCase() ==
+              _selectedDistrict!.trim().toLowerCase(),
           orElse: () => null,
         );
 
         if (districtData != null && districtData['sdpos'] != null) {
           final sdpos = districtData['sdpos'] as List;
           setState(() {
-            _subDivisions = sdpos.map((s) => s['name'] as String).toList()..sort();
+            _subDivisions = sdpos.map((s) => s['name'] as String).toList()
+              ..sort();
             _isLoadingSubDivisions = false;
           });
         }
@@ -674,7 +716,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   }
 
   Future<void> _loadCirclesForSubDivision() async {
-    if (_policeHierarchyData == null || _selectedDistrict == null || _selectedSubDivision == null) return;
+    if (_policeHierarchyData == null ||
+        _selectedDistrict == null ||
+        _selectedSubDivision == null) return;
 
     setState(() {
       _isLoadingCircles = true;
@@ -685,20 +729,21 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     });
 
     try {
-      final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+      final districts =
+          (_policeHierarchyData!['districts'] as List).cast<dynamic>();
       final districtData = districts.firstWhere(
-        (d) => d['name'].toString().trim().toLowerCase() == 
-               _selectedDistrict!.trim().toLowerCase(),
-        orElse: () => null
-      );
+          (d) =>
+              d['name'].toString().trim().toLowerCase() ==
+              _selectedDistrict!.trim().toLowerCase(),
+          orElse: () => null);
 
       if (districtData != null && districtData['sdpos'] != null) {
         final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
         final sdpoData = sdpos.firstWhere(
-          (s) => s['name'].toString().trim().toLowerCase() == 
-                 _selectedSubDivision!.trim().toLowerCase(),
-          orElse: () => null
-        );
+            (s) =>
+                s['name'].toString().trim().toLowerCase() ==
+                _selectedSubDivision!.trim().toLowerCase(),
+            orElse: () => null);
 
         if (sdpoData != null && sdpoData['circles'] != null) {
           final circles = sdpoData['circles'] as List;
@@ -715,7 +760,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   }
 
   Future<void> _loadPoliceStationsForCircle() async {
-    if (_policeHierarchyData == null || _selectedDistrict == null || _selectedSubDivision == null || _selectedCircle == null) return;
+    if (_policeHierarchyData == null ||
+        _selectedDistrict == null ||
+        _selectedSubDivision == null ||
+        _selectedCircle == null) return;
 
     setState(() {
       _isLoadingPoliceStations = true;
@@ -724,31 +772,35 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     });
 
     try {
-      final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+      final districts =
+          (_policeHierarchyData!['districts'] as List).cast<dynamic>();
       final districtData = districts.firstWhere(
-        (d) => d['name'].toString().trim().toLowerCase() == 
-               _selectedDistrict!.trim().toLowerCase(),
-        orElse: () => null
-      );
+          (d) =>
+              d['name'].toString().trim().toLowerCase() ==
+              _selectedDistrict!.trim().toLowerCase(),
+          orElse: () => null);
 
       if (districtData != null && districtData['sdpos'] != null) {
         final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
         final sdpoData = sdpos.firstWhere(
-          (s) => s['name'].toString().trim().toLowerCase() == 
-                 _selectedSubDivision!.trim().toLowerCase(),
-          orElse: () => null
-        );
+            (s) =>
+                s['name'].toString().trim().toLowerCase() ==
+                _selectedSubDivision!.trim().toLowerCase(),
+            orElse: () => null);
 
         if (sdpoData != null && sdpoData['circles'] != null) {
           final circles = (sdpoData['circles'] as List).cast<dynamic>();
           final circleData = circles.firstWhere(
-            (c) => c['name'].toString().trim().toLowerCase() == 
-                   _selectedCircle!.trim().toLowerCase(),
-            orElse: () => null
-          );
+              (c) =>
+                  c['name'].toString().trim().toLowerCase() ==
+                  _selectedCircle!.trim().toLowerCase(),
+              orElse: () => null);
 
           if (circleData != null && circleData['police_stations'] != null) {
-            final stations = (circleData['police_stations'] as List).cast<String>().toList()..sort();
+            final stations = (circleData['police_stations'] as List)
+                .cast<String>()
+                .toList()
+              ..sort();
             setState(() {
               _policeStationsEnglish = stations;
               _isLoadingPoliceStations = false;
@@ -766,7 +818,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     } catch (e) {
       debugPrint('Error loading police stations: $e');
     }
-    
+
     setState(() {
       _isLoadingPoliceStations = false;
       _policeStationLoadError = _getLocalizedLabel(
@@ -788,7 +840,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         _policeStationLoadError = null;
         _policeStationsEnglish = [];
       });
-      
+
       try {
         final Set<String> stationsSet = {};
         final searchDistrict = _selectedDistrict!.trim().toLowerCase();
@@ -797,36 +849,39 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         // STRATEGY 1: Search in FIR Hierarchy (Complex, Nested)
         // This is prioritized to ensure SDPOs and Circles are available/consistent
         try {
-          if (_policeHierarchyData != null && _policeHierarchyData!['districts'] != null) {
-             final districts = (_policeHierarchyData!['districts'] as List).cast<dynamic>();
-             
-             final districtData = districts.firstWhere(
-               (d) {
-                 if (d is Map && d['name'] != null) {
-                   return d['name'].toString().trim().toLowerCase() == searchDistrict;
-                 }
-                 return false;
-               },
-               orElse: () => null
-             );
-             
-             if (districtData != null && districtData is Map && districtData['sdpos'] != null) {
-               final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
-               for (var sdpo in sdpos) {
-                 if (sdpo is Map && sdpo['circles'] != null) {
-                   final circles = (sdpo['circles'] as List).cast<dynamic>();
-                   for (var circle in circles) {
-                      if (circle is Map && circle['police_stations'] != null) {
-                        final rawList = circle['police_stations'] as List;
-                        stationsSet.addAll(rawList.map((e) => e.toString()));
-                      }
-                   }
-                 }
-               }
-             }
+          if (_policeHierarchyData != null &&
+              _policeHierarchyData!['districts'] != null) {
+            final districts =
+                (_policeHierarchyData!['districts'] as List).cast<dynamic>();
+
+            final districtData = districts.firstWhere((d) {
+              if (d is Map && d['name'] != null) {
+                return d['name'].toString().trim().toLowerCase() ==
+                    searchDistrict;
+              }
+              return false;
+            }, orElse: () => null);
+
+            if (districtData != null &&
+                districtData is Map &&
+                districtData['sdpos'] != null) {
+              final sdpos = (districtData['sdpos'] as List).cast<dynamic>();
+              for (var sdpo in sdpos) {
+                if (sdpo is Map && sdpo['circles'] != null) {
+                  final circles = (sdpo['circles'] as List).cast<dynamic>();
+                  for (var circle in circles) {
+                    if (circle is Map && circle['police_stations'] != null) {
+                      final rawList = circle['police_stations'] as List;
+                      stationsSet.addAll(rawList.map((e) => e.toString()));
+                    }
+                  }
+                }
+              }
+            }
           }
           if (stationsSet.isNotEmpty) {
-             debugPrint('✅ Strategy 1 (FIR) found ${stationsSet.length} stations.');
+            debugPrint(
+                '✅ Strategy 1 (FIR) found ${stationsSet.length} stations.');
           }
         } catch (e) {
           debugPrint('⚠️ Strategy 1 (FIR) failed: $e');
@@ -835,28 +890,31 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         // STRATEGY 2: Search in Complete Hierarchy (Reliable, Flat)
         // Fallback if FIR hierarchy parsing fails
         if (stationsSet.isEmpty) {
-          debugPrint('⚠️ Strategy 1 returned 0 stations. Trying Strategy 2 (Complete)...');
+          debugPrint(
+              '⚠️ Strategy 1 returned 0 stations. Trying Strategy 2 (Complete)...');
           try {
             final completeData = kPoliceHierarchyComplete;
             bool foundInStrategy2 = false;
-            
+
             for (final rangeVal in completeData.values) {
               if (rangeVal is Map) {
-                 // Iterate keys to handle potential casing differences manually if needed
-                 for (final districtKey in rangeVal.keys) {
-                   if (districtKey.toString().trim().toLowerCase() == searchDistrict) {
-                      final rawStations = rangeVal[districtKey];
-                      if (rawStations is List) {
-                        stationsSet.addAll(rawStations.map((e) => e.toString()));
-                        foundInStrategy2 = true;
-                      }
-                   }
-                 }
+                // Iterate keys to handle potential casing differences manually if needed
+                for (final districtKey in rangeVal.keys) {
+                  if (districtKey.toString().trim().toLowerCase() ==
+                      searchDistrict) {
+                    final rawStations = rangeVal[districtKey];
+                    if (rawStations is List) {
+                      stationsSet.addAll(rawStations.map((e) => e.toString()));
+                      foundInStrategy2 = true;
+                    }
+                  }
+                }
               }
               if (foundInStrategy2) break;
             }
             if (stationsSet.isNotEmpty) {
-               debugPrint('✅ Strategy 2 (Complete) found ${stationsSet.length} stations.');
+              debugPrint(
+                  '✅ Strategy 2 (Complete) found ${stationsSet.length} stations.');
             }
           } catch (e) {
             debugPrint('⚠️ Strategy 2 (Complete) failed: $e');
@@ -875,7 +933,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               'No stations found for $_selectedDistrict',
               '$_selectedDistrict కోసం స్టేషన్లు దొరకలేదు',
             );
-            debugPrint('❌ FATAL: No stations found in either hierarchy for "$_selectedDistrict"');
+            debugPrint(
+                '❌ FATAL: No stations found in either hierarchy for "$_selectedDistrict"');
           }
         });
       } catch (e) {
@@ -883,7 +942,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         setState(() {
           _isLoadingPoliceStations = false;
           _policeStationLoadError = _getLocalizedLabel(
-            'Failed to load police stations: $e', 
+            'Failed to load police stations: $e',
             'పోలీస్ స్టేషన్లను లోడ్ చేయడంలో విఫలమైంది',
           );
         });
@@ -934,26 +993,26 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     setState(() {
       // Copy name
       _victimNameController.text = _complainantNameController.text;
-      
+
       // Copy father/husband name
       _victimFatherNameController.text = _fatherHusbandNameController.text;
-      
+
       // Copy gender
       _selectedVictimGender = _selectedComplainantGender;
-      
+
       // Copy DOB and age
       _victimDob = _complainantDob;
       _victimAgeController.text = _ageController.text;
-      
+
       // Copy nationality
       _victimNationalityController.text = _nationalityController.text;
-      
+
       // Copy caste
       _victimCasteController.text = _casteController.text;
-      
+
       // Copy occupation
       _victimOccupationController.text = _occupationController.text;
-      
+
       // Copy address
       _victimHouseNoController.text = _complainantHouseNoController.text;
       _victimStreetController.text = _complainantStreetController.text;
@@ -971,7 +1030,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle
+          .loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1003,10 +1063,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
           // Check if village name matches or is contained in station name
           if (cleanStationName.toLowerCase() == villageName.toLowerCase() ||
-              cleanStationName.toLowerCase().contains(villageName.toLowerCase()) ||
-              villageName.toLowerCase().contains(cleanStationName.toLowerCase())) {
+              cleanStationName
+                  .toLowerCase()
+                  .contains(villageName.toLowerCase()) ||
+              villageName
+                  .toLowerCase()
+                  .contains(cleanStationName.toLowerCase())) {
             foundDistrict = districtName;
-            
+
             // Try to extract mandal from station name
             // Many police stations are named after mandals
             if (cleanStationName.isNotEmpty) {
@@ -1021,7 +1085,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             if (part.toLowerCase() == villageName.toLowerCase() ||
                 part.toLowerCase().contains(villageName.toLowerCase()) ||
                 villageName.toLowerCase().contains(part.toLowerCase())) {
-              if (part.length >= 3) { // Only consider meaningful matches
+              if (part.length >= 3) {
+                // Only consider meaningful matches
                 foundDistrict = districtName;
                 foundMandal = part;
                 break;
@@ -1092,13 +1157,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   }
 
   /// Auto-fill Mandal and District for accused address based on Street/Village name
-  Future<void> _autoFillAccusedMandalAndDistrict(_AccusedFormData accusedData) async {
+  Future<void> _autoFillAccusedMandalAndDistrict(
+      _AccusedFormData accusedData) async {
     final villageName = accusedData.street.text.trim();
     if (villageName.isEmpty) return;
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle
+          .loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1130,10 +1197,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
           // Check if village name matches or is contained in station name
           if (cleanStationName.toLowerCase() == villageName.toLowerCase() ||
-              cleanStationName.toLowerCase().contains(villageName.toLowerCase()) ||
-              villageName.toLowerCase().contains(cleanStationName.toLowerCase())) {
+              cleanStationName
+                  .toLowerCase()
+                  .contains(villageName.toLowerCase()) ||
+              villageName
+                  .toLowerCase()
+                  .contains(cleanStationName.toLowerCase())) {
             foundDistrict = districtName;
-            
+
             // Try to extract mandal from station name
             if (cleanStationName.isNotEmpty) {
               foundMandal = cleanStationName;
@@ -1224,7 +1295,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     try {
       // Load police stations data
-      final String jsonString = await rootBundle.loadString('assets/data/district_police_stations.json');
+      final String jsonString = await rootBundle
+          .loadString('assets/data/district_police_stations.json');
       final Map<String, dynamic> jsonData = json.decode(jsonString);
 
       String? foundDistrict;
@@ -1256,10 +1328,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
           // Check if village name matches or is contained in station name
           if (cleanStationName.toLowerCase() == villageName.toLowerCase() ||
-              cleanStationName.toLowerCase().contains(villageName.toLowerCase()) ||
-              villageName.toLowerCase().contains(cleanStationName.toLowerCase())) {
+              cleanStationName
+                  .toLowerCase()
+                  .contains(villageName.toLowerCase()) ||
+              villageName
+                  .toLowerCase()
+                  .contains(cleanStationName.toLowerCase())) {
             foundDistrict = districtName;
-            
+
             // Try to extract mandal from station name
             if (cleanStationName.isNotEmpty) {
               foundMandal = cleanStationName;
@@ -1387,7 +1463,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   border: const OutlineInputBorder(),
                   prefixIcon: Icon(icon),
                   suffixIcon: const Icon(Icons.arrow_drop_down),
-                  errorText: formFieldState.hasError ? formFieldState.errorText : null,
+                  errorText:
+                      formFieldState.hasError ? formFieldState.errorText : null,
                 ),
                 child: Text(
                   value != null ? getDisplayText(value) : hint,
@@ -1418,7 +1495,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     String? emptyMessage,
   }) {
     List<T> filteredItems = List.from(items);
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -1490,10 +1567,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                           ? Padding(
                               padding: const EdgeInsets.all(24.0),
                               child: Text(
-                                emptyMessage ?? _getLocalizedLabel(
-                                  'No items found',
-                                  'ఎటువంటి అంశాలు కనుగొనబడలేదు',
-                                ),
+                                emptyMessage ??
+                                    _getLocalizedLabel(
+                                      'No items found',
+                                      'ఎటువంటి అంశాలు కనుగొనబడలేదు',
+                                    ),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
@@ -1602,7 +1680,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _policeStationSearchController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _selectFirRegistrationDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -1616,7 +1694,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
     }
   }
-  
+
   Future<void> _selectInformationReceivedAtPs() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -1642,7 +1720,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectOccurrenceDateTimeFrom() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -1675,11 +1753,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectOccurrenceDateTimeTo() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _occurrenceDateTimeTo ?? (_occurrenceDateTimeFrom ?? DateTime.now()),
+      initialDate:
+          _occurrenceDateTimeTo ?? (_occurrenceDateTimeFrom ?? DateTime.now()),
       firstDate: _occurrenceDateTimeFrom ?? DateTime(2000),
       lastDate: DateTime.now(),
     );
@@ -1714,11 +1793,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
     }
   }
-  
+
   Future<void> _selectComplainantDob() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _complainantDob ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+      initialDate: _complainantDob ??
+          DateTime.now().subtract(const Duration(days: 365 * 25)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -1740,7 +1820,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   Future<void> _selectVictimDob() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _victimDob ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+      initialDate:
+          _victimDob ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -1783,12 +1864,12 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       }
     }
   }
-  
+
   Future<void> _selectComplainantPassportDateOfIssue() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate:
-          _complainantPassportDateOfIssue ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
+      initialDate: _complainantPassportDateOfIssue ??
+          DateTime.now().subtract(const Duration(days: 365 * 5)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -1823,13 +1904,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       final caseProvider = Provider.of<CaseProvider>(context, listen: false);
 
       final newCase = CaseDoc(
-        caseId: _caseIdController.text.isNotEmpty ? _caseIdController.text : null,
+        caseId:
+            _caseIdController.text.isNotEmpty ? _caseIdController.text : null,
         title: _titleController.text,
         firNumber: _firNumberController.text,
         district: _selectedDistrict,
         policeStation: _selectedPoliceStation,
         year: _yearController.text.isNotEmpty ? _yearController.text : null,
-        date: _firRegistrationDate != null 
+        date: _firRegistrationDate != null
             ? DateFormat('yyyy-MM-dd').format(_firRegistrationDate!)
             : null,
         firFiledTimestamp: _firRegistrationDate != null
@@ -1838,9 +1920,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         complainantName: _complainantNameController.text.isNotEmpty
             ? _complainantNameController.text
             : null,
-        complainantFatherHusbandName: _fatherHusbandNameController.text.isNotEmpty
-            ? _fatherHusbandNameController.text
-            : null,
+        complainantFatherHusbandName:
+            _fatherHusbandNameController.text.isNotEmpty
+                ? _fatherHusbandNameController.text
+                : null,
         complainantGender: _selectedComplainantGender,
         complainantMobileNumber: _mobileNumberController.text.isNotEmpty
             ? _mobileNumberController.text
@@ -1848,18 +1931,16 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         complainantNationality: _nationalityController.text.isNotEmpty
             ? _nationalityController.text
             : null,
-        complainantCaste: _casteController.text.isNotEmpty
-            ? _casteController.text
-            : null,
+        complainantCaste:
+            _casteController.text.isNotEmpty ? _casteController.text : null,
         complainantOccupation: _occupationController.text.isNotEmpty
             ? _occupationController.text
             : null,
         complainantDob: _complainantDob != null
             ? DateFormat('yyyy-MM-dd').format(_complainantDob!)
             : null,
-        complainantAge: _ageController.text.isNotEmpty
-            ? _ageController.text
-            : null,
+        complainantAge:
+            _ageController.text.isNotEmpty ? _ageController.text : null,
         complainantAddress: [
           _complainantHouseNoController.text,
           _complainantStreetController.text,
@@ -1867,9 +1948,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           _complainantCityController.text,
           _complainantStateController.text,
           _complainantPinController.text,
-        ]
-            .where((part) => part.trim().isNotEmpty)
-            .join(', '),
+        ].where((part) => part.trim().isNotEmpty).join(', '),
         complainantPassportNumber:
             _complainantPassportNumberController.text.isNotEmpty
                 ? _complainantPassportNumberController.text
@@ -1878,10 +1957,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             _complainantPassportPlaceController.text.isNotEmpty
                 ? _complainantPassportPlaceController.text
                 : null,
-        complainantPassportDateOfIssue:
-            _complainantPassportDateOfIssue != null
-                ? DateFormat('yyyy-MM-dd').format(_complainantPassportDateOfIssue!)
-                : null,
+        complainantPassportDateOfIssue: _complainantPassportDateOfIssue != null
+            ? DateFormat('yyyy-MM-dd').format(_complainantPassportDateOfIssue!)
+            : null,
         accusedPersons: _accusedList
             .where((a) => a.name.text.trim().isNotEmpty)
             .map((a) => a.toMap())
@@ -1901,9 +1979,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         timePeriod: _timePeriodController.text.isNotEmpty
             ? _timePeriodController.text
             : null,
-        priorToDateTimeDetails: _priorToDateTimeDetailsController.text.isNotEmpty
-            ? _priorToDateTimeDetailsController.text
-            : null,
+        priorToDateTimeDetails:
+            _priorToDateTimeDetailsController.text.isNotEmpty
+                ? _priorToDateTimeDetailsController.text
+                : null,
         beatNumber: _beatNumberController.text.isNotEmpty
             ? _beatNumberController.text
             : null,
@@ -1916,12 +1995,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         placeOfOccurrenceCity: _cityDistrictController.text.isNotEmpty
             ? _cityDistrictController.text
             : null,
-        placeOfOccurrenceState: _stateController.text.isNotEmpty
-            ? _stateController.text
-            : null,
-        placeOfOccurrencePin: _pinController.text.isNotEmpty
-            ? _pinController.text
-            : null,
+        placeOfOccurrenceState:
+            _stateController.text.isNotEmpty ? _stateController.text : null,
+        placeOfOccurrencePin:
+            _pinController.text.isNotEmpty ? _pinController.text : null,
         placeOfOccurrenceLatitude: _latitudeController.text.isNotEmpty
             ? _latitudeController.text
             : null,
@@ -1937,9 +2014,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         informationReceivedDateTime: _informationReceivedAtPs != null
             ? DateFormat('yyyy-MM-dd HH:mm').format(_informationReceivedAtPs!)
             : null,
-        generalDiaryEntryNumber: _generalDiaryEntryNumberController.text.isNotEmpty
-            ? _generalDiaryEntryNumberController.text
-            : null,
+        generalDiaryEntryNumber:
+            _generalDiaryEntryNumberController.text.isNotEmpty
+                ? _generalDiaryEntryNumberController.text
+                : null,
         informationType: _selectedInformationType,
         propertiesDetails: _propertiesDetailsController.text.isNotEmpty
             ? _propertiesDetailsController.text
@@ -1989,19 +2067,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           _victimCityController.text,
           _victimStateController.text,
           _victimPinController.text,
-        ]
-            .where((p) => p.trim().isNotEmpty)
-            .join(', '),
+        ].where((p) => p.trim().isNotEmpty).join(', '),
         isComplainantAlsoVictim: _isComplainantAlsoVictim,
         actionTakenDetails: _actionTakenDetailsController.text.isNotEmpty
             ? _actionTakenDetailsController.text
             : null,
-        investigatingOfficerName: _ioNameController.text.isNotEmpty
-            ? _ioNameController.text
-            : null,
-        investigatingOfficerRank: _ioRankController.text.isNotEmpty
-            ? _ioRankController.text
-            : null,
+        investigatingOfficerName:
+            _ioNameController.text.isNotEmpty ? _ioNameController.text : null,
+        investigatingOfficerRank:
+            _ioRankController.text.isNotEmpty ? _ioRankController.text : null,
         investigatingOfficerDistrict: _ioDistrictController.text.isNotEmpty
             ? _ioDistrictController.text
             : null,
@@ -2031,7 +2105,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
       if (widget.existingCase != null) {
         // Update existing case
-        await caseProvider.updateCase(widget.existingCase!.id!, newCase.toMap());
+        await caseProvider.updateCase(
+            widget.existingCase!.id!, newCase.toMap());
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Case updated successfully')),
@@ -2041,9 +2116,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         // Create new case
         await caseProvider.addCase(newCase);
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
-           );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.caseCreatedSuccess)),
+          );
         }
       }
 
@@ -2053,7 +2130,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.errorCreatingCase(e.toString()))),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .errorCreatingCase(e.toString()))),
         );
       }
     } finally {
@@ -2110,7 +2189,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         }
         if (_selectedSubDivision == null || _selectedSubDivision!.isEmpty) {
           final locale = Localizations.localeOf(context);
-          final msg = locale.languageCode == 'te' 
+          final msg = locale.languageCode == 'te'
               ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
               : 'Please select a Sub-Division (SDPO)';
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2118,7 +2197,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           );
           return false;
         }
-        if (_selectedCircle == null || _selectedCircle!.isEmpty || _selectedCircle == '-') {
+        if (_selectedCircle == null ||
+            _selectedCircle!.isEmpty ||
+            _selectedCircle == '-') {
           final locale = Localizations.localeOf(context);
           final msg = locale.languageCode == 'te'
               ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
@@ -2179,7 +2260,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         children: List.generate(_totalSteps, (index) {
           final isActive = index == _currentStep;
           final isCompleted = index < _currentStep;
-          
+
           return Expanded(
             child: Row(
               children: [
@@ -2194,8 +2275,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     ),
                   ),
                 ),
-                if (index < _totalSteps - 1)
-                  const SizedBox(width: 8),
+                if (index < _totalSteps - 1) const SizedBox(width: 8),
               ],
             ),
           );
@@ -2206,7 +2286,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   Widget _buildStepContent() {
     final localizations = AppLocalizations.of(context)!;
-    
+
     switch (_currentStep) {
       case 0:
         return _buildBasicInformationStep(localizations);
@@ -2241,21 +2321,24 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               "1. ${localizations.districtAndFirDetails}",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
             ),
             const SizedBox(height: 24),
             // Case ID
             Builder(
               builder: (context) {
                 final locale = Localizations.localeOf(context);
-                final labelText = locale.languageCode == 'te' ? 'కేసు ID' : 'Case ID';
-                final hintText = locale.languageCode == 'te' ? 'కేసు ID ను నమోదు చేయండి' : 'Enter case ID';
+                final labelText =
+                    locale.languageCode == 'te' ? 'కేసు ID' : 'Case ID';
+                final hintText = locale.languageCode == 'te'
+                    ? 'కేసు ID ను నమోదు చేయండి'
+                    : 'Enter case ID';
                 final validationMsg = locale.languageCode == 'te'
                     ? 'దయచేసి కేసు ID ను నమోదు చేయండి'
                     : 'Please enter case ID';
-                
+
                 return TextFormField(
                   controller: _caseIdController,
                   decoration: InputDecoration(
@@ -2294,12 +2377,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             // District Searchable Dropdown
             _buildSearchableDropdown<String>(
               label: '${localizations.district} *',
-              hint: _getLocalizedLabel('Search district...', 'జిల్లాను శోధించండి...'),
+              hint: _getLocalizedLabel(
+                  'Search district...', 'జిల్లాను శోధించండి...'),
               icon: Icons.location_city,
               value: _selectedDistrict,
               items: _apDistrictsEnglish,
               searchController: _districtSearchController,
-              getDisplayText: (districtEnglish) => DistrictTranslations.getDistrictName(context, districtEnglish),
+              getDisplayText: (districtEnglish) =>
+                  DistrictTranslations.getDistrictName(
+                      context, districtEnglish),
               onChanged: (value) async {
                 setState(() {
                   _selectedDistrict = value;
@@ -2311,9 +2397,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _districtSearchController.clear();
                 });
                 if (value != null) {
-                   // Load sub-divisions for the new district
+                  // Load sub-divisions for the new district
                   _loadSubDivisionsForDistrict();
-                  
+
                   // Also load full flattened list for direct station selection
                   // (Currently the UI will clear this list visually via state but data will be fetched)
                   _loadAllPoliceStationsForDistrict();
@@ -2329,129 +2415,145 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             const SizedBox(height: 16),
             // Dynamic Sub-Division (SDPO) Dropdown
             if (_subDivisions.isNotEmpty || _isLoadingSubDivisions) ...[
-                Builder(
-                  builder: (context) {
-                    final locale = Localizations.localeOf(context);
-                    final labelText = locale.languageCode == 'te' ? 'ఉప-విభాగం (SDPO)' : 'Sub-Division (SDPO)';
-                    final validationMsg = locale.languageCode == 'te' 
-                        ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
-                        : 'Please select a Sub-Division (SDPO)';
-                    
-                    return DropdownButtonFormField<String>(
-                      value: _selectedSubDivision,
-                      decoration: InputDecoration(
-                        labelText: '$labelText *',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.account_tree),
-                        suffixIcon: _isLoadingSubDivisions 
-                          ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+              Builder(
+                builder: (context) {
+                  final locale = Localizations.localeOf(context);
+                  final labelText = locale.languageCode == 'te'
+                      ? 'ఉప-విభాగం (SDPO)'
+                      : 'Sub-Division (SDPO)';
+                  final validationMsg = locale.languageCode == 'te'
+                      ? 'దయచేసి ఉప-విభాగం (SDPO) ను ఎంచుకోండి'
+                      : 'Please select a Sub-Division (SDPO)';
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedSubDivision,
+                    decoration: InputDecoration(
+                      labelText: '$labelText *',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.account_tree),
+                      suffixIcon: _isLoadingSubDivisions
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)))
                           : null,
-                      ),
-                      items: _subDivisions
-                          .map((subDivEnglish) {
-                            final localizedName = DistrictTranslations.getSubDivisionName(context, subDivEnglish);
-                            return DropdownMenuItem(
-                              value: subDivEnglish, // Store English name
-                              child: Text(
-                                localizedName,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          })
-                          .toList(),
-                      onChanged: (value) {
-                         // Only update if value changed
-                         if(value != _selectedSubDivision) {
-                            setState(() {
-                              _selectedSubDivision = value;
-                              _selectedCircle = null;
-                              _selectedPoliceStation = null;
-                              _policeStationSearchController.clear();
-                              _policeStationsEnglish.clear();
-                              _circles.clear();
-                            });
-                            // Load circles for selected SDPO
-                            _loadCirclesForSubDivision();
-                         }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return validationMsg;
-                        }
-                        return null;
-                      },
-                      isExpanded: true,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
+                    ),
+                    items: _subDivisions.map((subDivEnglish) {
+                      final localizedName =
+                          DistrictTranslations.getSubDivisionName(
+                              context, subDivEnglish);
+                      return DropdownMenuItem(
+                        value: subDivEnglish, // Store English name
+                        child: Text(
+                          localizedName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      // Only update if value changed
+                      if (value != _selectedSubDivision) {
+                        setState(() {
+                          _selectedSubDivision = value;
+                          _selectedCircle = null;
+                          _selectedPoliceStation = null;
+                          _policeStationSearchController.clear();
+                          _policeStationsEnglish.clear();
+                          _circles.clear();
+                        });
+                        // Load circles for selected SDPO
+                        _loadCirclesForSubDivision();
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return validationMsg;
+                      }
+                      return null;
+                    },
+                    isExpanded: true,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
             ],
 
             // Dynamic Circle Dropdown
             if (_circles.isNotEmpty || _isLoadingCircles) ...[
-                Builder(
-                  builder: (context) {
-                    final locale = Localizations.localeOf(context);
-                    final labelText = locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
-                    final validationMsg = locale.languageCode == 'te'
-                        ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
-                        : 'Please select a Circle';
-                    
-                    return DropdownButtonFormField<String>(
-                      value: _selectedCircle,
-                      decoration: InputDecoration(
-                        labelText: '$labelText *',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.place),
-                        suffixIcon: _isLoadingCircles
-                          ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator(strokeWidth: 2)))
+              Builder(
+                builder: (context) {
+                  final locale = Localizations.localeOf(context);
+                  final labelText =
+                      locale.languageCode == 'te' ? 'సర్కిల్' : 'Circle';
+                  final validationMsg = locale.languageCode == 'te'
+                      ? 'దయచేసి సర్కిల్ ను ఎంచుకోండి'
+                      : 'Please select a Circle';
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCircle,
+                    decoration: InputDecoration(
+                      labelText: '$labelText *',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.place),
+                      suffixIcon: _isLoadingCircles
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)))
                           : null,
-                      ),
-                      items: _circles
-                          .map((circleEnglish) {
-                            final localizedName = DistrictTranslations.getCircleName(context, circleEnglish);
-                            return DropdownMenuItem(
-                              value: circleEnglish, // Store English name
-                              child: Text(
-                                localizedName,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          })
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != _selectedCircle) {
-                          setState(() {
-                            _selectedCircle = value;
-                            _selectedPoliceStation = null;
-                            _policeStationSearchController.clear();
-                          });
-                          // Load police stations for selected circle
-                          _loadPoliceStationsForCircle();
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty || value == '-') {
-                          return validationMsg;
-                        }
-                        return null;
-                      },
-                      isExpanded: true,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
+                    ),
+                    items: _circles.map((circleEnglish) {
+                      final localizedName = DistrictTranslations.getCircleName(
+                          context, circleEnglish);
+                      return DropdownMenuItem(
+                        value: circleEnglish, // Store English name
+                        child: Text(
+                          localizedName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != _selectedCircle) {
+                        setState(() {
+                          _selectedCircle = value;
+                          _selectedPoliceStation = null;
+                          _policeStationSearchController.clear();
+                        });
+                        // Load police stations for selected circle
+                        _loadPoliceStationsForCircle();
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty || value == '-') {
+                        return validationMsg;
+                      }
+                      return null;
+                    },
+                    isExpanded: true,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
             ],
             const SizedBox(height: 16),
             // Police Station Searchable Dropdown
             _buildSearchableDropdown<String>(
               label: '${localizations.policeStation} *',
-              hint: _getLocalizedLabel('Search police station...', 'పోలీస్ స్టేషన్‌ను శోధించండి...'),
+              hint: _getLocalizedLabel(
+                  'Search police station...', 'పోలీస్ స్టేషన్‌ను శోధించండి...'),
               icon: Icons.local_police,
               value: _selectedPoliceStation,
               items: _policeStationsEnglish,
               searchController: _policeStationSearchController,
-              getDisplayText: (stationEnglish) => DistrictTranslations.getLocalizedPoliceStationName(
+              getDisplayText: (stationEnglish) =>
+                  DistrictTranslations.getLocalizedPoliceStationName(
                 context,
                 stationEnglish,
               ),
@@ -2468,13 +2570,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 return null;
               },
               emptyMessage: _selectedDistrict == null
-                  ? _getLocalizedLabel('Please select a district first', 'దయచేసి ముందు జిల్లాను ఎంచుకోండి')
+                  ? _getLocalizedLabel('Please select a district first',
+                      'దయచేసి ముందు జిల్లాను ఎంచుకోండి')
                   : _isLoadingPoliceStations
                       ? localizations.loading
-                      : _policeStationLoadError ?? _getLocalizedLabel(
-                          'No police stations found',
-                          'పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
-                        ),
+                      : _policeStationLoadError ??
+                          _getLocalizedLabel(
+                            'No police stations found',
+                            'పోలీస్ స్టేషన్లు కనుగొనబడలేదు',
+                          ),
             ),
             const SizedBox(height: 16),
             // Year Field
@@ -2492,7 +2596,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   return 'Please enter the year';
                 }
                 final year = int.tryParse(value);
-                if (year == null || year < 2000 || year > DateTime.now().year + 1) {
+                if (year == null ||
+                    year < 2000 ||
+                    year > DateTime.now().year + 1) {
                   return 'Please enter a valid year';
                 }
                 return null;
@@ -2520,9 +2626,13 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Builder(
               builder: (context) {
                 final locale = Localizations.localeOf(context);
-                final labelText = locale.languageCode == 'te' ? 'FIR నమోదు తేదీ' : 'FIR Registration Date';
-                final placeholderText = locale.languageCode == 'te' ? 'తేదీని ఎంచుకోండి' : 'Select date';
-                
+                final labelText = locale.languageCode == 'te'
+                    ? 'FIR నమోదు తేదీ'
+                    : 'FIR Registration Date';
+                final placeholderText = locale.languageCode == 'te'
+                    ? 'తేదీని ఎంచుకోండి'
+                    : 'Select date';
+
                 return InkWell(
                   onTap: _selectFirRegistrationDate,
                   child: InputDecorator(
@@ -2534,7 +2644,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     ),
                     child: Text(
                       _firRegistrationDate != null
-                          ? DateFormat('dd-MM-yyyy').format(_firRegistrationDate!)
+                          ? DateFormat('dd-MM-yyyy')
+                              .format(_firRegistrationDate!)
                           : placeholderText,
                       style: TextStyle(
                         color: _firRegistrationDate != null
@@ -2562,9 +2673,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               '${2}. ${localizations.occurenceOfOffence}',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
             ),
             const SizedBox(height: 24),
             // Day of Occurrence
@@ -2590,7 +2701,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _occurrenceDateTimeFrom != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_occurrenceDateTimeFrom!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_occurrenceDateTimeFrom!)
                       : localizations.selectDateAndTime,
                   style: TextStyle(
                     color: _occurrenceDateTimeFrom != null
@@ -2613,7 +2725,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _occurrenceDateTimeTo != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_occurrenceDateTimeTo!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_occurrenceDateTimeTo!)
                       : localizations.selectDateAndTime,
                   style: TextStyle(
                     color: _occurrenceDateTimeTo != null
@@ -2661,8 +2774,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               localizations.placeOfOccurrence,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             // Street/Village
@@ -2739,7 +2852,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             // Latitude
             TextFormField(
               controller: _latitudeController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: localizations.latitude,
                 hintText: 'e.g., 16.5062',
@@ -2751,7 +2865,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             // Longitude
             TextFormField(
               controller: _longitudeController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: localizations.longitude,
                 hintText: 'e.g., 80.6480',
@@ -2768,7 +2883,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   // TODO: Implement map picker functionality
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Map picker functionality will be implemented'),
+                      content:
+                          Text('Map picker functionality will be implemented'),
                     ),
                   );
                 },
@@ -2787,8 +2903,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 'PS నుండి దూరం & దిశ:',
               ),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             // Distance from PS
@@ -2828,8 +2944,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 'అధికార పరిధి వెలుపల:',
               ),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             SwitchListTile(
@@ -2884,7 +3000,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _informationReceivedAtPs != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_informationReceivedAtPs!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_informationReceivedAtPs!)
                       : _getLocalizedLabel(
                           'Select date and time',
                           'తేదీ మరియు సమయాన్ని ఎంచుకోండి',
@@ -3006,7 +3123,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           final serialNo = index + 1;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -3020,9 +3138,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                             'Accused $serialNo',
                             'నిందితుడు $serialNo',
                           ),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const Spacer(),
                         if (_accusedList.length > 1)
@@ -3214,7 +3333,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                             'Auto-fill Mandal and District',
                             'మండలం మరియు జిల్లాను స్వయంచాలకంగా నింపండి',
                           ),
-                          onPressed: () => _autoFillAccusedMandalAndDistrict(data),
+                          onPressed: () =>
+                              _autoFillAccusedMandalAndDistrict(data),
                         ),
                         helperText: _getLocalizedLabel(
                           'Type village name and click search icon to auto-fill Mandal & District',
@@ -3225,7 +3345,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                       onChanged: (value) {
                         // Auto-fill when user finishes typing (after a delay)
                         if (value.isNotEmpty && value.length >= 3) {
-                          Future.delayed(const Duration(milliseconds: 1500), () {
+                          Future.delayed(const Duration(milliseconds: 1500),
+                              () {
                             if (data.street.text == value && mounted) {
                               _autoFillAccusedMandalAndDistrict(data);
                             }
@@ -3842,7 +3963,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _dispatchDateTime != null
-                      ? DateFormat('dd-MM-yyyy HH:mm').format(_dispatchDateTime!)
+                      ? DateFormat('dd-MM-yyyy HH:mm')
+                          .format(_dispatchDateTime!)
                       : _getLocalizedLabel(
                           'Select date and time',
                           'తేదీ మరియు సమయాన్ని ఎంచుకోండి',
@@ -3966,8 +4088,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 '5. ఫిర్యాదుదారు / సమాచారం అందించినవారి వివరాలు',
               ),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 24),
             // Name
@@ -4256,7 +4378,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
                 child: Text(
                   _complainantPassportDateOfIssue != null
-                      ? DateFormat('dd-MM-yyyy').format(_complainantPassportDateOfIssue!)
+                      ? DateFormat('dd-MM-yyyy')
+                          .format(_complainantPassportDateOfIssue!)
                       : _getLocalizedLabel(
                           'Select date',
                           'తేదీని ఎంచుకోండి',
@@ -4285,8 +4408,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             Text(
               'Review Case Details',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 24),
             if (_caseIdController.text.isNotEmpty) ...[
@@ -4320,7 +4443,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               const Divider(),
               _buildReviewItem(
                 _getLocalizedLabel('Sub-Division (SDPO)', 'ఉప-విభాగం (SDPO)'),
-                DistrictTranslations.getSubDivisionName(context, _selectedSubDivision!),
+                DistrictTranslations.getSubDivisionName(
+                    context, _selectedSubDivision!),
                 Icons.account_tree,
               ),
             ],
@@ -4336,7 +4460,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               const Divider(),
               _buildReviewItem(
                 localizations.policeStation,
-                DistrictTranslations.getLocalizedPoliceStationName(context, _selectedPoliceStation!),
+                DistrictTranslations.getLocalizedPoliceStationName(
+                    context, _selectedPoliceStation!),
                 Icons.local_police,
               ),
             ],
@@ -4572,9 +4697,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _victimCityController.text,
                   _victimStateController.text,
                   _victimPinController.text,
-                ]
-                    .where((p) => p.trim().isNotEmpty)
-                    .join(', '),
+                ].where((p) => p.trim().isNotEmpty).join(', '),
                 Icons.home,
                 isMultiline: true,
               ),
@@ -4585,7 +4708,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 'Complainant is also the Victim',
                 'ఫిర్యాదుదారు కూడా బాధితుడు',
               ),
-              (_isComplainantAlsoVictim ?? false) 
+              (_isComplainantAlsoVictim ?? false)
                   ? _getLocalizedLabel('Yes', 'అవును')
                   : _getLocalizedLabel('No', 'కాదు'),
               Icons.people_alt,
@@ -4687,9 +4810,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   _complainantCityController.text,
                   _complainantStateController.text,
                   _complainantPinController.text,
-                ]
-                    .where((part) => part.trim().isNotEmpty)
-                    .join(', '),
+                ].where((part) => part.trim().isNotEmpty).join(', '),
                 Icons.home,
                 isMultiline: true,
               ),
@@ -4723,7 +4844,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   'Passport Date of Issue',
                   'పాస్పోర్ట్ జారీ చేసిన తేదీ',
                 ),
-                DateFormat('dd-MM-yyyy').format(_complainantPassportDateOfIssue!),
+                DateFormat('dd-MM-yyyy')
+                    .format(_complainantPassportDateOfIssue!),
                 Icons.event,
               ),
             ],
@@ -4782,7 +4904,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 'Delay in Reporting',
                 'నివేదించడంలో ఆలస్యం',
               ),
-              _isDelayInReporting 
+              _isDelayInReporting
                   ? _getLocalizedLabel('Yes', 'అవును')
                   : _getLocalizedLabel('No', 'కాదు'),
               Icons.schedule,
@@ -4807,7 +4929,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   'Date/Time Received at PS',
                   'PS వద్ద అందిన తేదీ/సమయం',
                 ),
-                DateFormat('dd-MM-yyyy HH:mm').format(_informationReceivedAtPs!),
+                DateFormat('dd-MM-yyyy HH:mm')
+                    .format(_informationReceivedAtPs!),
                 Icons.access_time,
               ),
             ],
@@ -4979,10 +5102,11 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                             'Outside Jurisdiction',
                             'అధికార పరిధి వెలుపల',
                           ),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -5011,16 +5135,20 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ].where((p) => p.trim().isNotEmpty).join(', ');
                 final physicalLines = <String>[];
                 if (data.build.text.trim().isNotEmpty) {
-                  physicalLines.add('${_getLocalizedLabel('Build', 'నిర్మాణం')}: ${data.build.text}');
+                  physicalLines.add(
+                      '${_getLocalizedLabel('Build', 'నిర్మాణం')}: ${data.build.text}');
                 }
                 if (data.heightCms.text.trim().isNotEmpty) {
-                  physicalLines.add('${_getLocalizedLabel('Height', 'ఎత్తు')}: ${data.heightCms.text} ${_getLocalizedLabel('cms', 'సెం.మీ')}');
+                  physicalLines.add(
+                      '${_getLocalizedLabel('Height', 'ఎత్తు')}: ${data.heightCms.text} ${_getLocalizedLabel('cms', 'సెం.మీ')}');
                 }
                 if (data.complexion.text.trim().isNotEmpty) {
-                  physicalLines.add('${_getLocalizedLabel('Complexion', 'రంగు')}: ${data.complexion.text}');
+                  physicalLines.add(
+                      '${_getLocalizedLabel('Complexion', 'రంగు')}: ${data.complexion.text}');
                 }
                 if (data.deformities.text.trim().isNotEmpty) {
-                  physicalLines.add('${_getLocalizedLabel('Deformities/Peculiarities', 'వైకల్యాలు/ప్రత్యేకతలు')}: ${data.deformities.text}');
+                  physicalLines.add(
+                      '${_getLocalizedLabel('Deformities/Peculiarities', 'వైకల్యాలు/ప్రత్యేకతలు')}: ${data.deformities.text}');
                 }
 
                 return <Widget>[
@@ -5133,7 +5261,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     );
   }
 
-  Widget _buildReviewItem(String label, String value, IconData icon, {bool isMultiline = false}) {
+  Widget _buildReviewItem(String label, String value, IconData icon,
+      {bool isMultiline = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -5148,9 +5277,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -5168,14 +5297,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/cases'),
         ),
-        title: Text(widget.existingCase != null 
+        title: Text(widget.existingCase != null
             ? 'Edit Case' // Localize this later
             : localizations.createNewCase),
         bottom: PreferredSize(
@@ -5232,7 +5361,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
                                     ),
                                   )
                                 : Text(
