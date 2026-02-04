@@ -2016,6 +2016,12 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   // TODO: implement ok
   String get ok => 'ok';
+
+  @override
+  String get Saved => 'Saved';
+
+  @override
+  String get Drafts => 'Drafts';
   
   @override
   // TODO: implement from

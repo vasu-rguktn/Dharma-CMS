@@ -98,6 +98,40 @@ class ComplaintProvider with ChangeNotifier {
     }
   }
 
+  /// Save AI Chat Session as a Draft
+  Future<bool> saveChatAsDraft({
+    required String userId,
+    required String title,
+    required Map<String, dynamic> chatData,
+    String? draftId,
+  }) async {
+    try {
+      final String docId =
+          draftId ?? "draft_${userId}_${DateTime.now().millisecondsSinceEpoch}";
+      final docRef = _firestore.collection('complaints').doc(docId);
+
+      final draftData = {
+        'userId': userId,
+        'title': title,
+        'type': 'AI Chat Draft',
+        'isDraft': true,
+        'chatData': chatData,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'status': 'Draft',
+        'petitionerName': 'Chat Session', // Fallback
+        'grounds': 'In-progress AI Legal Chat session', // Fallback
+      };
+
+      await docRef.set(draftData, SetOptions(merge: true));
+      await fetchComplaints(userId: userId);
+      return true;
+    } catch (e) {
+      debugPrint("Error saving chat draft: $e");
+      return false;
+    }
+  }
+
   /// Delete a complaint (Fixing the refresh bug)
   Future<void> deleteComplaint(String complaintId) async {
     try {

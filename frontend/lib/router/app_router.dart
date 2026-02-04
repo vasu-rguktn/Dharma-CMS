@@ -15,12 +15,10 @@ import 'package:Dharma/screens/phone_login_screen.dart';
 import 'package:Dharma/screens/login_details_screen.dart';
 import 'package:Dharma/screens/otp_verification_screen.dart';
 
-
 // ───────────────── DASHBOARDS ─────────────────
 import 'package:Dharma/screens/dashboard_screen.dart';
 // Police dashboard import kept but route is blocked
 import 'package:Dharma/screens/police_dashboard_screen.dart';
-
 
 // ───────────────── FEATURES ─────────────────
 import 'package:Dharma/screens/cases_screen.dart';
@@ -42,8 +40,6 @@ import 'package:Dharma/screens/Investigation_Guidelines/AI_Investigation_Guideli
 import 'package:Dharma/screens/image_lab_screen.dart';
 import 'package:Dharma/screens/profile_screen.dart';
 
-
-
 // ───────────────── AI ─────────────────
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
 import 'package:Dharma/screens/ai_legal_chat_screen.dart';
@@ -51,17 +47,12 @@ import 'package:Dharma/screens/ai_chatbot_details_screen.dart';
 import 'package:Dharma/screens/cognigible_non_cognigible_separation.dart';
 import 'package:Dharma/screens/contact_officer_screen.dart';
 
-
-
 // ───────────────── PETITIONS ─────────────────
 import 'package:Dharma/screens/petition/petitions_screen.dart';
 import 'package:Dharma/screens/police_petitions_screen.dart';
 import 'package:Dharma/screens/petition/create_petition_form.dart';
 import 'package:Dharma/screens/petition/submit_offline_petition_screen.dart';
 import 'package:Dharma/screens/petition/offline_petitions_screen.dart';
-
-
-
 
 // ───────────────── UI ─────────────────
 import 'package:Dharma/widgets/app_scaffold.dart';
@@ -231,7 +222,9 @@ class AppRouter {
 
           GoRoute(
             path: '/ai-legal-chat',
-            builder: (context, state) => const AiLegalChatScreen(),
+            builder: (context, state) => AiLegalChatScreen(
+              initialDraft: state.extra as Map<String, dynamic>?,
+            ),
           ),
 
           GoRoute(
@@ -244,13 +237,13 @@ class AppRouter {
             builder: (context, state) {
               // Try to get caseId from query parameters first
               String? caseId = state.uri.queryParameters['caseId'];
-              
+
               // If not in query params, try to get from extra data
               if (caseId == null && state.extra != null) {
                 final extraData = state.extra as Map<String, dynamic>?;
                 caseId = extraData?['caseId'] as String?;
               }
-              
+
               return AiInvestigationGuidelinesScreen(caseId: caseId);
             },
           ),

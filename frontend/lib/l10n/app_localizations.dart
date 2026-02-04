@@ -3118,6 +3118,18 @@ String get ok;
   /// **'You have selected Anonymous Petition Mode. Your name and address will not be recorded.'**
   String get anonymousPetitionConfirm;
 
+  /// Saved petitions tab title
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get Saved;
+
+  /// Draft petitions tab title
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get Drafts;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

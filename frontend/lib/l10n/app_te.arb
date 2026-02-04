@@ -1672,5 +1672,13 @@
   "downloadFailed": "డౌన్‌లోడ్ విఫలమైంది:",
   "analysisComplete": "విశ్లేషణ పూర్తి!",
   "analysisErrorEvidence": "సాక్ష్యం విశ్లేషించడంలో లోపం:",
-  "evidenceRemoved": "సాక్ష్యం తొలగించబడింది"
+  "evidenceRemoved": "సాక్ష్యం తొలగించబడింది",
+  "saved": "సేవ్ చేసినవి",
+  "@saved": {
+    "description": "Tab title for saved petitions"
+  },
+  "drafts": "డ్రాఫ్ట్‌లు",
+  "@drafts": {
+    "description": "Tab title for draft petitions"
+  },
 }

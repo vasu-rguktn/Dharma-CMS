@@ -394,7 +394,6 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     ),
                   ),
                 ],
-                ],
                 const SizedBox(height: 16),
                 // Documents Section
                 if (petition.proofDocumentUrls != null && petition.proofDocumentUrls!.isNotEmpty) ...[
@@ -592,6 +591,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void initState() {
     super.initState();
     _initBackend();
+  }
     
   @override
   void didChangeDependencies() {
