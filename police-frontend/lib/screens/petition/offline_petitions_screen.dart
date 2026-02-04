@@ -35,10 +35,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   String? _officerId;
   String? _officerRank;
   String? _officerName;
+  String? _officerFullIdentity; // Combined name, rank, and location
   bool _isLoading = true;
-
-
-
 
   @override
   void initState() {
@@ -57,7 +55,37 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     if (policeProfile != null) {
       _officerId = policeProfile['uid'];
       _officerRank = policeProfile['rank'];
-      _officerName = policeProfile['name'];
+      _officerName = policeProfile['displayName'];
+
+      // ✅ ROBUST HIERARCHY-AWARE IDENTITY LOGIC
+      final rank = _officerRank ?? '';
+      final name = _officerName ?? 'Police Officer';
+      String location = '';
+
+      if (RankUtils.normalizeRank(rank).contains('DIRECTOR GENERAL')) {
+        location = 'Andhra Pradesh';
+      } else if (RankUtils.isRangeLevelOfficer(rank)) {
+        location = policeProfile['range'] ?? '';
+      } else if (RankUtils.isDistrictLevelOfficer(rank)) {
+        location = policeProfile['district'] ?? '';
+      } else if (rank.toUpperCase().contains('SDPO') ||
+          rank.toUpperCase().contains('DEPUTY SUPERINTENDENT')) {
+        location = policeProfile['sdpo'] ?? policeProfile['district'] ?? '';
+      } else if (rank.toUpperCase().contains('CIRCLE') ||
+          rank.toUpperCase().contains('INSPECTOR')) {
+        location =
+            policeProfile['circle'] ?? policeProfile['stationName'] ?? '';
+      } else {
+        location = policeProfile['stationName'] ?? '';
+      }
+
+      if (rank.isNotEmpty) {
+        _officerFullIdentity =
+            '$name ($rank${location.isNotEmpty ? " $location" : ""})';
+      } else {
+        _officerFullIdentity = name;
+      }
+
       _isHighLevelOfficer = RankUtils.isHighLevelOfficer(_officerRank);
 
       // Initialize tab controller based on officer level
@@ -120,7 +148,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
         return Colors.grey;
     }
   }
-  
+
   Color _getPoliceStatusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'received':
@@ -142,7 +170,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
   Widget _buildPetitionCard(Petition petition, bool isSentTab) {
     final theme = Theme.of(context);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -276,11 +304,12 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
               const SizedBox(height: 8),
 
               // Assignment info
-              if (isSentTab) ...[ 
+              if (isSentTab) ...[
                 // Show "Assigned To" in sent tab
                 Row(
                   children: [
-                    Icon(Icons.arrow_forward, size: 16, color: Colors.blue[600]),
+                    Icon(Icons.arrow_forward,
+                        size: 16, color: Colors.blue[600]),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -295,7 +324,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                     ),
                   ],
                 ),
-              ] else ...[ 
+              ] else ...[
                 // Show "Assigned By" in assigned tab
                 Row(
                   children: [
@@ -443,11 +472,14 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         // Petition Details
                         _buildDetailSection('Petition Details', [
                           _buildDetailRow('Type', petition.type.displayName),
-                          _buildDetailRow('Petitioner', petition.petitionerName),
+                          _buildDetailRow(
+                              'Petitioner', petition.petitionerName),
                           if (petition.phoneNumber != null)
                             _buildDetailRow(
                               'Phone',
-                              petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                              petition.isAnonymous
+                                  ? maskPhoneNumber(petition.phoneNumber)
+                                  : petition.phoneNumber!,
                             ),
                           if (petition.district != null)
                             _buildDetailRow('District', petition.district!),
@@ -464,21 +496,23 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         // Assignment Details
                         _buildDetailSection('Assignment Details', [
                           if (petition.assignedByName != null)
-                            _buildDetailRow(
-                                'Assigned By',
+                            _buildDetailRow('Assigned By',
                                 '${petition.assignedByName}${petition.assignedByRank != null ? " (${petition.assignedByRank})" : ""}'),
                           if (petition.assignedToName != null)
-                            _buildDetailRow('Assigned To', petition.assignedToName!),
+                            _buildDetailRow(
+                                'Assigned To', petition.assignedToName!),
                           if (petition.assignedToRank != null)
                             _buildDetailRow('Rank', petition.assignedToRank!),
                           if (petition.assignedToStation != null)
-                            _buildDetailRow('Station', petition.assignedToStation!),
+                            _buildDetailRow(
+                                'Station', petition.assignedToStation!),
                           if (petition.assignedToDistrict != null)
-                            _buildDetailRow('District', petition.assignedToDistrict!),
+                            _buildDetailRow(
+                                'District', petition.assignedToDistrict!),
                           if (petition.assignedToRange != null)
                             _buildDetailRow('Range', petition.assignedToRange!),
-                          _buildDetailRow(
-                              'Assigned At', _formatTimestamp(petition.assignedAt)),
+                          _buildDetailRow('Assigned At',
+                              _formatTimestamp(petition.assignedAt)),
                           if (petition.assignmentNotes != null)
                             _buildDetailRow('Notes', petition.assignmentNotes!),
                         ]),
@@ -491,7 +525,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
                         if (petition.prayerRelief != null &&
                             petition.prayerRelief!.isNotEmpty)
-                          _buildTextSection('Prayer/Relief', petition.prayerRelief!),
+                          _buildTextSection(
+                              'Prayer/Relief', petition.prayerRelief!),
 
                         const SizedBox(height: 20),
 
@@ -534,12 +569,15 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _showUpdateStatusDialog(petition),
+                                onPressed: () =>
+                                    _showUpdateStatusDialog(petition),
                                 icon: const Icon(Icons.sync),
                                 label: const Text('Update Status'),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  side: const BorderSide(color: Colors.deepPurple),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  side: const BorderSide(
+                                      color: Colors.deepPurple),
                                   foregroundColor: Colors.deepPurple,
                                 ),
                               ),
@@ -553,7 +591,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.deepPurple,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                 ),
                               ),
                             ),
@@ -566,14 +605,17 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.pop(context); // Close bottom sheet
-                                context.push('/submit-offline-petition', extra: petition);
+                                context.push('/submit-offline-petition',
+                                    extra: petition);
                               },
                               icon: const Icon(Icons.forward),
-                              label: const Text('Forward / Assign to Sub-ordinate'),
+                              label: const Text(
+                                  'Forward / Assign to Sub-ordinate'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.teal.shade700,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
@@ -593,7 +635,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   Widget _buildTimelineSection(Petition petition) {
     final petitionId = petition.id!;
     debugPrint('🔍 Building timeline for petition: $petitionId');
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -612,10 +654,11 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
               .orderBy('createdAt', descending: false)
               .snapshots(),
           builder: (context, snapshot) {
-            debugPrint('📊 Timeline snapshot state: ${snapshot.connectionState}');
+            debugPrint(
+                '📊 Timeline snapshot state: ${snapshot.connectionState}');
             debugPrint('📊 Has data: ${snapshot.hasData}');
             debugPrint('📊 Has error: ${snapshot.hasError}');
-            
+
             if (snapshot.hasError) {
               debugPrint('❌ Timeline error: ${snapshot.error}');
               return Container(
@@ -649,7 +692,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                 ),
               );
             }
-            
+
             if (snapshot.connectionState == ConnectionState.waiting) {
               debugPrint('⏳ Timeline loading...');
               return const Center(
@@ -691,7 +734,9 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                 .map((doc) => PetitionUpdate.fromFirestore(doc))
                 .toList();
 
-            final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
+            final allUpdates = context
+                .read<PetitionProvider>()
+                .getUpdatesWithEscalations(petition, updates);
 
             return PetitionUpdateTimeline(updates: allUpdates);
           },
@@ -749,7 +794,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     );
   }
 
-  Future<void> _updatePetitionStatus(Petition petition, String newStatus) async {
+  Future<void> _updatePetitionStatus(
+      Petition petition, String newStatus) async {
     try {
       final offlinePetitionProvider =
           Provider.of<OfflinePetitionProvider>(context, listen: false);
@@ -764,12 +810,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       });
 
       // Also create a timeline entry for the status change
-      await FirebaseFirestore.instance
-          .collection('petition_updates')
-          .add({
+      await FirebaseFirestore.instance.collection('petition_updates').add({
         'petitionId': petition.id,
         'updateText': '📋 Status changed to: $newStatus',
-        'addedBy': _officerName ?? 'Police Officer',
+        'addedBy': _officerFullIdentity ?? _officerName ?? 'Police Officer',
         'addedByUserId': _officerId ?? '',
         'photoUrls': [],
         'documents': [],
@@ -781,7 +825,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
         await _loadAssignedPetitions();
         await _loadSentPetitions();
 
-        // 2. Close only the petition details bottom sheet 
+        // 2. Close only the petition details bottom sheet
         // (The status selection dialog was already closed in its onTap)
         Navigator.of(context).pop();
 
@@ -810,7 +854,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       context: context,
       builder: (_) => AddPetitionUpdateDialog(
         petition: petition,
-        policeOfficerName: _officerName ?? 'Unknown Officer',
+        policeOfficerName:
+            _officerFullIdentity ?? _officerName ?? 'Unknown Officer',
         policeOfficerUserId: _officerId ?? '',
       ),
     ).then((_) {
@@ -820,7 +865,6 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       }
     });
   }
-
 
   Widget _buildDetailSection(String title, List<Widget> children) {
     return Column(
@@ -904,8 +948,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        final petitions = isSentTab 
-            ? offlinePetitionProvider.sentPetitions 
+        final petitions = isSentTab
+            ? offlinePetitionProvider.sentPetitions
             : offlinePetitionProvider.assignedPetitions;
 
         if (petitions.isEmpty) {
@@ -920,9 +964,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isSentTab
-                      ? 'No Sent Petitions'
-                      : 'No Assigned Petitions',
+                  isSentTab ? 'No Sent Petitions' : 'No Assigned Petitions',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -946,8 +988,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
         }
 
         return RefreshIndicator(
-          onRefresh:
-              isSentTab ? _loadSentPetitions : _loadAssignedPetitions,
+          onRefresh: isSentTab ? _loadSentPetitions : _loadAssignedPetitions,
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: petitions.length,
@@ -1074,7 +1115,8 @@ class _AiGuidelinesSectionState extends State<_AiGuidelinesSection> {
   bool _loadingAI = false;
   Map<String, dynamic>? _aiReport;
   bool _showAiGuidelines = false;
-  final String _apiUrl = "https://fastapi-app-335340524683.asia-south1.run.app/api/ai-investigation/";
+  final String _apiUrl =
+      "https://fastapi-app-335340524683.asia-south1.run.app/api/ai-investigation/";
 
   String _buildFirDetails(Petition p) {
     return '''
@@ -1197,7 +1239,8 @@ ${p.grounds}
                                 color: Colors.orange,
                                 content: Text(
                                   _aiReport!['summary'],
-                                  style: const TextStyle(fontSize: 14, height: 1.5),
+                                  style: const TextStyle(
+                                      fontSize: 14, height: 1.5),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -1210,9 +1253,12 @@ ${p.grounds}
                                 content: Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: (_aiReport!['modus_operandi_tags'] as List).map((tag) {
+                                  children: (_aiReport!['modus_operandi_tags']
+                                          as List)
+                                      .map((tag) {
                                     return Chip(
-                                      label: Text(tag.toString(), style: const TextStyle(fontSize: 12)),
+                                      label: Text(tag.toString(),
+                                          style: const TextStyle(fontSize: 12)),
                                       backgroundColor: Colors.indigo.shade50,
                                     );
                                   }).toList(),
@@ -1226,33 +1272,50 @@ ${p.grounds}
                                 icon: Icons.task_alt,
                                 color: Colors.blue,
                                 content: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: (_aiReport!['investigation_tasks'] as List).map((task) {
-                                    final priority = task['priority']?.toString() ?? 'Routine';
-                                    final isUrgent = priority.toLowerCase().contains('urgent');
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: (_aiReport!['investigation_tasks']
+                                          as List)
+                                      .map((task) {
+                                    final priority =
+                                        task['priority']?.toString() ??
+                                            'Routine';
+                                    final isUrgent = priority
+                                        .toLowerCase()
+                                        .contains('urgent');
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: isUrgent ? Colors.red.shade50 : Colors.blue.shade50,
+                                        color: isUrgent
+                                            ? Colors.red.shade50
+                                            : Colors.blue.shade50,
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: isUrgent ? Colors.red.shade200 : Colors.blue.shade200,
+                                          color: isUrgent
+                                              ? Colors.red.shade200
+                                              : Colors.blue.shade200,
                                         ),
                                       ),
                                       child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Icon(
-                                            isUrgent ? Icons.warning : Icons.info_outline,
+                                            isUrgent
+                                                ? Icons.warning
+                                                : Icons.info_outline,
                                             size: 16,
-                                            color: isUrgent ? Colors.red.shade700 : Colors.blue.shade700,
+                                            color: isUrgent
+                                                ? Colors.red.shade700
+                                                : Colors.blue.shade700,
                                           ),
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
                                               task['task']?.toString() ?? '',
-                                              style: const TextStyle(fontSize: 13),
+                                              style:
+                                                  const TextStyle(fontSize: 13),
                                             ),
                                           ),
                                         ],
@@ -1269,18 +1332,23 @@ ${p.grounds}
                                 icon: Icons.gavel,
                                 color: Colors.green,
                                 content: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: (_aiReport!['applicable_laws'] as List).map((law) {
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children:
+                                      (_aiReport!['applicable_laws'] as List)
+                                          .map((law) {
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: Colors.green.shade50,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.green.shade200),
+                                        border: Border.all(
+                                            color: Colors.green.shade200),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             law['section']?.toString() ?? '',
@@ -1292,8 +1360,10 @@ ${p.grounds}
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            law['justification']?.toString() ?? '',
-                                            style: const TextStyle(fontSize: 12),
+                                            law['justification']?.toString() ??
+                                                '',
+                                            style:
+                                                const TextStyle(fontSize: 12),
                                           ),
                                         ],
                                       ),
@@ -1309,21 +1379,28 @@ ${p.grounds}
                                 icon: Icons.science,
                                 color: Colors.purple,
                                 content: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: (_aiReport!['forensic_suggestions'] as List).map((suggestion) {
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: (_aiReport!['forensic_suggestions']
+                                          as List)
+                                      .map((suggestion) {
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: Colors.purple.shade50,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.purple.shade200),
+                                        border: Border.all(
+                                            color: Colors.purple.shade200),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            suggestion['evidence_type']?.toString() ?? '',
+                                            suggestion['evidence_type']
+                                                    ?.toString() ??
+                                                '',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
@@ -1332,8 +1409,11 @@ ${p.grounds}
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            suggestion['protocol']?.toString() ?? '',
-                                            style: const TextStyle(fontSize: 12),
+                                            suggestion['protocol']
+                                                    ?.toString() ??
+                                                '',
+                                            style:
+                                                const TextStyle(fontSize: 12),
                                           ),
                                         ],
                                       ),
