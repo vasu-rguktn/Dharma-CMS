@@ -1526,6 +1526,65 @@ async def chat_step(
                     "- Output 'DONE' ONLY when you have a complete picture AND have asked about evidence AND received a response.\n\n"
                 )
 
+            # Helper function to extract already-known information from conversation
+            def extract_known_info(initial_details: str, chat_history: List) -> str:
+                """Extract information already mentioned in the conversation to prevent repetition."""
+                known_info = []
+                
+                # Combine all text from initial context and conversation
+                all_text = initial_details.lower()
+                for msg in chat_history:
+                    # Handle both dict and Pydantic object
+                    if hasattr(msg, 'role') and hasattr(msg, 'content'):
+                        if msg.role == "user":
+                            all_text += " " + msg.content.lower()
+                    elif isinstance(msg, dict) and msg.get("role") == "user":
+                        all_text += " " + msg.get("content", "").lower()
+                
+                # Check for date/time mentions
+                date_patterns = ["january", "february", "march", "april", "may", "june", 
+                                "july", "august", "september", "october", "november", "december",
+                                "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+                                "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th",
+                                "yesterday", "today", "last night", "this morning"]
+                time_patterns = ["am", "pm", "o'clock", "morning", "afternoon", "evening", "night"]
+                
+                has_date = any(pattern in all_text for pattern in date_patterns)
+                has_time = any(pattern in all_text for pattern in time_patterns) or any(str(i) in all_text for i in range(1, 13))
+                
+                if has_date or has_time:
+                    known_info.append("- Date/Time: Already mentioned in conversation")
+                
+                # Check for location mentions
+                location_keywords = ["room", "college", "university", "hostel", "market", "street", 
+                                    "road", "building", "block", "floor", "house", "shop", "office"]
+                if any(keyword in all_text for keyword in location_keywords):
+                    known_info.append("- Location: Already mentioned in conversation")
+                
+                # Check for stolen items
+                item_keywords = ["purse", "wallet", "phone", "mobile", "laptop", "bag", "cash", 
+                                "money", "rupees", "card", "jewelry", "watch", "bike", "vehicle"]
+                if any(keyword in all_text for keyword in item_keywords):
+                    known_info.append("- Stolen items: Already mentioned in conversation")
+                
+                # Check for suspect information
+                suspect_keywords = ["suspect", "person", "man", "woman", "boy", "girl", "someone", 
+                                   "stranger", "friend", "neighbor", "description"]
+                if any(keyword in all_text for keyword in suspect_keywords) or "no suspect" in all_text or "don't know" in all_text:
+                    known_info.append("- Suspect info: Already discussed in conversation")
+                
+                # Check for witness information  
+                witness_keywords = ["witness", "saw", "seen", "noticed", "observed"]
+                if any(keyword in all_text for keyword in witness_keywords) or "no witness" in all_text or "nobody saw" in all_text:
+                    known_info.append("- Witnesses: Already discussed in conversation")
+                
+                if known_info:
+                    return "\n\nINFORMATION ALREADY KNOWN (DO NOT ASK ABOUT THESE AGAIN):\n" + "\n".join(known_info) + "\n"
+                return ""
+
+            # Extract known information from conversation
+            known_facts = extract_known_info(payload.initial_details, payload.chat_history)
+
             # System Prompt Definition
 
             language_name = display_lang
@@ -1533,14 +1592,6 @@ async def chat_step(
                 f"{anon_header}"
                 f"You are a helpful and empathetic Police Officer assistant helping a citizen file a complaint in {language_name}.\n"
                 "Your goal is to gather a complete complaint summary for a formal petition.\n\n"
-
-                "CRITICAL MEMORY RULE - READ THE ENTIRE CONVERSATION HISTORY BEFORE ASKING:\n"
-                "- BEFORE asking ANY question, carefully review the ENTIRE conversation history above.\n"
-                "- If the user has ALREADY answered a question (even partially), DO NOT ask it again.\n"
-                "- If you see information about suspects, witnesses, dates, times, locations, or any other details in the history, DO NOT ask for them again.\n"
-                "- Example: If the user mentioned 'It happened yesterday at 8 PM', DO NOT ask 'When did this happen?'\n"
-                "- Example: If the user said 'A man in a blue shirt took my phone', DO NOT ask 'Can you describe the suspect?'\n"
-                "- ONLY ask for NEW information that is genuinely missing from the conversation.\n\n"
 
                 "GUIDELINES:\n"
                 "- Use a polite, respectful, and reassuring tone.\n"
@@ -1550,7 +1601,7 @@ async def chat_step(
                 "- Briefly summarize information back to the user for confirmation before moving to the next category.\n\n"
 
                 "INFORMATION TO GATHER (Systematically):\n"
-                "1. Incident Details: Date, time, location (specific), and detailed narration.\n"
+                "1. Incident Details: Date, time, location (MUST BE SPECIFIC - if user says 'college', ask 'Which college?'; if 'market', ask 'Which market?'; if 'hostel', ask 'Which hostel?'), and detailed narration.\n"
                 "2. Accused Details: Name, description, address (if known).\n"
                 "3. Property/Vehicle: Description, value. (MANDATORY: If Vehicle/Mobile theft, ask for Reg No/IMEI/Model).\n"
                 "4. Witnesses: Names and contact details (if any).\n"
@@ -1559,13 +1610,20 @@ async def chat_step(
                 "7. EVIDENCE (ABSOLUTELY MANDATORY): You MUST ask about evidence before finishing.\n\n"
 
                 "STRICT RULES FOR FUNCTIONALITY:\n"
-                "1. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
-                "2. NO REPETITION (ABSOLUTELY CRITICAL):\n"
-                "   - Read the FULL conversation history before every response.\n"
-                "   - Create a mental checklist of what information you already have.\n"
-                "   - NEVER ask for information that was already provided in ANY previous message.\n"
-                "   - If you're unsure whether to ask something, check the history first - if it's there, don't ask.\n"
-                "   - Focus on filling GAPS in information, not re-asking what you know.\n"
+                "1. NO REPETITION (MOST CRITICAL - FOLLOW THIS PROCESS FOR EVERY RESPONSE):\n"
+                "   STEP 1: Before formulating your question, mentally review:\n"
+                "           - What did the INITIAL CONTEXT tell you? (user's first message)\n"
+                "           - What information appears in the conversation history?\n"
+                "   STEP 2: Make a mental list of what you ALREADY KNOW:\n"
+                "           - Date/Time: [check if mentioned]\n"
+                "           - Location: [check if mentioned]\n"
+                "           - What was stolen: [check if mentioned]\n"
+                "           - Suspect info: [check if mentioned]\n"
+                "           - Witnesses: [check if mentioned]\n"
+                "   STEP 3: ONLY ask about information NOT in your mental list.\n"
+                "   STEP 4: If you're about to ask 'When did this happen?' but you see 'February 4th' or '11 PM' ANYWHERE in the history, SKIP that question.\n"
+                "   STEP 5: If you're about to ask 'What was stolen?' but you see 'purse', 'blue leather', '10000 cash' ANYWHERE in the history, SKIP that question.\n"
+                "2. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
                 "3. EVIDENCE QUESTION (CRITICAL - CANNOT BE SKIPPED):\n"
                 "   - Before you output 'DONE', you MUST ask: 'Do you have any photos, videos, or documents to upload as evidence?'\n"
                 "   - Check the conversation history - if you have NOT asked this exact question yet, you MUST ask it now.\n"
@@ -1606,7 +1664,7 @@ async def chat_step(
                     # Instead of list of dicts, Gemini often prefers a single text block or specific Content object structure.
                     # For simplicity/robustness in Migration, we can flatten to a script or use the chat session.
                     
-                    full_prompt = f"{system_prompt}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
+                    full_prompt = f"{system_prompt}{known_facts}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
                     
                     # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
                     recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history

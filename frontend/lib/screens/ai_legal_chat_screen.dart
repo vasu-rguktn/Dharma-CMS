@@ -2304,6 +2304,32 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _ChatStateHolder.hasStarted = true;
       _ChatStateHolder.allowInput = true;
       _isAnonymous = chatData['isAnonymous'] as bool? ?? false;
+
+      // Load attached files from draft
+      final filesData = chatData['attachedFiles'] as List<dynamic>? ?? [];
+      _attachedFiles.clear();
+      for (final fileData in filesData) {
+        final name = fileData['name'] as String;
+        final bytesBase64 = fileData['bytes'] as String?;
+        final path = fileData['path'] as String?;
+        final size = fileData['size'] as int? ?? 0;
+
+        Uint8List? bytes;
+        if (bytesBase64 != null) {
+          bytes = base64Decode(bytesBase64);
+        }
+
+        _attachedFiles.add(PlatformFile(
+          name: name,
+          path: path,
+          bytes: bytes,
+          size: size,
+        ));
+      }
+
+      if (_attachedFiles.isNotEmpty) {
+        print('📥 Loaded ${_attachedFiles.length} attached files from draft');
+      }
     });
 
     _scrollToEnd();
@@ -2324,6 +2350,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       'currentQ': _ChatStateHolder.currentQ,
       'isAnonymous': _isAnonymous,
       'dynamicHistory': _dynamicHistory,
+      // Save attached files as base64
+      'attachedFiles': _attachedFiles
+          .map((file) => {
+                'name': file.name,
+                'bytes': file.bytes != null ? base64Encode(file.bytes!) : null,
+                'path': file.path,
+                'size': file.size,
+              })
+          .toList(),
     };
 
     final title = _ChatStateHolder.messages.length > 2
@@ -2921,14 +2956,43 @@ class _ChatMessage {
       'user': user,
       'content': content,
       'isUser': isUser,
+      'files': files
+          .map((file) => {
+                'name': file.name,
+                'bytes': file.bytes != null ? base64Encode(file.bytes!) : null,
+                'path': file.path,
+                'size': file.size,
+              })
+          .toList(),
     };
   }
 
   factory _ChatMessage.fromMap(Map<String, dynamic> map) {
+    final filesData = map['files'] as List<dynamic>? ?? [];
+    final files = filesData.map((fileData) {
+      final name = fileData['name'] as String;
+      final bytesBase64 = fileData['bytes'] as String?;
+      final path = fileData['path'] as String?;
+      final size = fileData['size'] as int? ?? 0;
+
+      Uint8List? bytes;
+      if (bytesBase64 != null) {
+        bytes = base64Decode(bytesBase64);
+      }
+
+      return PlatformFile(
+        name: name,
+        path: path,
+        bytes: bytes,
+        size: size,
+      );
+    }).toList();
+
     return _ChatMessage(
       user: map['user'] ?? '',
       content: map['content'] ?? '',
       isUser: map['isUser'] ?? false,
+      files: files,
     );
   }
 }

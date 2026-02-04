@@ -319,6 +319,21 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // ── PASSWORD RESET ────────────────────────────────────────────────
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (!Validators.isValidEmail(email)) {
+      throw Exception('Invalid email');
+    }
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      debugPrint('Password reset email sent to $email');
+    } on FirebaseAuthException catch (e) {
+      debugPrint('sendPasswordResetEmail error: ${e.message}');
+      rethrow;
+    }
+  }
+
   // ── EMAIL SIGN UP ─────────────────────────────────────────────────
   Future<UserCredential?> signUpWithEmail(String email, String password) async {
     if (!Validators.isValidEmail(email)) {

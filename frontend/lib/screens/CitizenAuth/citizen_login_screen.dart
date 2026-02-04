@@ -116,6 +116,174 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    final localizations = AppLocalizations.of(context);
+    final resetEmailController = TextEditingController(text: _emailController.text);
+    // Capture the parent context safely to use after the dialog closes
+    final parentContext = context;
+
+    await showDialog(
+      context: parentContext,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          localizations?.forgotPassword ?? 'Forgot Password?',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your email address to receive a password reset link.',
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: resetEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: localizations?.email ?? 'Email',
+                hintText: 'example@email.com',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              localizations?.cancel ?? 'Cancel',
+              style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = resetEmailController.text.trim();
+              if (email.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(
+                    content: Text(localizations?.pleaseEnterEmail ?? 'Please enter your email'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              // Close the input dialog
+              Navigator.pop(dialogContext);
+
+              setState(() => _isLoading = true);
+              
+              try {
+                // Use the parentContext for the provider, as dialogContext is now unmounted
+                final authProvider =
+                    Provider.of<custom_auth.AuthProvider>(parentContext, listen: false);
+
+                await authProvider.sendPasswordResetEmail(email);
+
+                if (mounted) {
+                   await showDialog(
+                    context: parentContext,
+                    builder: (context) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      title: const Text(
+                        'Email Sent',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      content: Text(
+                        'A password reset link has been sent to $email. Please check your inbox.',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(
+                                color: orange, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              } on FirebaseAuthException catch (e) {
+                if (mounted) {
+                  // Specific handling for user-not-found
+                  if (e.code == 'user-not-found') {
+                    await showDialog(
+                      context: parentContext,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        title: const Text(
+                          'Not Registered',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        content: Text(
+                          'The email $email is not registered with us.',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(
+                                  color: orange, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    // Show error dialog for other auth errors
+                    await showDialog(
+                      context: parentContext,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Error'),
+                        content: Text(e.message ?? 'An login error occurred'),
+                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                   // Show error dialog for generic errors
+                   await showDialog(
+                      context: parentContext,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Error'),
+                        content: Text('Failed to send email: $e'),
+                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                      ),
+                    );
+                }
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: orange,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Send Reset Link', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    
+    resetEmailController.dispose();
+  }
+
   Future<void> _googleLogin() async {
     final localizations = AppLocalizations.of(context);
     setState(() => _isGoogleLoading = true);
@@ -307,11 +475,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(localizations?.forgotPassword ??
-                                  'Forgot Password?')),
-                        ),
+                        onTap: _handleForgotPassword,
                         child: Text(
                           localizations?.forgotPassword ?? 'Forget Password?',
                           style: const TextStyle(
