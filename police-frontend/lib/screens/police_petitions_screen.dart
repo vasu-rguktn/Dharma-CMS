@@ -24,8 +24,7 @@ class PolicePetitionsScreen extends StatefulWidget {
   const PolicePetitionsScreen({super.key});
 
   @override
-  State<PolicePetitionsScreen> createState() =>
-      _PolicePetitionsScreenState();
+  State<PolicePetitionsScreen> createState() => _PolicePetitionsScreenState();
 }
 
 class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
@@ -55,7 +54,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   bool _usingFirestoreFallback = false; // Track if using Firestore fallback
 
   /* ================= RANK TIERS ================= */
-  
+
   static const List<String> _stateLevelRanks = [
     'Director General of Police',
     'Additional Director General of Police',
@@ -102,7 +101,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     final policeProvider = context.read<PoliceAuthProvider>();
     // Ensure profile is loaded
     await policeProvider.loadPoliceProfileIfLoggedIn();
-    
+
     final profile = policeProvider.policeProfile;
 
     if (profile != null && mounted) {
@@ -125,15 +124,16 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
   void _loadHierarchyData({bool retry = false}) {
     // Simplify loading by using hardcoded constants - 100% reliable
-    debugPrint('🔄 [Petitions] Loading police hierarchy data from constants...');
-    
+    debugPrint(
+        '🔄 [Petitions] Loading police hierarchy data from constants...');
+
     try {
       Map<String, Map<String, List<String>>> hierarchy = {};
       int totalDistricts = 0;
       int totalStations = 0;
-      
+
       final data = kPoliceHierarchyComplete;
-      
+
       data.forEach((range, districts) {
         if (districts is Map) {
           Map<String, List<String>> districtMap = {};
@@ -154,8 +154,9 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           _hierarchyError = null;
           _usingFirestoreFallback = false;
         });
-        
-        debugPrint('✅ [Petitions] Hierarchy loaded successfully from constants!');
+
+        debugPrint(
+            '✅ [Petitions] Hierarchy loaded successfully from constants!');
         debugPrint('   📊 Ranges: ${hierarchy.length}');
         debugPrint('   📊 Districts: $totalDistricts');
         debugPrint('   📊 Stations: $totalStations');
@@ -164,7 +165,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       debugPrint('❌ [Petitions] Error parsing hierarchy constants: $e');
       if (mounted) {
         setState(() {
-           _hierarchyError = 'Failed to parse station data: $e';
+          _hierarchyError = 'Failed to parse station data: $e';
         });
       }
     }
@@ -184,15 +185,15 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     if (_policeRank == null) return false;
     // DGP/Addl. DGP, IGP/DIG can filter by district
     return _stateLevelRanks.contains(_policeRank) ||
-           _rangeLevelRanks.contains(_policeRank);
+        _rangeLevelRanks.contains(_policeRank);
   }
 
   bool _canFilterByStation() {
     if (_policeRank == null) return false;
     // Everyone except station-level can filter by station
     return _stateLevelRanks.contains(_policeRank) ||
-           _rangeLevelRanks.contains(_policeRank) ||
-           _districtLevelRanks.contains(_policeRank);
+        _rangeLevelRanks.contains(_policeRank) ||
+        _districtLevelRanks.contains(_policeRank);
   }
 
   bool _isStationLevel() {
@@ -211,12 +212,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     if (_selectedRange != null) {
       return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
     }
-    
+
     // For IGP: Show districts from their assigned range
     if (_policeRange != null) {
       return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
     }
-    
+
     return [];
   }
 
@@ -241,7 +242,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     } else if (targetDistrict != null) {
       // Search logic for district
       final normalizedTarget = targetDistrict.trim().toLowerCase();
-      
+
       for (var range in _policeHierarchy.keys) {
         final districtMap = _policeHierarchy[range] ?? {};
         // 1. Exact case-insensitive match
@@ -255,10 +256,11 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
         );
 
         if (matchedKey.isEmpty) {
-           matchedKey = districtMap.keys.firstWhere(
+          matchedKey = districtMap.keys.firstWhere(
             (k) {
               final normalizedK = k.trim().toLowerCase();
-              return normalizedK.contains(normalizedTarget) || normalizedTarget.contains(normalizedK);
+              return normalizedK.contains(normalizedTarget) ||
+                  normalizedTarget.contains(normalizedK);
             },
             orElse: () => '',
           );
@@ -267,7 +269,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
         if (matchedKey.isNotEmpty) {
           targetRange = range;
           targetDistrict = matchedKey;
-          debugPrint('🔍 Found district "$targetDistrict" (matched from "${_policeDistrict ?? _selectedDistrict}") in range "$range"');
+          debugPrint(
+              '🔍 Found district "$targetDistrict" (matched from "${_policeDistrict ?? _selectedDistrict}") in range "$range"');
           break;
         }
       }
@@ -279,13 +282,13 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       if (districtMap.containsKey(targetDistrict)) {
         stations = List.from(districtMap[targetDistrict] ?? []);
       } else {
-         final matchedKey = districtMap.keys.firstWhere(
-            (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
-            orElse: () => '',
-         );
-         if (matchedKey.isNotEmpty) {
-            stations = List.from(districtMap[matchedKey] ?? []);
-         }
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchedKey.isNotEmpty) {
+          stations = List.from(districtMap[matchedKey] ?? []);
+        }
       }
     }
 
@@ -295,9 +298,10 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           .where((p) => p.stationName != null && p.stationName!.isNotEmpty)
           .map((p) => p.stationName!)
           .toSet();
-      
+
       for (final s in dynamicStations) {
-        if (!stations.any((existing) => existing.toLowerCase() == s.toLowerCase())) {
+        if (!stations
+            .any((existing) => existing.toLowerCase() == s.toLowerCase())) {
           stations.add(s);
         }
       }
@@ -328,7 +332,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
   /* ================= BUILD QUERY ================= */
 
   Query<Map<String, dynamic>> _buildPetitionQuery() {
-    Query<Map<String, dynamic>> query = 
+    Query<Map<String, dynamic>> query =
         FirebaseFirestore.instance.collection('petitions');
 
     // Station-level officers: filter by their assigned station
@@ -358,7 +362,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
       } else if (_policeRange != null) {
         // Show all from their range (would need a 'range' field in petitions)
         // For now, we'll show all petitions
-        debugPrint('🔍 Range Level Query: Show all (no range filter in petition schema)');
+        debugPrint(
+            '🔍 Range Level Query: Show all (no range filter in petition schema)');
       }
     }
     // DGP/Addl. DGP: filter by selected hierarchy
@@ -391,10 +396,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           p.phoneNumber,
           p.type.displayName,
           p.policeStatus,
-        ]
-            .whereType<String>()
-            .join(' ')
-            .toLowerCase();
+        ].whereType<String>().join(' ').toLowerCase();
         if (!haystack.contains(query)) return false;
       }
 
@@ -404,25 +406,22 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           p.policeStatus != _selectedPoliceStatus) {
         return false;
       }
-      
+
       // Filter by type - compare display names
       if (_selectedType != null &&
           _selectedType!.isNotEmpty &&
           p.type.displayName != _selectedType) {
         return false;
       }
-      
+
       // Filter by from date
-      if (_fromDate != null &&
-          p.createdAt.toDate().isBefore(_fromDate!)) {
+      if (_fromDate != null && p.createdAt.toDate().isBefore(_fromDate!)) {
         return false;
       }
-      
+
       // Filter by to date
       if (_toDate != null &&
-          p.createdAt
-              .toDate()
-              .isAfter(_toDate!.add(const Duration(days: 1)))) {
+          p.createdAt.toDate().isAfter(_toDate!.add(const Duration(days: 1)))) {
         return false;
       }
 
@@ -499,11 +498,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     if (items.isEmpty) {
       String message = 'No options available for $title';
       if (_hierarchyError != null) {
-        message += '\n\nError: $_hierarchyError\nTap retry in the warning banner above to reload data.';
+        message +=
+            '\n\nError: $_hierarchyError\nTap retry in the warning banner above to reload data.';
       } else if (_policeHierarchy.isEmpty) {
         message += '\n\nPolice station data is still loading. Please wait...';
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -544,7 +544,6 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
@@ -557,17 +556,14 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                       onChanged: (value) {
                         setModalState(() {
                           filtered = items
-                              .where((e) => e
-                                  .toLowerCase()
-                                  .contains(value.toLowerCase()))
+                              .where((e) =>
+                                  e.toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   Expanded(
                     child: Scrollbar(
                       thumbVisibility: true,
@@ -586,7 +582,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                               },
                             );
                           }
-                          
+
                           final item = filtered[index - 1];
                           return ListTile(
                             title: Text(item),
@@ -643,8 +639,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                           child: Text(
                             petition.title,
                             style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold),
+                                fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ),
                         IconButton(
@@ -659,10 +654,11 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     // Petition Details Section
                     const Text(
                       'Petition Details',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     _buildDetailRow('Petition ID', petition.id ?? '-'),
                     _buildDetailRow('Petition Type', petition.type.displayName),
                     _buildDetailRow('Status', petition.status.displayName),
@@ -671,30 +667,40 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                       'Phone Number',
                       petition.phoneNumber == null
                           ? '-'
-                          : (petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!),
+                          : (petition.isAnonymous
+                              ? maskPhoneNumber(petition.phoneNumber)
+                              : petition.phoneNumber!),
                     ),
-                    if (petition.address != null && petition.address!.isNotEmpty)
+                    if (petition.address != null &&
+                        petition.address!.isNotEmpty)
                       _buildDetailRow('Address', petition.address!),
-                    if (petition.district != null && petition.district!.isNotEmpty)
+                    if (petition.district != null &&
+                        petition.district!.isNotEmpty)
                       _buildDetailRow('District', petition.district!),
-                    if (petition.stationName != null && petition.stationName!.isNotEmpty)
+                    if (petition.stationName != null &&
+                        petition.stationName!.isNotEmpty)
                       _buildDetailRow('Police Station', petition.stationName!),
-                    if (petition.incidentAddress != null && petition.incidentAddress!.isNotEmpty)
-                      _buildDetailRow('Incident Address', petition.incidentAddress!),
+                    if (petition.incidentAddress != null &&
+                        petition.incidentAddress!.isNotEmpty)
+                      _buildDetailRow(
+                          'Incident Address', petition.incidentAddress!),
                     if (petition.incidentDate != null)
-                      _buildDetailRow('Incident Date', _formatTimestamp(petition.incidentDate!)),
+                      _buildDetailRow('Incident Date',
+                          _formatTimestamp(petition.incidentDate!)),
                     if (petition.caseId != null && petition.caseId!.isNotEmpty)
                       _buildDetailRow('Related Case ID', petition.caseId!),
-                    if (petition.firNumber != null && petition.firNumber!.isNotEmpty)
+                    if (petition.firNumber != null &&
+                        petition.firNumber!.isNotEmpty)
                       _buildDetailRow('FIR Number', petition.firNumber!),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Grounds Section
                     if (petition.grounds.isNotEmpty) ...[
                       const Text(
                         'Grounds',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -712,12 +718,14 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    
+
                     // Prayer/Relief Section
-                    if (petition.prayerRelief != null && petition.prayerRelief!.isNotEmpty) ...[
+                    if (petition.prayerRelief != null &&
+                        petition.prayerRelief!.isNotEmpty) ...[
                       const Text(
                         'Prayer/Relief Sought',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -735,65 +743,83 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    
+
                     // Dates Section
                     const Text(
                       'Important Dates',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    _buildDetailRow('Created At', _formatTimestamp(petition.createdAt)),
-                    _buildDetailRow('Last Updated', _formatTimestamp(petition.updatedAt)),
-                    if (petition.filingDate != null && petition.filingDate!.isNotEmpty)
+                    _buildDetailRow(
+                        'Created At', _formatTimestamp(petition.createdAt)),
+                    _buildDetailRow(
+                        'Last Updated', _formatTimestamp(petition.updatedAt)),
+                    if (petition.filingDate != null &&
+                        petition.filingDate!.isNotEmpty)
                       _buildDetailRow('Filing Date', petition.filingDate!),
-                    if (petition.nextHearingDate != null && petition.nextHearingDate!.isNotEmpty)
-                      _buildDetailRow('Next Hearing Date', petition.nextHearingDate!),
-                    if (petition.orderDate != null && petition.orderDate!.isNotEmpty)
+                    if (petition.nextHearingDate != null &&
+                        petition.nextHearingDate!.isNotEmpty)
+                      _buildDetailRow(
+                          'Next Hearing Date', petition.nextHearingDate!),
+                    if (petition.orderDate != null &&
+                        petition.orderDate!.isNotEmpty)
                       _buildDetailRow('Order Date', petition.orderDate!),
-                    
+
                     const SizedBox(height: 24),
 
                     // Assignment Details Section (For Offline/Assigned Petitions)
                     if (petition.assignmentType != null) ...[
                       const Text(
                         'Assignment Details',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       // Display assignment type-specific details
-                      if (petition.assignmentType == 'range' && petition.assignedToRange != null)
-                         _buildDetailRow('Assigned Range', petition.assignedToRange!),
-                      
-                      if (petition.assignmentType == 'district' && petition.assignedToDistrict != null)
-                         _buildDetailRow('Assigned District', petition.assignedToDistrict!),
-                      
-                      if (petition.assignmentType == 'station' && petition.assignedToStation != null)
-                         _buildDetailRow('Assigned Station', petition.assignedToStation!),
+                      if (petition.assignmentType == 'range' &&
+                          petition.assignedToRange != null)
+                        _buildDetailRow(
+                            'Assigned Range', petition.assignedToRange!),
+
+                      if (petition.assignmentType == 'district' &&
+                          petition.assignedToDistrict != null)
+                        _buildDetailRow(
+                            'Assigned District', petition.assignedToDistrict!),
+
+                      if (petition.assignmentType == 'station' &&
+                          petition.assignedToStation != null)
+                        _buildDetailRow(
+                            'Assigned Station', petition.assignedToStation!),
 
                       // Display individual officer details if assigned to a specific person
                       if (petition.assignedToName != null)
-                        _buildDetailRow('Assigned Officer', '${petition.assignedToName} (${petition.assignedToRank ?? "Rank Unknown"})'),
+                        _buildDetailRow('Assigned Officer',
+                            '${petition.assignedToName} (${petition.assignedToRank ?? "Rank Unknown"})'),
 
                       // Display who made the assignment
                       if (petition.assignedByName != null)
-                        _buildDetailRow('Assigned By', '${petition.assignedByName} (${petition.assignedByRank ?? "Rank Unknown"})'),
-                      
+                        _buildDetailRow('Assigned By',
+                            '${petition.assignedByName} (${petition.assignedByRank ?? "Rank Unknown"})'),
+
                       if (petition.assignedAt != null)
-                        _buildDetailRow('Assigned Date', _formatTimestamp(petition.assignedAt!)),
-                      
+                        _buildDetailRow('Assigned Date',
+                            _formatTimestamp(petition.assignedAt!)),
+
                       const SizedBox(height: 24),
                     ],
 
                     const SizedBox(height: 24),
 
-                    // ============= PETITION UPDATES TIMELINE ============= 
+                    // ============= PETITION UPDATES TIMELINE =============
                     const Divider(),
                     Row(
                       children: [
                         const Expanded(
                           child: Text(
                             'Case Updates',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ),
                         ElevatedButton.icon(
@@ -806,7 +832,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                 policeOfficerUserId: policeOfficerUserId,
                               ),
                             );
-                            
+
                             // Refresh the modal if update was added
                             if (result == true && context.mounted) {
                               setModal(() {}); // Trigger rebuild
@@ -829,9 +855,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
 
                     // Display petition updates in real-time using StreamBuilder
                     StreamBuilder<List<PetitionUpdate>>(
-                      stream: context.read<PetitionProvider>().streamPetitionUpdates(petition.id!),
+                      stream: context
+                          .read<PetitionProvider>()
+                          .streamPetitionUpdates(petition.id!),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Center(
                             child: Padding(
                               padding: EdgeInsets.all(32.0),
@@ -853,13 +882,16 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         }
 
                         final updates = snapshot.data ?? [];
-                        final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
+                        final allUpdates = context
+                            .read<PetitionProvider>()
+                            .getUpdatesWithEscalations(petition, updates);
                         return PetitionUpdateTimeline(updates: allUpdates);
                       },
                     ),
 
                     // ============= CITIZEN FEEDBACK =============
-                    if (petition.feedbacks != null && petition.feedbacks!.isNotEmpty) ...[
+                    if (petition.feedbacks != null &&
+                        petition.feedbacks!.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       const Divider(),
                       const SizedBox(height: 16),
@@ -878,18 +910,19 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     const SizedBox(height: 24),
                     const Divider(),
                     const SizedBox(height: 16),
-                    
+
                     // Police Status Section
                     const Text(
                       'Police Status',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     if (petition.policeStatus != null)
                       _buildDetailRow('Status', petition.policeStatus!),
                     if (petition.policeSubStatus != null)
                       _buildDetailRow('Sub Status', petition.policeSubStatus!),
-                    
+
                     const SizedBox(height: 16),
 
                     const Text(
@@ -912,13 +945,11 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         DropdownMenuItem(
                             value: 'Received', child: Text('Received')),
                         DropdownMenuItem(
-                            value: 'In Progress',
-                            child: Text('In Progress')),
+                            value: 'In Progress', child: Text('In Progress')),
                         DropdownMenuItem(
                             value: 'Closed', child: Text('Closed')),
                       ],
-                      onChanged: (v) =>
-                          setModal(() => selectedStatus = v),
+                      onChanged: (v) => setModal(() => selectedStatus = v),
                     ),
 
                     if (selectedStatus == 'Closed') ...[
@@ -931,18 +962,15 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: 'Rejected',
-                              child: Text('Rejected')),
+                              value: 'Rejected', child: Text('Rejected')),
                           DropdownMenuItem(
                               value: 'FIR Registered',
                               child: Text('FIR Registered')),
                           DropdownMenuItem(
                               value: 'Compromised / Disposed',
-                              child:
-                                  Text('Compromised / Disposed')),
+                              child: Text('Compromised / Disposed')),
                         ],
-                        onChanged: (v) =>
-                            setModal(() => selectedSubStatus = v),
+                        onChanged: (v) => setModal(() => selectedSubStatus = v),
                       ),
                     ],
 
@@ -954,47 +982,58 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context); // Close the modal first
-                          
+
                           // Prepare data for navigation - convert Timestamp to Map for serialization
                           final Map<String, dynamic> petitionData = {};
-                          
+
                           // Use case_id from petition (not petition.id)
-                          if (petition.caseId != null && petition.caseId!.isNotEmpty) {
+                          if (petition.caseId != null &&
+                              petition.caseId!.isNotEmpty) {
                             petitionData['caseId'] = petition.caseId;
-                            debugPrint('✅ Using petition.caseId: ${petition.caseId}');
-                          } else if (petition.id != null && petition.id!.isNotEmpty) {
+                            debugPrint(
+                                '✅ Using petition.caseId: ${petition.caseId}');
+                          } else if (petition.id != null &&
+                              petition.id!.isNotEmpty) {
                             // Fallback to petition.id if caseId is not available
                             petitionData['caseId'] = petition.id;
-                            debugPrint('⚠️ Using petition.id as fallback: ${petition.id}');
+                            debugPrint(
+                                '⚠️ Using petition.id as fallback: ${petition.id}');
                           }
-                          
+
                           // Map petition fields to FIR form fields
                           if (petition.title.isNotEmpty) {
                             petitionData['title'] = petition.title;
                           }
                           if (petition.petitionerName.isNotEmpty) {
-                            petitionData['petitionerName'] = petition.petitionerName;
+                            petitionData['petitionerName'] =
+                                petition.petitionerName;
                           }
-                          if (petition.phoneNumber != null && petition.phoneNumber!.isNotEmpty) {
+                          if (petition.phoneNumber != null &&
+                              petition.phoneNumber!.isNotEmpty) {
                             petitionData['phoneNumber'] = petition.phoneNumber;
                           }
                           // grounds maps to complaint narrative in FIR
                           if (petition.grounds.isNotEmpty) {
                             petitionData['grounds'] = petition.grounds;
                           }
-                          if (petition.district != null && petition.district!.isNotEmpty) {
+                          if (petition.district != null &&
+                              petition.district!.isNotEmpty) {
                             petitionData['district'] = petition.district;
                           }
-                          if (petition.stationName != null && petition.stationName!.isNotEmpty) {
+                          if (petition.stationName != null &&
+                              petition.stationName!.isNotEmpty) {
                             petitionData['stationName'] = petition.stationName;
                           }
-                          if (petition.incidentAddress != null && petition.incidentAddress!.isNotEmpty) {
-                            petitionData['incidentAddress'] = petition.incidentAddress;
+                          if (petition.incidentAddress != null &&
+                              petition.incidentAddress!.isNotEmpty) {
+                            petitionData['incidentAddress'] =
+                                petition.incidentAddress;
                           }
-                          if (petition.address != null && petition.address!.isNotEmpty) {
+                          if (petition.address != null &&
+                              petition.address!.isNotEmpty) {
                             petitionData['address'] = petition.address;
                           }
-                          
+
                           // Convert Timestamp to serializable format
                           if (petition.incidentDate != null) {
                             petitionData['incidentDate'] = {
@@ -1002,10 +1041,11 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                               'nanoseconds': petition.incidentDate!.nanoseconds,
                             };
                           }
-                          
+
                           debugPrint('🚀 Navigating to new case screen');
-                          debugPrint('📦 Petition data being passed: $petitionData');
-                          
+                          debugPrint(
+                              '📦 Petition data being passed: $petitionData');
+
                           // Navigate to new case screen with petition data
                           context.go(
                             '/cases/new',
@@ -1044,21 +1084,20 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                 await context
                                     .read<PetitionProvider>()
                                     .updatePetition(
-                                  petition.id!,
-                                  {
-                                    'policeStatus': selectedStatus,
-                                    'policeSubStatus': selectedSubStatus,
-                                  },
-                                  petition.userId,
-                                );
+                                      petition.id!,
+                                      {
+                                        'policeStatus': selectedStatus,
+                                        'policeSubStatus': selectedSubStatus,
+                                      },
+                                      petition.userId,
+                                    );
 
                                 if (context.mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
+                                  ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text(
-                                          'Status updated successfully'),
+                                      content:
+                                          Text('Status updated successfully'),
                                       backgroundColor: Colors.green,
                                     ),
                                   );
@@ -1161,7 +1200,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                        Icon(Icons.info_outline,
+                            color: Colors.orange.shade700, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -1189,12 +1229,14 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
         actions: [
           if (_usingFirestoreFallback)
             IconButton(
-              icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              icon:
+                  const Icon(Icons.warning_amber_rounded, color: Colors.orange),
               tooltip: 'Using fallback data from Firestore',
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Using fallback data. Some stations may be missing.'),
+                    content: Text(
+                        'Using fallback data. Some stations may be missing.'),
                     duration: Duration(seconds: 3),
                   ),
                 );
@@ -1251,7 +1293,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                      Icon(Icons.info_outline,
+                          color: Colors.orange.shade700, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -1324,14 +1367,18 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                           debugPrint('   Police Range: $_policeRange');
                           debugPrint('   Police District: $_policeDistrict');
                           debugPrint('   Selected Range: $_selectedRange');
-                          debugPrint('   Selected District: $_selectedDistrict');
-                          
-                          debugPrint('   Selected District: $_selectedDistrict');
-                          
+                          debugPrint(
+                              '   Selected District: $_selectedDistrict');
+
+                          debugPrint(
+                              '   Selected District: $_selectedDistrict');
+
                           // Pass allPetitions to use as fallback if hierarchy lookup fails
-                          final availableStations = _getAvailableStations(extraPetitions: allPetitions);
-                          debugPrint('   Available Stations: ${availableStations.length}');
-                          
+                          final availableStations = _getAvailableStations(
+                              extraPetitions: allPetitions);
+                          debugPrint(
+                              '   Available Stations: ${availableStations.length}');
+
                           _openSearchableDropdown(
                             title: 'Select Police Station',
                             items: availableStations,
@@ -1343,7 +1390,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         },
                       ),
                     ],
-                    
+
                     // Station Level: Show assigned station (read-only)
                     if (_isStationLevel() && _policeStation != null) ...[
                       Container(
@@ -1397,7 +1444,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -1407,7 +1455,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            const Icon(Icons.filter_list, size: 18, color: Colors.grey),
+                            const Icon(Icons.filter_list,
+                                size: 18, color: Colors.grey),
                             const SizedBox(width: 6),
                             Text(
                               'Filters:',
@@ -1498,7 +1547,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                 _selectedUrgency != null ||
                                 _fromDate != null ||
                                 _toDate != null ||
-                                (_searchQuery != null && _searchQuery!.isNotEmpty))
+                                (_searchQuery != null &&
+                                    _searchQuery!.isNotEmpty))
                               GestureDetector(
                                 onTap: () {
                                   setState(() {
@@ -1511,16 +1561,19 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                                   });
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.red.shade300),
+                                    border:
+                                        Border.all(color: Colors.red.shade300),
                                     color: Colors.red.shade50,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.clear, size: 16, color: Colors.red.shade700),
+                                      Icon(Icons.clear,
+                                          size: 16, color: Colors.red.shade700),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Clear All',
@@ -1582,279 +1635,30 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                             ],
                           ),
                         )
-                      : ListView.builder(
-                          itemCount: petitions.length,
-                          itemBuilder: (_, i) {
-                            final p = petitions[i];
-                            return Card(
-                              elevation: 2,
-                              color: Colors.white,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(18),
-                                onTap: () => _showPetitionDetails(context, p),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 18,
-                                            backgroundColor: Colors.indigo,
-                                            child: const Icon(
-                                              Icons.gavel,
-                                              color: Colors.white,
-                                              size: 18,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        p.title,
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w700,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment.end,
-                                                      children: [
-                                                        if (p.policeStatus != null)
-                                                          Container(
-                                                            margin:
-                                                                const EdgeInsets.only(
-                                                                    bottom: 4),
-                                                            padding: const EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 4,
-                                                            ),
-                                                            decoration: BoxDecoration(
-                                                              color:
-                                                                  _getPoliceStatusColor(
-                                                                          p.policeStatus!),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      20),
-                                                            ),
-                                                            child: Text(
-                                                              p.policeStatus!,
-                                                              style: const TextStyle(
-                                                                fontSize: 11,
-                                                                fontWeight:
-                                                                    FontWeight.w600,
-                                                                color: Colors.white,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        if (p.isEscalated)
-                                                          Container(
-                                                            margin:
-                                                                const EdgeInsets.only(
-                                                                    bottom: 4),
-                                                            padding: const EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 8,
-                                                              vertical: 4,
-                                                            ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors.red,
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      20),
-                                                            ),
-                                                            child: const Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize.min,
-                                                              children: [
-                                                                Icon(Icons.trending_up,
-                                                                    size: 10,
-                                                                    color:
-                                                                        Colors.white),
-                                                                SizedBox(width: 4),
-                                                                Text(
-                                                                  'ESCALATED',
-                                                                  style: TextStyle(
-                                                                    fontSize: 9,
-                                                                    fontWeight:
-                                                                        FontWeight.bold,
-                                                                    color: Colors.white,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        if (p.escalationLevel == 3)
-                                                          Container(
-                                                            margin:
-                                                                const EdgeInsets.only(
-                                                                    bottom: 4),
-                                                            padding: const EdgeInsets
-                                                                .symmetric(
-                                                              horizontal: 8,
-                                                              vertical: 4,
-                                                            ),
-                                                            decoration: BoxDecoration(
-                                                              color:
-                                                                  Colors.deepPurple,
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      20),
-                                                            ),
-                                                            child: const Text(
-                                                              'DGP LEVEL',
-                                                              style: TextStyle(
-                                                                fontSize: 9,
-                                                                fontWeight:
-                                                                    FontWeight.bold,
-                                                                color: Colors.white,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        // SAVE BUTTON
-                                                        Consumer<ComplaintProvider>(
-                                                          builder: (context,
-                                                              complaintProvider, _) {
-                                                            final isSaved =
-                                                                complaintProvider
-                                                                    .isPetitionSaved(
-                                                                        p.id);
-                                                            return InkWell(
-                                                              onTap: () async {
-                                                                final auth = Provider
-                                                                    .of<AuthProvider>(
-                                                                        context,
-                                                                        listen: false);
-                                                                final userId =
-                                                                    auth.user?.uid;
-                                                                if (userId == null)
-                                                                  return;
-
-                                                                await complaintProvider
-                                                                    .toggleSaveComplaint(
-                                                                        p.toMap(),
-                                                                        userId);
-                                                              },
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      20),
-                                                              child: Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .all(4.0),
-                                                                child: Icon(
-                                                                  isSaved
-                                                                      ? Icons.bookmark
-                                                                      : Icons
-                                                                          .bookmark_border,
-                                                                  color: isSaved
-                                                                      ? Colors.orange
-                                                                      : Colors.grey,
-                                                                  size: 24,
-                                                                ),
-                                                              ),
-                                                            );
-                                                          },
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    p.petitionerName,
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today,
-                                            size: 14,
-                                            color: Colors.grey[500],
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Created: ${_formatTimestamp(p.createdAt)}',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Icon(
-                                            Icons.category,
-                                            size: 14,
-                                            color: Colors.grey[500],
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            p.type.displayName,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      // AI Investigation Button
-                                      if (p.caseId != null && p.caseId!.isNotEmpty) ...[
-                                        const SizedBox(height: 12),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: OutlinedButton.icon(
-                                            onPressed: () {
-                                              context.go(
-                                                '/ai-investigation-guidelines?caseId=${p.caseId}',
-                                              );
-                                            },
-                                            icon: const Icon(
-                                              Icons.psychology,
-                                              size: 16,
-                                            ),
-                                            label: const Text(
-                                              'AI Investigation Guidelines',
-                                              style: TextStyle(fontSize: 12),
-                                            ),
-                                            style: OutlinedButton.styleFrom(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 8,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (constraints.maxWidth > 900) {
+                              // Web/Desktop Grid View
+                              return GridView.builder(
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  childAspectRatio: 2.0, // Wider cards for web
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
                                 ),
-                              ),
-                            );
+                                itemCount: petitions.length,
+                                itemBuilder: (_, i) =>
+                                    _buildPetitionCard(petitions[i]),
+                              );
+                            } else {
+                              // Mobile List View
+                              return ListView.builder(
+                                itemCount: petitions.length,
+                                itemBuilder: (_, i) =>
+                                    _buildPetitionCard(petitions[i]),
+                              );
+                            }
                           },
                         ),
                 ),
@@ -1866,6 +1670,240 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
     );
   }
 
+  Widget _buildPetitionCard(Petition p) {
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _showPetitionDetails(context, p),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.indigo,
+                    child: const Icon(
+                      Icons.gavel,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                p.title,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (p.policeStatus != null)
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getPoliceStatusColor(
+                                          p.policeStatus!),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      p.policeStatus!,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                if (p.isEscalated)
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.trending_up,
+                                            size: 10, color: Colors.white),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'ESCALATED',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (p.escalationLevel == 3)
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'DGP LEVEL',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                // SAVE BUTTON
+                                Consumer<ComplaintProvider>(
+                                  builder: (context, complaintProvider, _) {
+                                    final isSaved =
+                                        complaintProvider.isPetitionSaved(p.id);
+                                    return InkWell(
+                                      onTap: () async {
+                                        final auth = Provider.of<AuthProvider>(
+                                            context,
+                                            listen: false);
+                                        final userId = auth.user?.uid;
+                                        if (userId == null) return;
+
+                                        await complaintProvider
+                                            .toggleSaveComplaint(
+                                                p.toMap(), userId);
+                                      },
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: Icon(
+                                          isSaved
+                                              ? Icons.bookmark
+                                              : Icons.bookmark_border,
+                                          color: isSaved
+                                              ? Colors.orange
+                                              : Colors.grey,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          p.petitionerName,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: Colors.grey[500],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Created: ${_formatTimestamp(p.createdAt)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(
+                    Icons.category,
+                    size: 14,
+                    color: Colors.grey[500],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    p.type.displayName,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              // AI Investigation Button
+              if (p.caseId != null && p.caseId!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.go(
+                        '/ai-investigation-guidelines?caseId=${p.caseId}',
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.psychology,
+                      size: 16,
+                    ),
+                    label: const Text(
+                      'AI Investigation Guidelines',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   /* ================= FILTER UI WIDGETS ================= */
 
@@ -1894,7 +1932,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   color: value == null ? Colors.grey : Colors.black,
-                  fontWeight: value == null ? FontWeight.normal : FontWeight.w600,
+                  fontWeight:
+                      value == null ? FontWeight.normal : FontWeight.w600,
                 ),
               ),
             ),
@@ -1920,11 +1959,11 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           child: Text('All $label'),
         ),
         ...options.toSet().map(
-          (opt) => PopupMenuItem<T>(
-            value: opt,
-            child: Text(opt.toString()),
-          ),
-        ),
+              (opt) => PopupMenuItem<T>(
+                value: opt,
+                child: Text(opt.toString()),
+              ),
+            ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

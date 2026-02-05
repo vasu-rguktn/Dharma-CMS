@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/utils/petition_filter.dart';
@@ -11,7 +10,6 @@ import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 
 class PetitionListModal extends StatefulWidget {
   final PetitionFilter filter;
@@ -38,6 +36,7 @@ class _PetitionListModalState extends State<PetitionListModal> {
     super.initState();
     _loadFilteredPetitions();
   }
+
   Future<void> _loadFilteredPetitions() async {
     setState(() => _isLoading = true);
 
@@ -162,11 +161,11 @@ class _PetitionListModalState extends State<PetitionListModal> {
     );
   }
 
-  // Show petition details with timeline for police officers
   void _showPetitionDetailsForPolice(BuildContext context, Petition petition) {
-    final policeProfile = context.read<PoliceAuthProvider>().policeProfile;
-    final policeOfficerName = policeProfile?['displayName'] ?? 'Officer';
-    final policeOfficerUserId = policeProfile?['uid'] ?? '';
+    final authProvider = context.read<AuthProvider>();
+    final policeOfficerName =
+        authProvider.userProfile?.displayName ?? 'Officer';
+    final policeOfficerUserId = authProvider.user?.uid ?? '';
 
     showModalBottomSheet(
       context: context,
@@ -200,7 +199,7 @@ class _PetitionListModalState extends State<PetitionListModal> {
                   ],
                 ),
                 const Divider(),
-                
+
                 // Basic Info
                 const SizedBox(height: 16),
                 _buildInfoRow('Petitioner', petition.petitionerName),
@@ -208,10 +207,10 @@ class _PetitionListModalState extends State<PetitionListModal> {
                 _buildInfoRow('Status', petition.policeStatus ?? 'Pending'),
                 if (petition.stationName != null)
                   _buildInfoRow('Station', petition.stationName!),
-                
+
                 const SizedBox(height: 24),
                 const Divider(),
-                
+
                 // Timeline Section
                 Row(
                   children: [

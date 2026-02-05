@@ -957,18 +957,18 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Determine base URL robustly
     String baseUrl;
-    // if (kIsWeb) {
-    //   // on web you probably want to call your absolute backend URL
-    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    // } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    //   // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    // } else {
-    //   // iOS simulator / other platforms
-    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    // }
+    if (kIsWeb) {
+      // on web you probably want to call your absolute backend URL
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    } else {
+      // iOS simulator / other platforms
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    }
 
-    baseUrl = "http://127.0.0.1:8000";
+    // baseUrl = "http://127.0.0.1:8000";
     final settings = context.read<SettingsProvider>();
     final localeCode = settings.locale?.languageCode ??
         Localizations.localeOf(context).languageCode;
@@ -2361,11 +2361,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           .toList(),
     };
 
-    final title = _ChatStateHolder.messages.length > 2
-        ? _ChatStateHolder.messages[2].content.substring(
-                0, math.min(30, _ChatStateHolder.messages[2].content.length)) +
-            "..."
-        : "AI Legal Chat Draft";
+    // Generate a meaningful title from the user's initial complaint
+    String title = "AI Legal Chat Draft";
+
+    // Try to find the user's first message (their initial complaint description)
+    for (var msg in _ChatStateHolder.messages) {
+      if (msg.isUser && msg.content.trim().isNotEmpty) {
+        // Use the first user message as the title
+        final content = msg.content.trim();
+        // Take first 40 characters for a more descriptive title
+        title =
+            content.length > 40 ? content.substring(0, 40) + "..." : content;
+        break;
+      }
+    }
 
     final success = await complaintProv.saveChatAsDraft(
       userId: auth.user!.uid,

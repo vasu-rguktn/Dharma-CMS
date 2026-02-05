@@ -1516,14 +1516,22 @@ async def chat_step(
             if payload.is_anonymous:
                 anon_header = (
                     "MODE: ANONYMOUS PETITION\n"
-                    "CRITICAL INSTRUCTION: 'Anonymous' ONLY means you skip Name/Address. YOU MUST STILL INVESTIGATE THE CRIME FULLY.\n"
-                    "INSTRUCTIONS:\n"
-                    "- Do NOT ask for Name or Address.\n"
-                    "- Verify Mobile Number (10 digits) is present.\n"
-                    "- INVESTIGATE: Ask Who, What, Where, When, How in detail. Do NOT stop after just one sentence.\n"
-                    "- Ask about Suspects, Witnesses like a real officer.\n"
-                    "- EVIDENCE (ABSOLUTELY MANDATORY): Before finishing, you MUST ask: 'Do you have any photos, videos, or documents as evidence?'. Check the history - if you haven't asked this yet, ask it now.\n"
-                    "- Output 'DONE' ONLY when you have a complete picture AND have asked about evidence AND received a response.\n\n"
+                    "CRITICAL INSTRUCTION: 'Anonymous' ONLY means you skip Name/Address. YOU MUST STILL INVESTIGATE THE CRIME FULLY.\n\n"
+                    
+                    "INVESTIGATION PRIORITY (FOLLOW THIS ORDER):\n"
+                    "1. FIRST: Gather ALL incident details (Date, Time, Location, What happened, Suspects, Witnesses, Property/Vehicle details)\n"
+                    "2. SECOND: Ask about evidence (photos, videos, documents)\n"
+                    "3. THIRD: Verify Mobile Number (10 digits) is present\n"
+                    "4. LAST: Output 'DONE' only when ALL above are complete\n\n"
+                    
+                    "STRICT RULES:\n"
+                    "- Do NOT ask for Name or Address (they want to remain anonymous)\n"
+                    "- Do NOT ask for phone number until you have fully investigated the incident\n"
+                    "- INVESTIGATE THOROUGHLY: Ask Who, What, Where, When, How in detail\n"
+                    "- Ask about Suspects, Witnesses, Property details like a real police officer\n"
+                    "- Do NOT stop after just one or two questions - get the complete story first\n"
+                    "- EVIDENCE is MANDATORY: You MUST ask about photos/videos/documents before finishing\n"
+                    "- Only output 'DONE' when you have: Complete incident details + Evidence question answered + Phone number verified\n\n"
                 )
 
             # Helper function to extract already-known information from conversation

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/providers/police_auth_provider.dart';
 
 /// Widget that observes app lifecycle and updates session activity
 /// This keeps the user's session alive while they're using the app
@@ -11,7 +10,8 @@ class SessionLifecycleObserver extends StatefulWidget {
   const SessionLifecycleObserver({super.key, required this.child});
 
   @override
-  State<SessionLifecycleObserver> createState() => _SessionLifecycleObserverState();
+  State<SessionLifecycleObserver> createState() =>
+      _SessionLifecycleObserverState();
 }
 
 class _SessionLifecycleObserverState extends State<SessionLifecycleObserver>
@@ -33,7 +33,7 @@ class _SessionLifecycleObserverState extends State<SessionLifecycleObserver>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     // Update last activity when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       _updateActivity();
@@ -41,16 +41,11 @@ class _SessionLifecycleObserverState extends State<SessionLifecycleObserver>
   }
 
   void _updateActivity() {
-    // Update activity for both auth providers if user is authenticated
+    // Update activity for citizen auth provider if user is authenticated
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final policeAuthProvider = Provider.of<PoliceAuthProvider>(context, listen: false);
-    
+
     if (authProvider.isAuthenticated) {
       authProvider.updateLastActivity();
-    }
-    
-    if (policeAuthProvider.policeProfile != null) {
-      policeAuthProvider.updateLastActivity();
     }
   }
 
@@ -59,4 +54,3 @@ class _SessionLifecycleObserverState extends State<SessionLifecycleObserver>
     return widget.child;
   }
 }
-

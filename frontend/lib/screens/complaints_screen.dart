@@ -250,7 +250,21 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text('Draft saved on $dateStr'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // DELETE BUTTON
+                IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.red, size: 20),
+                  tooltip: 'Delete draft',
+                  onPressed: () =>
+                      _showDeleteConfirmation(context, draftMap['id'], title),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_ios, size: 16),
+              ],
+            ),
             onTap: () {
               // Navigate back to AI Chat with draft data
               context.push('/ai-legal-chat', extra: draftMap);
@@ -281,5 +295,62 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showDeleteConfirmation(
+      BuildContext context, String draftId, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Draft'),
+        content: Text(
+          'Are you sure you want to delete "$title"?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _deleteDraft(context, draftId);
+    }
+  }
+
+  Future<void> _deleteDraft(BuildContext context, String draftId) async {
+    final complaintProvider =
+        Provider.of<ComplaintProvider>(context, listen: false);
+
+    try {
+      await complaintProvider.deleteComplaint(draftId);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Draft deleted successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete draft: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }

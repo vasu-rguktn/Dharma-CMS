@@ -1,6 +1,10 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:Dharma/utils/file_downloader/file_downloader.dart';
 
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
@@ -9,7 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 
 class DocumentDraftingScreen extends StatefulWidget {
-  const DocumentDraftingScreen({super.key});  
+  const DocumentDraftingScreen({super.key});
 
   @override
   State<DocumentDraftingScreen> createState() => _DocumentDraftingScreenState();
@@ -19,14 +23,15 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
   final _caseDataController = TextEditingController();
   final _additionalInstructionsController = TextEditingController();
   final _draftController = TextEditingController();
-  
+
   // Use 10.0.2.2 for Android emulator, localhost for web/iOS
-  final _dio = Dio(BaseOptions(baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app'));
+  final _dio = Dio(BaseOptions(
+      baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app'));
 
   String? _recipientType;
   bool _isLoading = false;
   Map<String, dynamic>? _draft;
-  
+
   // New state for file
   PlatformFile? _attachedFile;
 
@@ -63,14 +68,81 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
     });
   }
 
+  Future<void> _downloadDraftAsPDF() async {
+    if (_draft == null || _draftController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No draft available to download'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final pdf = pw.Document();
+
+      // Split text into paragraphs to avoid page height issues
+      final paragraphs = _draftController.text.split('\n');
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (pw.Context context) {
+            return paragraphs.map((para) {
+              if (para.trim().isEmpty) {
+                return pw.SizedBox(height: 10);
+              }
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.Text(
+                  para,
+                  style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
+                  textAlign: pw.TextAlign.left,
+                ),
+              );
+            }).toList();
+          },
+        ),
+      );
+
+      final bytes = await pdf.save();
+      final fileName =
+          'document_draft_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      await downloadFile(bytes, fileName);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('PDF downloaded successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error downloading PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleSubmit() async {
     // Validate: At least caseData OR a file must be present + recipientType
-    bool hasData = _caseDataController.text.trim().isNotEmpty || _attachedFile != null;
-    
+    bool hasData =
+        _caseDataController.text.trim().isNotEmpty || _attachedFile != null;
+
     if (!hasData || _recipientType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.provideCaseDataAndRecipient),
+          content:
+              Text(AppLocalizations.of(context)!.provideCaseDataAndRecipient),
           backgroundColor: Colors.red,
         ),
       );
@@ -87,16 +159,17 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
       final formData = FormData.fromMap({
         'caseData': _caseDataController.text, // Backend handles empty string
         'recipientType': _recipientType,
-        'additionalInstructions': _additionalInstructionsController.text.trim().isEmpty
-            ? null
-            : _additionalInstructionsController.text,
+        'additionalInstructions':
+            _additionalInstructionsController.text.trim().isEmpty
+                ? null
+                : _additionalInstructionsController.text,
       });
 
       // Append file if exists
       if (_attachedFile != null) {
         // Handle bytes (Web) or path (Mobile/Desktop)
         if (_attachedFile!.bytes != null) {
-             formData.files.add(MapEntry(
+          formData.files.add(MapEntry(
             'file',
             MultipartFile.fromBytes(
               _attachedFile!.bytes!,
@@ -136,8 +209,8 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
         );
       }
     } catch (error) {
-       debugPrint("Drafting Error: $error");
-       if (mounted) {
+      debugPrint("Drafting Error: $error");
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!
@@ -193,9 +266,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 8),
-
                   Expanded(
                     child: Text(
                       localizations.aiDocumentDrafter,
@@ -274,7 +345,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                 contentPadding: const EdgeInsets.all(16),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 16),
 
                             // 📂 FILE UPLOAD SECTION
@@ -283,13 +354,15 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                 ElevatedButton.icon(
                                   onPressed: _pickFile,
                                   icon: const Icon(Icons.upload_file),
-                                  label: const Text('Attach Document (Optional)'),
+                                  label:
+                                      const Text('Attach Document (Optional)'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo.shade50,
-                                    foregroundColor: Colors.indigo,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-                                  ),
+                                      backgroundColor: Colors.indigo.shade50,
+                                      foregroundColor: Colors.indigo,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8))),
                                 ),
                               ],
                             ),
@@ -300,21 +373,25 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.green.shade50,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.shade200),
+                                  border:
+                                      Border.all(color: Colors.green.shade200),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                    const Icon(Icons.check_circle,
+                                        color: Colors.green, size: 20),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         _attachedFile!.name,
-                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w500),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+                                      icon: const Icon(Icons.close,
+                                          size: 20, color: Colors.grey),
                                       onPressed: _removeFile,
                                     )
                                   ],
@@ -494,6 +571,17 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: orange,
                                       side: BorderSide(color: orange),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  // DOWNLOAD PDF BUTTON
+                                  ElevatedButton.icon(
+                                    onPressed: _downloadDraftAsPDF,
+                                    icon: const Icon(Icons.download, size: 18),
+                                    label: const Text('Download PDF'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: orange,
+                                      foregroundColor: Colors.white,
                                     ),
                                   ),
                                 ],

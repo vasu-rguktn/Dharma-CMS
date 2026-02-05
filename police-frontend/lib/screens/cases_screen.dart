@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/providers/case_provider.dart';
+import 'package:Dharma/models/case_doc.dart';
 import 'package:Dharma/models/case_status.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -17,7 +18,6 @@ import 'package:Dharma/providers/police_auth_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:Dharma/data/station_data_constants.dart';
-
 
 class CasesScreen extends StatefulWidget {
   const CasesScreen({super.key});
@@ -52,7 +52,7 @@ class _CasesScreenState extends State<CasesScreen> {
   bool _usingFirestoreFallback = false; // Track if using Firestore fallback
 
   /* ================= RANK TIERS ================= */
-  
+
   static const List<String> _stateLevelRanks = [
     'Director General of Police',
     'Additional Director General of Police',
@@ -97,7 +97,7 @@ class _CasesScreenState extends State<CasesScreen> {
   }
 
   /* ================= INIT & LOAD ================= */
-  
+
   @override
   void initState() {
     super.initState();
@@ -111,7 +111,7 @@ class _CasesScreenState extends State<CasesScreen> {
 
   Future<void> _loadProfileAndFetch() async {
     final auth = context.read<AuthProvider>();
-    
+
     if (auth.role == 'police') {
       final policeProvider = context.read<PoliceAuthProvider>();
       await policeProvider.loadPoliceProfileIfLoggedIn();
@@ -124,21 +124,22 @@ class _CasesScreenState extends State<CasesScreen> {
           _policeDistrict = profile['district']?.toString();
           _policeStation = profile['stationName']?.toString();
         });
-        print('👮 [CASES] Police Profile: Rank=$_policeRank, Dist=$_policeDistrict');
+        print(
+            '👮 [CASES] Police Profile: Rank=$_policeRank, Dist=$_policeDistrict');
       }
     }
-    
+
     if (mounted) _fetchData();
   }
 
   void _loadHierarchyData({bool retry = false}) {
     // Simplify loading by using hardcoded constants - 100% reliable
     debugPrint('🔄 [CASES] Loading police hierarchy data from constants...');
-    
+
     try {
       Map<String, Map<String, List<String>>> hierarchy = {};
       final data = kPoliceHierarchyComplete;
-      
+
       data.forEach((range, districts) {
         if (districts is Map) {
           Map<String, List<String>> districtMap = {};
@@ -171,11 +172,10 @@ class _CasesScreenState extends State<CasesScreen> {
 
   // Firestore fallback removed as it is no longer needed with hardcoded constants
 
-
   Future<void> _fetchData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final caseProvider = Provider.of<CaseProvider>(context, listen: false);
-    
+
     // Determine effective filters
     String? targetDistrict;
     String? targetStation;
@@ -184,7 +184,7 @@ class _CasesScreenState extends State<CasesScreen> {
       // 1. Station Level: Must filter by assigned station
       if (_isStationLevel() && _policeStation != null) {
         targetStation = _policeStation;
-        targetDistrict = _policeDistrict; 
+        targetDistrict = _policeDistrict;
       }
       // 2. District Level (SP, ASP):
       else if (_districtLevelRanks.contains(_policeRank)) {
@@ -192,7 +192,7 @@ class _CasesScreenState extends State<CasesScreen> {
         if (_selectedStation != null) {
           targetStation = _selectedStation;
           targetDistrict = _selectedDistrict ?? _policeDistrict;
-        } 
+        }
         // Otherwise, filter by their district (SHOW ALL STATIONS IN DISTRICT)
         else {
           targetStation = null; // Important: Clear station filter
@@ -203,7 +203,8 @@ class _CasesScreenState extends State<CasesScreen> {
       else if (_rangeLevelRanks.contains(_policeRank)) {
         if (_selectedStation != null) {
           targetStation = _selectedStation;
-          targetDistrict = _selectedDistrict; // Might be null if implicitly selected
+          targetDistrict =
+              _selectedDistrict; // Might be null if implicitly selected
         } else if (_selectedDistrict != null) {
           targetStation = null;
           targetDistrict = _selectedDistrict;
@@ -211,10 +212,10 @@ class _CasesScreenState extends State<CasesScreen> {
           // Ideally filter by range, but backend might not support range query directly on cases.
           // For now, we rely on selectedDistrict. If none selected, we might show all or limit?
           // Let's assume fetching all for range if supported, or let them pick.
-          // Based on current CaseProvider, we can't filter by 'range'. 
+          // Based on current CaseProvider, we can't filter by 'range'.
           // So we default to no district/station filter unless specified.
           targetStation = null;
-          targetDistrict = null; 
+          targetDistrict = null;
         }
       }
       // 4. State Level (DGP):
@@ -229,13 +230,14 @@ class _CasesScreenState extends State<CasesScreen> {
       }
       // Fallback for edge cases or untagged ranks
       else {
-         // Attempt to respect manual selections if rank logic fails
-         targetStation = _selectedStation;
-         targetDistrict = _selectedDistrict ?? _policeDistrict;
+        // Attempt to respect manual selections if rank logic fails
+        targetStation = _selectedStation;
+        targetDistrict = _selectedDistrict ?? _policeDistrict;
       }
     }
 
-    print('📡 [CASES] Fetching with District=$targetDistrict, Station=$targetStation');
+    print(
+        '📡 [CASES] Fetching with District=$targetDistrict, Station=$targetStation');
     await caseProvider.fetchCases(
       userId: auth.user?.uid,
       isAdmin: auth.role == 'police',
@@ -254,14 +256,14 @@ class _CasesScreenState extends State<CasesScreen> {
   bool _canFilterByDistrict() {
     if (_policeRank == null) return false;
     return _stateLevelRanks.contains(_policeRank) ||
-           _rangeLevelRanks.contains(_policeRank);
+        _rangeLevelRanks.contains(_policeRank);
   }
 
   bool _canFilterByStation() {
     if (_policeRank == null) return false;
     return _stateLevelRanks.contains(_policeRank) ||
-           _rangeLevelRanks.contains(_policeRank) ||
-           _districtLevelRanks.contains(_policeRank);
+        _rangeLevelRanks.contains(_policeRank) ||
+        _districtLevelRanks.contains(_policeRank);
   }
 
   bool _isStationLevel() {
@@ -302,19 +304,19 @@ class _CasesScreenState extends State<CasesScreen> {
     } else if (targetDistrict != null) {
       // Search for range containing this district (Case-insensitive check)
       for (var range in _policeHierarchy.keys) {
-         final districtMap = _policeHierarchy[range] ?? {};
-         // Check if any key matches targetDistrict (ignore case/space)
-         final matchedKey = districtMap.keys.firstWhere(
-           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
-           orElse: () => '',
-         );
-         
-         if (matchedKey.isNotEmpty) {
-           targetRange = range;
-           // Update targetDistrict to the exact key found in JSON for lookup
-           targetDistrict = matchedKey; 
-           break;
-         }
+        final districtMap = _policeHierarchy[range] ?? {};
+        // Check if any key matches targetDistrict (ignore case/space)
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+
+        if (matchedKey.isNotEmpty) {
+          targetRange = range;
+          // Update targetDistrict to the exact key found in JSON for lookup
+          targetDistrict = matchedKey;
+          break;
+        }
       }
     }
 
@@ -336,22 +338,23 @@ class _CasesScreenState extends State<CasesScreen> {
           stations = List.from(districtMap[matchedKey] ?? []);
         }
       }
-    } else if (targetDistrict != null) { // Fallback global search
-       for (var range in _policeHierarchy.keys) {
-         final districtMap = _policeHierarchy[range] ?? {};
-         final matchedKey = districtMap.keys.firstWhere(
-           (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
-           orElse: () => '',
-         );
-         if (matchedKey.isNotEmpty) {
-            stations = List.from(districtMap[matchedKey] ?? []);
-            break; 
-         }
-       }
+    } else if (targetDistrict != null) {
+      // Fallback global search
+      for (var range in _policeHierarchy.keys) {
+        final districtMap = _policeHierarchy[range] ?? {};
+        final matchedKey = districtMap.keys.firstWhere(
+          (k) => k.trim().toLowerCase() == targetDistrict!.trim().toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchedKey.isNotEmpty) {
+          stations = List.from(districtMap[matchedKey] ?? []);
+          break;
+        }
+      }
     }
 
     // MERGE WITH DYNAMIC STATIONS FROM FETCHED CASES
-    // This handles missing data in JSON (e.g. Commissionerates) 
+    // This handles missing data in JSON (e.g. Commissionerates)
     // and ensures all actual active stations are listed.
     try {
       final caseProvider = Provider.of<CaseProvider>(context, listen: false);
@@ -359,7 +362,7 @@ class _CasesScreenState extends State<CasesScreen> {
           .where((c) => c.policeStation != null && c.policeStation!.isNotEmpty)
           .map((c) => c.policeStation!)
           .toSet();
-      
+
       for (final s in dynamicStations) {
         if (!stations.contains(s)) {
           stations.add(s);
@@ -418,7 +421,8 @@ class _CasesScreenState extends State<CasesScreen> {
     print('📚 [CASES_SCREEN] Can pop: ${Navigator.of(context).canPop()}');
 
     // Show loading state
-    if (_hierarchyLoading && Provider.of<AuthProvider>(context).role == 'police') {
+    if (_hierarchyLoading &&
+        Provider.of<AuthProvider>(context).role == 'police') {
       return Scaffold(
         backgroundColor: const Color(0xFFF1F3F6),
         body: SafeArea(
@@ -440,7 +444,7 @@ class _CasesScreenState extends State<CasesScreen> {
     }
 
     // Show error state with retry option (only for police)
-    if (_policeHierarchy.isEmpty && 
+    if (_policeHierarchy.isEmpty &&
         Provider.of<AuthProvider>(context).role == 'police') {
       return Scaffold(
         backgroundColor: const Color(0xFFF1F3F6),
@@ -489,14 +493,16 @@ class _CasesScreenState extends State<CasesScreen> {
         child: Column(
           children: [
             // Show warning if using Firestore fallback
-            if (_usingFirestoreFallback && Provider.of<AuthProvider>(context).role == 'police')
+            if (_usingFirestoreFallback &&
+                Provider.of<AuthProvider>(context).role == 'police')
               Container(
                 width: double.infinity,
                 color: Colors.orange.shade50,
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    Icon(Icons.info_outline,
+                        color: Colors.orange.shade700, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -532,7 +538,10 @@ class _CasesScreenState extends State<CasesScreen> {
                         color: orange,
                         size: 32,
                         shadows: const [
-                          Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+                          Shadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: Offset(0, 2)),
                         ],
                       ),
                     ),
@@ -564,7 +573,8 @@ class _CasesScreenState extends State<CasesScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: orange,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -616,7 +626,8 @@ class _CasesScreenState extends State<CasesScreen> {
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -626,7 +637,8 @@ class _CasesScreenState extends State<CasesScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          const Icon(Icons.filter_list, size: 18, color: Colors.grey),
+                          const Icon(Icons.filter_list,
+                              size: 18, color: Colors.grey),
                           const SizedBox(width: 6),
                           Text(
                             localizations.filters,
@@ -639,38 +651,41 @@ class _CasesScreenState extends State<CasesScreen> {
                           const SizedBox(width: 8),
 
                           // JURISDICTION FILTERS (For Police)
-                          if (Provider.of<AuthProvider>(context).role == 'police' && !_hierarchyLoading) ...[
-                             if (_canFilterByRange()) ...[
-                                _buildFilterDropdown(
-                                  label: localizations.range,
-                                  value: _selectedRange,
-                                  items: _getAvailableRanges(),
-                                  onChanged: _onRangeChanged,
-                                ),
-                                const SizedBox(width: 8),
-                             ],
-                             if (_canFilterByDistrict()) ...[
-                                _buildFilterDropdown(
-                                  label: localizations.district,
-                                  value: _selectedDistrict,
-                                  items: _getAvailableDistricts(),
-                                  onChanged: _onDistrictChanged,
-                                ),
-                                const SizedBox(width: 8),
-                             ],
-                             if (_canFilterByStation()) ...[
-                                _buildFilterDropdown(
-                                  label: localizations.policeStation,
-                                  value: _selectedStation,
-                                  items: _getAvailableStations(),
-                                  onChanged: _onStationChanged,
-                                ),
-                                const SizedBox(width: 8),
-                             ],
+                          if (Provider.of<AuthProvider>(context).role ==
+                                  'police' &&
+                              !_hierarchyLoading) ...[
+                            if (_canFilterByRange()) ...[
+                              _buildFilterDropdown(
+                                label: localizations.range,
+                                value: _selectedRange,
+                                items: _getAvailableRanges(),
+                                onChanged: _onRangeChanged,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (_canFilterByDistrict()) ...[
+                              _buildFilterDropdown(
+                                label: localizations.district,
+                                value: _selectedDistrict,
+                                items: _getAvailableDistricts(),
+                                onChanged: _onDistrictChanged,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            if (_canFilterByStation()) ...[
+                              _buildFilterDropdown(
+                                label: localizations.policeStation,
+                                value: _selectedStation,
+                                items: _getAvailableStations(),
+                                onChanged: _onStationChanged,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                           ],
 
                           // Only show Station chip if NOT police (since police use hierarchy above)
-                          if (Provider.of<AuthProvider>(context).role != 'police') ...[
+                          if (Provider.of<AuthProvider>(context).role !=
+                              'police') ...[
                             _buildFilterChip<String>(
                               label: localizations.policeStation,
                               value: _selectedStation,
@@ -709,9 +724,10 @@ class _CasesScreenState extends State<CasesScreen> {
                               setState(() => _selectedAgeRange = value);
                             },
                           ),
-                          
+
                           // Info Icon (Police Only) - At the end of filters
-                          if (Provider.of<AuthProvider>(context).role == 'police') ...[
+                          if (Provider.of<AuthProvider>(context).role ==
+                              'police') ...[
                             const SizedBox(width: 8),
                             InkWell(
                               onTap: _showAccessLevelDialog,
@@ -720,9 +736,11 @@ class _CasesScreenState extends State<CasesScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade100,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                 ),
-                                child: Icon(Icons.info_outline, size: 20, color: Colors.blue.shade700),
+                                child: Icon(Icons.info_outline,
+                                    size: 20, color: Colors.blue.shade700),
                               ),
                             ),
                           ],
@@ -789,7 +807,7 @@ class _CasesScreenState extends State<CasesScreen> {
         ),
       );
     }
-    
+
     // Apply in-memory filters
     final filteredCases = caseProvider.cases.where((c) {
       // Search query
@@ -802,10 +820,7 @@ class _CasesScreenState extends State<CasesScreen> {
           c.victimName,
           c.policeStation,
           c.district,
-        ]
-            .whereType<String>()
-            .join(' ')
-            .toLowerCase();
+        ].whereType<String>().join(' ').toLowerCase();
         if (!haystack.contains(query)) return false;
       }
 
@@ -870,156 +885,39 @@ class _CasesScreenState extends State<CasesScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: filteredCases.length,
-      itemBuilder: (context, index) {
-        final caseItem = filteredCases[index];
-        final filedDate = _formatDate(caseItem.dateFiled.toDate());
-        final lastUpdated = _formatDate(caseItem.lastUpdated.toDate());
-
-        return Card(
-          elevation: 2,
-          color: Colors.white,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+    return LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth > 900) {
+        // Web/Desktop View: 3 Columns Grid
+        return GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 2.0, // Reduced height (wider ratio)
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
           ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              print('📝 [CASES_SCREEN] Case card tapped: ${caseItem.id}');
-              context.push('/cases/${caseItem.id}');
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: orange,
-                        child: const Icon(Icons.gavel, color: Colors.white, size: 18),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    caseItem.title,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _statusColor(caseItem.status)
-                                        .withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    caseItem.status.displayName,
-                                    style: TextStyle(
-                                      color: _statusColor(caseItem.status),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'FIR No: ${caseItem.firNumber} | Filed: $filedDate',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            if (caseItem.policeStation != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  'Station: ${caseItem.policeStation!}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                              ),
-                            if (caseItem.complainantName != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  'Complainant: ${caseItem.complainantName!}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Last Updated: $lastUpdated',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () {
-                          print('🔍 [CASES_SCREEN] View Details button pressed: ${caseItem.id}');
-                          context.push('/cases/${caseItem.id}');
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        icon: const Icon(Icons.arrow_forward, size: 16),
-                        label: Text(
-                          localizations.viewDetails,
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+          itemCount: filteredCases.length,
+          itemBuilder: (context, index) {
+            final caseItem = filteredCases[index];
+            final filedDate = _formatDate(caseItem.dateFiled.toDate());
+            final lastUpdated = _formatDate(caseItem.lastUpdated.toDate());
+            return _buildCaseCard(
+                caseItem, localizations, orange, filedDate, lastUpdated);
+          },
         );
-      },
-    );
+      } else {
+        // Mobile View: List
+        return ListView.builder(
+          itemCount: filteredCases.length,
+          itemBuilder: (context, index) {
+            final caseItem = filteredCases[index];
+            final filedDate = _formatDate(caseItem.dateFiled.toDate());
+            final lastUpdated = _formatDate(caseItem.lastUpdated.toDate());
+            return _buildCaseCard(
+                caseItem, localizations, orange, filedDate, lastUpdated);
+          },
+        );
+      }
+    });
   }
 
   void _showAccessLevelDialog() {
@@ -1027,7 +925,8 @@ class _CasesScreenState extends State<CasesScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(localizations.yourAccessLevel, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(localizations.yourAccessLevel,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1042,14 +941,16 @@ class _CasesScreenState extends State<CasesScreen> {
             const SizedBox(height: 16),
             Text(
               localizations.filterCasesUsingFilters,
-              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+              style: const TextStyle(
+                  fontStyle: FontStyle.italic, color: Colors.grey),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(localizations.ok, style: const TextStyle(color: Color(0xFFFC633C))),
+            child: Text(localizations.ok,
+                style: const TextStyle(color: Color(0xFFFC633C))),
           ),
         ],
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1094,11 +995,11 @@ class _CasesScreenState extends State<CasesScreen> {
           child: Text('All $label'),
         ),
         ...options.toSet().map(
-          (opt) => PopupMenuItem<T>(
-            value: opt,
-            child: Text(opt.toString()),
-          ),
-        ),
+              (opt) => PopupMenuItem<T>(
+                value: opt,
+                child: Text(opt.toString()),
+              ),
+            ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1227,6 +1128,169 @@ class _CasesScreenState extends State<CasesScreen> {
             const SizedBox(width: 4),
             const Icon(Icons.arrow_drop_down, size: 18),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaseCard(CaseDoc caseItem, AppLocalizations localizations,
+      Color orange, String filedDate, String lastUpdated) {
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () {
+          print('📝 [CASES_SCREEN] Case card tapped: ${caseItem.id}');
+          context.push('/cases/${caseItem.id}');
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: orange,
+                    child:
+                        const Icon(Icons.gavel, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          caseItem.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'FIR: ${caseItem.firNumber}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStatusBadge(caseItem.status),
+                ],
+              ),
+              const Divider(height: 24, thickness: 0.5),
+              Row(
+                children: [
+                  Icon(Icons.person, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Complainant: ${caseItem.complainantName}',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Station: ${caseItem.policeStation}',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Filed: $filedDate',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Last Updated: $lastUpdated',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      print(
+                          '🔍 [CASES_SCREEN] View Details button pressed: ${caseItem.id}');
+                      context.push('/cases/${caseItem.id}');
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    icon: const Icon(Icons.arrow_forward, size: 16),
+                    label: Text(
+                      localizations.viewDetails,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(CaseStatus status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: _statusColor(status).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status.displayName,
+        style: TextStyle(
+          color: _statusColor(status),
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
         ),
       ),
     );
