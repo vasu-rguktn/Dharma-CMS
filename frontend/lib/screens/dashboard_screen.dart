@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/utils/petition_filter.dart';
 import 'package:go_router/go_router.dart';
@@ -21,19 +20,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     debugPrint('🟢 DashboardScreen initState');
-    
+
     // Fetch petition stats after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       debugPrint('🟢 DashboardScreen PostFrameCallback');
-      
+
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
-      
+      final petitionProvider =
+          Provider.of<PetitionProvider>(context, listen: false);
+
       final userId = auth.user?.uid;
       final role = auth.role;
-      
+
       debugPrint('🟢 userId: $userId, role: $role');
-      
+
       // Check if onboarding should be shown for first-time citizen users
       if (role == 'citizen') {
         final shouldShow = await OnboardingService.shouldShowOnboarding();
@@ -42,18 +42,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return; // Don't fetch stats if showing onboarding
         }
       }
-      
-      if (role == 'police') {
-        // Police sees all petitions
-        debugPrint('🟢 Fetching GLOBAL petition stats (police)');
-        petitionProvider.fetchPetitionStats();
-        petitionProvider.fetchFilteredPetitions(
-          isPolice: true,
-          stationName: auth.userProfile?.stationName,
-          district: auth.userProfile?.district,
-          filter: PetitionFilter.all,
-        );
-      } else if (userId != null) {
+
+      if (userId != null) {
         // Citizen sees only their petitions
         debugPrint('🟢 Fetching USER petition stats for userId: $userId');
         petitionProvider.fetchPetitionStats(userId: userId);
@@ -71,7 +61,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final caseProvider = Provider.of<CaseProvider>(context);
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
 
@@ -115,9 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // This ensures we respect the role-based logic defined in DashboardBody
         body: DashboardBody(
           auth: authProvider,
-          cases: caseProvider,
           theme: theme,
-          isPolice: authProvider.role == 'police',
         ),
       ),
     );

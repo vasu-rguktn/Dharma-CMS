@@ -1,5 +1,6 @@
 // lib/screens/chargesheet_vetting_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,11 +8,17 @@ import 'dart:io';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/screens/petition/ocr_service.dart';class ChargesheetVettingScreen extends StatefulWidget {
+import 'package:Dharma/screens/petition/ocr_service.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:Dharma/utils/file_downloader/file_downloader.dart';
+
+class ChargesheetVettingScreen extends StatefulWidget {
   const ChargesheetVettingScreen({super.key});
 
   @override
-  State<ChargesheetVettingScreen> createState() => _ChargesheetVettingScreenState();
+  State<ChargesheetVettingScreen> createState() =>
+      _ChargesheetVettingScreenState();
 }
 
 class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
@@ -23,7 +30,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       baseUrl: "https://fastapi-app-335340524683.asia-south1.run.app",
       headers: {"Content-Type": "application/json"},
       connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 60), // AI processing can take time
+      receiveTimeout:
+          const Duration(seconds: 60), // AI processing can take time
     ),
   );
 
@@ -68,7 +76,9 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
         }
 
         // Use backend API for PDF, DOC, DOCX files
-        if (fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+        if (fileName.endsWith('.pdf') ||
+            fileName.endsWith('.doc') ||
+            fileName.endsWith('.docx')) {
           try {
             await _ocrService.runOcr(file);
             final ocrResult = _ocrService.result;
@@ -142,7 +152,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(AppLocalizations.of(context)!.fileContentLoaded(file.name)),
+                content: Text(
+                    AppLocalizations.of(context)!.fileContentLoaded(file.name)),
                 backgroundColor: Colors.green,
               ),
             );
@@ -162,7 +173,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.errorReadingFile(e.toString())),
+            content: Text(
+                AppLocalizations.of(context)!.errorReadingFile(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -174,7 +186,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
     if (_chargesheetContentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.pleaseUploadOrPasteChargesheet),
+          content: Text(
+              AppLocalizations.of(context)!.pleaseUploadOrPasteChargesheet),
           backgroundColor: Colors.red,
         ),
       );
@@ -199,7 +212,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.chargesheetVettedSuccess),
+            content:
+                Text(AppLocalizations.of(context)!.chargesheetVettedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -208,13 +222,113 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.failedToVetChargesheet(error.toString())),
+            content: Text(AppLocalizations.of(context)!
+                .failedToVetChargesheet(error.toString())),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _copyToClipboard() async {
+    if (_suggestions == null) return;
+
+    try {
+      await Clipboard.setData(
+        ClipboardData(text: _suggestions!['suggestions'] ?? ''),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Suggestions copied to clipboard'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error copying to clipboard'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _cleanMarkdown(String text) {
+    // Remove Markdown formatting symbols
+    return text
+        .replaceAll('**', '') // Remove bold markers
+        .replaceAll('__', '') // Remove alternative bold markers
+        .replaceAll('*', '') // Remove italic markers
+        .replaceAll('_', '') // Remove alternative italic markers
+        .replaceAll('###', '') // Remove heading markers
+        .replaceAll('##', '')
+        .replaceAll('#', '');
+  }
+
+  Future<void> _downloadSuggestionsAsPDF() async {
+    if (_suggestions == null) return;
+
+    try {
+      final suggestionsText =
+          _suggestions!['suggestions'] ?? 'No suggestions provided';
+      final cleanedText = _cleanMarkdown(suggestionsText);
+      final pdf = pw.Document();
+
+      // Split text into paragraphs to avoid page height issues
+      final paragraphs = cleanedText.split('\n');
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+          build: (pw.Context context) {
+            return paragraphs.map((para) {
+              if (para.trim().isEmpty) {
+                return pw.SizedBox(height: 10);
+              }
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.Text(
+                  para,
+                  style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
+                  textAlign: pw.TextAlign.left,
+                ),
+              );
+            }).toList();
+          },
+        ),
+      );
+
+      final bytes = await pdf.save();
+      final fileName =
+          'vetting_suggestions_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      await downloadFile(bytes, fileName);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Suggestions PDF downloaded successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error downloading PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -236,8 +350,11 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                   // PURE ORANGE BACK ARROW — NO CIRCLE
                   GestureDetector(
                     onTap: () {
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      final dashboardRoute = authProvider.role == 'police' ? '/police-dashboard' : '/dashboard';
+                      final authProvider =
+                          Provider.of<AuthProvider>(context, listen: false);
+                      final dashboardRoute = authProvider.role == 'police'
+                          ? '/police-dashboard'
+                          : '/dashboard';
                       context.go(dashboardRoute);
                     },
                     child: Padding(
@@ -247,7 +364,10 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                         color: orange,
                         size: 32,
                         shadows: const [
-                          Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+                          Shadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: Offset(0, 2)),
                         ],
                       ),
                     ),
@@ -274,7 +394,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
               padding: const EdgeInsets.fromLTRB(56, 0, 24, 24),
               child: Text(
                 localizations.chargesheetVettingDesc,
-                style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.4),
+                style: TextStyle(
+                    fontSize: 15, color: Colors.grey[700], height: 1.4),
               ),
             ),
 
@@ -288,7 +409,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                     // Input Card
                     Card(
                       elevation: 6,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       child: Padding(
                         padding: const EdgeInsets.all(20),
                         child: Column(
@@ -296,17 +418,21 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.fact_check_rounded, color: orange, size: 28),
+                                Icon(Icons.fact_check_rounded,
+                                    color: orange, size: 28),
                                 const SizedBox(width: 12),
                                 Text(
                                   localizations.chargesheetVettingAI,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 24),
-
-                            Text(localizations.uploadChargesheet, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.uploadChargesheet,
+                                style: const TextStyle(
+                                    fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             Row(
                               children: [
@@ -317,23 +443,29 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: orange,
                                     side: BorderSide(color: orange),
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                   ),
                                 ),
-                                if (_chargesheetContentController.text.isNotEmpty) ...[
+                                if (_chargesheetContentController
+                                    .text.isNotEmpty) ...[
                                   const SizedBox(width: 16),
                                   Text(
                                     "File loaded — edit below",
-                                    style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w500),
+                                    style: TextStyle(
+                                        color: Colors.green[700],
+                                        fontWeight: FontWeight.w500),
                                   ),
                                 ],
                               ],
                             ),
-
                             const SizedBox(height: 24),
-
-                            Text(localizations.orPasteChargesheet, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                            Text(localizations.orPasteChargesheet,
+                                style: const TextStyle(
+                                    fontSize: 17, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 12),
                             TextField(
                               controller: _chargesheetContentController,
@@ -343,26 +475,35 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                                 hintStyle: TextStyle(color: Colors.grey[500]),
                                 filled: true,
                                 fillColor: Colors.grey[50],
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none),
                                 contentPadding: const EdgeInsets.all(16),
                               ),
                             ),
-
                             const SizedBox(height: 28),
-
                             Align(
                               alignment: Alignment.centerRight,
                               child: ElevatedButton.icon(
                                 onPressed: _isLoading ? null : _handleSubmit,
                                 icon: _isLoading
-                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white))
                                     : const Icon(Icons.verified_rounded),
-                                label: Text(_isLoading ? localizations.vetting : localizations.vetChargeSheet),
+                                label: Text(_isLoading
+                                    ? localizations.vetting
+                                    : localizations.vetChargeSheet),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: orange,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 28, vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                   elevation: 5,
                                 ),
                               ),
@@ -380,7 +521,9 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                           children: [
                             CircularProgressIndicator(color: orange),
                             const SizedBox(height: 16),
-                            Text(localizations.vettingChargesheetWait, style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                            Text(localizations.vettingChargesheetWait,
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey[700])),
                           ],
                         ),
                       ),
@@ -391,7 +534,8 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                       const SizedBox(height: 32),
                       Card(
                         elevation: 6,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -399,9 +543,13 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.lightbulb_rounded, color: orange, size: 28),
+                                  Icon(Icons.lightbulb_rounded,
+                                      color: orange, size: 28),
                                   const SizedBox(width: 12),
-                                  Text(localizations.aiVettingSuggestions, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                  Text(localizations.aiVettingSuggestions,
+                                      style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -412,23 +560,58 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                                 decoration: BoxDecoration(
                                   color: orange.withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: orange.withOpacity(0.3)),
+                                  border: Border.all(
+                                      color: orange.withOpacity(0.3)),
                                 ),
                                 child: SelectableText(
-                                  _suggestions!['suggestions'] ?? localizations.noSuggestionsProvided,
-                                  style: const TextStyle(fontSize: 15, height: 1.6),
+                                  _suggestions!['suggestions'] ??
+                                      localizations.noSuggestionsProvided,
+                                  style: const TextStyle(
+                                      fontSize: 15, height: 1.6),
                                 ),
                               ),
                               const SizedBox(height: 20),
 
                               Row(
                                 children: [
-                                  Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 22),
+                                  Icon(Icons.warning_amber_rounded,
+                                      color: Colors.orange[700], size: 22),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
                                       localizations.aiVettingDisclaimer,
-                                      style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.4),
+                                      style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontSize: 13,
+                                          height: 1.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Action Buttons
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: _copyToClipboard,
+                                    icon: const Icon(Icons.copy, size: 18),
+                                    label: const Text('Copy'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: orange,
+                                      side: BorderSide(color: orange),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: _downloadSuggestionsAsPDF,
+                                    icon: const Icon(Icons.download, size: 18),
+                                    label: const Text('Download PDF'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: orange,
+                                      foregroundColor: Colors.white,
                                     ),
                                   ),
                                 ],

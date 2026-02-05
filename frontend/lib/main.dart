@@ -6,11 +6,8 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'package:Dharma/config/theme.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/providers/police_auth_provider.dart';
-import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
-import 'package:Dharma/providers/offline_petition_provider.dart';
 import 'package:Dharma/providers/legal_queries_provider.dart';
 import 'package:Dharma/providers/settings_provider.dart';
 import 'package:Dharma/providers/activity_provider.dart';
@@ -29,7 +26,8 @@ import 'package:Dharma/services/notification_service.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint('[FCM Background] Message received: ${message.notification?.title}');
+  debugPrint(
+      '[FCM Background] Message received: ${message.notification?.title}');
 }
 
 void main() async {
@@ -38,12 +36,13 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // Register FCM background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
+
   await FirebaseAppCheck.instance.activate(
-    webProvider: ReCaptchaV3Provider('6LfUh1AsAAAAAPOY30pIf00IzpmIYRCWV4ZNhIQ-'),
+    webProvider:
+        ReCaptchaV3Provider('6LfUh1AsAAAAAPOY30pIf00IzpmIYRCWV4ZNhIQ-'),
     androidProvider: AndroidProvider.playIntegrity, // or debug for now
   );
   FirestoreService.configureFirestore();
@@ -62,11 +61,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(),
         ),
-        ChangeNotifierProvider<PoliceAuthProvider>(
-          create: (_) => PoliceAuthProvider()..loadPoliceProfileIfLoggedIn(),
-        ),
-
-        /// 🔹 Police Auth (NEW)
 
         ChangeNotifierProvider<SettingsProvider>(
           create: (_) => SettingsProvider(),
@@ -77,11 +71,6 @@ class MyApp extends StatelessWidget {
         ),
 
         /// 🔹 Feature providers
-        ChangeNotifierProxyProvider<AuthProvider, CaseProvider>(
-          create: (_) => CaseProvider(),
-          update: (_, auth, previous) => previous ?? CaseProvider(),
-        ),
-
         ChangeNotifierProxyProvider<AuthProvider, ComplaintProvider>(
           create: (_) => ComplaintProvider(),
           update: (_, auth, previous) => previous ?? ComplaintProvider(),
@@ -92,10 +81,6 @@ class MyApp extends StatelessWidget {
           update: (_, auth, previous) => previous ?? PetitionProvider(),
         ),
 
-        /// 🔹 Offline Petition Provider
-        ChangeNotifierProvider<OfflinePetitionProvider>(
-          create: (_) => OfflinePetitionProvider(),
-        ),
         ChangeNotifierProvider<ActivityProvider>(
           create: (_) => ActivityProvider(),
         ),

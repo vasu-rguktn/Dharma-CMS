@@ -31,6 +31,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   String? _officerId;
   String? _officerRank;
   String? _officerName;
+  String? _officerFullIdentity; // Combined name, rank, and location
   bool _isLoading = true;
 
   @override
@@ -50,7 +51,37 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     if (policeProfile != null) {
       _officerId = policeProfile['uid'];
       _officerRank = policeProfile['rank'];
-      _officerName = policeProfile['name'];
+      _officerName = policeProfile['displayName'];
+
+      // ✅ ROBUST HIERARCHY-AWARE IDENTITY LOGIC
+      final rank = _officerRank ?? '';
+      final name = _officerName ?? 'Police Officer';
+      String location = '';
+
+      if (RankUtils.normalizeRank(rank).contains('DIRECTOR GENERAL')) {
+        location = 'Andhra Pradesh';
+      } else if (RankUtils.isRangeLevelOfficer(rank)) {
+        location = policeProfile['range'] ?? '';
+      } else if (RankUtils.isDistrictLevelOfficer(rank)) {
+        location = policeProfile['district'] ?? '';
+      } else if (rank.toUpperCase().contains('SDPO') ||
+          rank.toUpperCase().contains('DEPUTY SUPERINTENDENT')) {
+        location = policeProfile['sdpo'] ?? policeProfile['district'] ?? '';
+      } else if (rank.toUpperCase().contains('CIRCLE') ||
+          rank.toUpperCase().contains('INSPECTOR')) {
+        location =
+            policeProfile['circle'] ?? policeProfile['stationName'] ?? '';
+      } else {
+        location = policeProfile['stationName'] ?? '';
+      }
+
+      if (rank.isNotEmpty) {
+        _officerFullIdentity =
+            '$name ($rank${location.isNotEmpty ? " $location" : ""})';
+      } else {
+        _officerFullIdentity = name;
+      }
+
       _isHighLevelOfficer = RankUtils.isHighLevelOfficer(_officerRank);
 
       // Initialize tab controller based on officer level
@@ -106,7 +137,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
         return Colors.grey;
     }
   }
-  
+
   Color _getPoliceStatusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'received':
@@ -128,7 +159,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
   Widget _buildPetitionCard(Petition petition, bool isSentTab) {
     final theme = Theme.of(context);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -209,11 +240,12 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
               const SizedBox(height: 8),
 
               // Assignment info
-              if (isSentTab) ...[ 
+              if (isSentTab) ...[
                 // Show "Assigned To" in sent tab
                 Row(
                   children: [
-                    Icon(Icons.arrow_forward, size: 16, color: Colors.blue[600]),
+                    Icon(Icons.arrow_forward,
+                        size: 16, color: Colors.blue[600]),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -228,7 +260,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                     ),
                   ],
                 ),
-              ] else ...[ 
+              ] else ...[
                 // Show "Assigned By" in assigned tab
                 Row(
                   children: [
@@ -376,11 +408,14 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         // Petition Details
                         _buildDetailSection('Petition Details', [
                           _buildDetailRow('Type', petition.type.displayName),
-                          _buildDetailRow('Petitioner', petition.petitionerName),
+                          _buildDetailRow(
+                              'Petitioner', petition.petitionerName),
                           if (petition.phoneNumber != null)
                             _buildDetailRow(
                               'Phone',
-                              petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                              petition.isAnonymous
+                                  ? maskPhoneNumber(petition.phoneNumber)
+                                  : petition.phoneNumber!,
                             ),
                           if (petition.district != null)
                             _buildDetailRow('District', petition.district!),
@@ -397,21 +432,23 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                         // Assignment Details
                         _buildDetailSection('Assignment Details', [
                           if (petition.assignedByName != null)
-                            _buildDetailRow(
-                                'Assigned By',
+                            _buildDetailRow('Assigned By',
                                 '${petition.assignedByName}${petition.assignedByRank != null ? " (${petition.assignedByRank})" : ""}'),
                           if (petition.assignedToName != null)
-                            _buildDetailRow('Assigned To', petition.assignedToName!),
+                            _buildDetailRow(
+                                'Assigned To', petition.assignedToName!),
                           if (petition.assignedToRank != null)
                             _buildDetailRow('Rank', petition.assignedToRank!),
                           if (petition.assignedToStation != null)
-                            _buildDetailRow('Station', petition.assignedToStation!),
+                            _buildDetailRow(
+                                'Station', petition.assignedToStation!),
                           if (petition.assignedToDistrict != null)
-                            _buildDetailRow('District', petition.assignedToDistrict!),
+                            _buildDetailRow(
+                                'District', petition.assignedToDistrict!),
                           if (petition.assignedToRange != null)
                             _buildDetailRow('Range', petition.assignedToRange!),
-                          _buildDetailRow(
-                              'Assigned At', _formatTimestamp(petition.assignedAt)),
+                          _buildDetailRow('Assigned At',
+                              _formatTimestamp(petition.assignedAt)),
                           if (petition.assignmentNotes != null)
                             _buildDetailRow('Notes', petition.assignmentNotes!),
                         ]),
@@ -424,7 +461,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
 
                         if (petition.prayerRelief != null &&
                             petition.prayerRelief!.isNotEmpty)
-                          _buildTextSection('Prayer/Relief', petition.prayerRelief!),
+                          _buildTextSection(
+                              'Prayer/Relief', petition.prayerRelief!),
 
                         const SizedBox(height: 20),
 
@@ -458,12 +496,15 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
-                                onPressed: () => _showUpdateStatusDialog(petition),
+                                onPressed: () =>
+                                    _showUpdateStatusDialog(petition),
                                 icon: const Icon(Icons.sync),
                                 label: const Text('Update Status'),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  side: const BorderSide(color: Colors.deepPurple),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  side: const BorderSide(
+                                      color: Colors.deepPurple),
                                   foregroundColor: Colors.deepPurple,
                                 ),
                               ),
@@ -477,7 +518,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.deepPurple,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                 ),
                               ),
                             ),
@@ -489,10 +531,12 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                           child: OutlinedButton.icon(
                             onPressed: () {
                               if (petition.caseId != null) {
-                                context.push('/ai-investigation-guidelines?caseId=${petition.caseId}');
+                                context.push(
+                                    '/ai-investigation-guidelines?caseId=${petition.caseId}');
                               }
                             },
-                            icon: const Icon(Icons.psychology, color: Colors.deepPurple),
+                            icon: const Icon(Icons.psychology,
+                                color: Colors.deepPurple),
                             label: const Text('AI Investigation Guidelines'),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -511,14 +555,17 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.pop(context); // Close bottom sheet
-                                context.push('/submit-offline-petition', extra: petition);
+                                context.push('/submit-offline-petition',
+                                    extra: petition);
                               },
                               icon: const Icon(Icons.forward),
-                              label: const Text('Forward / Assign to Sub-ordinate'),
+                              label: const Text(
+                                  'Forward / Assign to Sub-ordinate'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.teal.shade700,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
@@ -592,8 +639,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
             final updates = snapshot.data!.docs
                 .map((doc) => PetitionUpdate.fromFirestore(doc))
                 .toList();
-                
-            final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
+
+            final allUpdates = context
+                .read<PetitionProvider>()
+                .getUpdatesWithEscalations(petition, updates);
 
             return PetitionUpdateTimeline(updates: allUpdates);
           },
@@ -651,7 +700,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     );
   }
 
-  Future<void> _updatePetitionStatus(Petition petition, String newStatus) async {
+  Future<void> _updatePetitionStatus(
+      Petition petition, String newStatus) async {
     try {
       final offlinePetitionProvider =
           Provider.of<OfflinePetitionProvider>(context, listen: false);
@@ -665,12 +715,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       });
 
       // Also create a timeline entry for the status change
-      await FirebaseFirestore.instance
-          .collection('petition_updates')
-          .add({
+      await FirebaseFirestore.instance.collection('petition_updates').add({
         'petitionId': petition.id,
         'updateText': '📋 Status changed to: $newStatus',
-        'addedBy': _officerName ?? 'Police Officer',
+        'addedBy': _officerFullIdentity ?? _officerName ?? 'Police Officer',
         'addedByUserId': _officerId ?? '',
         'photoUrls': [],
         'documents': [],
@@ -712,7 +760,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
       isScrollControlled: true,
       builder: (_) => AddPetitionUpdateDialog(
         petition: petition,
-        policeOfficerName: _officerName ?? 'Unknown Officer',
+        policeOfficerName:
+            _officerFullIdentity ?? _officerName ?? 'Unknown Officer',
         policeOfficerUserId: _officerId ?? '',
       ),
     ).then((_) {
@@ -805,8 +854,8 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        final petitions = isSentTab 
-            ? offlinePetitionProvider.sentPetitions 
+        final petitions = isSentTab
+            ? offlinePetitionProvider.sentPetitions
             : offlinePetitionProvider.assignedPetitions;
 
         if (petitions.isEmpty) {
@@ -821,9 +870,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isSentTab
-                      ? 'No Sent Petitions'
-                      : 'No Assigned Petitions',
+                  isSentTab ? 'No Sent Petitions' : 'No Assigned Petitions',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -847,8 +894,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
         }
 
         return RefreshIndicator(
-          onRefresh:
-              isSentTab ? _loadSentPetitions : _loadAssignedPetitions,
+          onRefresh: isSentTab ? _loadSentPetitions : _loadAssignedPetitions,
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: petitions.length,

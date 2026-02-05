@@ -161,6 +161,7 @@ class ComplaintResponse(BaseModel):
     localized_fields: Dict[str, str] = Field(default_factory=dict)
     incident_details: Optional[str] = None
     incident_address: Optional[str] = None
+    incident_date: Optional[str] = None  # New field for incident date
     
     # New top-level fields for user convenience
     full_name: Optional[str] = None
@@ -1515,15 +1516,82 @@ async def chat_step(
             if payload.is_anonymous:
                 anon_header = (
                     "MODE: ANONYMOUS PETITION\n"
-                    "CRITICAL INSTRUCTION: 'Anonymous' ONLY means you skip Name/Address. YOU MUST STILL INVESTIGATE THE CRIME FULLY.\n"
-                    "INSTRUCTIONS:\n"
-                    "- Do NOT ask for Name or Address.\n"
-                    "- Verify Mobile Number (10 digits) is present.\n"
-                    "- INVESTIGATE: Ask Who, What, Where, When, How in detail. Do NOT stop after just one sentence.\n"
-                    "- Ask about Suspects, Witnesses like a real officer.\n"
-                    "- CRITICAL: BEFORE finishing, YOU MUST ASK: 'Do you have any photos, videos, or documents as evidence?'.\n"
-                    "- Output 'DONE' ONLY when you have a complete picture AND have asked about evidence.\n\n"
+                    "CRITICAL INSTRUCTION: 'Anonymous' ONLY means you skip Name/Address. YOU MUST STILL INVESTIGATE THE CRIME FULLY.\n\n"
+                    
+                    "INVESTIGATION PRIORITY (FOLLOW THIS ORDER):\n"
+                    "1. FIRST: Gather ALL incident details (Date, Time, Location, What happened, Suspects, Witnesses, Property/Vehicle details)\n"
+                    "2. SECOND: Ask about evidence (photos, videos, documents)\n"
+                    "3. THIRD: Verify Mobile Number (10 digits) is present\n"
+                    "4. LAST: Output 'DONE' only when ALL above are complete\n\n"
+                    
+                    "STRICT RULES:\n"
+                    "- Do NOT ask for Name or Address (they want to remain anonymous)\n"
+                    "- Do NOT ask for phone number until you have fully investigated the incident\n"
+                    "- INVESTIGATE THOROUGHLY: Ask Who, What, Where, When, How in detail\n"
+                    "- Ask about Suspects, Witnesses, Property details like a real police officer\n"
+                    "- Do NOT stop after just one or two questions - get the complete story first\n"
+                    "- EVIDENCE is MANDATORY: You MUST ask about photos/videos/documents before finishing\n"
+                    "- Only output 'DONE' when you have: Complete incident details + Evidence question answered + Phone number verified\n\n"
                 )
+
+            # Helper function to extract already-known information from conversation
+            def extract_known_info(initial_details: str, chat_history: List) -> str:
+                """Extract information already mentioned in the conversation to prevent repetition."""
+                known_info = []
+                
+                # Combine all text from initial context and conversation
+                all_text = initial_details.lower()
+                for msg in chat_history:
+                    # Handle both dict and Pydantic object
+                    if hasattr(msg, 'role') and hasattr(msg, 'content'):
+                        if msg.role == "user":
+                            all_text += " " + msg.content.lower()
+                    elif isinstance(msg, dict) and msg.get("role") == "user":
+                        all_text += " " + msg.get("content", "").lower()
+                
+                # Check for date/time mentions
+                date_patterns = ["january", "february", "march", "april", "may", "june", 
+                                "july", "august", "september", "october", "november", "december",
+                                "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+                                "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th",
+                                "yesterday", "today", "last night", "this morning"]
+                time_patterns = ["am", "pm", "o'clock", "morning", "afternoon", "evening", "night"]
+                
+                has_date = any(pattern in all_text for pattern in date_patterns)
+                has_time = any(pattern in all_text for pattern in time_patterns) or any(str(i) in all_text for i in range(1, 13))
+                
+                if has_date or has_time:
+                    known_info.append("- Date/Time: Already mentioned in conversation")
+                
+                # Check for location mentions
+                location_keywords = ["room", "college", "university", "hostel", "market", "street", 
+                                    "road", "building", "block", "floor", "house", "shop", "office"]
+                if any(keyword in all_text for keyword in location_keywords):
+                    known_info.append("- Location: Already mentioned in conversation")
+                
+                # Check for stolen items
+                item_keywords = ["purse", "wallet", "phone", "mobile", "laptop", "bag", "cash", 
+                                "money", "rupees", "card", "jewelry", "watch", "bike", "vehicle"]
+                if any(keyword in all_text for keyword in item_keywords):
+                    known_info.append("- Stolen items: Already mentioned in conversation")
+                
+                # Check for suspect information
+                suspect_keywords = ["suspect", "person", "man", "woman", "boy", "girl", "someone", 
+                                   "stranger", "friend", "neighbor", "description"]
+                if any(keyword in all_text for keyword in suspect_keywords) or "no suspect" in all_text or "don't know" in all_text:
+                    known_info.append("- Suspect info: Already discussed in conversation")
+                
+                # Check for witness information  
+                witness_keywords = ["witness", "saw", "seen", "noticed", "observed"]
+                if any(keyword in all_text for keyword in witness_keywords) or "no witness" in all_text or "nobody saw" in all_text:
+                    known_info.append("- Witnesses: Already discussed in conversation")
+                
+                if known_info:
+                    return "\n\nINFORMATION ALREADY KNOWN (DO NOT ASK ABOUT THESE AGAIN):\n" + "\n".join(known_info) + "\n"
+                return ""
+
+            # Extract known information from conversation
+            known_facts = extract_known_info(payload.initial_details, payload.chat_history)
 
             # System Prompt Definition
 
@@ -1534,7 +1602,6 @@ async def chat_step(
                 "Your goal is to gather a complete complaint summary for a formal petition.\n\n"
 
                 "GUIDELINES:\n"
-                "- Critically review the chat history to avoid repeating questions.\n"
                 "- Use a polite, respectful, and reassuring tone.\n"
                 "- Actively lead the conversation. Focus on ONE point per turn.\n"
                 "- KEEP QUESTIONS SHORT (Max 20 words). Do not lecture.\n"
@@ -1542,20 +1609,41 @@ async def chat_step(
                 "- Briefly summarize information back to the user for confirmation before moving to the next category.\n\n"
 
                 "INFORMATION TO GATHER (Systematically):\n"
-                "1. Incident Details: Date, time, location (specific), and detailed narration.\n"
+                "1. Incident Details: Date, time, location (MUST BE SPECIFIC - if user says 'college', ask 'Which college?'; if 'market', ask 'Which market?'; if 'hostel', ask 'Which hostel?'), and detailed narration.\n"
                 "2. Accused Details: Name, description, address (if known).\n"
                 "3. Property/Vehicle: Description, value. (MANDATORY: If Vehicle/Mobile theft, ask for Reg No/IMEI/Model).\n"
                 "4. Witnesses: Names and contact details (if any).\n"
                 "5. Reason for delay in reporting (if any).\n"
-                "6. Complainant Details: Name/Address/Phone is ALREADY KNOWN. DO NOT ASK FOR THIS unless the user is reporting for someone else.\n\n"
+                "6. Complainant Details: Name/Address/Phone is ALREADY KNOWN. DO NOT ASK FOR THIS unless the user is reporting for someone else.\n"
+                "7. EVIDENCE (ABSOLUTELY MANDATORY): You MUST ask about evidence before finishing.\n\n"
 
                 "STRICT RULES FOR FUNCTIONALITY:\n"
-                "1. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
-                "2. NO REPETITION: Check the history. If the user answered it, do NOT ask again.\n"
-                "3. MANDATORY STEP - EVIDENCE: Before concluding, you MUST explicitly ask: 'Do you have any photos, videos, or documents to upload as evidence?'. Do NOT output 'DONE' until the user answers this specific question (Yes/No).\n"
-                "3. EVIDENCE CHECK (MANDATORY): BEFORE saying 'DONE', you MUST ask: 'Do you have any photos, videos, or documents as evidence?'.\n"
+                "1. NO REPETITION (MOST CRITICAL - FOLLOW THIS PROCESS FOR EVERY RESPONSE):\n"
+                "   STEP 1: Before formulating your question, mentally review:\n"
+                "           - What did the INITIAL CONTEXT tell you? (user's first message)\n"
+                "           - What information appears in the conversation history?\n"
+                "   STEP 2: Make a mental list of what you ALREADY KNOW:\n"
+                "           - Date/Time: [check if mentioned]\n"
+                "           - Location: [check if mentioned]\n"
+                "           - What was stolen: [check if mentioned]\n"
+                "           - Suspect info: [check if mentioned]\n"
+                "           - Witnesses: [check if mentioned]\n"
+                "   STEP 3: ONLY ask about information NOT in your mental list.\n"
+                "   STEP 4: If you're about to ask 'When did this happen?' but you see 'February 4th' or '11 PM' ANYWHERE in the history, SKIP that question.\n"
+                "   STEP 5: If you're about to ask 'What was stolen?' but you see 'purse', 'blue leather', '10000 cash' ANYWHERE in the history, SKIP that question.\n"
+                "2. LANGUAGE: Speak in {language_name}. Use natural phrasing.\n"
+                "3. EVIDENCE QUESTION (CRITICAL - CANNOT BE SKIPPED):\n"
+                "   - Before you output 'DONE', you MUST ask: 'Do you have any photos, videos, or documents to upload as evidence?'\n"
+                "   - Check the conversation history - if you have NOT asked this exact question yet, you MUST ask it now.\n"
+                "   - Only output 'DONE' if:\n"
+                "     a) You have already asked about evidence in a previous turn, AND\n"
+                "     b) The user has responded (Yes/No/I don't have any)\n"
+                "   - If you see '[SYSTEM: USER ATTACHED EVIDENCE]' in the history, acknowledge it but still ask if they have MORE evidence.\n"
                 "4. DOCUMENT AWARENESS: If you see '[SYSTEM: USER ATTACHED EVIDENCE]' or '[ATTACHED IMAGE...]', acknowledge it and use its content.\n"
-                "5. TERMINATION: When you have gathered all necessary details and the Evidence confirmation (Yes/No), output ONLY 'DONE'.\n"
+                "5. TERMINATION: Output 'DONE' ONLY when:\n"
+                "   - You have gathered all necessary incident details, AND\n"
+                "   - You have explicitly asked about evidence, AND\n"
+                "   - The user has responded to the evidence question.\n"
             )
             
             # Convert Pydantic chat history to LLM format
@@ -1584,7 +1672,7 @@ async def chat_step(
                     # Instead of list of dicts, Gemini often prefers a single text block or specific Content object structure.
                     # For simplicity/robustness in Migration, we can flatten to a script or use the chat session.
                     
-                    full_prompt = f"{system_prompt}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
+                    full_prompt = f"{system_prompt}{known_facts}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
                     
                     # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
                     recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
@@ -1763,7 +1851,8 @@ OUTPUT FORMAT (STRICT JSON ONLY):
     "initial_details": "",
     "details": "COMPREHENSIVE NARRATIVE in FIRST PERSON ('I...'). Must be a detailed formal complaint text suitable for an FIR. Include EVERY fact mentioned (Who, What, Where, When, How, Vehicle details, Suspects, etc). NOT a chat summary.",
   
-    "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names."
+    "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names.",
+    "incident_date": "Extract the incident date in YYYY-MM-DD format if mentioned. Examples: '2026-01-06', '2025-12-25'. If not mentioned, leave empty."
 }}
 
 INFORMATION:
@@ -1923,6 +2012,11 @@ INFORMATION:
             localized_fields['incident_details'] = narrative
             localized_fields['incident_address'] = short_incident # Keep consistent
             
+            # Extract incident_date from LLM response
+            incident_date_str = n_data.get("incident_date", "")
+            if incident_date_str:
+                logger.info(f"Extracted incident_date from LLM: {incident_date_str}")
+            
             # Classification
             classification_context = _build_classification_context(
                 final_complaint_type,
@@ -1952,6 +2046,7 @@ INFORMATION:
                 localized_fields={k: safe_utf8(v) for k, v in localized_fields.items()},
                 incident_details=safe_utf8(narrative),
                 incident_address=None,
+                incident_date=incident_date_str if incident_date_str else None,  # Add incident date
                 
                 # New fields from user script logic
                 full_name=final_req.full_name,

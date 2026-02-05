@@ -1995,6 +1995,12 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
   @override
   // TODO: implement ok
   String get ok => 'సరే';
+
+  @override
+  String get Saved => 'సేవ్ చేసినవి';
+
+  @override
+  String get Drafts => 'డ్రాఫ్ట్‌లు';
   
   @override
   // TODO: implement from

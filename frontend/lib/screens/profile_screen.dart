@@ -25,15 +25,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _addressController;
   late TextEditingController _districtController;
   late TextEditingController _pincodeController;
-  
+
   String? _selectedGender;
 
   @override
   void initState() {
     super.initState();
     final user = context.read<AuthProvider>().userProfile;
-    
-    _displayNameController = TextEditingController(text: user?.displayName ?? '');
+
+    _displayNameController =
+        TextEditingController(text: user?.displayName ?? '');
     _usernameController = TextEditingController(text: user?.username ?? '');
     _phoneController = TextEditingController(text: user?.phoneNumber ?? '');
     _aadharController = TextEditingController(text: user?.aadharNumber ?? '');
@@ -42,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _addressController = TextEditingController(text: user?.address ?? '');
     _districtController = TextEditingController(text: user?.district ?? '');
     _pincodeController = TextEditingController(text: user?.pincode ?? '');
-    
+
     _selectedGender = user?.gender;
   }
 
@@ -133,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          localizations.profileInformation, 
+          localizations.profileInformation,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -160,7 +161,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       radius: 50,
                       backgroundColor: Colors.orange.shade100,
                       child: Text(
-                        (user?.displayName ?? user?.email ?? 'U')[0].toUpperCase(),
+                        (user?.displayName ?? user?.email ?? 'U')[0]
+                            .toUpperCase(),
                         style: TextStyle(
                           fontSize: 40,
                           fontWeight: FontWeight.bold,
@@ -175,7 +177,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: CircleAvatar(
                           radius: 18,
                           backgroundColor: Colors.white,
-                          child: Icon(Icons.camera_alt, color: Colors.orange.shade800, size: 20),
+                          child: Icon(Icons.camera_alt,
+                              color: Colors.orange.shade800, size: 20),
                         ),
                       ),
                   ],
@@ -184,14 +187,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
 
               // Fields
-              _buildSectionHeader(localizations.basicInformation ?? 'Basic Information'),
+              _buildSectionHeader(
+                  localizations.basicInformation ?? 'Basic Information'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _displayNameController,
                 enabled: _isEditing,
-                decoration: _inputDecoration(localizations.fullName ?? 'Full Name', icon: Icons.person),
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                decoration: _inputDecoration(
+                    localizations.fullName ?? 'Full Name',
+                    icon: Icons.person),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
 
@@ -199,10 +206,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: _phoneController,
                 enabled: _isEditing,
                 keyboardType: TextInputType.phone,
-                decoration: _inputDecoration(localizations.mobileNumber, icon: Icons.phone),
-                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Required';
-                  if (val.length < 10) return 'Invalid Number';
+                decoration: _inputDecoration(
+                    '${localizations.mobileNumber} (Optional)',
+                    icon: Icons.phone),
+                validator: (val) {
+                  final trimmed = val?.trim() ?? '';
+                  if (trimmed.isNotEmpty && trimmed.length < 10) {
+                    return 'Invalid Number';
+                  }
                   return null;
                 },
               ),
@@ -213,12 +224,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 enabled: _isEditing,
                 keyboardType: TextInputType.number,
                 maxLength: 12,
-                decoration: _inputDecoration('Aadhar Number', icon: Icons.fingerprint).copyWith(counterText: ""),
+                decoration:
+                    _inputDecoration('Aadhar Number', icon: Icons.fingerprint)
+                        .copyWith(counterText: ""),
                 validator: (val) {
-                   if (val != null && val.isNotEmpty && val.length != 12) {
-                     return 'Must be 12 digits';
-                   }
-                   return null;
+                  if (val != null && val.isNotEmpty && val.length != 12) {
+                    return 'Must be 12 digits';
+                  }
+                  return null;
                 },
               ),
               const SizedBox(height: 16),
@@ -229,30 +242,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: TextFormField(
                       controller: _dobController,
                       enabled: _isEditing,
-                      decoration: _inputDecoration(localizations.dateOfBirth ?? 'Date of Birth', icon: Icons.calendar_today),
-                      onTap: _isEditing ? () async {
-                         FocusScope.of(context).requestFocus(FocusNode());
-                         final date = await showDatePicker(
-                           context: context,
-                           initialDate: DateTime.now(),
-                           firstDate: DateTime(1900),
-                           lastDate: DateTime.now(),
-                         );
-                         if (date != null) {
-                           _dobController.text = "${date.day}/${date.month}/${date.year}";
-                         }
-                      } : null,
+                      readOnly: true,
+                      decoration: _inputDecoration(
+                          localizations.dateOfBirth ??
+                              'Date of Birth (Optional)',
+                          icon: Icons.calendar_today),
+                      onTap: _isEditing
+                          ? () async {
+                              FocusScope.of(context).requestFocus(FocusNode());
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (date != null) {
+                                _dobController.text =
+                                    "${date.day}/${date.month}/${date.year}";
+                              }
+                            }
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedGender,
-                      decoration: _inputDecoration(localizations.gender ?? 'Gender', icon: Icons.people),
+                      decoration: _inputDecoration(
+                          localizations.gender ?? 'Gender',
+                          icon: Icons.people),
                       items: ['Male', 'Female', 'Other']
-                          .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                          .map(
+                              (g) => DropdownMenuItem(value: g, child: Text(g)))
                           .toList(),
-                      onChanged: _isEditing ? (val) => setState(() => _selectedGender = val) : null,
+                      onChanged: _isEditing
+                          ? (val) => setState(() => _selectedGender = val)
+                          : null,
                     ),
                   ),
                 ],
@@ -265,15 +290,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               TextFormField(
                 controller: _houseNoController,
                 enabled: _isEditing,
-                decoration: _inputDecoration(localizations.houseNo ?? 'House No', icon: Icons.home),
+                decoration: _inputDecoration(
+                    localizations.houseNo ?? 'House No',
+                    icon: Icons.home),
               ),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _addressController,
                 enabled: _isEditing,
                 maxLines: 2,
-                decoration: _inputDecoration(localizations.streetVillage ?? 'Street / Area', icon: Icons.map),
+                decoration: _inputDecoration(
+                    localizations.streetVillage ?? 'Street / Area',
+                    icon: Icons.map),
               ),
               const SizedBox(height: 16),
 
@@ -283,7 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: TextFormField(
                       controller: _districtController,
                       enabled: _isEditing,
-                      decoration: _inputDecoration(localizations.district ?? 'District', icon: Icons.location_city),
+                      decoration: _inputDecoration(
+                          localizations.district ?? 'District',
+                          icon: Icons.location_city),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -292,7 +323,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       controller: _pincodeController,
                       enabled: _isEditing,
                       keyboardType: TextInputType.number,
-                      decoration: _inputDecoration(localizations.pincode ?? 'Pincode', icon: Icons.pin_drop),
+                      decoration: _inputDecoration(
+                          localizations.pincode ?? 'Pincode (Optional)',
+                          icon: Icons.pin_drop),
+                      validator: (val) {
+                        final trimmed = val?.trim() ?? '';
+                        if (trimmed.isNotEmpty && trimmed.length != 6) {
+                          return 'Must be 6 digits';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                 ],
@@ -306,15 +346,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: OutlinedButton(
                         onPressed: () {
                           // Reset fields
-                           setState(() {
-                             _isEditing = false;
-                             // Reload original values
-                             final u = auth.userProfile;
-                             _displayNameController.text = u?.displayName ?? '';
-                             _phoneController.text = u?.phoneNumber ?? '';
-                             _aadharController.text = u?.aadharNumber ?? '';
-                              // ... reset others if strictly needed, or just pop
-                           });
+                          setState(() {
+                            _isEditing = false;
+                            // Reload original values
+                            final u = auth.userProfile;
+                            _displayNameController.text = u?.displayName ?? '';
+                            _phoneController.text = u?.phoneNumber ?? '';
+                            _aadharController.text = u?.aadharNumber ?? '';
+                            // ... reset others if strictly needed, or just pop
+                          });
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -332,9 +372,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           foregroundColor: Colors.white,
                         ),
-                        child: auth.isLoading 
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                          : Text(localizations.save ?? 'Save'),
+                        child: auth.isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                            : Text(localizations.save ?? 'Save'),
                       ),
                     ),
                   ],

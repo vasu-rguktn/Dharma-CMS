@@ -1,9 +1,10 @@
-
 // lib/screens/ai_legal_chat_screen.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -47,7 +48,8 @@ class _ChatStateHolder {
 }
 
 class AiLegalChatScreen extends StatefulWidget {
-  const AiLegalChatScreen({super.key});
+  final Map<String, dynamic>? initialDraft;
+  const AiLegalChatScreen({super.key, this.initialDraft});
 
   @override
   State<AiLegalChatScreen> createState() => _AiLegalChatScreenState();
@@ -86,7 +88,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   Future<bool> _showPetitionTypeDialog() async {
     final localizations = AppLocalizations.of(context)!;
-    
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -117,9 +119,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Description
                 Text(
                   localizations.petitionTypeDescription,
@@ -129,9 +131,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     height: 1.4,
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Anonymous Option
                 PetitionTypeCard(
                   icon: Icons.shield_outlined,
@@ -143,9 +145,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     Navigator.of(context).pop(true);
                   },
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Normal Option
                 PetitionTypeCard(
                   icon: Icons.person_outline,
@@ -157,9 +159,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                     Navigator.of(context).pop(true);
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Cancel button
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
@@ -174,7 +176,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         );
       },
     );
-    
+
     return result ?? false;
   }
 
@@ -198,7 +200,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
   String? _currentSttLang; // Store current STT language for restarting
   bool _ignoreAsrCallbacks = false; // Ignore ASR callbacks after sending
-  bool _isUpdatingFromAsr = false; // Flag to prevent manual edit detection during ASR updates
+  bool _isUpdatingFromAsr =
+      false; // Flag to prevent manual edit detection during ASR updates
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Platform channel for muting system sounds during ASR
@@ -209,10 +212,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   static const Color orange = Color(0xFFFC633C);
   static const Color background = Color(0xFFF5F8FE);
 
+  String? _currentDraftId;
+
   @override
   void initState() {
     super.initState();
-    
+
+    if (widget.initialDraft != null) {
+      _loadDraft(widget.initialDraft!);
+    }
+
     // SAFETY CHECK: If app was closed while loading, it might be stuck.
     // Since we can't resume the network request easily, we reset the UI.
     if (_ChatStateHolder.isLoading) {
@@ -225,31 +234,33 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _flutterTts = FlutterTts();
     _flutterTts.setSpeechRate(0.45);
     _flutterTts.setPitch(1.0);
-    
+
     // Setup TTS-ASR coordination to prevent feedback loop
     _setupTTSHandlers();
-    
+
     // Setup native speech recognizer callbacks (Android only)
     if (_isAndroid) {
       _setupNativeSpeechCallbacks();
     }
-    
+
     // Listen to text controller changes to sync with manual edits
     _controller.addListener(() {
       if (_isRecording && !_isUpdatingFromAsr) {
         final currentText = _controller.text.trim();
-        
+
         // If user manually edited the text, sync ASR state
         final expectedText = _finalizedTranscript.isEmpty
             ? _currentTranscript
             : '$_finalizedTranscript $_currentTranscript';
-        
+
         if (currentText != expectedText.trim()) {
           // User manually edited - update state to match
           final expectedTextTrimmed = expectedText.trim();
-          final textWasShortened = currentText.length < expectedTextTrimmed.length;
-          
-          print('Manual edit detected: "$currentText" (was: "$expectedTextTrimmed", shortened: $textWasShortened)');
+          final textWasShortened =
+              currentText.length < expectedTextTrimmed.length;
+
+          print(
+              'Manual edit detected: "$currentText" (was: "$expectedTextTrimmed", shortened: $textWasShortened)');
           setState(() {
             // Treat entire text as finalized (user's manual edit)
             _finalizedTranscript = currentText;
@@ -257,7 +268,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             _lastRecognizedText = '';
           });
           print('ASR state synced with manual edit');
-          
+
           // CRITICAL: If text was shortened (words removed), restart ASR to clear its buffer
           // This prevents ASR from re-adding removed words when user speaks again
           if (textWasShortened && _isRecording) {
@@ -283,7 +294,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
     });
   }
-  
+
   /// Setup native speech recognizer callbacks (Android only)
   void _setupNativeSpeechCallbacks() {
     _nativeSpeech.onPartialResult = (text) {
@@ -298,7 +309,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         }
         return;
       }
-      
+
       if (mounted && _isRecording) {
         setState(() {
           _isUpdatingFromAsr = true;
@@ -315,24 +326,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               partialToShow = text;
             }
           }
-          
+
           // Update current transcript
           _currentTranscript = partialToShow;
           _lastRecognizedText = text;
           // Display: finalized + current partial
           final displayText = _finalizedTranscript.isEmpty
               ? _currentTranscript
-              : (_currentTranscript.isEmpty 
-                  ? _finalizedTranscript 
+              : (_currentTranscript.isEmpty
+                  ? _finalizedTranscript
                   : '$_finalizedTranscript $_currentTranscript');
           _controller.text = displayText.trim();
-          
+
           _isUpdatingFromAsr = false;
-          print('Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+          print(
+              'Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
         });
       }
     };
-    
+
     _nativeSpeech.onFinalResult = (text) {
       // Ignore if we just sent a message
       if (_ignoreAsrCallbacks) {
@@ -345,7 +357,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         }
         return;
       }
-      
+
       if (mounted && _isRecording) {
         setState(() {
           _isUpdatingFromAsr = true;
@@ -355,83 +367,85 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           _currentTranscript = '';
           _lastRecognizedText = text;
           _controller.text = merged;
-          
+
           _isUpdatingFromAsr = false;
           print('Native final (merged): "$text" -> "$merged"');
         });
       }
     };
-    
+
     _nativeSpeech.onError = (error, message) {
       print('Native ASR error: $error - $message');
       // Errors are handled by auto-restart in native code
     };
-    
+
     _nativeSpeech.onListeningStarted = () {
       print('Native ASR started');
     };
-    
+
     _nativeSpeech.onListeningStopped = () {
       print('Native ASR stopped');
     };
   }
-  
+
   /// Extract only genuinely new words from ASR text (for partial results)
   /// Returns only words that aren't already at the end of current text
   String extractNewWordsOnly(String currentText, String asrText) {
     currentText = currentText.trim();
     asrText = asrText.trim();
-    
+
     if (currentText.isEmpty) return asrText;
-    
-    final normalizedCurrent = currentText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-    final normalizedAsr = asrText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-    
+
+    final normalizedCurrent =
+        currentText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final normalizedAsr =
+        asrText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+
     // If ASR doesn't start with current, return ASR as-is (might be completely new)
     if (!normalizedAsr.startsWith(normalizedCurrent)) {
       return asrText;
     }
-    
+
     final currentWords = normalizedCurrent.split(' ');
     final asrWords = normalizedAsr.split(' ');
-    
+
     if (asrWords.length <= currentWords.length) {
       return ''; // No new words
     }
-    
+
     final suffixWordsNormalized = asrWords.sublist(currentWords.length);
     final asrWordsOriginal = asrText.split(RegExp(r'\s+'));
-    
+
     if (asrWordsOriginal.length <= currentWords.length) {
       return '';
     }
-    
+
     final suffixWordsOriginal = asrWordsOriginal.sublist(currentWords.length);
-    
+
     // CRITICAL: Check if suffix starts with words that don't match current text end
     // This handles cases where ASR re-adds manually removed words
     // Example: current="hello", ASR="hello world welcome", suffix="world welcome"
     // "world" doesn't match end of "hello", so it was likely removed - skip it
-    
+
     // Strategy: If suffix has multiple words and first word doesn't match current end,
     // skip the first word (it's likely a removed word that ASR is re-adding)
     int startIndex = 0;
     if (currentWords.isNotEmpty && suffixWordsNormalized.length > 1) {
       final lastWordOfCurrent = currentWords.last.toLowerCase();
       final firstWordOfSuffix = suffixWordsNormalized[0].toLowerCase();
-      
+
       // If first word of suffix doesn't match last word of current, skip it
       // This handles: current="hello", suffix="world welcome" → skip "world", add "welcome"
       if (firstWordOfSuffix != lastWordOfCurrent) {
         startIndex = 1; // Skip first word, start from second
       }
     }
-    
+
     // Check each word individually - only add words that aren't already at the end
     final wordsToAdd = <String>[];
     for (int i = startIndex; i < suffixWordsNormalized.length; i++) {
       final wordToCheck = suffixWordsNormalized[i];
-      
+
       // Check if this word is already at the end of current text
       bool wordAlreadyPresent = false;
       if (currentWords.isNotEmpty) {
@@ -440,15 +454,18 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           wordAlreadyPresent = true;
         }
         // Also check if multiple words at the end match
-        if (!wordAlreadyPresent && currentWords.length >= (i - startIndex + 1)) {
-          final endWords = currentWords.sublist(currentWords.length - (i - startIndex + 1));
+        if (!wordAlreadyPresent &&
+            currentWords.length >= (i - startIndex + 1)) {
+          final endWords =
+              currentWords.sublist(currentWords.length - (i - startIndex + 1));
           final suffixSoFar = suffixWordsNormalized.sublist(startIndex, i + 1);
-          if (endWords.join(' ').toLowerCase() == suffixSoFar.join(' ').toLowerCase()) {
+          if (endWords.join(' ').toLowerCase() ==
+              suffixSoFar.join(' ').toLowerCase()) {
             wordAlreadyPresent = true;
           }
         }
       }
-      
+
       if (!wordAlreadyPresent) {
         wordsToAdd.add(suffixWordsOriginal[i]);
       } else {
@@ -456,10 +473,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         break;
       }
     }
-    
+
     return wordsToAdd.join(' ');
   }
-  
+
   /// Merge ASR text with current text intelligently to prevent duplication
   String mergeAsrWithCurrentText(String currentText, String asrText) {
     currentText = currentText.trim();
@@ -468,8 +485,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (currentText.isEmpty) return asrText;
 
     // Normalize both texts for comparison (lowercase, single spaces)
-    final normalizedCurrent = currentText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-    final normalizedAsr = asrText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final normalizedCurrent =
+        currentText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final normalizedAsr =
+        asrText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
 
     // If texts are exactly the same, return current (preserve user's capitalization)
     if (normalizedCurrent == normalizedAsr) {
@@ -486,29 +505,29 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // Split into words for accurate comparison
       final currentWords = normalizedCurrent.split(' ');
       final asrWords = normalizedAsr.split(' ');
-      
+
       // If ASR has same or fewer words, it's already contained
       if (asrWords.length <= currentWords.length) {
         return currentText;
       }
-      
+
       // Get the suffix words (words after currentText in ASR)
       final suffixWordsNormalized = asrWords.sublist(currentWords.length);
       if (suffixWordsNormalized.isEmpty) return currentText;
-      
+
       // Get suffix from original ASR text (preserve case)
       final asrWordsOriginal = asrText.split(RegExp(r'\s+'));
       if (asrWordsOriginal.length <= currentWords.length) {
         return currentText;
       }
-      
+
       final suffixWordsOriginal = asrWordsOriginal.sublist(currentWords.length);
-      
+
       // CRITICAL: Check each word individually - only add words that aren't already at the end
       final wordsToAdd = <String>[];
       for (int i = 0; i < suffixWordsNormalized.length; i++) {
         final wordToCheck = suffixWordsNormalized[i];
-        
+
         // Check if this word is already at the end of current text
         bool wordAlreadyPresent = false;
         if (currentWords.isNotEmpty) {
@@ -519,14 +538,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           }
           // Also check if multiple words at the end match (e.g., "purse purse" already there)
           if (!wordAlreadyPresent && currentWords.length >= i + 1) {
-            final endWords = currentWords.sublist(currentWords.length - (i + 1));
+            final endWords =
+                currentWords.sublist(currentWords.length - (i + 1));
             final suffixSoFar = suffixWordsNormalized.sublist(0, i + 1);
-            if (endWords.join(' ').toLowerCase() == suffixSoFar.join(' ').toLowerCase()) {
+            if (endWords.join(' ').toLowerCase() ==
+                suffixSoFar.join(' ').toLowerCase()) {
               wordAlreadyPresent = true;
             }
           }
         }
-        
+
         if (!wordAlreadyPresent) {
           // This word is genuinely new - add it
           wordsToAdd.add(suffixWordsOriginal[i]);
@@ -536,30 +557,33 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           break;
         }
       }
-      
+
       // If no new words to add, return current text as-is
       if (wordsToAdd.isEmpty) {
         return currentText;
       }
-      
+
       // Append only the genuinely new words
       final suffix = wordsToAdd.join(' ');
-      final result = (currentText + ' ' + suffix).replaceAll(RegExp(r'\s+'), ' ').trim();
-      
+      final result =
+          (currentText + ' ' + suffix).replaceAll(RegExp(r'\s+'), ' ').trim();
+
       // Safety check: prevent duplicate patterns
-      final normalizedResult = result.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-      if (normalizedResult.contains(normalizedCurrent + ' ' + normalizedCurrent)) {
+      final normalizedResult =
+          result.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+      if (normalizedResult
+          .contains(normalizedCurrent + ' ' + normalizedCurrent)) {
         return currentText; // Duplicate detected
       }
-      
+
       return result;
     }
 
     // Find common prefix (for cases where texts don't align perfectly)
     int minLen = math.min(currentText.length, asrText.length);
     int i = 0;
-    while (i < minLen && 
-           currentText[i].toLowerCase() == asrText[i].toLowerCase()) {
+    while (i < minLen &&
+        currentText[i].toLowerCase() == asrText[i].toLowerCase()) {
       i++;
     }
 
@@ -571,12 +595,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     final normalizedSuffix = suffix.toLowerCase().trim();
     final currentWords = normalizedCurrent.split(' ');
     final suffixWords = normalizedSuffix.split(' ');
-    
+
     // If the last few words of current text match the suffix words, don't append
     if (currentWords.length >= suffixWords.length) {
-      final lastWords = currentWords.sublist(
-        currentWords.length - suffixWords.length
-      );
+      final lastWords =
+          currentWords.sublist(currentWords.length - suffixWords.length);
       if (lastWords.join(' ') == suffixWords.join(' ')) {
         return currentText; // Suffix already present, don't duplicate
       }
@@ -590,16 +613,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   String _correctCommonMistakes(String text) {
     // Fix common misrecognitions
     // "triple it news video" → "IIIT Nuzvid"
-    text = text.replaceAll(RegExp(r'triple\s*it\s*news\s*video', caseSensitive: false), 'IIIT Nuzvid');
-    text = text.replaceAll(RegExp(r'triple\s*it', caseSensitive: false), 'IIIT');
-    text = text.replaceAll(RegExp(r'news\s*video', caseSensitive: false), 'Nuzvid');
-    
+    text = text.replaceAll(
+        RegExp(r'triple\s*it\s*news\s*video', caseSensitive: false),
+        'IIIT Nuzvid');
+    text =
+        text.replaceAll(RegExp(r'triple\s*it', caseSensitive: false), 'IIIT');
+    text = text.replaceAll(
+        RegExp(r'news\s*video', caseSensitive: false), 'Nuzvid');
+
     // Add more corrections as you discover them
     // Example: text = text.replaceAll(RegExp(r'wrong\s*word', caseSensitive: false), 'correct word');
-    
+
     return text;
   }
-  
+
   /// Setup TTS handlers to coordinate with ASR (prevent feedback loop)
   void _setupTTSHandlers() {
     // When TTS starts speaking, pause ASR to prevent feedback
@@ -607,26 +634,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       print('TTS started - pausing ASR');
       _pauseASRForTTS();
     });
-    
+
     // When TTS finishes, resume ASR automatically
     _flutterTts.setCompletionHandler(() {
       print('TTS completed - resuming ASR');
       _resumeASRAfterTTS();
     });
-    
+
     // Handle TTS errors
     _flutterTts.setErrorHandler((msg) {
       print('TTS error: $msg - resuming ASR');
       _resumeASRAfterTTS();
     });
   }
-  
+
   /// Pause ASR when TTS is speaking (prevent feedback loop)
   void _pauseASRForTTS() {
     if (_isRecording && mounted) {
       print('Pausing ASR for TTS...');
 
-      
       if (_isAndroid) {
         // Use native recognizer on Android
         _nativeSpeech.stopListening();
@@ -637,12 +663,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
     }
   }
-  
+
   /// Resume ASR after TTS finishes
   void _resumeASRAfterTTS() {
     if (_isRecording && mounted) {
       print('Resuming ASR after TTS...');
-      
+
       // Small delay to ensure TTS audio has fully stopped
       Future.delayed(const Duration(milliseconds: 300), () async {
         if (_isRecording && mounted) {
@@ -661,21 +687,22 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       });
     }
   }
-  
+
   /// Centralized function to reset chat state
   void _resetChatState({bool clearMessages = true, bool stopASR = false}) {
-    print('Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
-    
+    print(
+        'Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
+
     setState(() {
       // Reset ASR state
       _finalizedTranscript = '';
       _currentTranscript = '';
       _lastRecognizedText = '';
-      
+
       // Clear input
       _controller.clear();
       _inputError = false;
-      
+
       // Clear chat messages if requested
       if (clearMessages) {
         _ChatStateHolder.messages.clear();
@@ -684,7 +711,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         _ChatStateHolder.hasStarted = false;
         _dynamicHistory.clear();
       }
-      
+
       // Stop ASR if requested
       if (stopASR && _isRecording) {
         _isRecording = false;
@@ -692,12 +719,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         _listeningMonitorTimer?.cancel();
       }
     });
-    
+
     // Stop TTS
     try {
       _flutterTts.stop();
     } catch (_) {}
-    
+
     // Stop ASR if requested
     if (stopASR) {
       try {
@@ -710,7 +737,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       } catch (_) {}
     }
   }
-  
+
   /// Handle back button press
   Future<bool> _onWillPop() async {
     // If chat is active, show confirmation dialog
@@ -720,7 +747,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
     return true; // Allow navigation
   }
-  
+
   /// Show exit confirmation dialog
   Future<void> _showExitDialog() async {
     final result = await showDialog<String>(
@@ -736,19 +763,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               onPressed: () => Navigator.of(context).pop('clear'),
               child: const Text(
                 'CLEAR CHAT',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
               ),
             ),
-            
+
             // CLOSE CHAT button
             TextButton(
               onPressed: () => Navigator.of(context).pop('close'),
               child: const Text(
                 'CLOSE CHAT',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
             ),
-            
+
             // NO button
             TextButton(
               onPressed: () => Navigator.of(context).pop('no'),
@@ -758,7 +787,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         );
       },
     );
-    
+
     // Handle user choice
     if (result == 'clear') {
       _clearChat();
@@ -767,7 +796,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
     // If 'no', do nothing (dialog closes, chat continues)
   }
-  
+
   /// Clear chat but stay on screen
   void _clearChat() {
     _resetChatState(clearMessages: true, stopASR: false);
@@ -778,7 +807,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
     });
   }
-  
+
   /// Close chat and navigate away
   void _closeChat() {
     _resetChatState(clearMessages: true, stopASR: true);
@@ -788,7 +817,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Safety check: If we have no messages, we MUST treat it as a fresh start.
     // This fixes the bug where navigating away without sending a message (empty state)
     // would leave hasStarted=true, causing the next open to get stuck (modal wouldn't show).
@@ -801,12 +830,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _ChatStateHolder.hasStarted = true;
       _startChatFlow();
     } else {
-        // Returning to existing chat - preserve state
-        // Ensure input is enabled if we're in the middle of a dynamic turn
-        if (!_isLoading && !_errored) {
-          _setAllowInput(true);
-          setState(() {});
-        }
+      // Returning to existing chat - preserve state
+      // Ensure input is enabled if we're in the middle of a dynamic turn
+      if (!_isLoading && !_errored) {
+        _setAllowInput(true);
+        setState(() {});
+      }
     }
   }
 
@@ -814,13 +843,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Show petition type selection first
     await Future.delayed(Duration.zero); // Ensure context is ready
     if (!mounted) return;
-    
+
     final bool proceed = await _showPetitionTypeDialog();
-    
+
     if (!proceed) {
       if (mounted) {
-         _ChatStateHolder.reset();
-         context.go('/dashboard');
+        _ChatStateHolder.reset();
+        context.go('/dashboard');
       }
       return;
     }
@@ -838,14 +867,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _setAllowInput(false);
       _setErrored(false);
     });
-    
+
     // Customize welcome message based on selection
     if (_isAnonymous) {
       _addBot(localizations.anonymousPetitionConfirm);
     } else {
       _addBot(localizations.welcomeToDharma);
     }
-    
+
     await Future.delayed(const Duration(seconds: 1));
     _addBot(localizations.letUsBegin);
     await Future.delayed(const Duration(seconds: 1)); // Small delay for flow
@@ -895,8 +924,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   void _addUser(String content, {List<PlatformFile> files = const []}) {
     _ChatStateHolder.messages.add(_ChatMessage(
-      user: 'You', 
-      content: content, 
+      user: 'You',
+      content: content,
       isUser: true,
       files: List.from(files), // Copy to prevent mutation issues
     ));
@@ -938,14 +967,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // iOS simulator / other platforms
       baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     }
-    
-    // baseUrl="http://127.0.0.1:8000";
+
+    // baseUrl = "http://127.0.0.1:8000";
     final settings = context.read<SettingsProvider>();
-    final localeCode = settings.locale?.languageCode ?? Localizations.localeOf(context).languageCode;
+    final localeCode = settings.locale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
 
     // Construct Payload using FormData to support Files
     final formData = FormData();
-    
+
     // PROCESS FILES (Optimization: Do not upload bytes, just pass reference)
     String attachmentNote = "";
     if (_attachedFiles.isNotEmpty) {
@@ -953,17 +983,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       for (final file in _attachedFiles) {
         // Track globally for final handover to Petition Screen
         // Check by name as simplistic dedup
-        if (!_ChatStateHolder.allAttachedFiles.any((f) => f.name == file.name && f.size == file.size)) {
-           _ChatStateHolder.allAttachedFiles.add(file);
+        if (!_ChatStateHolder.allAttachedFiles
+            .any((f) => f.name == file.name && f.size == file.size)) {
+          _ChatStateHolder.allAttachedFiles.add(file);
         }
 
         final filename = file.name;
-        attachmentNote += "\n[System: User attached file '$filename' (Reference Only)]";
+        attachmentNote +=
+            "\n[System: User attached file '$filename' (Reference Only)]";
       }
       // NOTE: We do NOT add files to formData.files to avoid network latency.
       // The backend will see the text note and acknowledge it.
     }
-    
+
     // START: Payload Construction with injected attachment note
     List<Map<String, dynamic>> payloadHistory = [];
     // Deep copy history to modify it
@@ -978,10 +1010,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         // Append to last user message in history
         var lastMsg = payloadHistory.last;
         if (lastMsg['role'] == 'user') {
-           lastMsg['content'] = "${lastMsg['content']} $attachmentNote";
+          lastMsg['content'] = "${lastMsg['content']} $attachmentNote";
         } else {
-           // Fallback if last msg was AI (rare)
-           finalInitialDetails += " $attachmentNote";
+          // Fallback if last msg was AI (rare)
+          finalInitialDetails += " $attachmentNote";
         }
       } else {
         // First turn - append to initial details
@@ -990,18 +1022,23 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     // Add text fields
-    formData.fields.add(MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
-    formData.fields.add(MapEntry('address', _ChatStateHolder.answers['address'] ?? ''));
-    final phone = _ChatStateHolder.answers['phone'] ?? _ChatStateHolder.answers['phone_number'] ?? '';
+    formData.fields.add(
+        MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
+    formData.fields
+        .add(MapEntry('address', _ChatStateHolder.answers['address'] ?? ''));
+    final phone = _ChatStateHolder.answers['phone'] ??
+        _ChatStateHolder.answers['phone_number'] ??
+        '';
     formData.fields.add(MapEntry('phone', phone));
-    formData.fields.add(MapEntry('complaint_type', _ChatStateHolder.answers['complaint_type'] ?? ''));
+    formData.fields.add(MapEntry(
+        'complaint_type', _ChatStateHolder.answers['complaint_type'] ?? ''));
     formData.fields.add(MapEntry('initial_details', finalInitialDetails));
     formData.fields.add(MapEntry('language', localeCode));
     formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
-    
+
     // Serialize chat history
     formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
-    
+
     print('🚀 Sending to backend (FormData):');
     print('   History items: ${_dynamicHistory.length}');
     print('   Files attached: ${_attachedFiles.length}');
@@ -1013,15 +1050,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             data: formData,
             // Header content-type is auto-set by FormData
           )
-          .timeout(const Duration(seconds: 90)); // Increased timeout for file uploads coverage
+          .timeout(const Duration(
+              seconds: 90)); // Increased timeout for file uploads coverage
 
       final data = resp.data;
       print("Backend Response: $data"); // DEBUG LOG
-      
+
       // Clear attached files after successful send
       if (_attachedFiles.isNotEmpty) {
         setState(() {
-           _attachedFiles.clear();
+          _attachedFiles.clear();
         });
       }
 
@@ -1051,14 +1089,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     } catch (e) {
       String msg = localizations.somethingWentWrong ??
           'Sorry, something went wrong. Please try again later.';
-      
+
       // Enhanced error logging for debugging
       print('❌ Chat step error: $e');
-      
+
       if (e is DioException) {
         print('HTTP Status Code: ${e.response?.statusCode}');
         print('Response Data: ${e.response?.data}');
-        
+
         if (e.response != null && e.response?.data != null) {
           // try to show server-provided message if present
           try {
@@ -1071,7 +1109,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           } catch (_) {}
         }
       }
-      
+
       _addBot(msg);
       setState(() {
         _setIsLoading(false);
@@ -1120,7 +1158,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       _setIsLoading(false);
       _setAllowInput(false);
     });
-    
+
     // STOP ASR when chat completes
     if (_isRecording) {
       print('Chat completed - stopping ASR');
@@ -1140,7 +1178,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // navigate to details screen
     // navigate to details screen
     if (_ChatStateHolder.allAttachedFiles.isNotEmpty) {
-      print('💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
+      print(
+          '💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
       try {
         Provider.of<PetitionProvider>(context, listen: false)
             .setTempEvidence(_ChatStateHolder.allAttachedFiles);
@@ -1149,7 +1188,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
       }
     } else {
-       print('⚠️ [DEBUG] Chat Screen: No files to stash (list empty)');
+      print('⚠️ [DEBUG] Chat Screen: No files to stash (list empty)');
     }
 
     Future.delayed(const Duration(seconds: 1), () {
@@ -1176,7 +1215,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Capture the final message to send BEFORE resetting state
     String finalMessage = '';
     bool wasRecording = _isRecording;
-    
+
     // If recording is active, finalize the current transcript
     if (_isRecording) {
       // Finalize all accumulated text for this message
@@ -1189,7 +1228,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       } else {
         finalMessage = _finalizedTranscript.trim();
       }
-      
+
       // Update controller with finalized message
       _controller.text = finalMessage;
     } else {
@@ -1199,7 +1238,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Validate message
     if (!_allowInput || _isLoading) return;
-    
+
     if (finalMessage.isEmpty) {
       setState(() => _inputError = false);
       _inputFocus.requestFocus();
@@ -1210,11 +1249,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // This prevents concatenation with previous messages/autofill issues
     if (_isRecording) {
       print('Sending message - restarting ASR to clear buffer');
-      
+
       // Temporarily ignore callbacks to prevent flickering/race conditions
       setState(() {
         _ignoreAsrCallbacks = true;
-        _finalizedTranscript = ''; 
+        _finalizedTranscript = '';
         _currentTranscript = '';
         _lastRecognizedText = '';
         _inputError = false;
@@ -1227,9 +1266,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           await _nativeSpeech.stopListening();
           // Small delay to ensure engine processes the stop
           await Future.delayed(const Duration(milliseconds: 200));
-          
+
           if (mounted && _isRecording && _currentSttLang != null) {
-             await _nativeSpeech.startListening(language: _currentSttLang!);
+            await _nativeSpeech.startListening(language: _currentSttLang!);
           }
         } else {
           // iOS/Web: Use existing clean restart helper
@@ -1238,7 +1277,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       } catch (e) {
         print('Error restarting ASR in handleSend: $e');
       }
-      
+
       // Re-enable callbacks
       if (mounted) {
         setState(() {
@@ -1246,8 +1285,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         });
       }
     } else {
-       // Not recording - simple state clear
-       setState(() {
+      // Not recording - simple state clear
+      setState(() {
         _finalizedTranscript = '';
         _currentTranscript = '';
         _lastRecognizedText = '';
@@ -1255,7 +1294,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       });
       _controller.clear();
     }
-    
+
     // Add message to chat
     _addUser(finalMessage, files: _attachedFiles);
 
@@ -1277,7 +1316,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Explicitly call backend step
     _processDynamicStep();
-    
+
     // NOTE: Continuous listening continues automatically
     // The monitoring timer will restart if SDK stopped
   }
@@ -1342,11 +1381,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       ),
                     ),
                   );
-                  
+
                   if (geoTaggedImage != null && mounted) {
                     Uint8List? bytes;
                     if (kIsWeb) bytes = await geoTaggedImage.readAsBytes();
-                    
+
                     setState(() {
                       _attachedFiles.add(PlatformFile(
                         name: geoTaggedImage.name,
@@ -1356,7 +1395,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Photo attached: ${geoTaggedImage.name}')),
+                      SnackBar(
+                          content:
+                              Text('Photo attached: ${geoTaggedImage.name}')),
                     );
                   }
                 },
@@ -1380,23 +1421,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   // Use pickImage for simplicity if pickMultiImage logic is complex with types
                   // But LegalQueries uses pickMultiImage, lets try that
                   // Note: pickMultiImage returns List<XFile>, we need paths
-                  final List<XFile> images = await _imagePicker.pickMultiImage();
+                  final List<XFile> images =
+                      await _imagePicker.pickMultiImage();
                   if (images.isNotEmpty && mounted) {
-                     for (var img in images) {
-                       Uint8List? bytes;
-                       if (kIsWeb) bytes = await img.readAsBytes();
-                       
-                       setState(() {
-                          _attachedFiles.add(PlatformFile(
-                            name: img.name,
-                            size: 0,
-                            bytes: bytes,
-                            path: img.path,
-                          ));
-                       });
-                     }
-                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${images.length} photos selected')),
+                    for (var img in images) {
+                      Uint8List? bytes;
+                      if (kIsWeb) bytes = await img.readAsBytes();
+
+                      setState(() {
+                        _attachedFiles.add(PlatformFile(
+                          name: img.name,
+                          size: 0,
+                          bytes: bytes,
+                          path: img.path,
+                        ));
+                      });
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('${images.length} photos selected')),
                     );
                   }
                 },
@@ -1428,7 +1471,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   if (geoTaggedVideo != null && mounted) {
                     Uint8List? bytes;
                     if (kIsWeb) bytes = await geoTaggedVideo.readAsBytes();
-                    
+
                     setState(() {
                       _attachedFiles.add(PlatformFile(
                         name: geoTaggedVideo.name,
@@ -1438,7 +1481,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       ));
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Video attached: ${geoTaggedVideo.name}')),
+                      SnackBar(
+                          content:
+                              Text('Video attached: ${geoTaggedVideo.name}')),
                     );
                   }
                 },
@@ -1461,7 +1506,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   Navigator.pop(context);
                   final result = await FilePicker.platform.pickFiles(
                     type: FileType.custom,
-                    allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'mp3', 'wav'],
+                    allowedExtensions: [
+                      'pdf',
+                      'doc',
+                      'docx',
+                      'txt',
+                      'mp3',
+                      'wav'
+                    ],
                     allowMultiple: true,
                     withData: true,
                   );
@@ -1470,7 +1522,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       _attachedFiles.addAll(result.files);
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${result.files.length} file(s) attached')),
+                      SnackBar(
+                          content:
+                              Text('${result.files.length} file(s) attached')),
                     );
                   }
                 },
@@ -1620,15 +1674,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 _isUpdatingFromAsr = false;
                 return;
               }
-              
+
               if (result.finalResult) {
                 // FINAL RESULT: Merge with finalized transcript
-                final merged = mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                final merged =
+                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
                 _finalizedTranscript = merged;
                 _currentTranscript = '';
                 _lastRecognizedText = newWords;
                 _controller.text = merged;
-                print('STT safe restart final (merged): "$newWords" -> "$merged"');
+                print(
+                    'STT safe restart final (merged): "$newWords" -> "$merged"');
               } else {
                 // PARTIAL RESULT: Extract only genuinely new words (not already at end)
                 String partialToShow;
@@ -1637,25 +1693,27 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   partialToShow = newWords;
                 } else {
                   // Have finalized text - extract only new words
-                  partialToShow = extractNewWordsOnly(_finalizedTranscript, newWords);
+                  partialToShow =
+                      extractNewWordsOnly(_finalizedTranscript, newWords);
                   // If extraction returns empty but ASR has text, use ASR text
                   if (partialToShow.isEmpty && newWords.isNotEmpty) {
                     partialToShow = newWords;
                   }
                 }
-                
+
                 // Update current transcript
                 _currentTranscript = partialToShow;
                 _lastRecognizedText = newWords;
                 final displayText = _finalizedTranscript.isEmpty
                     ? _currentTranscript
-                    : (_currentTranscript.isEmpty 
-                        ? _finalizedTranscript 
+                    : (_currentTranscript.isEmpty
+                        ? _finalizedTranscript
                         : '$_finalizedTranscript $_currentTranscript');
                 _controller.text = displayText.trim();
-                print('STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                print(
+                    'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
               }
-              
+
               _isUpdatingFromAsr = false;
             });
           }
@@ -1699,15 +1757,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void _startListeningMonitor() {
     // Cancel any existing timer
     _listeningMonitorTimer?.cancel();
-    
+
     // Start periodic timer to check if SDK is still listening
     // Increased interval to 5 seconds to reduce restart frequency and sounds
-    _listeningMonitorTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _listeningMonitorTimer =
+        Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted || !_isRecording) {
         timer.cancel();
         return;
       }
-      
+
       // Check if SDK stopped listening
       if (!_speech.isListening && !_isRestarting) {
         print('Monitor detected SDK stopped - triggering seamless restart...');
@@ -1732,7 +1791,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     _isRestarting = true;
     print('=== SEAMLESS RESTART INITIATED ===');
-    print('Preserving state: finalized="$_finalizedTranscript", current="$_currentTranscript"');
+    print(
+        'Preserving state: finalized="$_finalizedTranscript", current="$_currentTranscript"');
 
     try {
       // Stop any existing session
@@ -1769,12 +1829,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 return;
               }
 
-              print('onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
+              print(
+                  'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
               _lastSpeechDetected = DateTime.now();
 
               if (result.finalResult) {
                 // FINAL RESULT: Merge with finalized transcript
-                final merged = mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                final merged =
+                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
                 _finalizedTranscript = merged;
                 _currentTranscript = '';
                 _lastRecognizedText = newWords;
@@ -1788,31 +1850,33 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   partialToShow = newWords;
                 } else {
                   // Have finalized text - extract only new words
-                  partialToShow = extractNewWordsOnly(_finalizedTranscript, newWords);
+                  partialToShow =
+                      extractNewWordsOnly(_finalizedTranscript, newWords);
                   // If extraction returns empty but ASR has text, use ASR text
                   if (partialToShow.isEmpty && newWords.isNotEmpty) {
                     partialToShow = newWords;
                   }
                 }
-                
+
                 // Update current transcript
                 _currentTranscript = partialToShow;
                 _lastRecognizedText = newWords;
                 final displayText = _finalizedTranscript.isEmpty
                     ? _currentTranscript
-                    : (_currentTranscript.isEmpty 
-                        ? _finalizedTranscript 
+                    : (_currentTranscript.isEmpty
+                        ? _finalizedTranscript
                         : '$_finalizedTranscript $_currentTranscript');
                 _controller.text = displayText.trim();
-                print('STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                print(
+                    'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
               }
-              
+
               _isUpdatingFromAsr = false;
             });
           }
         },
       );
-      
+
       // Start monitoring timer to detect when SDK stops
       _startListeningMonitor();
 
@@ -1822,7 +1886,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     } catch (e) {
       _isRestarting = false;
       print('Error during seamless restart: $e');
-      
+
       // Retry once after delay
       if (_busyRetryCount < 3 && mounted && _isRecording) {
         _busyRetryCount++;
@@ -1902,10 +1966,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       if (_isAndroid) {
         // Use Android Native SpeechRecognizer
         print('Starting Android Native SpeechRecognizer...');
-        
+
         // Mute system sounds to prevent restart sounds
         await _muteSystemSounds();
-        
+
         setState(() {
           _isRecording = true;
           _currentSttLang = sttLang;
@@ -1935,148 +1999,154 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         await Future.delayed(const Duration(milliseconds: 100));
 
         bool available = await _speech.initialize(
-        onError: (val) {
-          print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
-          final errorMsg = val.errorMsg.toLowerCase();
+          onError: (val) {
+            print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
+            final errorMsg = val.errorMsg.toLowerCase();
 
-          // For continuous listening: Treat all errors as non-fatal
-          // Silence and "no match" are normal - just continue listening
-          if (errorMsg.contains('no_match') || errorMsg.contains('no match')) {
-            print(
-                'No match error detected - treating as silence/pause, continuing to listen...');
-            // Don't do anything - just let it continue listening
-            return;
-          }
-
-          // For other errors, only stop on truly critical errors
-          if (val.permanent &&
-              (errorMsg.contains('permission') ||
-                  errorMsg.contains('denied'))) {
-            // Only stop on permission errors - these are truly critical
-            if (mounted) {
-              setState(() {
-                _isRecording = false;
-                _recordingStartTime = null;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: ${val.errorMsg}')),
-              );
+            // For continuous listening: Treat all errors as non-fatal
+            // Silence and "no match" are normal - just continue listening
+            if (errorMsg.contains('no_match') ||
+                errorMsg.contains('no match')) {
+              print(
+                  'No match error detected - treating as silence/pause, continuing to listen...');
+              // Don't do anything - just let it continue listening
+              return;
             }
-          } else {
-            // All other errors (temporary or non-critical) - just restart listening
-            print(
-                'Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
-            if (mounted && _isRecording) {
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted && _isRecording && !_speech.isListening) {
-                  _seamlessRestart();
-                }
-              });
-            }
-          }
-        },
-      );
 
-      if (available) {
-        setState(() {
-          _isRecording = true;
-          _currentSttLang =
-              sttLang; // Store language for potential restart on clear
-          // Start fresh - TRUE continuous mode
-          _currentTranscript = ''; // Start fresh for streaming
-          _lastRecognizedText = ''; // Reset for text comparison
-          _recordingStartTime = DateTime.now();
-          _lastRestartAttempt = null; // Reset restart tracker for new session
-          _isRestarting = false; // Reset restart flag
-          _busyRetryCount = 0; // Reset BUSY retry count
-          _lastSpeechDetected = null; // Reset last speech timestamp
-        });
-
-        // Use try-catch for initial listen to handle BUSY errors
-        try {
-          await _speech.listen(
-            localeId: sttLang,
-            listenFor: const Duration(
-                hours: 1), // Listen for up to 1 hour - continuous listening
-            pauseFor: const Duration(
-                hours:
-                    1), // Allow very long pauses - treat silence as thinking time
-            partialResults: true, // Get partial results as user speaks
-            cancelOnError: false, // Don't cancel on errors, keep listening
-            onResult: (result) {
-              if (mounted && _isRecording) {
+            // For other errors, only stop on truly critical errors
+            if (val.permanent &&
+                (errorMsg.contains('permission') ||
+                    errorMsg.contains('denied'))) {
+              // Only stop on permission errors - these are truly critical
+              if (mounted) {
                 setState(() {
-                  _isUpdatingFromAsr = true;
-                  final newWords = result.recognizedWords.trim();
-
-                  if (newWords.isEmpty) {
-                    _isUpdatingFromAsr = false;
-                    return;
+                  _isRecording = false;
+                  _recordingStartTime = null;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: ${val.errorMsg}')),
+                );
+              }
+            } else {
+              // All other errors (temporary or non-critical) - just restart listening
+              print(
+                  'Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
+              if (mounted && _isRecording) {
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted && _isRecording && !_speech.isListening) {
+                    _seamlessRestart();
                   }
-
-                  print('onResult: newWords="$newWords", isFinal=${result.finalResult}');
-                  _lastSpeechDetected = DateTime.now();
-
-                  if (result.finalResult) {
-                    // FINAL RESULT: Merge with finalized transcript
-                    final merged = mergeAsrWithCurrentText(_finalizedTranscript, newWords);
-                    _finalizedTranscript = merged;
-                    _currentTranscript = '';
-                    _lastRecognizedText = newWords;
-                    _controller.text = merged;
-                    print('STT final result (merged): "$newWords" -> "$merged"');
-                  } else {
-                    // PARTIAL RESULT: Extract only genuinely new words (not already at end)
-                    String partialToShow;
-                    if (_finalizedTranscript.isEmpty) {
-                      // No finalized text yet - use ASR text directly
-                      partialToShow = newWords;
-                    } else {
-                      // Have finalized text - extract only new words
-                      partialToShow = extractNewWordsOnly(_finalizedTranscript, newWords);
-                      // If extraction returns empty but ASR has text, use ASR text
-                      // (this handles cases where ASR doesn't start with finalized)
-                      if (partialToShow.isEmpty && newWords.isNotEmpty) {
-                        partialToShow = newWords;
-                      }
-                    }
-                    
-                    // Update current transcript
-                    _currentTranscript = partialToShow;
-                    _lastRecognizedText = newWords;
-                    // Display: finalized + current partial
-                    final displayText = _finalizedTranscript.isEmpty
-                        ? _currentTranscript
-                        : (_currentTranscript.isEmpty 
-                            ? _finalizedTranscript 
-                            : '$_finalizedTranscript $_currentTranscript');
-                    _controller.text = displayText.trim();
-                    print('STT partial result: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
-                  }
-                  
-                  _isUpdatingFromAsr = false;
                 });
               }
-            },
-          );
-          
-          // Start monitoring timer to detect when SDK stops
-          _startListeningMonitor();
-        } catch (e) {
-          final errorStr = e.toString().toLowerCase();
-          if (errorStr.contains('busy') || errorStr.contains('already')) {
-            // Handle BUSY error on initial listen - use safe restart
-            print('BUSY error on initial listen, using safe restart...');
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted && _isRecording) {
-                _safeRestartListening(sttLang);
-              }
-            });
-          } else {
-            print('Error starting speech recognition: $e');
-            // Unmute on error
-            await _unmuteSystemSounds();
-          }
+            }
+          },
+        );
+
+        if (available) {
+          setState(() {
+            _isRecording = true;
+            _currentSttLang =
+                sttLang; // Store language for potential restart on clear
+            // Start fresh - TRUE continuous mode
+            _currentTranscript = ''; // Start fresh for streaming
+            _lastRecognizedText = ''; // Reset for text comparison
+            _recordingStartTime = DateTime.now();
+            _lastRestartAttempt = null; // Reset restart tracker for new session
+            _isRestarting = false; // Reset restart flag
+            _busyRetryCount = 0; // Reset BUSY retry count
+            _lastSpeechDetected = null; // Reset last speech timestamp
+          });
+
+          // Use try-catch for initial listen to handle BUSY errors
+          try {
+            await _speech.listen(
+              localeId: sttLang,
+              listenFor: const Duration(
+                  hours: 1), // Listen for up to 1 hour - continuous listening
+              pauseFor: const Duration(
+                  hours:
+                      1), // Allow very long pauses - treat silence as thinking time
+              partialResults: true, // Get partial results as user speaks
+              cancelOnError: false, // Don't cancel on errors, keep listening
+              onResult: (result) {
+                if (mounted && _isRecording) {
+                  setState(() {
+                    _isUpdatingFromAsr = true;
+                    final newWords = result.recognizedWords.trim();
+
+                    if (newWords.isEmpty) {
+                      _isUpdatingFromAsr = false;
+                      return;
+                    }
+
+                    print(
+                        'onResult: newWords="$newWords", isFinal=${result.finalResult}');
+                    _lastSpeechDetected = DateTime.now();
+
+                    if (result.finalResult) {
+                      // FINAL RESULT: Merge with finalized transcript
+                      final merged = mergeAsrWithCurrentText(
+                          _finalizedTranscript, newWords);
+                      _finalizedTranscript = merged;
+                      _currentTranscript = '';
+                      _lastRecognizedText = newWords;
+                      _controller.text = merged;
+                      print(
+                          'STT final result (merged): "$newWords" -> "$merged"');
+                    } else {
+                      // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                      String partialToShow;
+                      if (_finalizedTranscript.isEmpty) {
+                        // No finalized text yet - use ASR text directly
+                        partialToShow = newWords;
+                      } else {
+                        // Have finalized text - extract only new words
+                        partialToShow =
+                            extractNewWordsOnly(_finalizedTranscript, newWords);
+                        // If extraction returns empty but ASR has text, use ASR text
+                        // (this handles cases where ASR doesn't start with finalized)
+                        if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                          partialToShow = newWords;
+                        }
+                      }
+
+                      // Update current transcript
+                      _currentTranscript = partialToShow;
+                      _lastRecognizedText = newWords;
+                      // Display: finalized + current partial
+                      final displayText = _finalizedTranscript.isEmpty
+                          ? _currentTranscript
+                          : (_currentTranscript.isEmpty
+                              ? _finalizedTranscript
+                              : '$_finalizedTranscript $_currentTranscript');
+                      _controller.text = displayText.trim();
+                      print(
+                          'STT partial result: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                    }
+
+                    _isUpdatingFromAsr = false;
+                  });
+                }
+              },
+            );
+
+            // Start monitoring timer to detect when SDK stops
+            _startListeningMonitor();
+          } catch (e) {
+            final errorStr = e.toString().toLowerCase();
+            if (errorStr.contains('busy') || errorStr.contains('already')) {
+              // Handle BUSY error on initial listen - use safe restart
+              print('BUSY error on initial listen, using safe restart...');
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted && _isRecording) {
+                  _safeRestartListening(sttLang);
+                }
+              });
+            } else {
+              print('Error starting speech recognition: $e');
+              // Unmute on error
+              await _unmuteSystemSounds();
+            }
           }
         } else {
           await _unmuteSystemSounds();
@@ -2145,13 +2215,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: orange.withOpacity(0.3)),
-              image: (isImage) 
+              image: (isImage)
                   ? DecorationImage(
-                      image: (kIsWeb && file.bytes != null) 
-                          ? MemoryImage(file.bytes!) 
+                      image: (kIsWeb && file.bytes != null)
+                          ? MemoryImage(file.bytes!)
                           : FileImage(File(file.path!)) as ImageProvider,
                       fit: BoxFit.cover,
-                    ) 
+                    )
                   : null,
             ),
             child: Stack(
@@ -2177,8 +2247,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close,
-                          size: 14, color: Colors.red),
+                      child:
+                          const Icon(Icons.close, size: 14, color: Colors.red),
                     ),
                   ),
                 ),
@@ -2204,11 +2274,133 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     super.dispose();
   }
 
+  void _loadDraft(Map<String, dynamic> draft) {
+    print('📂 Loading draft: ${draft['id'] ?? draft['userId']}');
+    final chatData = draft['chatData'] as Map<String, dynamic>?;
+    if (chatData == null) return;
+
+    _currentDraftId = draft['id'];
+
+    setState(() {
+      _ChatStateHolder.reset();
+
+      final msgs = chatData['messages'] as List<dynamic>? ?? [];
+      _ChatStateHolder.messages.addAll(
+        msgs
+            .map((m) => _ChatMessage.fromMap(m as Map<String, dynamic>))
+            .toList(),
+      );
+
+      final answers = chatData['answers'] as Map<String, dynamic>? ?? {};
+      _ChatStateHolder.answers.addAll(
+        answers.map((k, v) => MapEntry(k, v.toString())),
+      );
+
+      final history = chatData['dynamicHistory'] as List<dynamic>? ?? [];
+      _dynamicHistory =
+          history.map((h) => Map<String, String>.from(h as Map)).toList();
+
+      _ChatStateHolder.currentQ = chatData['currentQ'] as int? ?? 0;
+      _ChatStateHolder.hasStarted = true;
+      _ChatStateHolder.allowInput = true;
+      _isAnonymous = chatData['isAnonymous'] as bool? ?? false;
+
+      // Load attached files from draft
+      final filesData = chatData['attachedFiles'] as List<dynamic>? ?? [];
+      _attachedFiles.clear();
+      for (final fileData in filesData) {
+        final name = fileData['name'] as String;
+        final bytesBase64 = fileData['bytes'] as String?;
+        final path = fileData['path'] as String?;
+        final size = fileData['size'] as int? ?? 0;
+
+        Uint8List? bytes;
+        if (bytesBase64 != null) {
+          bytes = base64Decode(bytesBase64);
+        }
+
+        _attachedFiles.add(PlatformFile(
+          name: name,
+          path: path,
+          bytes: bytes,
+          size: size,
+        ));
+      }
+
+      if (_attachedFiles.isNotEmpty) {
+        print('📥 Loaded ${_attachedFiles.length} attached files from draft');
+      }
+    });
+
+    _scrollToEnd();
+  }
+
+  Future<void> _saveDraft() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final complaintProv =
+        Provider.of<ComplaintProvider>(context, listen: false);
+
+    if (auth.user == null) return;
+
+    _setIsLoading(true);
+
+    final chatData = {
+      'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
+      'answers': _ChatStateHolder.answers,
+      'currentQ': _ChatStateHolder.currentQ,
+      'isAnonymous': _isAnonymous,
+      'dynamicHistory': _dynamicHistory,
+      // Save attached files as base64
+      'attachedFiles': _attachedFiles
+          .map((file) => {
+                'name': file.name,
+                'bytes': file.bytes != null ? base64Encode(file.bytes!) : null,
+                'path': file.path,
+                'size': file.size,
+              })
+          .toList(),
+    };
+
+    // Generate a meaningful title from the user's initial complaint
+    String title = "AI Legal Chat Draft";
+
+    // Try to find the user's first message (their initial complaint description)
+    for (var msg in _ChatStateHolder.messages) {
+      if (msg.isUser && msg.content.trim().isNotEmpty) {
+        // Use the first user message as the title
+        final content = msg.content.trim();
+        // Take first 40 characters for a more descriptive title
+        title =
+            content.length > 40 ? content.substring(0, 40) + "..." : content;
+        break;
+      }
+    }
+
+    final success = await complaintProv.saveChatAsDraft(
+      userId: auth.user!.uid,
+      title: title,
+      chatData: chatData,
+      draftId: _currentDraftId,
+    );
+
+    _setIsLoading(false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              success ? 'Draft saved successfully!' : 'Failed to save draft'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final localizations = AppLocalizations.of(context)!;
-    
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
@@ -2223,487 +2415,526 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               }
             },
           ),
+          actions: [
+            // Save Draft Button
+            IconButton(
+              icon: const Icon(Icons.save, color: Colors.white),
+              tooltip: 'Save Draft',
+              onPressed: _saveDraft,
+            ),
+          ],
           title: Text(
             localizations.aiLegalAssistant ?? 'AI Legal Assistant',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
           ),
           backgroundColor: const Color(0xFFFC633C),
           foregroundColor: Colors.white,
         ),
-      body: Column(
-        children: [
-          // ── CHAT MESSAGES ──
-          Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Text(
-                      localizations.loading ?? 'Loading...',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final msg = _messages[index];
-                      // Different layout based on sender
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: msg.isUser
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            // AI Avatar (Left)
-                            if (!msg.isUser) ...[
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
-                                    width: 1,
-                                  ),
-                                  image: const DecorationImage(
-                                    image: AssetImage('assets/avatar.png'),
-                                    fit: BoxFit.contain,
+        body: Column(
+          children: [
+            // ── CHAT MESSAGES ──
+            Expanded(
+              child: _messages.isEmpty
+                  ? Center(
+                      child: Text(
+                        localizations.loading ?? 'Loading...',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = _messages[index];
+                        // Different layout based on sender
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: msg.isUser
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // AI Avatar (Left)
+                              if (!msg.isUser) ...[
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                      width: 1,
+                                    ),
+                                    image: const DecorationImage(
+                                      image: AssetImage('assets/avatar.png'),
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
+                                const SizedBox(width: 8),
+                              ],
 
-                            // Message Bubble
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.of(context).size.width *
-                                      0.70, // Slightly reduced max width to account for avatars
-                                ),
-                                decoration: BoxDecoration(
-                                  color: msg.isUser ? orange : Colors.white,
-                                  // Add different border radius for "chat bubble" effect
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(18),
-                                    topRight: const Radius.circular(18),
-                                    bottomLeft: Radius.circular(
-                                        msg.isUser ? 18 : 4), // Square corner near avatar
-                                    bottomRight: Radius.circular(
-                                        msg.isUser ? 4 : 18), // Square corner near avatar
+                              // Message Bubble
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  constraints: BoxConstraints(
+                                    maxWidth: MediaQuery.of(context)
+                                            .size
+                                            .width *
+                                        0.70, // Slightly reduced max width to account for avatars
                                   ),
-                                  border: msg.isUser
-                                      ? null
-                                      : Border.all(
-                                          color: Colors.grey.shade300, width: 1),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 3,
-                                      offset: const Offset(0, 1),
+                                  decoration: BoxDecoration(
+                                    color: msg.isUser ? orange : Colors.white,
+                                    // Add different border radius for "chat bubble" effect
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(18),
+                                      topRight: const Radius.circular(18),
+                                      bottomLeft: Radius.circular(msg.isUser
+                                          ? 18
+                                          : 4), // Square corner near avatar
+                                      bottomRight: Radius.circular(msg.isUser
+                                          ? 4
+                                          : 18), // Square corner near avatar
                                     ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      msg.content,
-                                      style: TextStyle(
-                                        color: msg.isUser
-                                            ? Colors.white
-                                            : Colors.black87,
-                                        fontSize: 16,
+                                    border: msg.isUser
+                                        ? null
+                                        : Border.all(
+                                            color: Colors.grey.shade300,
+                                            width: 1),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 1),
                                       ),
-                                    ),
-                                    if (msg.files.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 4,
-                                        children: msg.files.map((file) {
-                                          final filename = file.name;
-                                          final isImage = ['jpg', 'png', 'jpeg', 'webp'].any(
-                                              (ext) => filename.toLowerCase().endsWith(ext));
-                                          
-                                          if (isImage) {
-                                           return ClipRRect(
-                                             borderRadius: BorderRadius.circular(8),
-                                             child: (kIsWeb && file.bytes != null)
-                                                 ? Image.memory(
-                                                     file.bytes!,
-                                                     width: 100,
-                                                     height: 100,
-                                                     fit: BoxFit.cover,
-                                                   )
-                                                 : Image.file(
-                                                     File(file.path!),
-                                                     width: 100,
-                                                     height: 100,
-                                                     fit: BoxFit.cover,
-                                                   ),
-                                           );
-                                          }    
-                                          
-                                          return Container(
-                                            margin: const EdgeInsets.only(right: 4, bottom: 4),
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: msg.isUser ? Colors.white.withOpacity(0.9) : Colors.grey[200],
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: Colors.black12,
-                                                width: 0.5,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(Icons.description, size: 16, color: Colors.black87),
-                                                const SizedBox(width: 6),
-                                                ConstrainedBox(
-                                                    constraints: const BoxConstraints(maxWidth: 160),
-                                                    child: Text(
-                                                      filename, 
-                                                      overflow: TextOverflow.ellipsis, 
-                                                      style: const TextStyle(
-                                                        fontSize: 13, 
-                                                        color: Colors.black87,
-                                                        fontWeight: FontWeight.w500
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        msg.content,
+                                        style: TextStyle(
+                                          color: msg.isUser
+                                              ? Colors.white
+                                              : Colors.black87,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      if (msg.files.isNotEmpty) ...[
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: msg.files.map((file) {
+                                            final filename = file.name;
+                                            final isImage = [
+                                              'jpg',
+                                              'png',
+                                              'jpeg',
+                                              'webp'
+                                            ].any((ext) => filename
+                                                .toLowerCase()
+                                                .endsWith(ext));
+
+                                            if (isImage) {
+                                              return ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: (kIsWeb &&
+                                                        file.bytes != null)
+                                                    ? Image.memory(
+                                                        file.bytes!,
+                                                        width: 100,
+                                                        height: 100,
+                                                        fit: BoxFit.cover,
                                                       )
-                                                    )
+                                                    : Image.file(
+                                                        File(file.path!),
+                                                        width: 100,
+                                                        height: 100,
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                              );
+                                            }
+
+                                            return Container(
+                                              margin: const EdgeInsets.only(
+                                                  right: 4, bottom: 4),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: msg.isUser
+                                                    ? Colors.white
+                                                        .withOpacity(0.9)
+                                                    : Colors.grey[200],
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: Colors.black12,
+                                                  width: 0.5,
                                                 ),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ]
-                                  ],
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.description,
+                                                      size: 16,
+                                                      color: Colors.black87),
+                                                  const SizedBox(width: 6),
+                                                  ConstrainedBox(
+                                                      constraints:
+                                                          const BoxConstraints(
+                                                              maxWidth: 160),
+                                                      child: Text(filename,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: const TextStyle(
+                                                              fontSize: 13,
+                                                              color: Colors
+                                                                  .black87,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500))),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ]
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
 
-                            // User Avatar (Right)
-                            if (msg.isUser) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  shape: BoxShape.circle,
+                              // User Avatar (Right)
+                              if (msg.isUser) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.grey.shade600,
+                                    size: 20,
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.person,
-                                  color: Colors.grey.shade600,
-                                  size: 20,
-                                ),
-                              ),
+                              ],
                             ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-
-          // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
-          if (_isRecording)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: background,
-                border: Border(
-                  top: BorderSide(color: Colors.grey[300]!, width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Recording indicator dot
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Timer
-                  if (_recordingStartTime != null)
-                    StreamBuilder<DateTime>(
-                      stream: Stream.periodic(
-                          const Duration(seconds: 1), (_) => DateTime.now()),
-                      builder: (context, snapshot) {
-                        final duration =
-                            DateTime.now().difference(_recordingStartTime!);
-                        final minutes = duration.inMinutes;
-                        final seconds = duration.inSeconds % 60;
-                        return Text(
-                          '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
                           ),
                         );
                       },
                     ),
-                  const SizedBox(width: 12),
-                  // Waveform visualization
-                  Expanded(
-                    child: _WaveformVisualization(
-                      isActive: _currentTranscript.isNotEmpty,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Pause/Stop button
-                  GestureDetector(
-                    onTap: _toggleRecording,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: orange,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.pause,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
 
-          // ── FILE PREVIEW ──
-          if (_attachedFiles.isNotEmpty) _buildFilePreview(),
+            // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
+            if (_isRecording)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: background,
+                  border: Border(
+                    top: BorderSide(color: Colors.grey[300]!, width: 1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Recording indicator dot
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Timer
+                    if (_recordingStartTime != null)
+                      StreamBuilder<DateTime>(
+                        stream: Stream.periodic(
+                            const Duration(seconds: 1), (_) => DateTime.now()),
+                        builder: (context, snapshot) {
+                          final duration =
+                              DateTime.now().difference(_recordingStartTime!);
+                          final minutes = duration.inMinutes;
+                          final seconds = duration.inSeconds % 60;
+                          return Text(
+                            '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        },
+                      ),
+                    const SizedBox(width: 12),
+                    // Waveform visualization
+                    Expanded(
+                      child: _WaveformVisualization(
+                        isActive: _currentTranscript.isNotEmpty,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Pause/Stop button
+                    GestureDetector(
+                      onTap: _toggleRecording,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: orange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.pause,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-          // ── INPUT FIELD ──
-          if (!_isLoading && !_errored && _allowInput)
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              color: background,
-              child: Material(
-                elevation: 2,
-                shadowColor: Colors.black.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.grey.shade200,
-                      width: 1,
+            // ── FILE PREVIEW ──
+            if (_attachedFiles.isNotEmpty) _buildFilePreview(),
+
+            // ── INPUT FIELD ──
+            if (!_isLoading && !_errored && _allowInput)
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                color: background,
+                child: Material(
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Attachment button
+                        GestureDetector(
+                          onTap: _showAttachmentOptions,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.attach_file,
+                              color: Colors.grey.shade700,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Text input field with rounded corners
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: TextField(
+                              controller: _controller,
+                              focusNode: _inputFocus,
+                              maxLines: 2,
+                              minLines: 1,
+                              textInputAction: TextInputAction.send,
+                              decoration: InputDecoration(
+                                hintText: _currentQ >= 0 &&
+                                        _currentQ < _questions.length
+                                    ? _questions[_currentQ].question
+                                    : localizations.typeMessage ??
+                                        'Type your message...',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 13,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                errorText: _inputError
+                                    ? localizations.pleaseEnterYourAnswer ??
+                                        "Please enter your answer"
+                                    : null,
+                                errorStyle: const TextStyle(fontSize: 10),
+                              ),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                              onSubmitted: (_) => _handleSend(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // WhatsApp-style mic button with animated waves
+                        SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.center,
+                            children: [
+                              // Animated waves (only when recording) - positioned absolutely
+                              if (_isRecording) ...[
+                                Positioned.fill(
+                                  child: _AnimatedWave(
+                                    delay: 0,
+                                    color: Colors.red.withOpacity(0.3),
+                                  ),
+                                ),
+                                Positioned.fill(
+                                  child: _AnimatedWave(
+                                    delay: 200,
+                                    color: Colors.red.withOpacity(0.2),
+                                  ),
+                                ),
+                                Positioned.fill(
+                                  child: _AnimatedWave(
+                                    delay: 400,
+                                    color: Colors.red.withOpacity(0.1),
+                                  ),
+                                ),
+                              ],
+                              // Microphone button
+                              GestureDetector(
+                                onTap: _toggleRecording,
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: _isRecording ? Colors.red : orange,
+                                    shape: BoxShape.circle,
+                                    boxShadow: _isRecording
+                                        ? [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.red.withOpacity(0.4),
+                                              blurRadius: 5,
+                                              spreadRadius: 1,
+                                            ),
+                                          ]
+                                        : [
+                                            BoxShadow(
+                                              color: orange.withOpacity(0.3),
+                                              blurRadius: 2,
+                                              spreadRadius: 0.5,
+                                            ),
+                                          ],
+                                  ),
+                                  child: Icon(
+                                    _isRecording ? Icons.stop : Icons.mic,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Send button
+                        GestureDetector(
+                          onTap: _handleSend,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: orange,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: orange.withOpacity(0.3),
+                                  blurRadius: 2,
+                                  spreadRadius: 0.5,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.send,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
+              ),
+
+            // ── LOADER ──
+            if (_isLoading)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                  ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Attachment button
-                      GestureDetector(
-                        onTap: _showAttachmentOptions,
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.attach_file,
-                            color: Colors.grey.shade700,
-                            size: 16,
-                          ),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(orange),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      // Text input field with rounded corners
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: TextField(
-                            controller: _controller,
-                            focusNode: _inputFocus,
-                            maxLines: 1,
-                            minLines: 1,
-                            textInputAction: TextInputAction.send,
-                            decoration: InputDecoration(
-                              hintText: _currentQ >= 0 &&
-                                      _currentQ < _questions.length
-                                  ? _questions[_currentQ].question
-                                  : localizations.typeMessage ??
-                                      'Type your message...',
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 13,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 2,
-                              ),
-                              errorText: _inputError
-                                  ? localizations.pleaseEnterYourAnswer ??
-                                      "Please enter your answer"
-                                  : null,
-                              errorStyle: const TextStyle(fontSize: 10),
-                            ),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.black87,
-                            ),
-                            onSubmitted: (_) => _handleSend(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // WhatsApp-style mic button with animated waves
-                      SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          alignment: Alignment.center,
-                          children: [
-                            // Animated waves (only when recording) - positioned absolutely
-                            if (_isRecording) ...[
-                              Positioned.fill(
-                                child: _AnimatedWave(
-                                  delay: 0,
-                                  color: Colors.red.withOpacity(0.3),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: _AnimatedWave(
-                                  delay: 200,
-                                  color: Colors.red.withOpacity(0.2),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: _AnimatedWave(
-                                  delay: 400,
-                                  color: Colors.red.withOpacity(0.1),
-                                ),
-                              ),
-                            ],
-                            // Microphone button
-                            GestureDetector(
-                              onTap: _toggleRecording,
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: _isRecording ? Colors.red : orange,
-                                  shape: BoxShape.circle,
-                                  boxShadow: _isRecording
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.red.withOpacity(0.4),
-                                            blurRadius: 5,
-                                            spreadRadius: 1,
-                                          ),
-                                        ]
-                                      : [
-                                          BoxShadow(
-                                            color: orange.withOpacity(0.3),
-                                            blurRadius: 2,
-                                            spreadRadius: 0.5,
-                                          ),
-                                        ],
-                                ),
-                                child: Icon(
-                                  _isRecording ? Icons.stop : Icons.mic,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Send button
-                      GestureDetector(
-                        onTap: _handleSend,
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: orange,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: orange.withOpacity(0.3),
-                                blurRadius: 2,
-                                spreadRadius: 0.5,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.send,
-                            color: Colors.white,
-                            size: 14,
-                          ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "AI is thinking...",
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-
-          // ── LOADER ──
-          if (_isLoading)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(orange),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "AI is thinking...",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+          ],
+        ),
       ), // Close Scaffold
     ); // Close WillPopScope
   }
@@ -2723,11 +2954,56 @@ class _ChatMessage {
   final List<PlatformFile> files;
 
   _ChatMessage({
-    required this.user, 
-    required this.content, 
+    required this.user,
+    required this.content,
     required this.isUser,
     this.files = const [],
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'user': user,
+      'content': content,
+      'isUser': isUser,
+      'files': files
+          .map((file) => {
+                'name': file.name,
+                'bytes': file.bytes != null ? base64Encode(file.bytes!) : null,
+                'path': file.path,
+                'size': file.size,
+              })
+          .toList(),
+    };
+  }
+
+  factory _ChatMessage.fromMap(Map<String, dynamic> map) {
+    final filesData = map['files'] as List<dynamic>? ?? [];
+    final files = filesData.map((fileData) {
+      final name = fileData['name'] as String;
+      final bytesBase64 = fileData['bytes'] as String?;
+      final path = fileData['path'] as String?;
+      final size = fileData['size'] as int? ?? 0;
+
+      Uint8List? bytes;
+      if (bytesBase64 != null) {
+        bytes = base64Decode(bytesBase64);
+      }
+
+      return PlatformFile(
+        name: name,
+        path: path,
+        bytes: bytes,
+        size: size,
+      );
+    }).toList();
+
+    return _ChatMessage(
+      user: map['user'] ?? '',
+      content: map['content'] ?? '',
+      isUser: map['isUser'] ?? false,
+      files: files,
+    );
+  }
 }
 
 // Animated wave widget for microphone button

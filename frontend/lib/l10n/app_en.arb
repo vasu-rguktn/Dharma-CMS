@@ -2052,5 +2052,13 @@
   "evidenceRemoved": "Evidence removed",
   "@evidenceRemoved": {
     "description": "Success message for evidence removal"
-  }
+  },
+  "saved": "Saved",
+  "@saved": {
+    "description": "Tab title for saved petitions"
+  },
+  "drafts": "Drafts",
+  "@drafts": {
+    "description": "Tab title for draft petitions"
+  },
 }
