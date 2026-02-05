@@ -201,48 +201,41 @@ class _AiInvestigationGuidelinesScreenState
     });
 
     try {
-      // 1. Query 'petitions' (Online)
-      Query<Map<String, dynamic>> onlineQuery = FirebaseFirestore.instance.collection('petitions');
-      // 2. Query 'offlinepetitions' (Offline)
-      Query<Map<String, dynamic>> offlineQuery = FirebaseFirestore.instance.collection('offlinepetitions');
+      // Query specific to 'petitions' (Online Citizen Submissions Only)
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection('petitions');
 
       if (_isStationLevel() && _policeStation != null) {
-        onlineQuery = onlineQuery.where('stationName', isEqualTo: _policeStation);
-        offlineQuery = offlineQuery.where('stationName', isEqualTo: _policeStation);
+        // 1. Station Level Officer (Locked to Station)
+        query = query.where('stationName', isEqualTo: _policeStation);
       } else if (_selectedStation != null) {
-        onlineQuery = onlineQuery.where('stationName', isEqualTo: _selectedStation);
-        offlineQuery = offlineQuery.where('stationName', isEqualTo: _selectedStation);
+        // 2. Filter: Selected Station
+        query = query.where('stationName', isEqualTo: _selectedStation);
       } else if (_selectedDistrict != null) {
-        onlineQuery = onlineQuery.where('district', isEqualTo: _selectedDistrict);
-        offlineQuery = offlineQuery.where('district', isEqualTo: _selectedDistrict);
+        // 3. Filter: Selected District
+        query = query.where('district', isEqualTo: _selectedDistrict);
       } else if (_selectedRange != null) {
+        // 4. Filter: Selected Range
         final districts = _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
         if (districts.isNotEmpty) {
-          onlineQuery = onlineQuery.where('district', whereIn: districts.take(10).toList());
-          offlineQuery = offlineQuery.where('district', whereIn: districts.take(10).toList());
+          query = query.where('district', whereIn: districts.take(10).toList());
         }
       } else if (_policeDistrict != null && !_canFilterByDistrict()) {
-        onlineQuery = onlineQuery.where('district', isEqualTo: _policeDistrict);
-        offlineQuery = offlineQuery.where('district', isEqualTo: _policeDistrict);
+        // 5. District Level Officer (Locked to District)
+        query = query.where('district', isEqualTo: _policeDistrict);
+      } else if (_policeRange != null && !_canFilterByRange()) {
+         // 6. Range Level Officer (Locked to Range)
+         final districts = _policeHierarchy[_policeRange]?.keys.toList() ?? [];
+         if (districts.isNotEmpty) {
+           query = query.where('district', whereIn: districts.take(10).toList());
+         }
       }
 
-      final onlineSnapshot = await onlineQuery.orderBy('createdAt', descending: true).limit(30).get();
-      final offlineSnapshot = await offlineQuery.orderBy('createdAt', descending: true).limit(30).get();
-
-      final onlinePetitions = onlineSnapshot.docs.map((d) => Petition.fromFirestore(d)).toList();
-      final offlinePetitions = offlineSnapshot.docs.map((d) => Petition.fromFirestore(d)).toList();
-
-      // Merge and sort
-      final allPetitions = [...onlinePetitions, ...offlinePetitions];
-      allPetitions.sort((a, b) {
-        final dateA = a.createdAt?.toDate() ?? DateTime(2000);
-        final dateB = b.createdAt?.toDate() ?? DateTime(2000);
-        return dateB.compareTo(dateA);
-      });
+      final snapshot = await query.orderBy('createdAt', descending: true).limit(30).get();
+      final petitions = snapshot.docs.map((d) => Petition.fromFirestore(d)).toList();
 
       if (mounted) {
         setState(() {
-          _filteredPetitions = allPetitions;
+          _filteredPetitions = petitions;
           _loadingPetitions = false;
         });
       }

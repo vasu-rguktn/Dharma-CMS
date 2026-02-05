@@ -87,6 +87,48 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "offlinepetitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "stationName",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "offlinepetitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "district",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "petitions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "district",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
