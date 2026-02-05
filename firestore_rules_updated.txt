@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper to check if current user is an approved police officer.
+    function isPolice() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/police/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/police/$(request.auth.uid)).data.role == 'police' &&
+             get(/databases/$(database)/documents/police/$(request.auth.uid)).data.isApproved == true;
+    }
+    
+    // USERS COLLECTION
+    // Modified to allow "Forgot Password" email existence check
+    match /users/{userId} {
+      // Allow getting a specific document only if it belongs to the user
+      allow get: if request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid);
+      
+      // Allow listing/querying users if:
+      // 1. Authenticated user querying their own data
+      // 2. OR limiting results to 1 (Safe for "email exists" check without login)
+      allow list: if (request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid))
+                  || request.query.limit <= 1;
+      
+      // Allow create if own uid
+      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || userId == request.auth.uid);
+      
+      // Allow update if own uid
+      allow update: if request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid);
+    }
+
+    // POLICE COLLECTION
+    match /police/{policeId} {
+      allow read: if true;
+      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || policeId == request.auth.uid);
+      allow update: if request.auth != null && (resource.data.uid == request.auth.uid || policeId == request.auth.uid);
+    }
+    
+    // CASES COLLECTION (FIRs)
+    match /cases/{caseId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // PETITIONS COLLECTION
+    match /petitions/{petitionId} {
+      allow read: if request.auth != null;
+      
+      allow create: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+      
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isPolice()
+      );
+      
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // OFFLINE PETITIONS COLLECTION
+    match /offlinepetitions/{petitionId} {
+      allow create: if isPolice() && request.resource.data.assignedBy == request.auth.uid;
+
+      allow read: if request.auth != null && (
+        isPolice() ||
+        resource.data.userId == request.auth.uid
+      );
+
+      allow update: if isPolice();
+
+      allow delete: if isPolice() && resource.data.assignedBy == request.auth.uid;
+    }
+    
+    // SAVED COMPLAINTS COLLECTION
+    match /complaints/{complaintId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // PETITION UPDATES TIMELINE COLLECTION
+    match /petition_updates/{updateId} {
+      allow create: if isPolice() && request.resource.data.addedByUserId == request.auth.uid;
+
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          resource.data.petitionId is string &&
+          exists(/databases/$(database)/documents/petitions/$(resource.data.petitionId)) &&
+          get(/databases/$(database)/documents/petitions/$(resource.data.petitionId)).data.userId == request.auth.uid
+        )
+      );
+
+      allow update, delete: if isPolice() && resource.data.addedByUserId == request.auth.uid;
+    }
+
+    // CASE JOURNAL ENTRIES
+    match /caseJournalEntries/{entryId} {
+      allow create: if isPolice() && request.resource.data.officerUid == request.auth.uid;
+
+      allow read: if isPolice() || (
+          request.auth != null &&
+          resource.data.caseId is string &&
+          exists(/databases/$(database)/documents/cases/$(resource.data.caseId)) &&
+          get(/databases/$(database)/documents/cases/$(resource.data.caseId)).data.userId == request.auth.uid
+        );
+
+      allow update, delete: if isPolice() && resource.data.officerUid == request.auth.uid;
+    }
+
+    // CRIME DETAILS COLLECTION
+    match /crimeDetails/{caseId} {
+      allow create: if isPolice();
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+      allow update: if isPolice();
+      allow delete: if isPolice();
+    }
+
+    // CASES SUBCOLLECTIONS
+    match /cases/{caseId}/{subcollection}/{docId} {
+      // MEDIA ANALYSES SUBCOLLECTION
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+      allow create, update, delete: if isPolice();
+    }
+
+    // SCENE ANALYSES SUBCOLLECTION
+    match /cases/{caseId}/sceneAnalyses/{analysisId} {
+      allow create: if isPolice();
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+      allow update, delete: if isPolice();
+    }
+    
+    // CRIME SCENE EVIDENCE SUBCOLLECTION
+    match /cases/{caseId}/crimeSceneEvidence/{docId} {
+      allow create, update: if isPolice();
+      allow read: if request.auth != null && (
+        isPolice() ||
+        (
+          exists(/databases/$(database)/documents/cases/$(caseId)) &&
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid
+        )
+      );
+      allow delete: if isPolice();
+    }
+
+    // LEGAL QUERIES CHATS COLLECTION
+    match /legal_queries_chats/{sessionId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow create, read, update, delete: if request.auth != null &&
+          get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
+      }
+    }
+    
+    // FCM TOKENS COLLECTION
+    match /fcm_tokens/{tokenId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+}
