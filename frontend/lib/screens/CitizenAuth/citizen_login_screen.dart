@@ -185,6 +185,44 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                 final authProvider =
                     Provider.of<custom_auth.AuthProvider>(parentContext, listen: false);
 
+                // Check if the user is registered in the database first
+                final userQuery = await FirebaseFirestore.instance
+                    .collection('users')
+                    .where('email', isEqualTo: email)
+                    .limit(1)
+                    .get();
+
+                if (userQuery.docs.isEmpty) {
+                  if (mounted) {
+                    await showDialog(
+                      context: parentContext,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        title: const Text(
+                          'Not Registered',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        content: Text(
+                          'The email $email is not registered with us.',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(
+                                  color: orange, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return;
+                }
+
                 await authProvider.sendPasswordResetEmail(email);
 
                 if (mounted) {
