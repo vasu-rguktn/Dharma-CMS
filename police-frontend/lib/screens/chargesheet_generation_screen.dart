@@ -542,6 +542,7 @@ class _ChargesheetGenerationScreenState
     }
   }
 
+
   Future<void> _copyToClipboard() async {
     if (_chargeSheet == null) return;
 
