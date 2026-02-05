@@ -2021,4 +2021,10 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   
   @override
   String get to => 'To';
+
+  @override
+  String get incidentDate => 'Incident Date';
+
+  @override
+  String get jurisdictionForFilingComplaint => 'Jurisdiction for Filing Complaint';
 }

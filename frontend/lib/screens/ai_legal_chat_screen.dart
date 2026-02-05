@@ -750,19 +750,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   /// Show exit confirmation dialog
   Future<void> _showExitDialog() async {
+    final localizations = AppLocalizations.of(context)!;
     final result = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('AI Chat in Progress'),
-          content: const Text('Do you want to stop using the AI chatbot?'),
+          title: Text(localizations.aiChatInProgressTitle),
+          content: Text(localizations.aiChatInProgressMessage),
           actions: [
             // CLEAR CHAT button
             TextButton(
               onPressed: () => Navigator.of(context).pop('clear'),
-              child: const Text(
-                'CLEAR CHAT',
+              child: Text(
+                localizations.clearChat,
                 style:
                     TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
               ),
@@ -771,8 +772,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             // CLOSE CHAT button
             TextButton(
               onPressed: () => Navigator.of(context).pop('close'),
-              child: const Text(
-                'CLOSE CHAT',
+              child: Text(
+                localizations.closeChat,
                 style:
                     TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
@@ -781,7 +782,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             // NO button
             TextButton(
               onPressed: () => Navigator.of(context).pop('no'),
-              child: const Text('NO'),
+              child: Text(localizations.no),
             ),
           ],
         );

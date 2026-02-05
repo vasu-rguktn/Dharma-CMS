@@ -537,7 +537,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
     // Responsive PIN field dimensions
     final pinFieldHeight = (screenWidth * 0.12).clamp(45.0, 58.0);
     final pinFieldWidth = (screenWidth * 0.11).clamp(40.0, 50.0);
-
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Column(
@@ -666,20 +666,20 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ConsentPdfViewer(
+                                  builder: (context) => ConsentPdfViewer(
                                     assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
-                                    title: 'Terms & Conditions',
+                                    title: localizations.termsAndConditions,
                                   ),
                                 ),
                               );
                             },
                             child: RichText(
                               text: TextSpan(
-                                text: 'I agree to the ',
+                                text: '${AppLocalizations.of(context)!.iAgreeToThe} ',
                                 style: const TextStyle(color: Colors.black, fontSize: 14),
                                 children: [
                                   TextSpan(
-                                    text: 'Terms & Conditions',
+                                    text: '${AppLocalizations.of(context)!.termsAndConditions}',
                                     style: const TextStyle(
                                       color: Color(0xFFFC633C),
                                       fontWeight: FontWeight.bold,

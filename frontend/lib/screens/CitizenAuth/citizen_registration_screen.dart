@@ -497,11 +497,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             },
                             child: RichText(
                               text: TextSpan(
-                                text: 'I agree to the ',
+                                text: '${AppLocalizations.of(context)!.iAgreeToThe} ',
                                 style: const TextStyle(color: Colors.black, fontSize: 14),
                                 children: [
                                   TextSpan(
-                                    text: 'Terms & Conditions',
+                                    text: '${AppLocalizations.of(context)!.termsAndConditions}',
                                     style: const TextStyle(
                                       color: Color(0xFFFC633C),
                                       fontWeight: FontWeight.bold,

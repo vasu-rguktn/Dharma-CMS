@@ -2000,4 +2000,10 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
   
   @override
   String get to => 'వరకు';
+
+  @override
+  String get incidentDate => 'సంఘటన తేదీ';
+
+  @override
+  String get jurisdictionForFilingComplaint => 'ఫిర్యాదు దాఖలు చేయవలసిన పరిధి';
 }

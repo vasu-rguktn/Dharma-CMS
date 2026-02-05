@@ -360,7 +360,7 @@ class _DetailContent extends StatelessWidget {
 
 // ================= INCIDENT DETAILS =================
         Text(
-          'Incident Details',
+          localizations.incidentDetails,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -371,13 +371,13 @@ class _DetailContent extends StatelessWidget {
         if (petition.incidentAddress != null &&
             petition.incidentAddress!.isNotEmpty)
           _buildDetailRow(
-            'Incident Address',
+            localizations.incidentAddress,
             petition.incidentAddress!,
           ),
 
         if (petition.incidentDate != null)
           _buildDetailRow(
-            'Incident Date',
+            localizations.incidentAddress,
             petition.incidentDate!.toDate().toLocal().toString().split(' ')[0],
           ),
 
@@ -385,7 +385,7 @@ class _DetailContent extends StatelessWidget {
 
 // ================= JURISDICTION DETAILS =================
         Text(
-          'Jurisdiction for Filing Complaint',
+          localizations.jurisdictionForFilingComplaint,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -395,13 +395,13 @@ class _DetailContent extends StatelessWidget {
 
         if (petition.district != null && petition.district!.isNotEmpty)
           _buildDetailRow(
-            'District',
+            localizations.district,
             petition.district!,
           ),
 
         if (petition.stationName != null && petition.stationName!.isNotEmpty)
           _buildDetailRow(
-            'Police Station',
+            localizations.policeStation,
             petition.stationName!,
           ),
 
@@ -472,7 +472,7 @@ class _DetailContent extends StatelessWidget {
           const Divider(),
           const SizedBox(height: 16),
           Text(
-            'Uploaded Documents',
+            AppLocalizations.of(context)!.uploadedDocuments,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -489,7 +489,7 @@ class _DetailContent extends StatelessWidget {
         if (petition.proofDocumentUrls != null &&
             petition.proofDocumentUrls!.isNotEmpty) ...[
           Text(
-            'Proof Documents (${petition.proofDocumentUrls!.length})',
+            '${localizations.proofDocuments} (${petition.proofDocumentUrls!.length})',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
           const SizedBox(height: 8),
@@ -553,14 +553,14 @@ class _DetailContent extends StatelessWidget {
         const SizedBox(height: 16),
         
         Text(
-          'Case Progress Updates',
+          localizations.caseProgressUpdates,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Track the progress of your petition here. Police will add updates about the work done on your case.',
+          localizations.trackCaseProgressDescription,
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],

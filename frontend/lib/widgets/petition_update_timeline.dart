@@ -1,3 +1,4 @@
+import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:Dharma/models/petition_update.dart';
 import 'package:intl/intl.dart';
@@ -39,7 +40,7 @@ class PetitionUpdateTimeline extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'No Updates Yet',
+                AppLocalizations.of(context)!.noUpdatesYet,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -48,7 +49,7 @@ class PetitionUpdateTimeline extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'The police will add updates about your case here',
+                AppLocalizations.of(context)!.policeWillAddUpdatesHere,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
