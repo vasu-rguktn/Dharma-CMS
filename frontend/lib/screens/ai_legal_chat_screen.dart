@@ -1006,6 +1006,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     String finalInitialDetails = _ChatStateHolder.answers['details'] ?? '';
 
+    // Inject strong instruction for anonymous petitions
+    if (_isAnonymous) {
+      finalInitialDetails +=
+          " [SYSTEM INSTRUCTION: This is an ANONYMOUS petition. Do NOT ask for the user's name, phone number, or personal details. Treat the user as 'Anonymous Citizen'. PROCEED IMMEDIATELY to investigating the incident details. Ask relevant questions to gather evidence and facts. Do NOT conclude the chat without gathering substantial details about the incident.]";
+    }
+
     if (attachmentNote.isNotEmpty) {
       if (payloadHistory.isNotEmpty) {
         // Append to last user message in history
