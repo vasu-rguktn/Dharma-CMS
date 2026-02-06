@@ -2384,13 +2384,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       draftId: _currentDraftId,
     );
 
+    final localizations = AppLocalizations.of(context)!;
+
     _setIsLoading(false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              success ? 'Draft saved successfully!' : 'Failed to save draft'),
+              success ? localizations.draftSaved : localizations.failedToSaveDraft),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );

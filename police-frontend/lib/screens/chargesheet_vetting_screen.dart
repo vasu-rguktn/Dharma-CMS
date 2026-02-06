@@ -276,6 +276,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
     if (_suggestions == null) return;
 
     try {
+      print('📄 Starting vetting suggestions PDF generation...');
       final suggestionsText =
           _suggestions!['suggestions'] ?? 'No suggestions provided';
       final cleanedText = _cleanMarkdown(suggestionsText);
@@ -310,17 +311,34 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       final fileName =
           'vetting_suggestions_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      await downloadFile(bytes, fileName);
+      print(
+          '📥 Vetting PDF generated (${bytes.length} bytes), calling downloadFile...');
+      final savedPath = await downloadFile(bytes, fileName);
+      print('📥 downloadFile returned: $savedPath');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Suggestions PDF downloaded successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (savedPath != null && savedPath.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '✅ Vetting result saved successfully!\n📂 $fileName\n📍 Check Downloads folder'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('⚠️ Download may have failed. Rebuild app if needed.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
       }
     } catch (e) {
+      print('❌ Error in _downloadSuggestionsAsPDF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -139,7 +139,7 @@ class _DetailContent extends StatelessWidget {
 
     // Labels based on request
     final steps = [
-      'Submitted',
+      localizations.submitted,
       localizations.received,
       localizations.inProgress, // Use inProgress usually 'In Progress'
       localizations.closed,

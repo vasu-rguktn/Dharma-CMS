@@ -249,7 +249,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: Text('Draft saved on $dateStr'),
+            subtitle: Text(localizations.draftSavedOn + ' $dateStr'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

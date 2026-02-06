@@ -487,6 +487,7 @@ class _ChargesheetGenerationScreenState
     setState(() => _isDownloading = true);
 
     try {
+      print('📄 Starting chargesheet PDF generation...');
       final chargesheetText = _chargeSheet!['chargeSheet'] ?? '';
       final cleanedText = _cleanMarkdown(chargesheetText);
 
@@ -522,16 +523,34 @@ class _ChargesheetGenerationScreenState
       final fileName =
           'chargesheet_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      await downloadFile(bytes, fileName);
+      print(
+          '📥 Chargesheet PDF generated (${bytes.length} bytes), calling downloadFile...');
+      final savedPath = await downloadFile(bytes, fileName);
+      print('📥 downloadFile returned: $savedPath');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Chargesheet PDF downloaded'),
-              backgroundColor: Colors.green),
-        );
+        if (savedPath != null && savedPath.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '✅ Chargesheet saved successfully!\n📂 $fileName\n📍 Check Downloads folder'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('⚠️ Download may have failed. Rebuild app if needed.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
       }
     } catch (e) {
+      print('❌ Error in _downloadChargesheet: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -541,7 +560,6 @@ class _ChargesheetGenerationScreenState
       setState(() => _isDownloading = false);
     }
   }
-
 
   Future<void> _copyToClipboard() async {
     if (_chargeSheet == null) return;

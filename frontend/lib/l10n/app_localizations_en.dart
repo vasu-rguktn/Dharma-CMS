@@ -2011,7 +2011,7 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   // TODO: implement profileUpdated
-  String get profileUpdated => throw UnimplementedError();
+  String get profileUpdated => "Profile Updated";
   
   @override
   // TODO: implement ok
@@ -2020,7 +2020,7 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   String get Saved => 'Saved';
 
-  @override
+  @override 
   String get Drafts => 'Drafts';
 
   @override
@@ -2118,9 +2118,30 @@ String get proofDocuments => 'Proof Documents';
 
   @override
   // TODO: implement from
-  String get from => throw UnimplementedError();
+  String get from => 'from';
   
   @override
   // TODO: implement to
-  String get to => throw UnimplementedError();
+  String get to => 'to';
+
+  @override
+String get submitted => 'Submitted';
+
+@override
+String get Login_With => 'Login With';
+
+@override
+String get draftSaved => 'Draft saved Successfully';
+
+@override
+String get failedToSaveDraft => 'Failed to save draft';
+
+@override
+String get draftSavedOn => 'Draft saved on';
+
+@override
+String get draftDeleted => 'Draft deleted';
+
+@override
+String get draftDeletedOn => 'Draft deleted on';
 }

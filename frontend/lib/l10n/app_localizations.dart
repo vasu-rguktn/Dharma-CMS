@@ -7,7 +7,6 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
 import 'app_localizations_te.dart';
-
 // ignore_for_file: type=lint
 
 /// Callers can lookup localized strings with an instance of AppLocalizations
@@ -3142,6 +3141,13 @@ abstract class AppLocalizations {
   String get policeWillAddUpdatesHere;
   String get uploadedDocuments;
   String get proofDocuments;
+  String get submitted;
+  String get Login_With;
+  String get draftSaved;
+  String get draftSavedOn;
+  String get draftDeleted;
+  String get draftDeletedOn;
+  String get failedToSaveDraft;
 
   String errorSubmittingFeedback(String error);
 }

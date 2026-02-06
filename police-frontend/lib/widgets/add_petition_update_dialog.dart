@@ -6,6 +6,8 @@ import 'package:Dharma/models/petition.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 class AddPetitionUpdateDialog extends StatefulWidget {
   final Petition petition;
@@ -20,18 +22,19 @@ class AddPetitionUpdateDialog extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AddPetitionUpdateDialog> createState() => _AddPetitionUpdateDialogState();
+  State<AddPetitionUpdateDialog> createState() =>
+      _AddPetitionUpdateDialogState();
 }
 
 class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
   final _formKey = GlobalKey<FormState>();
   final _updateTextController = TextEditingController();
-  
+
   List<PlatformFile> _selectedPhotos = [];
   List<PlatformFile> _selectedDocuments = [];
   bool _isSubmitting = false;
   bool _isAiChecking = false;
-  String? _aiColor;   // 'green' | 'amber' | 'red'
+  String? _aiColor; // 'green' | 'amber' | 'red'
   String? _aiReason;
 
   // Base URL for Dharma CMS backend.
@@ -50,22 +53,79 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
 
   Future<void> _pickPhotos() async {
     try {
+      // Check permissions on Android
+      if (!kIsWeb && Platform.isAndroid) {
+        // Request storage permissions (both read and write)
+        final storageStatus = await Permission.storage.request();
+
+        // For Android 13+, also request photos permission
+        final photosStatus = await Permission.photos.request();
+
+        // Check if either permission was granted
+        if (storageStatus != PermissionStatus.granted &&
+            photosStatus != PermissionStatus.granted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Storage permission is required to upload images'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: true,
-        withData: kIsWeb, // Only load bytes on Web to avoid OOM on Android
+        withData: kIsWeb, // Only load bytes on Web
+        allowCompression:
+            false, // Disable compression to avoid temp file creation
       );
 
-      if (result != null) {
-        setState(() {
-          _selectedPhotos.addAll(result.files);
-        });
+      if (result != null && result.files.isNotEmpty) {
+        // Validate files on Android
+        if (!kIsWeb) {
+          final validFiles = <PlatformFile>[];
+          for (var file in result.files) {
+            if (file.path != null && await File(file.path!).exists()) {
+              validFiles.add(file);
+            } else {
+              debugPrint('⚠️ Skipping invalid file: ${file.name}');
+            }
+          }
+
+          if (validFiles.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Selected files are not accessible. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+
+          setState(() {
+            _selectedPhotos.addAll(validFiles);
+          });
+        } else {
+          setState(() {
+            _selectedPhotos.addAll(result.files);
+          });
+        }
       }
     } catch (e) {
+      debugPrint('❌ Error picking photos: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking photos: $e'),
+            content: Text('Error selecting photos. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -75,23 +135,85 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
 
   Future<void> _pickDocuments() async {
     try {
+      // Check permissions on Android
+      if (!kIsWeb && Platform.isAndroid) {
+        // Request storage permissions
+        final status = await Permission.storage.request();
+
+        if (status != PermissionStatus.granted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Storage permission is required to upload documents'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'],
+        allowedExtensions: [
+          'pdf',
+          'doc',
+          'docx',
+          'txt',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'csv'
+        ],
         allowMultiple: true,
-        withData: kIsWeb, // Only load bytes on Web to avoid OOM on Android
+        withData: kIsWeb, // Only load bytes on Web
+        allowCompression:
+            false, // Disable compression to avoid temp file creation
       );
 
-      if (result != null) {
-        setState(() {
-          _selectedDocuments.addAll(result.files);
-        });
+      if (result != null && result.files.isNotEmpty) {
+        // Validate files on Android
+        if (!kIsWeb) {
+          final validFiles = <PlatformFile>[];
+          for (var file in result.files) {
+            if (file.path != null && await File(file.path!).exists()) {
+              validFiles.add(file);
+            } else {
+              debugPrint('⚠️ Skipping invalid file: ${file.name}');
+            }
+          }
+
+          if (validFiles.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Selected files are not accessible. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return;
+          }
+
+          setState(() {
+            _selectedDocuments.addAll(validFiles);
+          });
+        } else {
+          setState(() {
+            _selectedDocuments.addAll(result.files);
+          });
+        }
       }
     } catch (e) {
+      debugPrint('❌ Error picking documents: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking documents: $e'),
+            content: Text('Error selecting documents. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -110,16 +232,21 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
 
     try {
       // 🤖 AUTO-RUN AI CHECK if officer forgot!
-      if (_aiColor == null && (_updateTextController.text.trim().isNotEmpty || _selectedPhotos.isNotEmpty || _selectedDocuments.isNotEmpty)) {
-        debugPrint('🤖 [UPDATE] Officer forgot AI check. Running automatically...');
+      if (_aiColor == null &&
+          (_updateTextController.text.trim().isNotEmpty ||
+              _selectedPhotos.isNotEmpty ||
+              _selectedDocuments.isNotEmpty)) {
+        debugPrint(
+            '🤖 [UPDATE] Officer forgot AI check. Running automatically...');
         await _runAiRelevanceCheck();
       }
 
       final provider = context.read<PetitionProvider>();
-      
+
       debugPrint('📤 [UPDATE] Starting petition update submission');
-      debugPrint('📸 Photos: ${_selectedPhotos.length}, 📄 Documents: ${_selectedDocuments.length}');
-      
+      debugPrint(
+          '📸 Photos: ${_selectedPhotos.length}, 📄 Documents: ${_selectedDocuments.length}');
+
       final success = await provider.createPetitionUpdate(
         petitionId: widget.petition.id!,
         updateText: _updateTextController.text.trim(),
@@ -127,7 +254,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
         addedByUserId: widget.policeOfficerUserId,
         photoFiles: _selectedPhotos.isEmpty ? null : _selectedPhotos,
         documentFiles: _selectedDocuments.isEmpty ? null : _selectedDocuments,
-        aiStatus: _aiColor, 
+        aiStatus: _aiColor,
         // We aren't capturing the score in state yet, but color is what drives the UI
       );
 
@@ -158,7 +285,8 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e}'),
+            content: Text(
+                'Error: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
@@ -252,15 +380,29 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 600;
+
+    // Responsive padding and spacing
+    final horizontalPadding = isSmallScreen ? 16.0 : 24.0;
+    final spacing = isSmallScreen ? 16.0 : 24.0;
+
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
       ),
+      insetPadding: isSmallScreen
+          ? const EdgeInsets.symmetric(horizontal: 16, vertical: 24)
+          : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
+        constraints: BoxConstraints(
+          maxWidth: isSmallScreen ? screenWidth : 600,
+          maxHeight: screenHeight * 0.9,
+        ),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(horizontalPadding),
             child: Form(
               key: _formKey,
               child: Column(
@@ -283,11 +425,11 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Add Case Update',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: isSmallScreen ? 18 : 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -299,17 +441,19 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                     ],
                   ),
 
-                  const SizedBox(height: 8),
-                  
+                  SizedBox(height: spacing / 3),
+
                   Text(
                     'Case: ${widget.petition.title}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: isSmallScreen ? 12 : 14,
                       color: Colors.grey.shade600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
 
-                  const Divider(height: 32),
+                  Divider(height: spacing * 1.5),
 
                   // Update Text Field
                   const Text(
@@ -319,12 +463,13 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: spacing / 3),
                   TextFormField(
                     controller: _updateTextController,
                     maxLines: 5,
                     decoration: InputDecoration(
-                      hintText: 'Describe the work done, progress made, or any developments...',
+                      hintText:
+                          'Describe the work done, progress made, or any developments...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -350,7 +495,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   OutlinedButton.icon(
                     onPressed: _isSubmitting ? null : _pickPhotos,
                     icon: const Icon(Icons.add_photo_alternate),
@@ -364,16 +509,17 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                   ),
 
                   if (_selectedPhotos.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: spacing / 2),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: isSmallScreen ? 6 : 8,
+                      runSpacing: isSmallScreen ? 6 : 8,
                       children: _selectedPhotos.map((photo) {
+                        final thumbnailSize = isSmallScreen ? 70.0 : 80.0;
                         return Stack(
                           children: [
                             Container(
-                              width: 80,
-                              height: 80,
+                              width: thumbnailSize,
+                              height: thumbnailSize,
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade200,
                                 borderRadius: BorderRadius.circular(8),
@@ -388,7 +534,8 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                                     ),
                                     const SizedBox(height: 4),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4),
                                       child: Text(
                                         photo.name,
                                         style: TextStyle(
@@ -444,7 +591,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   OutlinedButton.icon(
                     onPressed: _isSubmitting ? null : _pickDocuments,
                     icon: const Icon(Icons.attach_file),
@@ -458,7 +605,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                   ),
 
                   if (_selectedDocuments.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: spacing / 2),
                     ..._selectedDocuments.map((doc) {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -527,52 +674,103 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
                     const SizedBox(height: 12),
                   ],
 
-                  // Action buttons row: Check with AI + Submit
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _isAiChecking ? null : _runAiRelevanceCheck,
-                          icon: const Icon(Icons.analytics_outlined),
-                          label: const Text('Check with AI'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isSubmitting ? null : _submitUpdate,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  // Action buttons: Stack on small screens, row on larger
+                  isSmallScreen
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed:
+                                  _isAiChecking ? null : _runAiRelevanceCheck,
+                              icon: const Icon(Icons.analytics_outlined),
+                              label: const Text('Check with AI'),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                              ),
                             ),
-                          ),
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Submit Update',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                            SizedBox(height: spacing / 2),
+                            ElevatedButton(
+                              onPressed: _isSubmitting ? null : _submitUpdate,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Submit Update',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed:
+                                    _isAiChecking ? null : _runAiRelevanceCheck,
+                                icon: const Icon(Icons.analytics_outlined),
+                                label: const Text('Check with AI'),
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _isSubmitting ? null : _submitUpdate,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo,
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: _isSubmitting
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Submit Update',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

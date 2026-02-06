@@ -630,8 +630,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                               style: const TextStyle(
                                   fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
-                                const TextSpan(
-                                  text: "Login with",
+                                TextSpan(
+                                  text:localizations?.Login_With,
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 WidgetSpan(
