@@ -22,6 +22,8 @@ class PetitionsScreen extends StatefulWidget {
 class _PetitionsScreenState extends State<PetitionsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -33,6 +35,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -84,24 +87,60 @@ class _PetitionsScreenState extends State<PetitionsScreen>
         return true; // Allow exit only if truly root
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Petition Management'),
-        bottom: TabBar(
-          isScrollable: true,
+        appBar: AppBar(
+          title: const Text('Petition Management'),
+          bottom: TabBar(
+            isScrollable: true,
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: Icon(Icons.list), text: 'My Petitions'),
+              Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
+            ],
+          ),
+        ),
+        body: TabBarView(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.list), text: 'My Petitions'),
-            Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
+          children: [
+            _buildPetitionsListTab(theme),
+            _buildCreatePetitionTab(theme),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPetitionsListTab(theme),
-          _buildCreatePetitionTab(theme),
-        ],
-      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search by Title, ID, or Petitioner Name...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value.toLowerCase();
+          });
+        },
       ),
     );
   }
@@ -113,41 +152,61 @@ class _PetitionsScreenState extends State<PetitionsScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (petitionProvider.petitions.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.gavel, size: 80, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'No Petitions Yet',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Create your first petition using the "Create New" tab',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
+        // Apply Search Filter
+        final petitions = petitionProvider.petitions.where((petition) {
+          final query = _searchQuery.toLowerCase();
+          final title = petition.title.toLowerCase();
+          final id = petition.id?.toLowerCase() ?? '';
+          final petitioner = petition.petitionerName.toLowerCase();
 
-        return RefreshIndicator(
-          onRefresh: _fetchPetitions,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: petitionProvider.petitions.length,
-            itemBuilder: (context, index) {
-              final petition = petitionProvider.petitions[index];
-              return _buildPetitionCard(petition, theme);
-            },
-          ),
+          return title.contains(query) ||
+              id.contains(query) ||
+              petitioner.contains(query);
+        }).toList();
+
+        return Column(
+          children: [
+            _buildSearchBar(),
+            Expanded(
+              child: petitions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.gavel, size: 80, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'No matching petitions found'
+                                : 'No Petitions Yet',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_searchQuery.isEmpty)
+                            Text(
+                              'Create your first petition using the "Create New" tab',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchPetitions,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        itemCount: petitions.length,
+                        itemBuilder: (context, index) {
+                          final petition = petitions[index];
+                          return _buildPetitionCard(petition, theme);
+                        },
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );
@@ -217,7 +276,9 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                      petition.isAnonymous
+                          ? maskPhoneNumber(petition.phoneNumber)
+                          : petition.phoneNumber!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -311,7 +372,9 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                 if (petition.phoneNumber != null)
                   _buildDetailRow(
                     'Phone',
-                    petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                    petition.isAnonymous
+                        ? maskPhoneNumber(petition.phoneNumber)
+                        : petition.phoneNumber!,
                   ),
                 if (petition.address != null)
                   _buildDetailRow('Address', petition.address!),
@@ -396,8 +459,9 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                 ],
                 const SizedBox(height: 16),
                 // Documents Section
-                if (petition.proofDocumentUrls != null && petition.proofDocumentUrls!.isNotEmpty) ...[
-                   Text(
+                if (petition.proofDocumentUrls != null &&
+                    petition.proofDocumentUrls!.isNotEmpty) ...[
+                  Text(
                     'Uploaded Documents/Proofs',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -413,15 +477,18 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                           // Determine file type
                           final lowerUrl = url.toLowerCase();
                           final isPdf = lowerUrl.contains('.pdf');
-                          final isDoc = lowerUrl.contains('.doc') || lowerUrl.contains('.docx');
+                          final isDoc = lowerUrl.contains('.doc') ||
+                              lowerUrl.contains('.docx');
                           final isTxt = lowerUrl.contains('.txt');
-                          
+
                           // Assume image ONLY if specific image extension is present
                           // Removed 'alt=media' check as it causes PDFs to be treated as images
-                          final isImage = lowerUrl.contains('.jpg') || lowerUrl.contains('.png') || 
-                                          lowerUrl.contains('.jpeg') || lowerUrl.contains('.webp') || 
-                                          lowerUrl.contains('.heic');
-                          
+                          final isImage = lowerUrl.contains('.jpg') ||
+                              lowerUrl.contains('.png') ||
+                              lowerUrl.contains('.jpeg') ||
+                              lowerUrl.contains('.webp') ||
+                              lowerUrl.contains('.heic');
+
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: GestureDetector(
@@ -438,15 +505,21 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                                             child: Image.network(
                                               url,
                                               fit: BoxFit.contain,
-                                              errorBuilder: (c, o, s) => const Center(child: Icon(Icons.error, color: Colors.white)),
+                                              errorBuilder: (c, o, s) =>
+                                                  const Center(
+                                                      child: Icon(Icons.error,
+                                                          color: Colors.white)),
                                             ),
                                           ),
                                           Positioned(
                                             top: 10,
                                             right: 10,
                                             child: IconButton(
-                                              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                                              onPressed: () => Navigator.of(ctx).pop(),
+                                              icon: const Icon(Icons.close,
+                                                  color: Colors.white,
+                                                  size: 30),
+                                              onPressed: () =>
+                                                  Navigator.of(ctx).pop(),
                                             ),
                                           ),
                                         ],
@@ -455,7 +528,8 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                                   );
                                 } else {
                                   // Launch URL for documents
-                                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                  launchUrl(Uri.parse(url),
+                                      mode: LaunchMode.externalApplication);
                                 }
                               },
                               child: Container(
@@ -464,34 +538,50 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                                 decoration: BoxDecoration(
                                   color: Colors.grey[100],
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                 ),
                                 clipBehavior: Clip.hardEdge,
-                                child: isImage 
-                                ? Image.network(
-                                    url, 
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        isPdf ? Icons.picture_as_pdf : (isDoc ? Icons.description : Icons.insert_drive_file),
-                                        size: 32,
-                                        color: isPdf ? Colors.red : (isDoc ? Colors.blue : Colors.grey[700]),
+                                child: isImage
+                                    ? Image.network(
+                                        url,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error,
+                                                stackTrace) =>
+                                            const Center(
+                                                child: Icon(Icons.broken_image,
+                                                    color: Colors.grey)),
+                                      )
+                                    : Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            isPdf
+                                                ? Icons.picture_as_pdf
+                                                : (isDoc
+                                                    ? Icons.description
+                                                    : Icons.insert_drive_file),
+                                            size: 32,
+                                            color: isPdf
+                                                ? Colors.red
+                                                : (isDoc
+                                                    ? Colors.blue
+                                                    : Colors.grey[700]),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            isPdf
+                                                ? 'PDF'
+                                                : (isDoc ? 'DOC' : 'FILE'),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[800],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        isPdf ? 'PDF' : (isDoc ? 'DOC' : 'FILE'),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.grey[800],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                               ),
                             ),
                           );
@@ -500,22 +590,22 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     ),
                   )
                 ] else ...[
-                   Padding(
-                     padding: const EdgeInsets.only(top: 16.0),
-                     child: Text(
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Text(
                       'Uploaded Documents/Proofs: None',
                       style: TextStyle(
-                            color: Colors.grey[600],
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.bold
-                          ),
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.bold),
                     ),
-                   ),
-                    // DEBUG: Remove this later
-                    Builder(builder: (c) {
-                        print('DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
-                        return const SizedBox.shrink();
-                    }),
+                  ),
+                  // DEBUG: Remove this later
+                  Builder(builder: (c) {
+                    print(
+                        'DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
+                    return const SizedBox.shrink();
+                  }),
                 ],
               ],
             ),
@@ -557,10 +647,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
 }
 
 class CreatePetitionForm extends StatefulWidget {
-  const CreatePetitionForm({
-    super.key, 
-    this.onCreatedSuccess
-  });
+  const CreatePetitionForm({super.key, this.onCreatedSuccess});
 
   final VoidCallback? onCreatedSuccess;
 
@@ -592,7 +679,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     super.initState();
     _initBackend();
   }
-    
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -602,82 +689,95 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void _checkAndConsumeEvidence() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-     print('🔍 [DEBUG] Petition Screen: Checking for evidence...');
-      final petitionProvider = Provider.of<PetitionProvider>(context, listen: false);
-      
+      print('🔍 [DEBUG] Petition Screen: Checking for evidence...');
+      final petitionProvider =
+          Provider.of<PetitionProvider>(context, listen: false);
+
       // 1. Try Provider (Best for Web/Bytes & Mobile Stashing)
       if (petitionProvider.tempEvidence.isNotEmpty) {
-         debugPrint('📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
-         setState(() {
-           // Avoid adding duplicates if already added
-           final existingNames = _proofFiles.map((e) => e.name).toSet();
-           final newFiles = petitionProvider.tempEvidence.where((e) => !existingNames.contains(e.name)).toList();
-           
-           if (newFiles.isNotEmpty) {
-             _proofFiles.addAll(newFiles);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Auto-attached ${newFiles.length} proofs from chat')),
-              );
-           }
-         });
-         // Clear temp evidence to prevent processing again
-         petitionProvider.clearTempEvidence();
-      } 
+        debugPrint(
+            '📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
+        setState(() {
+          // Avoid adding duplicates if already added
+          final existingNames = _proofFiles.map((e) => e.name).toSet();
+          final newFiles = petitionProvider.tempEvidence
+              .where((e) => !existingNames.contains(e.name))
+              .toList();
+
+          if (newFiles.isNotEmpty) {
+            _proofFiles.addAll(newFiles);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'Auto-attached ${newFiles.length} proofs from chat')),
+            );
+          }
+        });
+        // Clear temp evidence to prevent processing again
+        petitionProvider.clearTempEvidence();
+      }
       // 2. Fallback to Router 'extra' (Legacy/Android Paths)
       else {
         final extra = GoRouterState.of(context).extra;
         if (extra is Map && extra['evidencePaths'] is List) {
-           final paths = extra['evidencePaths'] as List;
-           if (paths.isNotEmpty) {
-             // Only process if we haven't already (simple check)
-             if (_proofFiles.isEmpty) {
-                setState(() {
-                   _proofFiles = paths.map((p) {
-                      final name = p.toString().split('/').last;
-                      return PlatformFile(
-                        name: name, 
-                        size: 0, 
-                        path: p.toString()
-                      );
-                   }).toList();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Auto-attached ${paths.length} proofs from chat')),
-                );
-             }
-           }
+          final paths = extra['evidencePaths'] as List;
+          if (paths.isNotEmpty) {
+            // Only process if we haven't already (simple check)
+            if (_proofFiles.isEmpty) {
+              setState(() {
+                _proofFiles = paths.map((p) {
+                  final name = p.toString().split('/').last;
+                  return PlatformFile(name: name, size: 0, path: p.toString());
+                }).toList();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content:
+                        Text('Auto-attached ${paths.length} proofs from chat')),
+              );
+            }
+          }
         }
       }
-      
+
       // Also check for auto-fill fields from Router
       final extra = GoRouterState.of(context).extra;
       if (extra is Map) {
-          if (extra.containsKey('complaintType') && _titleController.text.isEmpty) {
-             _titleController.text = extra['complaintType'].toString();
+        if (extra.containsKey('complaintType') &&
+            _titleController.text.isEmpty) {
+          _titleController.text = extra['complaintType'].toString();
+        }
+        if (extra.containsKey('fullName') &&
+            _petitionerNameController.text.isEmpty) {
+          _petitionerNameController.text = extra['fullName'].toString();
+        }
+        if (extra.containsKey('phone') && _phoneNumberController.text.isEmpty) {
+          _phoneNumberController.text = extra['phone'].toString();
+        }
+        if (extra.containsKey('address') && _addressController.text.isEmpty) {
+          _addressController.text = extra['address'].toString();
+        }
+
+        if (_groundsController.text.isEmpty &&
+            (extra.containsKey('details') ||
+                extra.containsKey('incident_details'))) {
+          String combined = "";
+          if (extra['incident_address'] != null &&
+              extra['incident_address'].toString().isNotEmpty) {
+            combined += "Location: ${extra['incident_address']}\n\n";
           }
-          if (extra.containsKey('fullName') && _petitionerNameController.text.isEmpty) {
-             _petitionerNameController.text = extra['fullName'].toString();
-          }
-          if (extra.containsKey('phone') && _phoneNumberController.text.isEmpty) {
-             _phoneNumberController.text = extra['phone'].toString();
-          }
-          if (extra.containsKey('address') && _addressController.text.isEmpty) {
-             _addressController.text = extra['address'].toString();
-          }
-          
-          if (_groundsController.text.isEmpty && (extra.containsKey('details') || extra.containsKey('incident_details'))) {
-             String combined = "";
-             if (extra['incident_address'] != null && extra['incident_address'].toString().isNotEmpty) {
-                combined += "Location: ${extra['incident_address']}\n\n";
-             }
-             combined += extra['details']?.toString() ?? extra['incident_details']?.toString() ?? '';
-             _groundsController.text = combined;
-          }
-          
-          if (_prayerReliefController.text.isEmpty && _titleController.text.isNotEmpty) {
-             _prayerReliefController.text = "I request the police authorities to register an FIR and take necessary action to trace and recover my stolen belongings.";
-          }
-       }
+          combined += extra['details']?.toString() ??
+              extra['incident_details']?.toString() ??
+              '';
+          _groundsController.text = combined;
+        }
+
+        if (_prayerReliefController.text.isEmpty &&
+            _titleController.text.isNotEmpty) {
+          _prayerReliefController.text =
+              "I request the police authorities to register an FIR and take necessary action to trace and recover my stolen belongings.";
+        }
+      }
     });
   }
 

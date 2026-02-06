@@ -80,6 +80,7 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
     }
 
     try {
+      print('📄 Starting PDF generation...');
       final pdf = pw.Document();
 
       // Split text into paragraphs to avoid page height issues
@@ -111,17 +112,34 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
       final fileName =
           'document_draft_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-      await downloadFile(bytes, fileName);
+      print(
+          '📥 PDF generated (${bytes.length} bytes), calling downloadFile...');
+      final savedPath = await downloadFile(bytes, fileName);
+      print('📥 downloadFile returned: $savedPath');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF downloaded successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (savedPath != null && savedPath.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '✅ PDF saved successfully!\n📂 $fileName\n📍 Check Downloads folder'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  '⚠️ Download may have failed. Check logs or rebuild the app with: flutter run'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
       }
     } catch (e) {
+      print('❌ Error in _downloadDraftAsPDF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -1673,4 +1673,13 @@
   "analysisComplete": "విశ్లేషణ పూర్తి!",
   "analysisErrorEvidence": "సాక్ష్యం విశ్లేషించడంలో లోపం:",
   "evidenceRemoved": "సాక్ష్యం తొలగించబడింది"
+  "incidentDate": "సంఘటన తేదీ",
+  "@incidentDate": {
+    "description": "సంఘటన జరిగిన తేదీని సూచించే లేబుల్"
+  },
+
+  "jurisdictionForFilingComplaint": "ఫిర్యాదు దాఖలు చేయవలసిన పరిధి",
+  "@jurisdictionForFilingComplaint": {
+    "description": "ఫిర్యాదు దాఖలు చేయాల్సిన అధికార పరిధిని సూచించే లేబుల్"
+  },
 }

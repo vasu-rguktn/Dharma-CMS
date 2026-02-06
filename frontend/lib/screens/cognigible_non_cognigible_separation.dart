@@ -24,7 +24,9 @@ class CognigibleNonCognigibleSeparationScreen extends StatefulWidget {
       classification: q?['classification'] as String? ?? '',
       originalClassification: q?['originalClassification'] as String? ?? '',
       complaintData: q?['complaintData'] as Map<String, dynamic>?,
-      evidencePaths: (q?['evidencePaths'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      evidencePaths:
+          (q?['evidencePaths'] as List?)?.map((e) => e.toString()).toList() ??
+              [],
     );
   }
 
@@ -126,6 +128,7 @@ class _CognigibleNonCognigibleSeparationScreenState
       'incident_address': widget.complaintData?['incident_address'] ?? '',
       'incident_details': widget.complaintData?['incident_details'] ?? '',
       'evidencePaths': widget.evidencePaths,
+      'classification': widget.classification, // Pass BNS Section info
     };
 
     return Scaffold(
@@ -229,8 +232,9 @@ class _CognigibleNonCognigibleSeparationScreenState
                         icon: LucideIcons.fileText,
                         color: const Color(0xFFFC633C), // App Orange
                         onPressed: () {
-                           print('🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
-                           context.go('/petitions/create', extra: petitionData);
+                          print(
+                              '🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
+                          context.go('/petitions/create', extra: petitionData);
                         },
                       )
                     else ...[

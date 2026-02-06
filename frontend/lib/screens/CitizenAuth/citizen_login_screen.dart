@@ -135,7 +135,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Enter your email address to receive a password reset link.',
+              localizations?.enterEmailForPasswordReset ?? 'Enter your email address to receive a password reset link.',
               style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 16),
@@ -199,19 +199,19 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                       builder: (context) => AlertDialog(
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16)),
-                        title: const Text(
-                          'Not Registered',
+                        title: Text(
+                          localizations?.userNotRegistered ?? 'Not Registered',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         content: Text(
-                          'The email $email is not registered with us.',
+                          '${localizations?.theEmail} $email ${localizations?.isNotRegisteredWithUs}',
                           style: const TextStyle(fontSize: 16),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              'OK',
+                            child: Text(
+                              localizations?.ok ?? 'OK',
                               style: TextStyle(
                                   color: orange, fontWeight: FontWeight.bold),
                             ),
@@ -231,19 +231,19 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                     builder: (context) => AlertDialog(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
-                      title: const Text(
-                        'Email Sent',
+                      title: Text(
+                        localizations?.emailSent ?? 'Email Sent',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       content: Text(
-                        'A password reset link has been sent to $email. Please check your inbox.',
+                        localizations?.passwordResetLinkSentTo ?? ' $email ${localizations?.pleaseCheckYourInbox}',
                         style: const TextStyle(fontSize: 16),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            'OK',
+                          child: Text(
+                            localizations?.ok ?? 'OK',
                             style: TextStyle(
                                 color: orange, fontWeight: FontWeight.bold),
                           ),
@@ -261,19 +261,19 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                       builder: (context) => AlertDialog(
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16)),
-                        title: const Text(
-                          'Not Registered',
+                        title: Text(
+                          localizations?.userNotRegistered ?? 'Not Registered',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         content: Text(
-                          'The email $email is not registered with us.',
+                          '${localizations?.theEmail} $email ${localizations?.isNotRegisteredWithUs}',
                           style: const TextStyle(fontSize: 16),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              'OK',
+                            child: Text(
+                              localizations?.ok ?? 'OK',
                               style: TextStyle(
                                   color: orange, fontWeight: FontWeight.bold),
                             ),
@@ -313,7 +313,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
               backgroundColor: orange,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Send Reset Link', style: TextStyle(color: Colors.white)),
+            child: Text(localizations?.sendResetLink ?? 'Send Reset Link', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -551,11 +551,11 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                             },
                             child: RichText(
                               text: TextSpan(
-                                text: 'I agree to the ',
+                                text: '${AppLocalizations.of(context)!.iAgreeToThe} ',
                                 style: const TextStyle(color: Colors.black, fontSize: 14),
                                 children: [
                                   TextSpan(
-                                    text: 'Terms & Conditions',
+                                    text: '${AppLocalizations.of(context)!.termsAndConditions}',
                                     style: const TextStyle(
                                       color: Color(0xFFFC633C),
                                       fontWeight: FontWeight.bold,
@@ -630,8 +630,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                               style: const TextStyle(
                                   fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
-                                const TextSpan(
-                                  text: "Login with",
+                                TextSpan(
+                                  text:localizations?.Login_With,
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 WidgetSpan(

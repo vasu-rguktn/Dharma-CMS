@@ -1989,9 +1989,14 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
   String get anonymousPetitionConfirm => 'మీరు గోపనీయ పిటిషన్ మోడ్‌ను ఎంచుకున్నారు. మీ పేరు మరియు చిరునామా రికార్డ్ చేయబడవు.';
 
   @override
-  // TODO: implement profileUpdated
-  String get profileUpdated => throw UnimplementedError();
-  
+String get profileUpdated => 'ప్రొఫైల్ నవీకరించబడింది';
+
+@override
+String get from => 'నుండి';
+
+@override
+String get to => 'వరకు';
+
   @override
   // TODO: implement ok
   String get ok => 'సరే';
@@ -2002,11 +2007,117 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
   @override
   String get Drafts => 'డ్రాఫ్ట్‌లు';
   
+
   @override
-  // TODO: implement from
-  String get from => throw UnimplementedError();
-  
-  @override
-  // TODO: implement to
-  String get to => throw UnimplementedError();
+String get aiChatInProgressTitle => 'AI చాట్ కొనసాగుతోంది';
+
+@override
+String get aiChatInProgressMessage => 'మీరు AI చాట్‌బాట్ వినియోగాన్ని ఆపాలనుకుంటున్నారా?';
+
+@override
+String get clearChat => 'చాట్ తొలగించండి';
+
+@override
+String get closeChat => 'చాట్ మూసివేయండి';
+
+@override
+String get iAgreeToThe => 'నేను అంగీకరిస్తున్నాను';
+
+@override
+String get termsAndConditions => 'నిబంధనలు మరియు షరతులు';
+
+@override
+String get enterEmailForPasswordReset =>
+    'పాస్‌వర్డ్ రీసెట్ లింక్ పొందడానికి మీ ఈమెయిల్ చిరునామాను నమోదు చేయండి.';
+
+@override
+String get sendResetLink => 'రీసెట్ లింక్ పంపండి';
+
+@override
+String get emailSent => 'ఈమెయిల్ పంపబడింది';
+
+@override
+String get theEmail => 'ఈమెయిల్,';
+
+@override
+String get isNotRegisteredWithUs => 'మా వద్ద నమోదు కాలేదు';
+
+@override
+String get passwordResetLinkSentTo =>
+    'పాస్‌వర్డ్ రీసెట్ లింక్ పంపబడింది,';
+
+@override
+String get pleaseCheckYourInbox =>
+    'దయచేసి మీ ఇన్‌బాక్స్‌ను తనిఖీ చేయండి';
+@override
+String get rateOfficerAndFeedback =>
+    'అధికారిని రేట్ చేయండి & అభిప్రాయం';
+
+@override
+String get pleaseRateOfficerHandling =>
+    'మీ కేసును అధికారి నిర్వహించిన విధానాన్ని రేట్ చేయండి.';
+
+@override
+String get writeYourFeedbackOptional =>
+    'మీ అభిప్రాయాన్ని వ్రాయండి (ఐచ్చికం)...';
+
+@override
+String get submitFeedback => 'అభిప్రాయం పంపండి';
+
+@override
+String get feedbackSubmittedSuccessfully =>
+    'అభిప్రాయం విజయవంతంగా పంపబడింది!';
+
+@override
+String errorSubmittingFeedback(String error) =>
+    'అభిప్రాయం పంపడంలో లోపం: $error';
+@override
+String get incidentAddress => 'సంఘటన చిరునామా';
+
+@override
+String get incidentDate => 'సంఘటన తేదీ';
+
+@override
+String get jurisdictionForFilingComplaint =>
+    'ఫిర్యాదు దాఖలు చేయవలసిన పరిధి';
+@override
+String get caseProgressUpdates => 'కేసు పురోగతి వివరాలు';
+
+@override
+String get trackCaseProgressDescription =>
+    'మీ పిటిషన్ పురోగతిని ఇక్కడ గమనించండి. మీ కేసుపై జరిగిన చర్యల గురించి పోలీసులు నవీకరణలను జోడిస్తారు.';
+
+@override
+String get noUpdatesYet => 'ఇంకా ఎటువంటి నవీకరణలు లేవు';
+
+@override
+String get policeWillAddUpdatesHere =>
+    'మీ కేసుకు సంబంధించిన నవీకరణలను పోలీసులు ఇక్కడ జోడిస్తారు';
+
+@override
+String get uploadedDocuments => 'అప్‌లోడ్ చేసిన పత్రాలు';
+
+@override
+String get proofDocuments => 'ఆధార పత్రాలు';
+
+ @override
+String get submitted => 'సమర్పించబడింది';
+
+@override
+String get Login_With => 'లాగిన్ అవ్వండి';
+
+@override
+String get draftSaved => 'డ్రాఫ్ట్ సేవ్ చేయబడింది';
+
+@override
+String get draftSavedOn => 'డ్రాఫ్ట్ సేవ్ చేయబడింది';
+
+@override
+String get draftDeleted => 'డ్రాఫ్ట్ తొలగించబడింది';
+
+@override
+String get draftDeletedOn => 'డ్రాఫ్ట్ తొలగించబడింది';
+
+@override
+String get failedToSaveDraft => 'డ్రాఫ్ట్ సేవ్ చేయడంలో విఫలమైంది';
 }

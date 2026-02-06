@@ -7,7 +7,6 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
 import 'app_localizations_te.dart';
-
 // ignore_for_file: type=lint
 
 /// Callers can lookup localized strings with an instance of AppLocalizations
@@ -62,7 +61,8 @@ import 'app_localizations_te.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +70,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,7 +83,8 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -1108,103 +1110,103 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to sign out?'**
   String get areYouSureSignOut;
-  
+
   /// Text shown on AI legal guider screen asking user to utilise feature
   ///
   /// In en, this message translates to:
   /// **'Want to utilise this feature?'**
   String get wantToUtiliseFeature;
-  
+
   /// Utilise button text
   ///
   /// In en, this message translates to:
   /// **'Utilise'**
   String get utilise;
-  
+
   /// Skip button text
   ///
   /// In en, this message translates to:
   /// **'Skip'**
   String get skip;
-  
+
   /// Question asking for user's full name
   ///
   /// In en, this message translates to:
   /// **'What is your full name?'**
   String get fullNameQuestion;
-  
+
   /// Question asking for user's address
   ///
   /// In en, this message translates to:
   /// **'Where do you live (place / area)?'**
   String get addressQuestion;
-  
+
   /// Question asking for user's phone number
   ///
   /// In en, this message translates to:
   /// **'What is your phone number?'**
   String get phoneQuestion;
-  
+
   /// Question asking for complaint type
   ///
   /// In en, this message translates to:
   /// **'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)'**
   String get complaintTypeQuestion;
-  
+
   /// Question asking for complaint details
   ///
   /// In en, this message translates to:
   /// **'Please describe your complaint in detail.'**
   String get detailsQuestion;
-  
+
   /// Loading message
   ///
   /// In en, this message translates to:
   /// **'Loading...'**
   String get loading;
-  
+
   /// Error message when user doesn't enter an answer
   ///
   /// In en, this message translates to:
   /// **'Please enter your answer'**
   String get pleaseEnterYourAnswer;
-  
+
   /// Tooltip for voice input button
   ///
   /// In en, this message translates to:
   /// **'Voice input (coming soon)'**
   String get voiceInputComingSoon;
-  
+
   /// Welcome message in AI legal chat
   ///
   /// In en, this message translates to:
   /// **'Welcome to NyayaSetu'**
   String get welcomeToDharma;
-  
+
   /// Message shown when starting the chat flow
   ///
   /// In en, this message translates to:
   /// **'Let us begin...'**
   String get letUsBegin;
-  
+
   /// Error message when not all questions are answered
   ///
   /// In en, this message translates to:
   /// **'Please answer all questions before submitting. Missing: {missing}'**
   String pleaseAnswerAllQuestions(String missing);
-  
+
   /// Title for complaint summary section
   ///
   /// In en, this message translates to:
   /// **'Complaint Summary:'**
   String get complaintSummary;
-  
+
   /// Classification label with value
   ///
   /// In en, this message translates to:
   /// **'Classification: {classification}'**
   String classification(String classification);
-  
+
   /// Generic error message
   ///
   /// In en, this message translates to:
@@ -1212,7 +1214,7 @@ abstract class AppLocalizations {
   String get somethingWentWrong;
 
   get dharma => null;
-  
+
   /// Unexpected error message with error details
   ///
   /// In en, this message translates to:
@@ -2525,109 +2527,109 @@ abstract class AppLocalizations {
   String get signOutConfirmation;
 
   String get loginWithPhone;
-String get mobileNumber;
-String get sendOtp;
-String get verifyOtp;
-String get otpSent;
-String get otpResent;
-String get enterValidNumber;
-String get enterOtp;
-String resendIn(int seconds);
-String get resendOtp;
-String get loginSuccessful;
-String get wrongOtp;
-String get otpExpired;
-String get invalidOtp;
-String get backToEmailLogin;
-String get emergencyHelplines;
-String get sos112;
-String get helplineEmergencyAll;
-String get helplineEmergencyAllDesc;
-String get helplinePolice;
-String get helplinePoliceDesc;
-String get helplineFire;
-String get helplineFireDesc;
-String get helplineAmbulance;
-String get helplineAmbulanceDesc;
-String get helplineAmbulanceAlt;
-String get helplineAmbulanceAltDesc;
-String get helplineWomen;
-String get helplineWomenDesc;
-String get helplineDomestic;
-String get helplineDomesticDesc;
-String get helplineChild;
-String get helplineChildDesc;
-String get helplineCyber;
-String get helplineCyberDesc;
-String get support;
-String get yourLegalAssistanceHub;
+  String get mobileNumber;
+  String get sendOtp;
+  String get verifyOtp;
+  String get otpSent;
+  String get otpResent;
+  String get enterValidNumber;
+  String get enterOtp;
+  String resendIn(int seconds);
+  String get resendOtp;
+  String get loginSuccessful;
+  String get wrongOtp;
+  String get otpExpired;
+  String get invalidOtp;
+  String get backToEmailLogin;
+  String get emergencyHelplines;
+  String get sos112;
+  String get helplineEmergencyAll;
+  String get helplineEmergencyAllDesc;
+  String get helplinePolice;
+  String get helplinePoliceDesc;
+  String get helplineFire;
+  String get helplineFireDesc;
+  String get helplineAmbulance;
+  String get helplineAmbulanceDesc;
+  String get helplineAmbulanceAlt;
+  String get helplineAmbulanceAltDesc;
+  String get helplineWomen;
+  String get helplineWomenDesc;
+  String get helplineDomestic;
+  String get helplineDomesticDesc;
+  String get helplineChild;
+  String get helplineChildDesc;
+  String get helplineCyber;
+  String get helplineCyberDesc;
+  String get support;
+  String get yourLegalAssistanceHub;
 
-String get inProgress;
-String get closed;
-String get received;
-String get welcome;
-String get policeCommandCenter;
-String get petitionOverview;
-String get recentActivityDescription;
+  String get inProgress;
+  String get closed;
+  String get received;
+  String get welcome;
+  String get policeCommandCenter;
+  String get petitionOverview;
+  String get recentActivityDescription;
   String get helpline;
-String get userNotRegistered;
-String get registeredAs;
-String get tryingToLoginAs;
-String get selectCorrectOption;
-String get loginFailed;
-String get googleLoginSuccessful;
+  String get userNotRegistered;
+  String get registeredAs;
+  String get tryingToLoginAs;
+  String get selectCorrectOption;
+  String get loginFailed;
+  String get googleLoginSuccessful;
 
 // Police Login & Registration
-String get policeLogin;
-String get policeRegistration;
-String get policeLoginSuccessful;
-String get policeRegisteredSuccessfully;
-String get dontHavePoliceAccount;
-String get invalidName;
-String get invalidEmailShort;
-String get passwordMinRequirement;
-String get rank;
-String get selectRank;
-String get selectDistrict;
-String get selectPoliceStationText;
-String get pleaseSelectAllDropdownFields;
-String get searchHint;
-String selectLabel(String label);
-String get aiInvestigationGuidelines;
-String get enterFirNumber;
-String get startInvestigation;
-String get enterOfficerResponse;
-String get errorContactingInvestigationAI;
-String get districtAndFirDetails;
-String get occurenceOfOffence;
-String get dayOfOccurrence;
-String get dateTimeFrom;
-String get dateTimeTo;
-String get selectDateAndTime;
-String get timePeriod;
-String get priorToDateTimeDetails;
-String get beatNumber;
-String get placeOfOccurrence;
-String get streetVillage;
-String get areaMandal;
-String get cityDistrict;
-String get pin;
-String get latitude;
-String get longitude;
-String get map;
-String get viewMap;
-String get listening;
-String get tapToStopRecording;
-String get imageLab;
-String get addPolice;
-String get submitOfflinePetition;
-String get offlinePetitions;
-String get assignedPetitions;
-String get escalated;
-String get viewDetails;
-String get filterCasesUsingFilters;
-String get yourAccessLevel;
-String get ok;
+  String get policeLogin;
+  String get policeRegistration;
+  String get policeLoginSuccessful;
+  String get policeRegisteredSuccessfully;
+  String get dontHavePoliceAccount;
+  String get invalidName;
+  String get invalidEmailShort;
+  String get passwordMinRequirement;
+  String get rank;
+  String get selectRank;
+  String get selectDistrict;
+  String get selectPoliceStationText;
+  String get pleaseSelectAllDropdownFields;
+  String get searchHint;
+  String selectLabel(String label);
+  String get aiInvestigationGuidelines;
+  String get enterFirNumber;
+  String get startInvestigation;
+  String get enterOfficerResponse;
+  String get errorContactingInvestigationAI;
+  String get districtAndFirDetails;
+  String get occurenceOfOffence;
+  String get dayOfOccurrence;
+  String get dateTimeFrom;
+  String get dateTimeTo;
+  String get selectDateAndTime;
+  String get timePeriod;
+  String get priorToDateTimeDetails;
+  String get beatNumber;
+  String get placeOfOccurrence;
+  String get streetVillage;
+  String get areaMandal;
+  String get cityDistrict;
+  String get pin;
+  String get latitude;
+  String get longitude;
+  String get map;
+  String get viewMap;
+  String get listening;
+  String get tapToStopRecording;
+  String get imageLab;
+  String get addPolice;
+  String get submitOfflinePetition;
+  String get offlinePetitions;
+  String get assignedPetitions;
+  String get escalated;
+  String get viewDetails;
+  String get filterCasesUsingFilters;
+  String get yourAccessLevel;
+  String get ok;
 
   /// Filters section label in cases screen
   ///
@@ -2653,8 +2655,6 @@ String get ok;
   /// **'Manage and view details of FIRs / Cases you are involved in.'**
   String get casesScreenSubtitle;
 
-
-
   /// Label for crimeScene
   String get crimeScene;
 
@@ -2673,8 +2673,6 @@ String get ok;
   /// Label for caseInformation
   String get caseInformation;
 
- 
-
   /// Label for year
   String get year;
 
@@ -2687,19 +2685,14 @@ String get ok;
   /// Label for firFiledAt
   String get firFiledAt;
 
-
-
   /// Label for occurrenceOfOffence
   String get occurrenceOfOffence;
-
-
 
   /// Label for from
   String get from;
 
   /// Label for to
   String get to;
- 
 
   /// Label for distanceFromPS
   String get distanceFromPS;
@@ -2743,7 +2736,6 @@ String get ok;
   /// Label for occupation
   String get occupation;
 
-  
   /// Label for passportNo
   String get passportNo;
 
@@ -2804,7 +2796,6 @@ String get ok;
   /// Label for investigatingOfficer
   String get investigatingOfficer;
 
- 
   /// Label for dispatchToCourtDateTime
   String get dispatchToCourtDateTime;
 
@@ -2878,7 +2869,6 @@ String get ok;
   String get analyzeSceneWithAI;
 
   /// Label for analyzing
-  
 
   /// Label for aiSceneAnalysis
   String get aiSceneAnalysis;
@@ -2955,8 +2945,6 @@ String get ok;
   /// Label for physicalEvidenceDescription
   String get physicalEvidenceDescription;
 
- 
-
   /// Label for crimeSceneAdded
   String get crimeSceneAdded;
 
@@ -2965,9 +2953,6 @@ String get ok;
 
   /// Label for errorSavingCrimeScene
   String get errorSavingCrimeScene;
-
-  
-  
 
   /// Label for uploadingCapturedEvidence
   String get uploadingCapturedEvidence;
@@ -3080,7 +3065,6 @@ String get ok;
   String get downloadFailed;
 
   /// Label for analysisComplete
-  
 
   /// Label for analysisErrorEvidence
   String get analysisErrorEvidence;
@@ -3130,9 +3114,46 @@ String get ok;
   /// **'Drafts'**
   String get Drafts;
 
+  String get aiChatInProgressTitle;
+  String get aiChatInProgressMessage;
+  String get clearChat;
+  String get closeChat;
+  String get iAgreeToThe;
+  String get termsAndConditions;
+  String get enterEmailForPasswordReset;
+  String get sendResetLink;
+  String get emailSent;
+  String get theEmail;
+  String get isNotRegisteredWithUs;
+  String get passwordResetLinkSentTo;
+  String get pleaseCheckYourInbox;
+  String get rateOfficerAndFeedback;
+  String get pleaseRateOfficerHandling;
+  String get writeYourFeedbackOptional;
+  String get submitFeedback;
+  String get feedbackSubmittedSuccessfully;
+  String get incidentAddress;
+  String get incidentDate;
+  String get jurisdictionForFilingComplaint;
+  String get caseProgressUpdates;
+  String get trackCaseProgressDescription;
+  String get noUpdatesYet;
+  String get policeWillAddUpdatesHere;
+  String get uploadedDocuments;
+  String get proofDocuments;
+  String get submitted;
+  String get Login_With;
+  String get draftSaved;
+  String get draftSavedOn;
+  String get draftDeleted;
+  String get draftDeletedOn;
+  String get failedToSaveDraft;
+
+  String errorSubmittingFeedback(String error);
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -3141,25 +3162,25 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'te'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'te'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'te': return AppLocalizationsTe();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'te':
+      return AppLocalizationsTe(); // Ensure AppLocalizationsTe is defined in the correct context.
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

@@ -3118,6 +3118,10 @@ String get ok;
   /// **'You have selected Anonymous Petition Mode. Your name and address will not be recorded.'**
   String get anonymousPetitionConfirm;
 
+  String get incidentDate;
+
+  String get jurisdictionForFilingComplaint;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

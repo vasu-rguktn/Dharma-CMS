@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
-
+import 'package:Dharma/l10n/app_localizations.dart';
 class FeedbackInput extends StatefulWidget {
   final String petitionId;
   final VoidCallback onSuccess;
@@ -63,6 +63,7 @@ class _FeedbackInputState extends State<FeedbackInput> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     if (_isSubmitting) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 20),
@@ -80,8 +81,8 @@ class _FeedbackInputState extends State<FeedbackInput> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Rate Officer & Feedback",
+          Text(
+            localizations.rateOfficerAndFeedback,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -89,8 +90,8 @@ class _FeedbackInputState extends State<FeedbackInput> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            "Please rate the officer's handling of your case.",
+          Text(
+            localizations.pleaseRateOfficerHandling,
             style: TextStyle(fontSize: 12, color: Colors.brown),
           ),
           const SizedBox(height: 12),
@@ -116,8 +117,8 @@ class _FeedbackInputState extends State<FeedbackInput> {
           
           TextField(
             controller: _commentController,
-            decoration: const InputDecoration(
-              hintText: "Write your feedback (optional)...",
+            decoration: InputDecoration(
+              hintText: localizations.writeYourFeedbackOptional,
               border: OutlineInputBorder(),
               filled: true,
               fillColor: Colors.white,
@@ -134,7 +135,7 @@ class _FeedbackInputState extends State<FeedbackInput> {
                 backgroundColor: Colors.brown,
                 foregroundColor: Colors.white,
               ),
-              child: const Text("Submit Feedback"),
+              child: Text(localizations.submitFeedback),
             ),
           ),
         ],

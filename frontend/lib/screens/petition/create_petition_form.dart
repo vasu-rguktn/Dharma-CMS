@@ -127,7 +127,32 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     final data = widget.initialData;
     if (data != null) {
-      _titleController.text = data['complaintType']?.toString() ?? '';
+      final type = data['complaintType']?.toString() ?? '';
+      // Raw: "Theft BNS 3032 (COGNIZABLE - ...)" or "Theft BNS 3032 - COGNIZABLE"
+      String rawClass = data['classification']?.toString() ?? '';
+
+      // 1. Remove text inside parentheses containing COGNIZABLE keywords
+      String clean = rawClass.replaceAll(
+          RegExp(r'\([^)]*(COGNIZABLE|NON-COGNIZABLE)[^)]*\)',
+              caseSensitive: false),
+          '');
+
+      // 2. Remove specific description pattern (- Description)
+      clean = clean.replaceAll(RegExp(r'\s*\(-[^)]*\)'), '');
+
+      // 3. Remove text after hyphen if it contains COGNIZABLE
+      clean = clean.replaceAll(
+          RegExp(r'-\s*(COGNIZABLE|NON-COGNIZABLE).*', caseSensitive: false),
+          '');
+
+      // 4. Cleanup remaining keywords
+      clean = clean
+          .replaceAll('COGNIZABLE', '')
+          .replaceAll('NON-COGNIZABLE', '')
+          .replaceAll(RegExp(r'\s+'), ' ') // Collpase multiple spaces
+          .trim();
+
+      _titleController.text = clean.isNotEmpty ? type : type;
       _petitionerNameController.text = data['fullName']?.toString() ?? '';
       _phoneNumberController.text = data['phone']?.toString() ?? '';
       _addressController.text = data['address']?.toString() ?? '';
@@ -552,376 +577,396 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // === BASIC INFO ===
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(localizations.basicInformation,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: InputDecoration(
-                          labelText: localizations.petitionTypeLabel,
-                          border: const OutlineInputBorder()),
-                      validator: (v) =>
-                          v?.isEmpty ?? true ? localizations.required : null,
+    return Scaffold(
+        appBar: AppBar(
+          title: Text(localizations.createPetition),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // === BASIC INFO ===
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(localizations.basicInformation,
+                            style: theme.textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                              labelText: localizations.petitionTypeLabel,
+                              border: const OutlineInputBorder()),
+                          validator: (v) => v?.isEmpty ?? true
+                              ? localizations.required
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _petitionerNameController,
+                          decoration: InputDecoration(
+                              labelText: localizations.yourNameLabel,
+                              border: const OutlineInputBorder()),
+                          validator: (v) => v?.isEmpty ?? true
+                              ? localizations.required
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _phoneNumberController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                              labelText: localizations.phoneNumberLabel,
+                              border: const OutlineInputBorder()),
+                          validator: (v) {
+                            if (v == null || v.isEmpty)
+                              return localizations.required;
+                            if (!RegExp(r'^\d{10}$').hasMatch(v))
+                              return localizations.enterTenDigitNumber;
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _addressController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                              labelText: localizations.addressLabel,
+                              border: const OutlineInputBorder()),
+                          validator: (v) => v?.isEmpty ?? true
+                              ? localizations.required
+                              : null,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _petitionerNameController,
-                      decoration: InputDecoration(
-                          labelText: localizations.yourNameLabel,
-                          border: const OutlineInputBorder()),
-                      validator: (v) =>
-                          v?.isEmpty ?? true ? localizations.required : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _phoneNumberController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                          labelText: localizations.phoneNumberLabel,
-                          border: const OutlineInputBorder()),
-                      validator: (v) {
-                        if (v == null || v.isEmpty)
-                          return localizations.required;
-                        if (!RegExp(r'^\d{10}$').hasMatch(v))
-                          return localizations.enterTenDigitNumber;
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _addressController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                          labelText: localizations.addressLabel,
-                          border: const OutlineInputBorder()),
-                      validator: (v) =>
-                          v?.isEmpty ?? true ? localizations.required : null,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
 // === INCIDENT DETAILS ===
 // === INCIDENT & JURISDICTION DETAILS ===
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ================= INCIDENT DETAILS =================
-                    Text(
-                      _getLocalizedLabel('Incident Details', 'సంఘటన వివరాలు'),
-                      style: theme.textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Incident Address
-                    TextFormField(
-                      controller: _incidentAddressController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: _getLocalizedLabel(
-                            'Incident Address', 'సంఘటన చిరునామా'),
-                        border: const OutlineInputBorder(),
-                      ),
-                      validator: (v) => v == null || v.isEmpty
-                          ? _getLocalizedLabel('Enter incident address',
-                              'సంఘటన చిరునామా నమోదు చేయండి')
-                          : null,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Incident Date
-                    InkWell(
-                      onTap: _pickIncidentDate,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText:
-                              _getLocalizedLabel('Incident Date', 'సంఘటన తేదీ'),
-                          border: const OutlineInputBorder(),
-                        ),
-                        child: Text(
-                          _incidentDate == null
-                              ? _getLocalizedLabel(
-                                  'Select date', 'తేదీని ఎంచుకోండి')
-                              : _incidentDate!
-                                  .toLocal()
-                                  .toString()
-                                  .split(' ')[0],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ================= JURISDICTION DETAILS =================
-                    Text(
-                      _getLocalizedLabel('Jurisdiction for Filing Complaint',
-                          'ఫిర్యాదు దాఖలు చేయడానికి అధికార పరిధి'),
-                      style: theme.textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // District
-                    _picker(
-                      label: _getLocalizedLabel('District', 'జిల్లా'),
-                      value: _districtController.text.isEmpty
-                          ? null
-                          : _districtController.text,
-                      onTap: () {
-                        _openSearchableDropdown(
-                          title: _getLocalizedLabel(
-                              'Select District', 'జిల్లాను ఎంచుకోండి'),
-                          items: _districtStations.keys.toList(),
-                          selectedValue: _districtController.text,
-                          onSelected: (v) {
-                            setState(() {
-                              _districtController.text = v;
-                              _stationController.clear();
-                            });
-                          },
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Police Station
-                    _picker(
-                      label: _getLocalizedLabel(
-                          'Police Station', 'పోలీస్ స్టేషన్'),
-                      value: _stationController.text.isEmpty
-                          ? null
-                          : _stationController.text,
-                      onTap: _districtController.text.isEmpty
-                          ? null
-                          : () {
-                              _openSearchableDropdown(
-                                title: _getLocalizedLabel(
-                                    'Select Police Station',
-                                    'పోలీస్ స్టేషన్‌ను ఎంచుకోండి'),
-                                items: _districtStations[
-                                        _districtController.text] ??
-                                    [],
-                                selectedValue: _stationController.text,
-                                onSelected: (v) {
-                                  setState(() => _stationController.text = v);
-                                },
-                              );
-                            },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // === PETITION DETAILS ===
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(localizations.petitionDetails,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _groundsController,
-                      maxLines: 8,
-                      decoration: InputDecoration(
-                          labelText: localizations.groundsReasonsLabel,
-                          border: const OutlineInputBorder()),
-                      validator: (v) =>
-                          v?.isEmpty ?? true ? localizations.required : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // === HANDWRITTEN DOCUMENTS ===
-                    Text(localizations.handwrittenDocuments,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.upload_file),
-                          label: Text(localizations.uploadDocuments),
-                          onPressed: _isSubmitting ? null : _pickAndOcr,
+                        // ================= INCIDENT DETAILS =================
+                        Text(
+                          _getLocalizedLabel(
+                              'Incident Details', 'సంఘటన వివరాలు'),
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        if (_pickedFiles.isNotEmpty)
-                          Text(localizations.filesCount(_pickedFiles.length)),
-                        if (_ocrService.isExtracting)
-                          const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2)),
-                      ],
-                    ),
-                    if (_pickedFiles.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8)),
-                        child: ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: _pickedFiles.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (_, i) {
-                            final f = _pickedFiles[i];
-                            return ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.insert_drive_file),
-                              title:
-                                  Text(f.name, overflow: TextOverflow.ellipsis),
-                              subtitle: Text(
-                                  '${(f.size / 1024).toStringAsFixed(1)} KB'),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: _isSubmitting
-                                    ? null
-                                    : () => setState(
-                                        () => _pickedFiles.removeAt(i)),
-                              ),
-                            );
-                          },
+                        const SizedBox(height: 12),
+
+                        // Incident Address
+                        TextFormField(
+                          controller: _incidentAddressController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: _getLocalizedLabel(
+                                'Incident Address', 'సంఘటన చిరునామా'),
+                            border: const OutlineInputBorder(),
+                          ),
+                          validator: (v) => v == null || v.isEmpty
+                              ? _getLocalizedLabel('Enter incident address',
+                                  'సంఘటన చిరునామా నమోదు చేయండి')
+                              : null,
                         ),
-                      ),
-                    ],
-                    if (_ocrService.result != null) ...[
-                      const SizedBox(height: 16),
-                      _buildOcrSummary(theme),
-                    ],
 
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                    // === RELATED DOCUMENT PROOFS ===
-                    Text(
-                      _getLocalizedLabel('Related Document Proofs (Optional)',
-                          'సంబంధిత పత్ర రుజువులు (ఐచ్ఛికం)'),
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.upload_file),
-                          label: Text(_getLocalizedLabel(
-                              'Upload Proofs', 'రుజువులను అప్‌లోడ్ చేయండి')),
-                          onPressed: _isSubmitting
+                        // Incident Date
+                        InkWell(
+                          onTap: _pickIncidentDate,
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: _getLocalizedLabel(
+                                  'Incident Date', 'సంఘటన తేదీ'),
+                              border: const OutlineInputBorder(),
+                            ),
+                            child: Text(
+                              _incidentDate == null
+                                  ? _getLocalizedLabel(
+                                      'Select date', 'తేదీని ఎంచుకోండి')
+                                  : _incidentDate!
+                                      .toLocal()
+                                      .toString()
+                                      .split(' ')[0],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // ================= JURISDICTION DETAILS =================
+                        Text(
+                          _getLocalizedLabel(
+                              'Jurisdiction for Filing Complaint',
+                              'ఫిర్యాదు దాఖలు చేయడానికి అధికార పరిధి'),
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // District
+                        _picker(
+                          label: _getLocalizedLabel('District', 'జిల్లా'),
+                          value: _districtController.text.isEmpty
                               ? null
-                              : () async {
-                                  final result =
-                                      await FilePicker.platform.pickFiles(
-                                    allowMultiple: true,
-                                    withData: true,
-                                    type: FileType.any,
-                                  );
-                                  if (result != null &&
-                                      result.files.isNotEmpty) {
-                                    setState(() {
-                                      _proofFiles.addAll(result.files);
-                                    });
-                                  }
-                                },
-                        ),
-                        if (_proofFiles.isNotEmpty)
-                          Text(_getLocalizedLabel(
-                            '${_proofFiles.length} file(s) selected',
-                            '${_proofFiles.length} ఫైల్(లు) ఎంచుకోబడ్డాయి',
-                          )),
-                      ],
-                    ),
-                    if (_proofFiles.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: _proofFiles.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final f = _proofFiles[index];
-                            return ListTile(
-                              dense: true,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              leading: const Icon(Icons.attach_file),
-                              title:
-                                  Text(f.name, overflow: TextOverflow.ellipsis),
-                              subtitle: Text(
-                                  '${(f.size / 1024).toStringAsFixed(1)} KB'),
-                              trailing: IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                    minWidth: 32, minHeight: 32),
-                                icon: const Icon(Icons.close),
-                                onPressed: _isSubmitting
-                                    ? null
-                                    : () => setState(
-                                        () => _proofFiles.removeAt(index)),
-                              ),
+                              : _districtController.text,
+                          onTap: () {
+                            _openSearchableDropdown(
+                              title: _getLocalizedLabel(
+                                  'Select District', 'జిల్లాను ఎంచుకోండి'),
+                              items: _districtStations.keys.toList(),
+                              selectedValue: _districtController.text,
+                              onSelected: (v) {
+                                setState(() {
+                                  _districtController.text = v;
+                                  _stationController.clear();
+                                });
+                              },
                             );
                           },
                         ),
-                      ),
-                    ],
-                  ],
+
+                        const SizedBox(height: 16),
+
+                        // Police Station
+                        _picker(
+                          label: _getLocalizedLabel(
+                              'Police Station', 'పోలీస్ స్టేషన్'),
+                          value: _stationController.text.isEmpty
+                              ? null
+                              : _stationController.text,
+                          onTap: _districtController.text.isEmpty
+                              ? null
+                              : () {
+                                  _openSearchableDropdown(
+                                    title: _getLocalizedLabel(
+                                        'Select Police Station',
+                                        'పోలీస్ స్టేషన్‌ను ఎంచుకోండి'),
+                                    items: _districtStations[
+                                            _districtController.text] ??
+                                        [],
+                                    selectedValue: _stationController.text,
+                                    onSelected: (v) {
+                                      setState(
+                                          () => _stationController.text = v);
+                                    },
+                                  );
+                                },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 24),
+                // === PETITION DETAILS ===
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(localizations.petitionDetails,
+                            style: theme.textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _groundsController,
+                          maxLines: 8,
+                          decoration: InputDecoration(
+                              labelText: localizations.groundsReasonsLabel,
+                              border: const OutlineInputBorder()),
+                          validator: (v) => v?.isEmpty ?? true
+                              ? localizations.required
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
 
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitPetition,
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16)),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(localizations.createPetition,
-                      style: const TextStyle(fontSize: 16)),
+                        // === HANDWRITTEN DOCUMENTS ===
+                        Text(localizations.handwrittenDocuments,
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.upload_file),
+                              label: Text(localizations.uploadDocuments),
+                              onPressed: _isSubmitting ? null : _pickAndOcr,
+                            ),
+                            if (_pickedFiles.isNotEmpty)
+                              Text(localizations
+                                  .filesCount(_pickedFiles.length)),
+                            if (_ocrService.isExtracting)
+                              const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)),
+                          ],
+                        ),
+                        if (_pickedFiles.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8)),
+                            child: ListView.separated(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: _pickedFiles.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (_, i) {
+                                final f = _pickedFiles[i];
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.insert_drive_file),
+                                  title: Text(f.name,
+                                      overflow: TextOverflow.ellipsis),
+                                  subtitle: Text(
+                                      '${(f.size / 1024).toStringAsFixed(1)} KB'),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : () => setState(
+                                            () => _pickedFiles.removeAt(i)),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        if (_ocrService.result != null) ...[
+                          const SizedBox(height: 16),
+                          _buildOcrSummary(theme),
+                        ],
+
+                        const SizedBox(height: 24),
+
+                        // === RELATED DOCUMENT PROOFS ===
+                        Text(
+                          _getLocalizedLabel(
+                              'Related Document Proofs (Optional)',
+                              'సంబంధిత పత్ర రుజువులు (ఐచ్ఛికం)'),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.upload_file),
+                              label: Text(_getLocalizedLabel('Upload Proofs',
+                                  'రుజువులను అప్‌లోడ్ చేయండి')),
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : () async {
+                                      final result =
+                                          await FilePicker.platform.pickFiles(
+                                        allowMultiple: true,
+                                        withData: true,
+                                        type: FileType.any,
+                                      );
+                                      if (result != null &&
+                                          result.files.isNotEmpty) {
+                                        setState(() {
+                                          _proofFiles.addAll(result.files);
+                                        });
+                                      }
+                                    },
+                            ),
+                            if (_proofFiles.isNotEmpty)
+                              Text(_getLocalizedLabel(
+                                '${_proofFiles.length} file(s) selected',
+                                '${_proofFiles.length} ఫైల్(లు) ఎంచుకోబడ్డాయి',
+                              )),
+                          ],
+                        ),
+                        if (_proofFiles.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListView.separated(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: _proofFiles.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final f = _proofFiles[index];
+                                return ListTile(
+                                  dense: true,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  leading: const Icon(Icons.attach_file),
+                                  title: Text(f.name,
+                                      overflow: TextOverflow.ellipsis),
+                                  subtitle: Text(
+                                      '${(f.size / 1024).toStringAsFixed(1)} KB'),
+                                  trailing: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    icon: const Icon(Icons.close),
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : () => setState(
+                                            () => _proofFiles.removeAt(index)),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitPetition,
+                  style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16)),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(localizations.createPetition,
+                          style: const TextStyle(fontSize: 16)),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }

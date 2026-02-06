@@ -2011,7 +2011,7 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   // TODO: implement profileUpdated
-  String get profileUpdated => throw UnimplementedError();
+  String get profileUpdated => "Profile Updated";
   
   @override
   // TODO: implement ok
@@ -2020,14 +2020,128 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   String get Saved => 'Saved';
 
-  @override
+  @override 
   String get Drafts => 'Drafts';
+
+  @override
+String get aiChatInProgressTitle => 'AI Chat in Progress';
+
+@override
+String get aiChatInProgressMessage => 'Do you want to stop using the AI chatbot?';
+
+@override
+String get clearChat => 'CLEAR CHAT';
+
+@override
+String get closeChat => 'CLOSE CHAT';
+
+@override
+String get iAgreeToThe => 'I agree to the';
+
+@override
+String get termsAndConditions => 'Terms & Conditions';
+
+@override
+String get enterEmailForPasswordReset =>
+    'Enter your email address to receive a password reset link.';
+
+@override
+String get sendResetLink => 'Send Reset Link';
+
+@override
+String get emailSent => 'Email Sent';
   
+@override
+String get theEmail => 'The email,';
+
+@override
+String get isNotRegisteredWithUs => 'is not registered with us';
+
+@override
+String get passwordResetLinkSentTo =>
+    'A password reset link has been sent to,';
+
+@override
+String get pleaseCheckYourInbox => 'Please check your inbox';
+
+@override
+String get rateOfficerAndFeedback => 'Rate Officer & Feedback';
+
+@override
+String get pleaseRateOfficerHandling =>
+    "Please rate the officer's handling of your case.";
+
+@override
+String get writeYourFeedbackOptional =>
+    'Write your feedback (optional)...';
+
+@override
+String get submitFeedback => 'Submit Feedback';
+
+@override
+String get feedbackSubmittedSuccessfully =>
+    'Feedback submitted successfully!';
+
+@override
+String errorSubmittingFeedback(String error) =>
+    'Error submitting feedback: $error';
+
+@override
+String get incidentAddress => 'Incident Address';
+
+@override
+String get incidentDate => 'Incident Date';
+
+@override
+String get jurisdictionForFilingComplaint =>
+    'Jurisdiction for Filing Complaint';
+@override
+String get caseProgressUpdates => 'Case Progress Updates';
+
+@override
+String get trackCaseProgressDescription =>
+    'Track the progress of your petition here. Police will add updates about the work done on your case.';
+
+@override
+String get noUpdatesYet => 'No Updates Yet';
+
+@override
+String get policeWillAddUpdatesHere =>
+    'The police will add updates about your case here';
+
+@override
+String get uploadedDocuments => 'Uploaded Documents';
+
+@override
+String get proofDocuments => 'Proof Documents';
+
+
   @override
   // TODO: implement from
-  String get from => throw UnimplementedError();
+  String get from => 'from';
   
   @override
   // TODO: implement to
-  String get to => throw UnimplementedError();
+  String get to => 'to';
+
+  @override
+String get submitted => 'Submitted';
+
+@override
+String get Login_With => 'Login With';
+
+@override
+String get draftSaved => 'Draft saved Successfully';
+
+@override
+String get failedToSaveDraft => 'Failed to save draft';
+
+@override
+String get draftSavedOn => 'Draft saved on';
+
+@override
+String get draftDeleted => 'Draft deleted';
+
+@override
+String get draftDeletedOn => 'Draft deleted on';
 }

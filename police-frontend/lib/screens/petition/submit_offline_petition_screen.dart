@@ -1,3 +1,4 @@
+import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -290,7 +291,7 @@ class _SubmitOfflinePetitionScreenState
   Widget build(BuildContext context) {
     final policeProfile =
         context.watch<PoliceAuthProvider>().policeProfile;
-
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Submit Offline Petition'),
@@ -430,7 +431,7 @@ class _SubmitOfflinePetitionScreenState
 
                   // Section: Incident Details
                   Text(
-                    'Incident Details',
+                    localizations.incidentDetails,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
