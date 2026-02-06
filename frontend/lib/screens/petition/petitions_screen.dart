@@ -22,6 +22,7 @@ class PetitionsScreen extends StatefulWidget {
 class _PetitionsScreenState extends State<PetitionsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
 
   // Your signature orange
   static const Color orange = Color(0xFFFC633C);
@@ -33,7 +34,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
     // Safe fetch after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPetitions());
   }
-  
+
   // Get petition ID from query params (for notification deep-linking)
   String? _getPetitionIdFromRoute() {
     final uri = GoRouterState.of(context).uri;
@@ -43,6 +44,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -67,6 +69,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final isWeb = MediaQuery.of(context).size.width > 900;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +82,8 @@ class _PetitionsScreenState extends State<PetitionsScreen>
               color: orange,
               size: 32,
               shadows: const [
-                Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))
+                Shadow(
+                    color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))
               ],
             ),
             onPressed: () => context.go('/dashboard'),
@@ -93,16 +97,78 @@ class _PetitionsScreenState extends State<PetitionsScreen>
           ),
         ),
         centerTitle: false,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: orange,
-          unselectedLabelColor: Colors.grey[600],
-          indicatorColor: orange,
-          tabs: [
-            Tab(icon: const Icon(Icons.list), text: localizations.myPetitions),
-            Tab(icon: const Icon(Icons.add_circle), text: localizations.createNew),
-          ],
-        ),
+        bottom: isWeb
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(kToolbarHeight),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2, // Tabs take 2/3 of the width
+                        child: TabBar(
+                          controller: _tabController,
+                          labelColor: orange,
+                          unselectedLabelColor: Colors.grey[600],
+                          indicatorColor: orange,
+                          indicatorWeight: 3,
+                          dividerColor: Colors.transparent, // Remove black line
+                          tabs: [
+                            Tab(
+                                icon: const Icon(Icons.list),
+                                text: localizations.myPetitions),
+                            Tab(
+                                icon: const Icon(Icons.add_circle),
+                                text: localizations.createNew),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1, // Search bar takes 1/3 of the width
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search Petitions...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 0),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(30),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : TabBar(
+                // Standard Mobile TabBar
+                controller: _tabController,
+                labelColor: orange,
+                unselectedLabelColor: Colors.grey[600],
+                indicatorColor: orange,
+                indicatorWeight: 3,
+                dividerColor: Colors.transparent, // Remove black line
+                tabs: [
+                  Tab(
+                      icon: const Icon(Icons.list),
+                      text: localizations.myPetitions),
+                  Tab(
+                      icon: const Icon(Icons.add_circle),
+                      text: localizations.createNew),
+                ],
+              ),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -111,6 +177,8 @@ class _PetitionsScreenState extends State<PetitionsScreen>
             onRefresh: _fetchPetitions,
             formatTimestamp: _formatTimestamp,
             initialPetitionId: _getPetitionIdFromRoute(), // Pass for auto-open
+            isWeb: isWeb,
+            searchController: _searchController,
           ),
           CreatePetitionForm(
             onCreatedSuccess: () => _tabController.index = 0,

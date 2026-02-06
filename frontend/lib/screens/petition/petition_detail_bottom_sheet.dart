@@ -9,6 +9,12 @@ import 'package:Dharma/widgets/full_screen_image_viewer.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/screens/petition/feedback_input.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 class PetitionDetailBottomSheet {
   static void show(BuildContext context, Petition petition) {
@@ -313,7 +319,8 @@ class _DetailContent extends StatelessWidget {
                     color: isSaved ? Colors.orange : Colors.grey,
                   ),
                   onPressed: () async {
-                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    final auth =
+                        Provider.of<AuthProvider>(context, listen: false);
                     final userId = auth.user?.uid;
                     if (userId == null) return;
 
@@ -347,7 +354,9 @@ class _DetailContent extends StatelessWidget {
         if (petition.phoneNumber != null)
           _buildDetailRow(
             localizations.phone,
-            petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+            petition.isAnonymous
+                ? maskPhoneNumber(petition.phoneNumber)
+                : petition.phoneNumber!,
           ),
         if (petition.address != null)
           _buildDetailRow(localizations.address, petition.address!),
@@ -499,45 +508,70 @@ class _DetailContent extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: petition.proofDocumentUrls!.length,
               itemBuilder: (context, index) {
+                final url = petition.proofDocumentUrls![index];
+                final lowerUrl = url.toLowerCase();
+                final isVideo = lowerUrl.contains('.mp4') ||
+                    lowerUrl.contains('.mov') ||
+                    lowerUrl.contains('.avi');
+                final isImage = lowerUrl.contains('.jpg') ||
+                    lowerUrl.contains('.png') ||
+                    lowerUrl.contains('.jpeg') ||
+                    lowerUrl.contains('.webp') ||
+                    lowerUrl.contains('.heic');
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: SizedBox(
                     width: 200,
                     child: InkWell(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FullScreenImageViewer(
-                              imageUrls: petition.proofDocumentUrls!,
-                              initialIndex: index,
+                        if (isVideo) {
+                          _playVideo(context, url);
+                        } else {
+                          // Default to image viewer for now, or add check for docs
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FullScreenImageViewer(
+                                imageUrls: petition.proofDocumentUrls!,
+                                initialIndex: index,
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        }
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          petition.proofDocumentUrls![index],
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                  child: CircularProgressIndicator()),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                  child: Icon(Icons.broken_image,
-                                      color: Colors.grey)),
-                            );
-                          },
-                        ),
+                        child: isVideo
+                            ? Container(
+                                color: Colors.black12,
+                                child: const Center(
+                                  child: Icon(Icons.play_circle_fill,
+                                      size: 48, color: Colors.orange),
+                                ),
+                              )
+                            : Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                        child: CircularProgressIndicator()),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                        child: Icon(Icons.broken_image,
+                                            color: Colors.grey)),
+                                  );
+                                },
+                              ),
                       ),
                     ),
                   ),
@@ -551,7 +585,7 @@ class _DetailContent extends StatelessWidget {
         const SizedBox(height: 24),
         const Divider(),
         const SizedBox(height: 16),
-        
+
         Text(
           localizations.caseProgressUpdates,
           style: theme.textTheme.titleLarge?.copyWith(
@@ -571,7 +605,9 @@ class _DetailContent extends StatelessWidget {
         // Display petition updates in real-time using StreamBuilder
         if (petition.id != null)
           StreamBuilder<List<PetitionUpdate>>(
-            stream: context.read<PetitionProvider>().streamPetitionUpdates(petition.id!),
+            stream: context
+                .read<PetitionProvider>()
+                .streamPetitionUpdates(petition.id!),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
@@ -595,41 +631,43 @@ class _DetailContent extends StatelessWidget {
               }
 
               final updates = snapshot.data ?? [];
-              final allUpdates = context.read<PetitionProvider>().getUpdatesWithEscalations(petition, updates);
+              final allUpdates = context
+                  .read<PetitionProvider>()
+                  .getUpdatesWithEscalations(petition, updates);
               return PetitionUpdateTimeline(updates: allUpdates);
             },
           ),
-          
-          // ================= FEEDBACK SECTION =================
-          if (_shouldShowFeedbackSection(petition)) ...[
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 16),
-             FeedbackInput(
-              petitionId: petition.id!,
-              onSuccess: () {
-                // Refresh or close? 
-                // Since this is inside a BottomSheet/Modal, maybe just show success message (handled in widget)
-                // and maybe refresh current view?
-                // The widget handles validation and UI state.
-                Navigator.pop(context);
-              },
-            ),
-          ],
+
+        // ================= FEEDBACK SECTION =================
+        if (_shouldShowFeedbackSection(petition)) ...[
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 16),
+          FeedbackInput(
+            petitionId: petition.id!,
+            onSuccess: () {
+              // Refresh or close?
+              // Since this is inside a BottomSheet/Modal, maybe just show success message (handled in widget)
+              // and maybe refresh current view?
+              // The widget handles validation and UI state.
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ],
     );
   }
 
   bool _shouldShowFeedbackSection(Petition petition) {
     final status = (petition.policeStatus ?? '').toLowerCase();
-    
+
     // 1. Must be resolved/closed
-    final isResolved = status.contains('closed') || 
-                       status.contains('resolved') || 
-                       status.contains('reject') ||
-                       petition.status == PetitionStatus.granted ||
-                       petition.status == PetitionStatus.rejected ||
-                       petition.status == PetitionStatus.withdrawn;
+    final isResolved = status.contains('closed') ||
+        status.contains('resolved') ||
+        status.contains('reject') ||
+        petition.status == PetitionStatus.granted ||
+        petition.status == PetitionStatus.rejected ||
+        petition.status == PetitionStatus.withdrawn;
 
     if (!isResolved) return false;
 
@@ -638,5 +676,198 @@ class _DetailContent extends StatelessWidget {
     if (feedbackCount >= 5) return false;
 
     return true;
+  }
+
+  void _playVideo(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (context) => VideoPlayerDialog(videoUrl: url),
+    );
+  }
+}
+
+class VideoPlayerDialog extends StatefulWidget {
+  final String videoUrl;
+  const VideoPlayerDialog({super.key, required this.videoUrl});
+
+  @override
+  State<VideoPlayerDialog> createState() => _VideoPlayerDialogState();
+}
+
+class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
+  late VideoPlayerController _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
+      await _videoPlayerController.initialize();
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController,
+        autoPlay: true,
+        looping: false,
+        aspectRatio: _videoPlayerController.value.aspectRatio,
+        errorBuilder: (context, errorMessage) {
+          return Center(
+            child: Text(
+              errorMessage,
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error initializing video: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _downloadVideo() async {
+    try {
+      // 1. Simple permission request (mainly for older Androids)
+      // On Android 13+, this might not be needed for public downloads,
+      // or might need Permission.videos.
+      // We'll try-catch the permission request to avoid crashing if handled by OS.
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.status;
+        if (!status.isGranted) {
+          await Permission.storage.request();
+        }
+      }
+
+      // 2. Determine path
+      Directory? dir;
+      if (Platform.isAndroid) {
+        dir = Directory('/storage/emulated/0/Download');
+      } else {
+        dir = await getDownloadsDirectory();
+      }
+
+      if (dir == null || !dir.existsSync()) {
+        dir = await getApplicationDocumentsDirectory();
+      }
+
+      final fileName = 'Evidence_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final savePath = '${dir.path}/$fileName';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Downloading video...')),
+        );
+      }
+
+      // 3. Download
+      await Dio().download(widget.videoUrl, savePath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved to Downloads: $fileName'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.black,
+      insetPadding: const EdgeInsets.all(10),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (_isLoading)
+            const CircularProgressIndicator(color: Colors.white)
+          else if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline,
+                      color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            )
+          else if (_chewieController != null)
+            AspectRatio(
+              aspectRatio: _videoPlayerController.value.aspectRatio,
+              child: Chewie(controller: _chewieController!),
+            ),
+
+          // Download button (Top-Left)
+          Positioned(
+            top: 10,
+            left: 10,
+            child: CircleAvatar(
+              backgroundColor: Colors.black.withOpacity(0.5),
+              child: IconButton(
+                icon: const Icon(Icons.download, color: Colors.white),
+                onPressed: _downloadVideo,
+                tooltip: 'Download Video',
+              ),
+            ),
+          ),
+
+          // Close button (Top-Right)
+          Positioned(
+            top: 10,
+            right: 10,
+            child: CircleAvatar(
+              backgroundColor: Colors.black.withOpacity(0.5),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

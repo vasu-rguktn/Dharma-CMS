@@ -127,7 +127,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     final data = widget.initialData;
     if (data != null) {
-      _titleController.text = data['complaintType']?.toString() ?? '';
+      final type = data['complaintType']?.toString() ?? '';
+      final classification = data['classification']?.toString() ?? '';
+      _titleController.text =
+          classification.isNotEmpty ? '$type ($classification)' : type;
       _petitionerNameController.text = data['fullName']?.toString() ?? '';
       _phoneNumberController.text = data['phone']?.toString() ?? '';
       _addressController.text = data['address']?.toString() ?? '';

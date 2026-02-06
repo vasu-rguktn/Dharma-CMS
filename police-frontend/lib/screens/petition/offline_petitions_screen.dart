@@ -38,6 +38,10 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   String? _officerFullIdentity; // Combined name, rank, and location
   bool _isLoading = true;
 
+  // Search functionality
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -117,6 +121,7 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -941,6 +946,42 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Search by Title, ID, or Petitioner Name...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value.toLowerCase();
+          });
+        },
+      ),
+    );
+  }
+
   Widget _buildPetitionList(bool isSentTab) {
     return Consumer<OfflinePetitionProvider>(
       builder: (context, offlinePetitionProvider, _) {
@@ -948,54 +989,81 @@ class _OfflinePetitionsScreenState extends State<OfflinePetitionsScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        final petitions = isSentTab
+        final allPetitions = isSentTab
             ? offlinePetitionProvider.sentPetitions
             : offlinePetitionProvider.assignedPetitions;
 
-        if (petitions.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isSentTab ? Icons.send_outlined : Icons.inbox_outlined,
-                  size: 80,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isSentTab ? 'No Sent Petitions' : 'No Assigned Petitions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isSentTab
-                      ? 'Petitions you assign will appear here'
-                      : 'Petitions assigned to you will appear here',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[500],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        }
+        // Apply Search Filter
+        final petitions = allPetitions.where((petition) {
+          final query = _searchQuery.toLowerCase();
+          final title = petition.title.toLowerCase();
+          final id = petition.id?.toLowerCase() ?? '';
+          final petitioner = petition.petitionerName.toLowerCase();
 
-        return RefreshIndicator(
-          onRefresh: isSentTab ? _loadSentPetitions : _loadAssignedPetitions,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: petitions.length,
-            itemBuilder: (context, index) {
-              return _buildPetitionCard(petitions[index], isSentTab);
-            },
-          ),
+          return title.contains(query) ||
+              id.contains(query) ||
+              petitioner.contains(query);
+        }).toList();
+
+        return Column(
+          children: [
+            _buildSearchBar(),
+            Expanded(
+              child: petitions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isSentTab
+                                ? Icons.send_outlined
+                                : Icons.inbox_outlined,
+                            size: 80,
+                            color: Colors.grey[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'No matching petitions found'
+                                : (isSentTab
+                                    ? 'No Sent Petitions'
+                                    : 'No Assigned Petitions'),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_searchQuery.isEmpty)
+                            Text(
+                              isSentTab
+                                  ? 'Petitions you assign will appear here'
+                                  : 'Petitions assigned to you will appear here',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: isSentTab
+                          ? _loadSentPetitions
+                          : _loadAssignedPetitions,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        itemCount: petitions.length,
+                        itemBuilder: (context, index) {
+                          return _buildPetitionCard(
+                              petitions[index], isSentTab);
+                        },
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );

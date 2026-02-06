@@ -1240,7 +1240,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Validate message
     if (!_allowInput || _isLoading) return;
 
-    if (finalMessage.isEmpty) {
+    // Validate message - Allow empty text IF there are attachments
+    if (finalMessage.isEmpty && _attachedFiles.isEmpty) {
       setState(() => _inputError = false);
       _inputFocus.requestFocus();
       return;
@@ -2391,8 +2392,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              success ? localizations.draftSaved : localizations.failedToSaveDraft),
+          content: Text(success
+              ? localizations.draftSaved
+              : localizations.failedToSaveDraft),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
