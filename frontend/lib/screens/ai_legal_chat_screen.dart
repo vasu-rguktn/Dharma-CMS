@@ -17,12 +17,13 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image/image.dart'
+    as dart_img; // Renamed to avoid shadowing 'img' variables
 import 'package:Dharma/services/native_speech_recognizer.dart';
 import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/petition_provider.dart';
-import '../widgets/petition_type_card.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -82,12 +83,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   // Local state
   bool _inputError = false;
+  bool _isChatCompleted = false; // Track final completion
+  bool _isNavigating = false; // Track if navigation is in progress
+  String? _finalSummary;
+  String? _finalClassification;
+  String? _finalOriginalClassification;
   bool _isDynamicMode = false;
   bool _isAnonymous = false; // Track anonymous petition state
   List<Map<String, String>> _dynamicHistory = [];
 
+  // Complaint Flow State
+  String _complaintForWho = 'Self'; // 'Self' or 'Other'
+
   Future<bool> _showPetitionTypeDialog() async {
     final localizations = AppLocalizations.of(context)!;
+
+    // Reset state on open
+    _isAnonymous = false;
+    _complaintForWho = 'Self';
 
     final result = await showDialog<bool>(
       context: context,
@@ -95,80 +108,130 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Title
+                // Header
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.gavel, color: orange, size: 28),
-                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: orange.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.gavel_rounded,
+                          color: orange, size: 28),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         localizations.selectPetitionType,
                         style: const TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
                         ),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // Description
                 Text(
-                  localizations.petitionTypeDescription,
+                  "Who is this complaint for?",
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                    height: 1.4,
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                // Anonymous Option
-                PetitionTypeCard(
-                  icon: Icons.shield_outlined,
-                  iconColor: orange,
-                  title: localizations.anonymousPetition,
-                  borderColor: orange,
+                // Option 1: Complaint for Self
+                _buildTypeOption(
+                  context,
+                  title: "Complaint for Self",
+                  icon: Icons.person,
+                  color: Colors.blue.shade700,
                   onTap: () {
-                    setState(() => _isAnonymous = true);
+                    setState(() {
+                      _isAnonymous = false;
+                      _complaintForWho = 'Self';
+                    });
                     Navigator.of(context).pop(true);
                   },
                 ),
 
                 const SizedBox(height: 12),
 
-                // Normal Option
-                PetitionTypeCard(
-                  icon: Icons.person_outline,
-                  iconColor: Colors.blue,
-                  title: localizations.normalPetition,
-                  borderColor: Colors.blue,
+                // Option 2: Complaint for Others
+                _buildTypeOption(
+                  context,
+                  title: "Complaint for Others",
+                  icon: Icons.group,
+                  color: Colors.purple.shade700,
                   onTap: () {
-                    setState(() => _isAnonymous = false);
+                    setState(() {
+                      _isAnonymous = false;
+                      _complaintForWho = 'Other';
+                    });
                     Navigator.of(context).pop(true);
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 12),
 
-                // Cancel button
+                // Option 3: Anonymous (Subtle)
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isAnonymous = true;
+                      _complaintForWho =
+                          'Self'; // Anonymous is implied self regarding knowledge, but identity hidden
+                    });
+                    Navigator.of(context).pop(true);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.visibility_off_outlined,
+                            size: 18, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Text(
+                          localizations.anonymousPetition ?? "File Anonymously",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Cancel
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                    localizations.close,
-                    style: const TextStyle(fontSize: 15),
-                  ),
+                  child: Text(localizations.close ?? 'Cancel'),
                 ),
               ],
             ),
@@ -178,6 +241,53 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     );
 
     return result ?? false;
+  }
+
+  Widget _buildTypeOption(BuildContext context,
+      {required String title,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios,
+                  size: 16, color: Colors.grey.shade400),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // STT (Speech-to-Text) variables
@@ -666,26 +776,18 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   /// Resume ASR after TTS finishes
   void _resumeASRAfterTTS() {
+    // DISABLED for "Auto-Stop" feature.
+    // The user wants the mic to stop after they speak, not continuous conversation where mic stays open.
+    // We only resume if we were explicitly in a specialized "continuous" mode, which we are removing to fix the overlapping issue.
+
+    // Original Code:
+    /*
     if (_isRecording && mounted) {
       print('Resuming ASR after TTS...');
-
-      // Small delay to ensure TTS audio has fully stopped
-      Future.delayed(const Duration(milliseconds: 300), () async {
-        if (_isRecording && mounted) {
-          if (_isAndroid) {
-            // Restart native recognizer
-            if (!_nativeSpeech.isListening && _currentSttLang != null) {
-              await _nativeSpeech.startListening(language: _currentSttLang!);
-            }
-          } else {
-            // Restart speech_to_text
-            if (!_speech.isListening) {
-              _seamlessRestart();
-            }
-          }
-        }
-      });
+    ...
     }
+    */
+    print('TTS finished - Mic remains OFF (waiting for user input)');
   }
 
   /// Centralized function to reset chat state
@@ -881,8 +983,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     await Future.delayed(const Duration(seconds: 1)); // Small delay for flow
 
     // Explicitly ask for description instead of calling backend immediately
-    String startMsg = localizations.detailsQuestion ??
-        'Please describe your complaint in detail.';
+    String startMsg = localizations.detailsQuestion;
+
+    // Custom start message for 'Others'
+    if (_complaintForWho == 'Other') {
+      startMsg =
+          "Since you are filing this for someone else, please describe the incident and your relationship to the victim.";
+    }
+
     _addBot(startMsg);
     _speak(startMsg);
 
@@ -958,18 +1066,18 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Determine base URL robustly
     String baseUrl;
-    if (kIsWeb) {
-      // on web you probably want to call your absolute backend URL
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else {
-      // iOS simulator / other platforms
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    }
+    // if (kIsWeb) {
+    //   // on web you probably want to call your absolute backend URL
+    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    // } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    //   // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    // } else {
+    //   // iOS simulator / other platforms
+    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    // }
 
-    // baseUrl = "http://127.0.0.1:8000";
+    baseUrl = "http://127.0.0.1:8000";
     final settings = context.read<SettingsProvider>();
     final localeCode = settings.locale?.languageCode ??
         Localizations.localeOf(context).languageCode;
@@ -1006,10 +1114,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     String finalInitialDetails = _ChatStateHolder.answers['details'] ?? '';
 
+    // Inject context for complaint type (Self vs Other)
+    if (_complaintForWho == 'Other') {
+      finalInitialDetails +=
+          " [SYSTEM: The user is filing this complaint ON BEHALF OF SOMEONE ELSE. Treat this exactly like a normal complaint investigation. You MUST gather all details (Incident, Evidence, Reporter's Identity). Do not skip any steps. Provide full investigation.]";
+    }
+
     // Inject strong instruction for anonymous petitions
     if (_isAnonymous) {
       finalInitialDetails +=
-          " [SYSTEM INSTRUCTION: This is an ANONYMOUS petition. Do NOT ask for the user's name, phone number, or personal details. Treat the user as 'Anonymous Citizen'. PROCEED IMMEDIATELY to investigating the incident details. Ask relevant questions to gather evidence and facts. Do NOT conclude the chat without gathering substantial details about the incident.]";
+          " [SYSTEM INSTRUCTION: This is an ANONYMOUS petition. Do NOT ask for the user's name or address. However, you MUST verify the phone number at the end for tracking. INVESTIGATE THE CRIME FULLY (Incident, Date, Location, Evidence) just like a normal petition. Do NOT shorten the investigation.]";
     }
 
     if (attachmentNote.isNotEmpty) {
@@ -1075,6 +1189,108 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         if (question.trim().isEmpty) {
           question = "Could you please provide more details?";
         }
+
+        // INTERCEPTION: If the AI outputs the summary but backend didn't mark as 'done'
+        final qLower = question.toLowerCase();
+        if (qLower.contains('complaint summary') ||
+            qLower.contains('formal petition') ||
+            (qLower.contains('incident details') &&
+                qLower.contains('incident location'))) {
+          print(
+              "🕵️ Intercepted Summary in Chat Message - Forcing Completion (Frontend)");
+
+          // IMPROVED EXTRACTION: Extract classification from the text
+          String classification = "General Complaint";
+
+          // STEP 1: Scan current message + history for "Cognizable" or "Non-Cognizable"
+          String allTextToScan = question;
+          for (var m in _ChatStateHolder.messages) {
+            allTextToScan += "\n${m.content}";
+          }
+          final allUpper = allTextToScan.toUpperCase();
+
+          // Fuzzy Regex for common misspellings: COGNIZABLE, COGNIGIBLE, COGNINGIBLE
+          final ncRegex =
+              RegExp(r'.*NON-?COGNIZ?G?N?IBLE.*', caseSensitive: false);
+          final cRegex = RegExp(r'(?<!NON-)COGNIZ?G?N?IBLE.*',
+              caseSensitive: false); // Negative lookbehind for NON-
+
+          if (allUpper.contains("NON-COGNIZABLE") ||
+              allUpper.contains("NON COGNIZABLE") ||
+              ncRegex.hasMatch(allTextToScan)) {
+            final matches = ncRegex.allMatches(allTextToScan);
+            if (matches.isNotEmpty) {
+              classification = matches.last
+                  .group(0)!
+                  .trim()
+                  .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+            } else {
+              classification =
+                  "NON-COGNIZABLE - Offence permits magistrate order.";
+            }
+          } else if (allUpper.contains("COGNIZABLE") ||
+              cRegex.hasMatch(allTextToScan)) {
+            final matches = cRegex.allMatches(allTextToScan);
+            if (matches.isNotEmpty) {
+              classification = matches.last
+                  .group(0)!
+                  .trim()
+                  .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+            } else {
+              classification = "COGNIZABLE - Offence permits police action.";
+            }
+          } else {
+            // STEP 2: Fallback to labeled fields in current message
+            final classificationRegex = RegExp(
+                r'(?:Classification|Offence Classification|Legal Status)\s*[:*-]+\s*(.*)',
+                caseSensitive: false);
+            final cMatch = classificationRegex.firstMatch(question);
+
+            if (cMatch != null && cMatch.group(1) != null) {
+              classification = cMatch.group(1)!.trim();
+            } else {
+              // SECONDARY: Try to find the "Complaint Type" label
+              final typeRegex = RegExp(
+                  r'(?:Complaint Type|Category)\s*[:*-]+\s*(.*)',
+                  caseSensitive: false);
+              final tMatch = typeRegex.firstMatch(question);
+              if (tMatch != null && tMatch.group(1) != null) {
+                classification = tMatch.group(1)!.trim();
+              } else {
+                // Fallback: Look for BNS or specialized keywords
+                if (question.contains('BNS')) {
+                  final bnsRegex = RegExp(r'\(.*BNS.*\)', caseSensitive: false);
+                  final bMatch = bnsRegex.firstMatch(question);
+                  if (bMatch != null) {
+                    classification =
+                        bMatch.group(0)!.replaceAll(RegExp(r'[()]'), '');
+                  }
+                } else if (qLower.contains("theft")) {
+                  classification = "Theft";
+                } else if (qLower.contains("assault")) {
+                  classification = "Assault";
+                } else if (qLower.contains("cyber")) {
+                  classification = "Cyber Crime";
+                }
+              }
+            }
+          }
+
+          // Cleanup markdown bolding/stars from the final string
+          classification =
+              classification.replaceAll('*', '').replaceAll('#', '').trim();
+          print("🕵️ Intercepted Classification: $classification");
+
+          final syntheticData = {
+            'formal_summary': question,
+            'classification': classification,
+            'original_classification': classification,
+            'localized_fields': {}
+          };
+
+          _handleFinalResponse(syntheticData);
+          return;
+        }
         _addBot(question);
         _speak(question);
 
@@ -1094,8 +1310,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         _handleFinalResponse(finalResp);
       }
     } catch (e) {
-      String msg = localizations.somethingWentWrong ??
-          'Sorry, something went wrong. Please try again later.';
+      String msg = localizations.somethingWentWrong;
 
       // Enhanced error logging for debugging
       print('❌ Chat step error: $e');
@@ -1126,20 +1341,118 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
+  Future<void> _navigateToDetails() async {
+    if (!mounted || _isNavigating) return;
+
+    // Set lock to prevent double navigation
+    setState(() => _isNavigating = true);
+
+    print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen via Helper...');
+
+    // Pack Chat Data for "Save Draft" on Details Screen
+    final chatData = {
+      'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
+      'answers': _ChatStateHolder.answers,
+      'currentQ': _ChatStateHolder.currentQ,
+      'isAnonymous': _isAnonymous,
+      'dynamicHistory': _dynamicHistory,
+      // Attached files are cleared after processing, so this will be empty list usually
+      'attachedFiles': [],
+    };
+
+    try {
+      await context.push(
+        '/ai-chatbot-details',
+        extra: {
+          'answers': Map<String, String>.from(_ChatStateHolder.answers),
+          'summary': _finalSummary ?? '',
+          'classification': _finalClassification ?? '',
+          'originalClassification': _finalOriginalClassification ?? '',
+          'evidencePaths': [], // We use Provider for file transfer now
+          'chatData': chatData,
+          'draftId': _currentDraftId,
+        },
+      );
+    } finally {
+      // Reset lock when user comes back OR if navigation fails
+      if (mounted) {
+        setState(() => _isNavigating = false);
+      }
+    }
+  }
+
   Future<void> _handleFinalResponse(dynamic data) async {
     final localizations = AppLocalizations.of(context)!;
 
-    _addBot(localizations.complaintSummary ?? 'Complaint Summary:');
+    _addBot(localizations.complaintSummary);
     final formalSummary = (data is Map && data['formal_summary'] != null)
         ? data['formal_summary'].toString()
         : '(no summary)';
-    final classification = (data is Map && data['classification'] != null)
+    String classification = (data is Map && data['classification'] != null)
         ? data['classification'].toString()
         : '(none)';
+
+    // ROBUSTNESS: Scan chat history to override classification if LLM mentioned it in a bubble
+    // This catches cases where the AI split the classification into a separate bubble.
+    final historyText =
+        _ChatStateHolder.messages.map((m) => m.content).join("\n") +
+            "\n" +
+            formalSummary;
+    final upperHistory = historyText.toUpperCase();
+
+    // Fuzzy Regex for common misspellings: COGNIZABLE, COGNIGIBLE, COGNINGIBLE
+    final ncRegex = RegExp(r'.*NON-?COGNIZ?G?N?IBLE.*', caseSensitive: false);
+    final cRegex = RegExp(r'(?<!NON-)COGNIZ?G?N?IBLE.*', caseSensitive: false);
+
+    if (upperHistory.contains("NON-COGNIZABLE") ||
+        upperHistory.contains("NON COGNIZABLE") ||
+        ncRegex.hasMatch(historyText)) {
+      final matches = ncRegex.allMatches(historyText);
+      if (matches.isNotEmpty) {
+        classification = matches.last
+            .group(0)!
+            .trim()
+            .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+        print(
+            "💡 Found NON-COGNIZABLE in history sweep (fuzzy). Overriding classification.");
+      }
+    } else if (upperHistory.contains("COGNIZABLE") ||
+        cRegex.hasMatch(historyText)) {
+      final matches = cRegex.allMatches(historyText);
+      if (matches.isNotEmpty) {
+        classification = matches.last
+            .group(0)!
+            .trim()
+            .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+        print(
+            "💡 Found COGNIZABLE in history sweep (fuzzy). Overriding classification.");
+      }
+    }
+
+    String finalOriginal = "NON-COGNIZABLE";
+    if (classification.toUpperCase().contains("NON-COGNIZABLE") ||
+        classification.toUpperCase().contains("NON COGNIZABLE") ||
+        ncRegex.hasMatch(classification)) {
+      finalOriginal = "NON-COGNIZABLE";
+    } else if (classification.toUpperCase().contains("COGNIZABLE") ||
+        cRegex.hasMatch(classification)) {
+      finalOriginal = "COGNIZABLE";
+    }
+
     final originalClassification =
         (data is Map && data['original_classification'] != null)
             ? data['original_classification'].toString()
-            : classification;
+            : finalOriginal;
+
+    // Store in State for UI button
+    if (mounted) {
+      setState(() {
+        _finalSummary = formalSummary;
+        _finalClassification = classification;
+        _finalOriginalClassification = originalClassification;
+        _isChatCompleted = true; // Mark as done
+      });
+    }
 
     final Map<String, String> localizedAnswers =
         Map<String, String>.from(_ChatStateHolder.answers);
@@ -1158,13 +1471,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       ..addAll(localizedAnswers);
 
     _addBot(formalSummary);
-    _addBot(localizations.classification(classification as String) ??
-        'Classification: $classification');
+    _addBot(localizations.classification(classification));
 
-    setState(() {
-      _setIsLoading(false);
-      _setAllowInput(false);
-    });
+    if (mounted) {
+      setState(() {
+        _setIsLoading(false);
+        _setAllowInput(false);
+      });
+    }
 
     // STOP ASR when chat completes
     if (_isRecording) {
@@ -1182,8 +1496,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       });
     }
 
-    // navigate to details screen
-    // navigate to details screen
+    // Stash files directly to Provider
     if (_ChatStateHolder.allAttachedFiles.isNotEmpty) {
       print(
           '💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
@@ -1194,24 +1507,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       } catch (e) {
         print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
       }
-    } else {
-      print('⚠️ [DEBUG] Chat Screen: No files to stash (list empty)');
     }
 
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen...');
-      context.push(
-        '/ai-chatbot-details',
-        extra: {
-          'answers': Map<String, String>.from(_ChatStateHolder.answers),
-          'summary': formalSummary,
-          'classification': classification,
-          'originalClassification': originalClassification,
-          'evidencePaths': [], // We use Provider for file transfer now
-        },
-      );
-    });
+    // Auto-navigate after delay
+    Future.delayed(const Duration(seconds: 1), _navigateToDetails);
   }
 
   void _handleSend() async {
@@ -1221,7 +1520,6 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Capture the final message to send BEFORE resetting state
     String finalMessage = '';
-    bool wasRecording = _isRecording;
 
     // If recording is active, finalize the current transcript
     if (_isRecording) {
@@ -1255,51 +1553,33 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // CRITICAL: Reset ALL ASR state for fresh start on next message
     // This prevents concatenation with previous messages/autofill issues
+    // Stop Microphone properly if it was recording
     if (_isRecording) {
-      print('Sending message - restarting ASR to clear buffer');
-
-      // Temporarily ignore callbacks to prevent flickering/race conditions
+      print('Sending message - STOPPING MICROPHONE (Auto-Stop)');
+      // Stop recording functionality
       setState(() {
-        _ignoreAsrCallbacks = true;
-        _finalizedTranscript = '';
+        _isRecording = false;
+        _recordingStartTime = null;
         _currentTranscript = '';
-        _lastRecognizedText = '';
-        _inputError = false;
+        _finalizedTranscript = '';
+        _ignoreAsrCallbacks = false;
+        _listeningMonitorTimer?.cancel();
       });
       _controller.clear();
 
       try {
         if (_isAndroid) {
-          // Android Native ASR: Explicitly stop and restart to clear buffer
           await _nativeSpeech.stopListening();
-          // Small delay to ensure engine processes the stop
-          await Future.delayed(const Duration(milliseconds: 200));
-
-          if (mounted && _isRecording && _currentSttLang != null) {
-            await _nativeSpeech.startListening(language: _currentSttLang!);
-          }
         } else {
-          // iOS/Web: Use existing clean restart helper
-          await _restartSpeechRecognitionOnClear();
+          if (_speech.isListening) {
+            await _speech.stop();
+            await _speech.cancel();
+          }
         }
       } catch (e) {
-        print('Error restarting ASR in handleSend: $e');
-      }
-
-      // Re-enable callbacks
-      if (mounted) {
-        setState(() {
-          _ignoreAsrCallbacks = false;
-        });
+        print('Error stopping ASR in handleSend: $e');
       }
     } else {
-      // Not recording - simple state clear
-      setState(() {
-        _finalizedTranscript = '';
-        _currentTranscript = '';
-        _lastRecognizedText = '';
-        _inputError = false;
-      });
       _controller.clear();
     }
 
@@ -1432,16 +1712,22 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   final List<XFile> images =
                       await _imagePicker.pickMultiImage();
                   if (images.isNotEmpty && mounted) {
-                    for (var img in images) {
-                      Uint8List? bytes;
-                      if (kIsWeb) bytes = await img.readAsBytes();
+                    print('📷 Selected ${images.length} images from gallery');
+                    for (var xFile in images) {
+                      Uint8List? fileBytes;
+                      if (kIsWeb) {
+                        fileBytes = await xFile.readAsBytes();
+                        print(
+                            '🌐 Web: Read ${fileBytes.length} bytes for ${xFile.name}');
+                      }
 
                       setState(() {
                         _attachedFiles.add(PlatformFile(
-                          name: img.name,
-                          size: 0,
-                          bytes: bytes,
-                          path: img.path,
+                          name: xFile.name,
+                          size:
+                              xFile.path.length, // Placeholder size if not web
+                          bytes: fileBytes,
+                          path: kIsWeb ? null : xFile.path,
                         ));
                       });
                     }
@@ -1568,42 +1854,6 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     } catch (e) {
       // Silently fail - sound unmuting is optional
       print('Could not unmute system sounds: $e');
-    }
-  }
-
-  /// Restart speech recognition when user manually clears text
-  /// This resets the SDK's internal buffer to get fresh transcript
-  Future<void> _restartSpeechRecognitionOnClear() async {
-    if (!_isRecording || _currentSttLang == null) return;
-
-    print('Restarting speech recognition after manual text clear...');
-
-    try {
-      // Stop and cancel current session to reset SDK buffer
-      await _speech.stop();
-      await _speech.cancel();
-
-      // Small delay to ensure clean state
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // Reset all transcript state
-      setState(() {
-        _currentTranscript = '';
-        _finalizedTranscript = '';
-        _busyRetryCount = 0;
-        _isRestarting = false;
-        _lastRestartAttempt = null;
-        _lastSpeechDetected = null;
-      });
-
-      // Restart listening with fresh state
-      await _safeRestartListening(_currentSttLang!);
-    } catch (e) {
-      print('Error restarting speech recognition on clear: $e');
-      // If restart fails, try safe restart
-      if (mounted && _isRecording && _currentSttLang != null) {
-        await _safeRestartListening(_currentSttLang!);
-      }
     }
   }
 
@@ -2212,7 +2462,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           final name = file.name;
           final isImage = name.toLowerCase().endsWith('.jpg') ||
               name.toLowerCase().endsWith('.jpeg') ||
-              name.toLowerCase().endsWith('.png');
+              name.toLowerCase().endsWith('.png') ||
+              name.toLowerCase().endsWith('.webp');
           final isVideo = name.toLowerCase().endsWith('.mp4') ||
               name.toLowerCase().endsWith('.mov');
 
@@ -2223,9 +2474,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: orange.withOpacity(0.3)),
-              image: (isImage)
+              image: (isImage &&
+                      (file.bytes != null || (!kIsWeb && file.path != null)))
                   ? DecorationImage(
-                      image: (kIsWeb && file.bytes != null)
+                      image: (file.bytes != null)
                           ? MemoryImage(file.bytes!)
                           : FileImage(File(file.path!)) as ImageProvider,
                       fit: BoxFit.cover,
@@ -2234,10 +2486,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             ),
             child: Stack(
               children: [
-                if (!isImage)
+                if (!isImage ||
+                    (isImage &&
+                        file.bytes == null &&
+                        (kIsWeb || file.path == null)))
                   Center(
                     child: Icon(
-                      isVideo ? Icons.videocam : Icons.insert_drive_file,
+                      isImage
+                          ? Icons.image
+                          : (isVideo
+                              ? Icons.videocam
+                              : Icons.insert_drive_file),
                       color: orange,
                       size: 24,
                     ),
@@ -2338,72 +2597,214 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       if (_attachedFiles.isNotEmpty) {
         print('📥 Loaded ${_attachedFiles.length} attached files from draft');
       }
+
+      // Restore completion state and classification from chatData if present
+      _isChatCompleted = chatData['isChatCompleted'] as bool? ?? false;
+      _finalSummary = chatData['finalSummary'] as String?;
+      _finalClassification = chatData['finalClassification'] as String?;
+      _finalOriginalClassification =
+          chatData['finalOriginalClassification'] as String?;
+      _isNavigating = false; // Reset navigation lock on load
+
+      // Fallback: Robust Scan for older drafts without explicit completion flags
+      if (!_isChatCompleted && _ChatStateHolder.messages.isNotEmpty) {
+        try {
+          final summaryMsg = _ChatStateHolder.messages.reversed.firstWhere(
+            (msg) {
+              final c = msg.content.toLowerCase();
+              return c.contains('complaint summary') ||
+                  c.contains('formal petition') ||
+                  (c.contains('incident details') &&
+                      c.contains('incident location'));
+            },
+          );
+
+          print(
+              '🏁 [LoadDraft] Found existing summary via scan. Restoring COMPLETED state.');
+          _isChatCompleted = true;
+          _finalSummary = summaryMsg.content;
+          _ChatStateHolder.allowInput = false;
+          _ChatStateHolder.isLoading = false;
+
+          // Attempt to extract a simple classification from the summary text
+          if (_finalClassification == null || _finalClassification!.isEmpty) {
+            String classification = "General Complaint";
+
+            // STEP 1: Aggressive Search for Legal Status
+            String allText = _finalSummary!;
+            for (var m in _ChatStateHolder.messages) {
+              allText += "\n${m.content}";
+            }
+            final allUpper = allText.toUpperCase();
+            final ncRegex =
+                RegExp(r'.*NON-?COGNIZ?G?N?IBLE.*', caseSensitive: false);
+            final cRegex =
+                RegExp(r'(?<!NON-)COGNIZ?G?N?IBLE.*', caseSensitive: false);
+
+            if (allUpper.contains("NON-COGNIZABLE") ||
+                allUpper.contains("NON COGNIZABLE") ||
+                ncRegex.hasMatch(allText)) {
+              final matches = ncRegex.allMatches(allText);
+              classification = matches.isNotEmpty
+                  ? matches.last
+                      .group(0)!
+                      .trim()
+                      .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '')
+                  : "NON-COGNIZABLE - Offence permits magistrate order.";
+            } else if (allUpper.contains("COGNIZABLE") ||
+                cRegex.hasMatch(allText)) {
+              final matches = cRegex.allMatches(allText);
+              classification = matches.isNotEmpty
+                  ? matches.last
+                      .group(0)!
+                      .trim()
+                      .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '')
+                  : "COGNIZABLE - Offence permits police action.";
+            } else {
+              // STEP 2: Labeled fields
+              final classificationRegex = RegExp(
+                  r'(?:Classification|Offence Classification|Legal Status)\s*[:*-]+\s*(.*)',
+                  caseSensitive: false);
+              final cMatch = classificationRegex.firstMatch(_finalSummary!);
+
+              if (cMatch != null && cMatch.group(1) != null) {
+                classification = cMatch.group(1)!.trim();
+              } else {
+                // PRIORITY 2: Complaint Type
+                final typeRegex = RegExp(
+                    r'(?:Complaint Type|Category)\s*[:*-]+\s*(.*)',
+                    caseSensitive: false);
+                final tMatch = typeRegex.firstMatch(_finalSummary!);
+                if (tMatch != null && tMatch.group(1) != null) {
+                  classification = tMatch.group(1)!.trim();
+                } else {
+                  String cText = _finalSummary!.toLowerCase();
+                  if (cText.contains("theft")) {
+                    classification = "Theft";
+                  } else if (cText.contains("assault")) {
+                    classification = "Assault";
+                  } else if (cText.contains("cyber")) {
+                    classification = "Cyber Crime";
+                  }
+                }
+              }
+            }
+            _finalClassification = classification
+                .replaceAll('*', '')
+                .replaceAll('#', '')
+                .replaceAll('=', '')
+                .trim();
+            _finalOriginalClassification =
+                _finalClassification!.toUpperCase().contains("NON-COGNIZABLE")
+                    ? "NON-COGNIZABLE"
+                    : "COGNIZABLE";
+          }
+        } catch (_) {
+          // No summary found in scan
+        }
+      }
+
+      if (_isChatCompleted) {
+        _ChatStateHolder.allowInput = false;
+        _ChatStateHolder.isLoading = false;
+      }
     });
 
     _scrollToEnd();
   }
 
   Future<void> _saveDraft() async {
+    print('📝 [DRAFT UI] User clicked Save Draft');
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final complaintProv =
         Provider.of<ComplaintProvider>(context, listen: false);
 
-    if (auth.user == null) return;
-
-    _setIsLoading(true);
-
-    final chatData = {
-      'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
-      'answers': _ChatStateHolder.answers,
-      'currentQ': _ChatStateHolder.currentQ,
-      'isAnonymous': _isAnonymous,
-      'dynamicHistory': _dynamicHistory,
-      // Save attached files as base64
-      'attachedFiles': _attachedFiles
-          .map((file) => {
-                'name': file.name,
-                'bytes': file.bytes != null ? base64Encode(file.bytes!) : null,
-                'path': file.path,
-                'size': file.size,
-              })
-          .toList(),
-    };
-
-    // Generate a meaningful title from the user's initial complaint
-    String title = "AI Legal Chat Draft";
-
-    // Try to find the user's first message (their initial complaint description)
-    for (var msg in _ChatStateHolder.messages) {
-      if (msg.isUser && msg.content.trim().isNotEmpty) {
-        // Use the first user message as the title
-        final content = msg.content.trim();
-        // Take first 40 characters for a more descriptive title
-        title =
-            content.length > 40 ? content.substring(0, 40) + "..." : content;
-        break;
-      }
+    if (auth.user == null) {
+      print('📝 [DRAFT UI] User not logged in, aborting');
+      return;
     }
 
-    final success = await complaintProv.saveChatAsDraft(
-      userId: auth.user!.uid,
-      title: title,
-      chatData: chatData,
-      draftId: _currentDraftId,
-    );
+    _setIsLoading(true);
+    print('📝 [DRAFT UI] Loading state set to true');
 
-    final localizations = AppLocalizations.of(context)!;
+    try {
+      print('📝 [DRAFT UI] Preparing chatData for serialization...');
+      final chatData = {
+        'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
+        'answers': _ChatStateHolder.answers,
+        'currentQ': _ChatStateHolder.currentQ,
+        'isAnonymous': _isAnonymous,
+        'dynamicHistory': _dynamicHistory,
+        'isChatCompleted': _isChatCompleted,
+        'finalSummary': _finalSummary,
+        'finalClassification': _finalClassification,
+        'finalOriginalClassification': _finalOriginalClassification,
+        'attachedFiles': _attachedFiles.map((file) {
+          final thumbnail = _ChatMessage._getSmallThumbnail(file);
+          return {
+            'name': file.name,
+            'bytes': thumbnail, // Store small thumbnail
+            'path': kIsWeb ? null : file.path,
+            'size': file.size,
+          };
+        }).toList(),
+      };
 
-    _setIsLoading(false);
+      print(
+          '📝 [DRAFT UI] Serialized ${_ChatStateHolder.messages.length} messages');
+      print('📝 [DRAFT UI] Serialized ${_attachedFiles.length} files');
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success
-              ? localizations.draftSaved
-              : localizations.failedToSaveDraft),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
+      // Generate a meaningful title from the user's initial complaint
+      String title = "AI Legal Chat Draft";
+
+      // Try to find the user's first message (their initial complaint description)
+      for (var msg in _ChatStateHolder.messages) {
+        if (msg.isUser && msg.content.trim().isNotEmpty) {
+          // Use the first user message as the title
+          final content = msg.content.trim();
+          // Take first 40 characters for a more descriptive title
+          title =
+              content.length > 40 ? content.substring(0, 40) + "..." : content;
+          break;
+        }
+      }
+      print('📝 [DRAFT UI] Generated Title: $title');
+
+      print('📝 [DRAFT UI] Handing over to ComplaintProvider...');
+      final success = await complaintProv.saveChatAsDraft(
+        userId: auth.user!.uid,
+        title: title,
+        chatData: chatData,
+        draftId: _currentDraftId,
       );
+      print('📝 [DRAFT UI] Provider return status: $success');
+
+      final localizations = AppLocalizations.of(context)!;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? localizations.draftSaved
+                : localizations.failedToSaveDraft),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e, stack) {
+      print('❌ [DRAFT UI] CRASH in _saveDraft: $e');
+      print('❌ [DRAFT UI] Stack Trace: $stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to save draft. Please try again."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      print('📝 [DRAFT UI] Finalizing: setting loading false');
+      _setIsLoading(false);
     }
   }
 
@@ -2427,6 +2828,48 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             },
           ),
           actions: [
+            // Language Selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  dropdownColor: const Color(0xFFFC633C),
+                  value: Localizations.localeOf(context).languageCode == 'te'
+                      ? 'Telugu'
+                      : 'English',
+                  icon: const Icon(Icons.language, color: Colors.white),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      // Switch Language
+                      Locale newLocale = newValue == 'Telugu'
+                          ? const Locale('te', 'IN')
+                          : const Locale('en', 'US');
+                      // Use SettingsProvider to update app-wide language
+                      Provider.of<SettingsProvider>(context, listen: false)
+                          .setLanguage(newLocale.languageCode);
+
+                      // Update STT/TTS language
+                      setState(() {
+                        // This will trigger rebuild with new locale
+                        // Restart ASR if recording?
+                        if (_isRecording) {
+                          _toggleRecording(); // Toggle off
+                        }
+                      });
+                    }
+                  },
+                  items: <String>['English', 'Telugu']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
             // Save Draft Button
             IconButton(
               icon: const Icon(Icons.save, color: Colors.white),
@@ -2560,20 +3003,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                                               return ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
-                                                child: (kIsWeb &&
-                                                        file.bytes != null)
-                                                    ? Image.memory(
-                                                        file.bytes!,
-                                                        width: 100,
-                                                        height: 100,
-                                                        fit: BoxFit.cover,
-                                                      )
-                                                    : Image.file(
-                                                        File(file.path!),
-                                                        width: 100,
-                                                        height: 100,
-                                                        fit: BoxFit.cover,
-                                                      ),
+                                                child: _ChatMessage
+                                                    ._buildMessageImage(file),
                                               );
                                             }
 
@@ -2727,8 +3158,42 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             // ── FILE PREVIEW ──
             if (_attachedFiles.isNotEmpty) _buildFilePreview(),
 
-            // ── INPUT FIELD ──
-            if (!_isLoading && !_errored && _allowInput)
+            // ── COMPLETED STATE & INPUT FIELD ──
+            if (_isChatCompleted)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                color: const Color(0xFFF5F8FE), // background color match
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFC633C),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  onPressed: _navigateToDetails,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.assignment_turned_in,
+                          color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text(
+                        localizations.complaintSummary ??
+                            "View Complaint Summary",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (!_isLoading && !_errored && _allowInput)
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 color: background,
@@ -2971,19 +3436,119 @@ class _ChatMessage {
     this.files = const [],
   });
 
+  static Widget _buildMessageImage(PlatformFile file) {
+    print(
+        '🎨 Rendering message image: ${file.name} (hasBytes: ${file.bytes != null})');
+    if (file.bytes != null && file.bytes!.isNotEmpty) {
+      print('🎨 Image bytes length: ${file.bytes!.length}');
+      return Image.memory(
+        file.bytes!,
+        width: 130, // Slightly larger for better visibility
+        height: 130,
+        fit: BoxFit.cover,
+        cacheWidth: 260, // Optimization for web/gallery
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Error rendering Image.memory: $error');
+          return _buildImagePlaceholder("Corrupt Img");
+        },
+      );
+    } else if (!kIsWeb && file.path != null && file.path!.isNotEmpty) {
+      print('🎨 Image path: ${file.path}');
+      return Image.file(
+        File(file.path!),
+        width: 130,
+        height: 130,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Error rendering Image.file: $error');
+          return _buildImagePlaceholder("File Error");
+        },
+      );
+    } else {
+      print('🎨 No image data available for ${file.name}');
+      return _buildImagePlaceholder("Image Missing");
+    }
+  }
+
+  static Widget _buildImagePlaceholder(String label) {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey.shade200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image, color: Colors.grey.shade400, size: 32),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String? _getSmallThumbnail(PlatformFile file) {
+    try {
+      Uint8List? sourceBytes = file.bytes;
+
+      // On Mobile, if bytes are null but path is present, read them
+      if (sourceBytes == null &&
+          !kIsWeb &&
+          file.path != null &&
+          file.path!.isNotEmpty) {
+        try {
+          sourceBytes = File(file.path!).readAsBytesSync();
+          print(
+              '🎞️ Mobile: Read ${sourceBytes.length} bytes from disk for thumbnail');
+        } catch (e) {
+          print('Error reading file for thumbnail: $e');
+        }
+      }
+
+      if (sourceBytes == null || sourceBytes.isEmpty) return null;
+
+      final name = file.name.toLowerCase();
+      if (!(name.endsWith('.jpg') ||
+          name.endsWith('.jpeg') ||
+          name.endsWith('.png') ||
+          name.endsWith('.webp'))) return null;
+
+      // Decode the image
+      final image = dart_img.decodeImage(sourceBytes);
+      if (image == null) return null;
+
+      // Resize the image to be very small for Firestore (max 150px)
+      final thumbnail = dart_img.copyResize(image, width: 150);
+
+      // Encode as JPG with low quality to save space
+      final jpg = dart_img.encodeJpg(thumbnail, quality: 50);
+      return base64Encode(jpg);
+    } catch (e) {
+      print('Error generating thumbnail: $e');
+      return null;
+    }
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'user': user,
       'content': content,
       'isUser': isUser,
-      'files': files
-          .map((file) => {
-                'name': file.name,
-                'bytes': file.bytes != null ? base64Encode(file.bytes!) : null,
-                'path': file.path,
-                'size': file.size,
-              })
-          .toList(),
+      'files': files.map((file) {
+        final thumbnail = _getSmallThumbnail(file);
+        return {
+          'name': file.name,
+          'bytes': thumbnail, // Store small thumbnail
+          'path': kIsWeb ? null : file.path,
+          'size': file.size,
+        };
+      }).toList(),
     };
   }
 
@@ -2995,15 +3560,19 @@ class _ChatMessage {
       final path = fileData['path'] as String?;
       final size = fileData['size'] as int? ?? 0;
 
-      Uint8List? bytes;
-      if (bytesBase64 != null) {
-        bytes = base64Decode(bytesBase64);
+      Uint8List? decodedBytes;
+      if (bytesBase64 != null && bytesBase64.isNotEmpty) {
+        try {
+          decodedBytes = base64Decode(bytesBase64);
+        } catch (e) {
+          print('Error decoding base64 thumbnail: $e');
+        }
       }
 
       return PlatformFile(
         name: name,
         path: path,
-        bytes: bytes,
+        bytes: decodedBytes,
         size: size,
       );
     }).toList();

@@ -105,6 +105,10 @@ class ComplaintProvider with ChangeNotifier {
     required Map<String, dynamic> chatData,
     String? draftId,
   }) async {
+    debugPrint("📂 [SAVE DRAFT] Starting saveChatAsDraft for User: $userId");
+    debugPrint("📂 [SAVE DRAFT] Title: $title");
+    debugPrint("📂 [SAVE DRAFT] Draft ID: ${draftId ?? 'New Draft'}");
+
     try {
       final String docId =
           draftId ?? "draft_${userId}_${DateTime.now().millisecondsSinceEpoch}";
@@ -123,11 +127,19 @@ class ComplaintProvider with ChangeNotifier {
         'grounds': 'In-progress AI Legal Chat session', // Fallback
       };
 
+      debugPrint("📂 [SAVE DRAFT] Saving to Firestore path: complaints/$docId");
+      // Log approx data size
+      final dataStr = draftData.toString();
+      debugPrint("📂 [SAVE DRAFT] Approx Data Size: ${dataStr.length} chars");
+
       await docRef.set(draftData, SetOptions(merge: true));
+      debugPrint("✅ [SAVE DRAFT] Firestore set() completed successfully");
+
       await fetchComplaints(userId: userId);
+      debugPrint("✅ [SAVE DRAFT] Refresh fetchComplaints completed");
       return true;
     } catch (e) {
-      debugPrint("Error saving chat draft: $e");
+      debugPrint("❌ [SAVE DRAFT] ERROR in saveChatAsDraft: $e");
       return false;
     }
   }

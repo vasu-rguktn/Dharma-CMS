@@ -172,8 +172,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
           // Handle string format (YYYY-MM-DD) from chatbot
           if (incidentDateData is String) {
-            parsedDate = DateTime.tryParse(incidentDateData);
-            debugPrint('✅ Parsed incident date from string: $parsedDate');
+            String dateStr = incidentDateData.trim();
+            parsedDate = DateTime.tryParse(dateStr);
+            debugPrint(
+                '✅ Parsed incident date from string: $parsedDate (raw: "$dateStr")');
           }
           // Handle Timestamp object format
           else if (incidentDateData is Timestamp) {
@@ -210,13 +212,62 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       final Map<String, dynamic> data = json.decode(jsonStr);
 
       setState(() {
-        _districtStations =
-            data.map((k, v) => MapEntry(k, List<String>.from(v)));
+        _districtStations = data.map((k, v) {
+          final stations = List<String>.from(v);
+          if (!stations.contains('Station Unknown')) {
+            stations.insert(0, 'Station Unknown');
+          }
+          return MapEntry(k, stations);
+        });
         _dataLoading = false;
+
+        // Trigger Autofill
+        _autofillJurisdiction(data);
       });
     } catch (e) {
       debugPrint('Error loading district data: $e');
       setState(() => _dataLoading = false);
+    }
+  }
+
+  void _autofillJurisdiction(Map<String, dynamic> districtsMap) {
+    if (widget.initialData == null) return;
+
+    final targetStation =
+        widget.initialData!['selected_police_station']?.toString().trim();
+    if (targetStation == null || targetStation.isEmpty) return;
+
+    debugPrint('🤖 Attempting to autofill jurisdiction for: $targetStation');
+
+    String? foundDistrict;
+    String? foundStation;
+
+    // Search for the station in the map
+    for (final entry in districtsMap.entries) {
+      final district = entry.key;
+      final stations = List<String>.from(entry.value);
+
+      // Case insensitive check
+      final match = stations.firstWhere(
+        (s) => s.toLowerCase() == targetStation.toLowerCase(),
+        orElse: () => '',
+      );
+
+      if (match.isNotEmpty) {
+        foundDistrict = district;
+        foundStation = match; // Use the exact casing from JSON
+        break;
+      }
+    }
+
+    if (foundDistrict != null) {
+      debugPrint('✅ Found District: $foundDistrict for Station: $foundStation');
+      setState(() {
+        _districtController.text = foundDistrict!;
+        _stationController.text = foundStation!;
+      });
+    } else {
+      debugPrint('⚠️ Station "$targetStation" not found in district database.');
     }
   }
 
@@ -582,7 +633,13 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
           title: Text(localizations.createPetition),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/petitions'); // Fallback if no history
+              }
+            },
           ),
         ),
         body: SingleChildScrollView(

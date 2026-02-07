@@ -3,13 +3,17 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
 
-class AiChatbotDetailsScreen extends StatelessWidget {
+class AiChatbotDetailsScreen extends StatefulWidget {
   final Map<String, String> answers;
   final String summary;
   final String classification;
   final String originalClassification;
-  final List<String> evidencePaths; // New field
+  final List<String> evidencePaths;
+  final Map<String, dynamic>? chatData; // For saving draft
+  final String? draftId;
 
   const AiChatbotDetailsScreen({
     super.key,
@@ -17,24 +21,96 @@ class AiChatbotDetailsScreen extends StatelessWidget {
     required this.summary,
     required this.classification,
     required this.originalClassification,
-    this.evidencePaths = const [], // Default empty
+    this.evidencePaths = const [],
+    this.chatData,
+    this.draftId,
   });
 
   static AiChatbotDetailsScreen fromRouteSettings(
       BuildContext context, GoRouterState state) {
     final q = state.extra as Map<String, dynamic>?;
-    
+
     // Safely cast the nested map
     final rawAnswers = q?['answers'] as Map<String, dynamic>?;
-    final safeAnswers = rawAnswers?.map((k, v) => MapEntry(k, v.toString())) ?? {};
+    final safeAnswers =
+        rawAnswers?.map((k, v) => MapEntry(k, v.toString())) ?? {};
 
     return AiChatbotDetailsScreen(
       answers: safeAnswers,
       summary: q?['summary'] as String? ?? '',
       classification: q?['classification'] as String? ?? '',
       originalClassification: q?['originalClassification'] as String? ?? '',
-      evidencePaths: (q?['evidencePaths'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      evidencePaths: (q?['evidencePaths'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      chatData: (q?['chatData'] as Map?)?.cast<String, dynamic>(),
+      draftId: q?['draftId'] as String?,
     );
+  }
+
+  @override
+  State<AiChatbotDetailsScreen> createState() => _AiChatbotDetailsScreenState();
+}
+
+class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
+  bool _isSavingDraft = false;
+
+  Future<void> _saveDraft() async {
+    if (widget.chatData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No chat data available to save.')),
+      );
+      return;
+    }
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final complaintProv =
+        Provider.of<ComplaintProvider>(context, listen: false);
+
+    if (auth.user == null) return;
+
+    setState(() {
+      _isSavingDraft = true;
+    });
+
+    // Generate a meaningful title from the answers if possible
+    String title = "Completed Chat Draft";
+    if (widget.answers['incident_details'] != null &&
+        widget.answers['incident_details']!.isNotEmpty) {
+      title = widget.answers['incident_details']!.length > 40
+          ? widget.answers['incident_details']!.substring(0, 40) + "..."
+          : widget.answers['incident_details']!;
+    } else if (widget.answers['details'] != null &&
+        widget.answers['details']!.isNotEmpty) {
+      // Fallback to initial details
+      title = widget.answers['details']!.length > 40
+          ? widget.answers['details']!.substring(0, 40) + "..."
+          : widget.answers['details']!;
+    }
+
+    final success = await complaintProv.saveChatAsDraft(
+      userId: auth.user!.uid,
+      title: title,
+      chatData: widget.chatData!,
+      draftId: widget.draftId,
+    );
+
+    setState(() {
+      _isSavingDraft = false;
+    });
+
+    if (mounted) {
+      final localizations = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success
+              ? localizations.draftSaved
+              : localizations.failedToSaveDraft),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildSummaryRow(String label, String? value) {
@@ -74,20 +150,37 @@ class AiChatbotDetailsScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-             if (context.canPop()) {
-               context.pop();
-             } else {
-               context.go('/dashboard'); // Fallback to home
-             }
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/dashboard'); // Fallback to home
+            }
           },
         ),
         title: Text(
           localizations.aiChatbotDetails,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFFC633C),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: _isSavingDraft
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.save),
+            tooltip: 'Save as Draft',
+            onPressed: _isSavingDraft ? null : _saveDraft,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(22.0),
@@ -132,27 +225,52 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                   const Divider(height: 24, thickness: 1),
 
                   // Fields
-                  _buildSummaryRow('Full Name', answers['full_name']),
+                  _buildSummaryRow('Full Name', widget.answers['full_name']),
                   const SizedBox(height: 12),
                   _buildSummaryRow('Address',
-                      answers['address']), // Maps to Resident Address
+                      widget.answers['address']), // Maps to Resident Address
                   const SizedBox(height: 12),
-                  _buildSummaryRow('Phone Number', answers['phone']),
+                  _buildSummaryRow('Phone Number', widget.answers['phone']),
                   const SizedBox(height: 12),
-                  _buildSummaryRow('Complaint Type', answers['complaint_type']),
+                  _buildSummaryRow(
+                      'Complaint Type', widget.answers['complaint_type']),
                   const SizedBox(height: 12),
                   _buildSummaryRow('Incident Details',
-                      answers['incident_address']), // Short summary
+                      widget.answers['incident_address']), // Short summary
+
+                  // Police Station Selection
+                  if (widget.answers['selected_police_station'] != null &&
+                      widget
+                          .answers['selected_police_station']!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildSummaryRow('Selected Police Station',
+                        widget.answers['selected_police_station']),
+                  ],
+                  if (widget.answers['police_station_reason'] != null &&
+                      widget.answers['police_station_reason']!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildSummaryRow(
+                        'Reason', widget.answers['police_station_reason']),
+                  ],
+                  if (widget.answers['station_confidence'] != null &&
+                      widget.answers['station_confidence']!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildSummaryRow('Confidence Level',
+                        widget.answers['station_confidence']),
+                  ],
+                  const SizedBox(height: 12),
+                  _buildSummaryRow('Details',
+                      widget.answers['incident_details']), // Full narrative
                   const SizedBox(height: 12),
                   _buildSummaryRow(
-                      'Details', answers['incident_details']), // Full narrative
-                  const SizedBox(height: 12),
-                  _buildSummaryRow(
-                      'Date of Complaint', answers['date_of_complaint']),
-                  if (Provider.of<PetitionProvider>(context).tempEvidence.isNotEmpty)
+                      'Date of Complaint', widget.answers['date_of_complaint']),
+                  if (Provider.of<PetitionProvider>(context)
+                      .tempEvidence
+                      .isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 12.0),
-                      child: _buildSummaryRow('Attached Evidence', '${Provider.of<PetitionProvider>(context).tempEvidence.length} file(s) attached'),
+                      child: _buildSummaryRow('Attached Evidence',
+                          '${Provider.of<PetitionProvider>(context).tempEvidence.length} file(s) attached'),
                     ),
                 ],
               ),
@@ -169,21 +287,23 @@ class AiChatbotDetailsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.grey[200]!, width: 1.2),
               ),
-              child: Text(classification, style: const TextStyle(fontSize: 15)),
+              child: Text(widget.classification,
+                  style: const TextStyle(fontSize: 15)),
             ),
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  print('🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
+                  print(
+                      '🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
                   context.push('/cognigible-non-cognigible-separation', extra: {
-                  'classification': classification,
-                  'originalClassification':
-                      originalClassification, // Pass it on
-                  'complaintData': answers,
-                  'evidencePaths': evidencePaths, // FORWARD EVIDENCE
-                });
+                    'classification': widget.classification,
+                    'originalClassification':
+                        widget.originalClassification, // Pass it on
+                    'complaintData': widget.answers,
+                    'evidencePaths': widget.evidencePaths, // FORWARD EVIDENCE
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFC633C),

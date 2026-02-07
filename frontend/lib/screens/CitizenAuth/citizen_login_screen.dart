@@ -89,10 +89,10 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
 
         // Go to dashboard first
         context.go('/dashboard');
-        
+
         // Check if onboarding is needed
         final showOnboarding = await OnboardingService.shouldShowOnboarding();
-        
+
         // Only push AI chat if onboarding is NOT needed (returning user)
         if (!showOnboarding) {
           // Wait a moment for dashboard to load, then push to AI chat
@@ -118,7 +118,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
 
   Future<void> _handleForgotPassword() async {
     final localizations = AppLocalizations.of(context);
-    final resetEmailController = TextEditingController(text: _emailController.text);
+    final resetEmailController =
+        TextEditingController(text: _emailController.text);
     // Capture the parent context safely to use after the dialog closes
     final parentContext = context;
 
@@ -135,7 +136,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              localizations?.enterEmailForPasswordReset ?? 'Enter your email address to receive a password reset link.',
+              localizations?.enterEmailForPasswordReset ??
+                  'Enter your email address to receive a password reset link.',
               style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 16),
@@ -149,7 +151,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
           ],
@@ -159,7 +162,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               localizations?.cancel ?? 'Cancel',
-              style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.grey, fontWeight: FontWeight.w600),
             ),
           ),
           ElevatedButton(
@@ -168,7 +172,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
               if (email.isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
-                    content: Text(localizations?.pleaseEnterEmail ?? 'Please enter your email'),
+                    content: Text(localizations?.pleaseEnterEmail ??
+                        'Please enter your email'),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -179,18 +184,22 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
               Navigator.pop(dialogContext);
 
               setState(() => _isLoading = true);
-              
+
               try {
                 // Use the parentContext for the provider, as dialogContext is now unmounted
-                final authProvider =
-                    Provider.of<custom_auth.AuthProvider>(parentContext, listen: false);
+                final authProvider = Provider.of<custom_auth.AuthProvider>(
+                    parentContext,
+                    listen: false);
 
                 // Check if the user is registered in the database first
                 final userQuery = await FirebaseFirestore.instance
                     .collection('users')
                     .where('email', isEqualTo: email)
                     .limit(1)
-                    .get();
+                    .get(const GetOptions(source: Source.server));
+
+                debugPrint(
+                    '🔍 Forgot Password Check: Email=$email, Found docs=${userQuery.docs.length}');
 
                 if (userQuery.docs.isEmpty) {
                   if (mounted) {
@@ -226,7 +235,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                 await authProvider.sendPasswordResetEmail(email);
 
                 if (mounted) {
-                   await showDialog(
+                  await showDialog(
                     context: parentContext,
                     builder: (context) => AlertDialog(
                       shape: RoundedRectangleBorder(
@@ -236,7 +245,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       content: Text(
-                        localizations?.passwordResetLinkSentTo ?? ' $email ${localizations?.pleaseCheckYourInbox}',
+                        localizations?.passwordResetLinkSentTo ??
+                            ' $email ${localizations?.pleaseCheckYourInbox}',
                         style: const TextStyle(fontSize: 16),
                       ),
                       actions: [
@@ -288,22 +298,30 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                       builder: (context) => AlertDialog(
                         title: const Text('Error'),
                         content: Text(e.message ?? 'An login error occurred'),
-                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'))
+                        ],
                       ),
                     );
                   }
                 }
               } catch (e) {
                 if (mounted) {
-                   // Show error dialog for generic errors
-                   await showDialog(
-                      context: parentContext,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Error'),
-                        content: Text('Failed to send email: $e'),
-                        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-                      ),
-                    );
+                  // Show error dialog for generic errors
+                  await showDialog(
+                    context: parentContext,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Error'),
+                      content: Text('Failed to send email: $e'),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'))
+                      ],
+                    ),
+                  );
                 }
               } finally {
                 if (mounted) setState(() => _isLoading = false);
@@ -311,14 +329,16 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: orange,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text(localizations?.sendResetLink ?? 'Send Reset Link', style: TextStyle(color: Colors.white)),
+            child: Text(localizations?.sendResetLink ?? 'Send Reset Link',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
-    
+
     resetEmailController.dispose();
   }
 
@@ -366,14 +386,15 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
           );
           // Go to dashboard first
           context.go('/dashboard');
-          
+
           // Check if onboarding is needed
           final showOnboarding = await OnboardingService.shouldShowOnboarding();
-          
+
           // Only push AI chat if onboarding is NOT needed (returning user)
           if (!showOnboarding) {
             // Wait a moment for dashboard to load, then push to AI chat
-            _delayedNavigationTimer = Timer(const Duration(milliseconds: 50), () {
+            _delayedNavigationTimer =
+                Timer(const Duration(milliseconds: 50), () {
               if (mounted) {
                 context.push('/ai-legal-chat');
               }
@@ -543,7 +564,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const ConsentPdfViewer(
-                                    assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
+                                    assetPath:
+                                        'assets/data/Dharma_Citizen_Consent.pdf',
                                     title: 'Terms & Conditions',
                                   ),
                                 ),
@@ -551,11 +573,14 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                             },
                             child: RichText(
                               text: TextSpan(
-                                text: '${AppLocalizations.of(context)!.iAgreeToThe} ',
-                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                                text:
+                                    '${AppLocalizations.of(context)!.iAgreeToThe} ',
+                                style: const TextStyle(
+                                    color: Colors.black, fontSize: 14),
                                 children: [
                                   TextSpan(
-                                    text: '${AppLocalizations.of(context)!.termsAndConditions}',
+                                    text:
+                                        '${AppLocalizations.of(context)!.termsAndConditions}',
                                     style: const TextStyle(
                                       color: Color(0xFFFC633C),
                                       fontWeight: FontWeight.bold,
@@ -631,7 +656,7 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                                   fontSize: 17, fontWeight: FontWeight.w600),
                               children: [
                                 TextSpan(
-                                  text:localizations?.Login_With,
+                                  text: localizations?.Login_With,
                                   style: TextStyle(color: Colors.black),
                                 ),
                                 WidgetSpan(
