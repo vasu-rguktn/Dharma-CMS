@@ -168,6 +168,11 @@ class ComplaintResponse(BaseModel):
     address: Optional[str] = None
     phone: Optional[str] = None
     initial_details: Optional[str] = None
+    
+    # New fields for Police Station Logic
+    selected_police_station: Optional[str] = None
+    police_station_reason: Optional[str] = None
+    station_confidence: Optional[str] = None
 
 
 
@@ -1598,9 +1603,17 @@ async def chat_step(
             language_name = display_lang
             system_prompt = (
                 f"{anon_header}"
-                f"You are a helpful and empathetic Police Officer assistant helping a citizen file a complaint in {language_name}.\n"
-                "Your goal is to gather a complete complaint summary for a formal petition.\n\n"
-
+                f"You are an expert Police Officer conducting an investigation in {language_name}.\n"
+                "GOAL: Ask relevant questions to understand the crime (Who, What, Where, When, How).\n\n"
+                
+                "CRITICAL RULES:\n"
+                "1. NEVER ask about information that is already KNOWN or MENTIONED in the conversation history.\n"
+                "2. Check the 'INFORMATION ALREADY KNOWN' section below carefully.\n"
+                "3. Ask ONE question at a time. Keep it short and direct.\n"
+                "4. Do NOT ask for Name, Phone, or Address if they are already provided/recovered.\n"
+                "5. Only ask mandatory case-related questions (Incident Details, Date, Time, Location).\n"
+                "6. End questions with '?'.\n"
+                "8. Say 'DONE' only when you have the full story + evidence status.\n"
                 "GUIDELINES:\n"
                 "- Use a polite, respectful, and reassuring tone.\n"
                 "- Actively lead the conversation. Focus on ONE point per turn.\n"
@@ -1752,50 +1765,44 @@ async def chat_step(
         
         # Unified Logic: If skipped LLM (intercepted/user done) OR LLM said Done => Finalize
         if skip_llm or is_done:
-            # --- FINAL IDENTITY CONFIRMATION (ALWAYS ASK) ---
-            final_name_confirmed = payload.full_name and validate_name(payload.full_name)
-            final_address_confirmed = payload.address and validate_address(payload.address)
-            final_phone_confirmed = payload.phone and validate_phone(payload.phone)
+            # --- FINAL IDENTITY CONFIRMATION ---
+            
+            # 1. ANONYMOUS MODE EXCEPTIONS
+            if payload.is_anonymous:
+                 # In Anonymous mode, we ONLY need the phone number (for OTP verification/tracking)
+                 # We DO NOT ask for Name or Address.
+                 
+                 final_phone_confirmed = payload.phone and validate_phone(payload.phone)
+                 
+                 if not final_phone_confirmed:
+                    msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
+                    return ChatStepResponse(status="question", message=msg)
+                    
+                 # If phone is present, we are done with identity for anonymous.
+                 # Proceed to summary.
 
-            if not final_name_confirmed:
-                # If anonymous, we skip name check (it should be set to "Anonymous" anyway)
-                if not payload.is_anonymous:
+            else:
+                # 2. NORMAL MODE (Self OR Other)
+                # We need FULL details: Name, Address, Phone.
+                # Even for "Complaint for Other", we need the REPORTER'S details (or the victim's, depending on flow, but we need *someone's* details).
+                
+                final_name_confirmed = payload.full_name and validate_name(payload.full_name)
+                final_address_confirmed = payload.address and validate_address(payload.address)
+                final_phone_confirmed = payload.phone and validate_phone(payload.phone)
+
+                if not final_name_confirmed:
                      msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
                      return ChatStepResponse(status="question", message=msg)
 
-            if not final_address_confirmed:
-                # If anonymous, we skip address check
-                if not payload.is_anonymous:
+                if not final_address_confirmed:
                     msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
                     return ChatStepResponse(status="question", message=msg)
 
-            # Phone is MANDATORY for both Normal and Anonymous
-            if not final_phone_confirmed:
-                msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
-                return ChatStepResponse(status="question", message=msg)
-
+                if not final_phone_confirmed:
+                    msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
+                    return ChatStepResponse(status="question", message=msg)
             
-            # --- MANDATORY SEQUENTIAL QUESTIONS START ---
-            # Only proceed to summary if we have ALL identity fields.
-            # 1. Name
-            # if not payload.full_name:
-            #     logger.info("Investigation done, but Name missing. Asking Name.")
-            #     msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
-            #     return ChatStepResponse(status="question", message=msg)
-                
-            # # 2. Address
-            # if not payload.address:
-            #     logger.info("Investigation done, but Address missing. Asking Address.")
-            #     msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
-            #     return ChatStepResponse(status="question", message=msg)
-                
-            # # 3. Phone
-            # # Ensure phone is valid too
-            # if not payload.phone or not validate_phone(payload.phone):
-            #     logger.info("Investigation done, but Phone missing/invalid. Asking Phone.")
-            #     msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
-            #     return ChatStepResponse(status="question", message=msg)
-            # # --- MANDATORY SEQUENTIAL QUESTIONS END ---
+            # --- MANDATORY SEQUENTIAL QUESTIONS END ---
 
             # Generate final summary using NEW prompt
             
@@ -1803,6 +1810,10 @@ async def chat_step(
             for msg in payload.chat_history:
                 role_label = "User" if msg.role == "user" else "Officer"
                 transcript += f"{role_label}: {msg.content}\n"
+
+            from routers.station_data import DISTRICT_STATIONS
+            # json is already imported globally
+            stations_json = json.dumps(DISTRICT_STATIONS, indent=2)
                 
             summary_prompt = f"""
 You are an expert police complaint writer.
@@ -1837,10 +1848,30 @@ TASKS:
    - DO NOT use "You said...", "The user said...", "Complainant stated...".
    - DO NOT summarize the chat structure ("We asked more questions..."). 
    - Write it as a Formal Petition/Complaint to the Police Station.
-5. Do NOT invent dates, places, or items not explicitly mentioned by the user.
+5. LEGAL CLASSIFICATION (MANDATORY): At the very end of the details field, you MUST include a line exactly like this:
+   "Classification: COGNIZABLE - Offence permits police action." 
+   OR 
+   "Classification: NON-COGNIZABLE - Offence permits magistrate order."
+   (Choose the correct one based on Indian legal standards).
+6. Do NOT invent dates, places, or items not explicitly mentioned by the user.
 6. Extract name, address, number from the conversation.
 7. Donot assume the incident location as the complainant's residential address untill they mentioned in the residential address.
 8. In details field, need the detailed description/ summarization of the entire complaint incident.
+
+
+# POLICE STATION SELECTION (CRITICAL RULE):
+# 1. Analyze the 'short_incident_summary' or incident address from the conversation.
+# 2. Identify Locality, Town/City, Mandal, and District.
+# 3. CONSULT THE AVAILABLE POLICE STATIONS DATABASE BELOW.
+# 4. SELECT ONE POLICE STATION from the list that best matches the location.
+#    - If incident is in MUNICIPAL/TOWN limits -> Select '<TownName> Town Police Station' (if available).
+#    - If multiple Town stations exist (e.g., I Town, II Town) -> Select based on landmark (e.g., Market, Bus Stand -> usually I Town). If unsure, use 'I Town'.
+#    - If incident is in VILLAGE/OUTSKIRTS -> Select '<MandalName> Rural Police Station' or the specific Village station.
+#    - MUST EXACTLY MATCH A STRING FROM THE DATABASE. Do not invent names.
+# 5. NEVER return 'Station Unknown'. YOU MUST SELECT THE BEST MATCH FROM THE DATABASE.
+
+AVAILABLE POLICE STATIONS DATABASE:
+{stations_json}
 
 OUTPUT FORMAT (STRICT JSON ONLY):
 {{
@@ -1852,7 +1883,11 @@ OUTPUT FORMAT (STRICT JSON ONLY):
     "details": "COMPREHENSIVE NARRATIVE in FIRST PERSON ('I...'). Must be a detailed formal complaint text suitable for an FIR. Include EVERY fact mentioned (Who, What, Where, When, How, Vehicle details, Suspects, etc). NOT a chat summary.",
   
     "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names.",
-    "incident_date": "Extract the incident date in YYYY-MM-DD format if mentioned. Examples: '2026-01-06', '2025-12-25'. If not mentioned, leave empty."
+    "incident_date": "Extract the incident date in YYYY-MM-DD format if mentioned. Examples: '2026-01-06', '2025-12-25'. If not mentioned, leave empty.",
+
+    "selected_police_station": "Name of the Station (e.g., 'Nuzvid Town Police Station')",
+    "police_station_reason": "Brief reason (e.g., 'Incident location is within Nuzvid municipal limits.')",
+    "station_confidence": "High/Medium/Low"
 }}
 
 INFORMATION:
@@ -2012,6 +2047,11 @@ INFORMATION:
             localized_fields['incident_details'] = narrative
             localized_fields['incident_address'] = short_incident # Keep consistent
             
+            # Add Police Station fields to localized_fields to ensure availability in frontend
+            localized_fields['selected_police_station'] = safe_utf8(n_data.get("selected_police_station"))
+            localized_fields['police_station_reason'] = safe_utf8(n_data.get("police_station_reason"))
+            localized_fields['station_confidence'] = safe_utf8(n_data.get("station_confidence"))
+            
             # Extract incident_date from LLM response
             incident_date_str = n_data.get("incident_date", "")
             if incident_date_str:
@@ -2052,7 +2092,12 @@ INFORMATION:
                 full_name=final_req.full_name,
                 address=final_req.address,
                 phone=final_req.phone,
-                initial_details=safe_utf8(initial_details_summary)
+                initial_details=safe_utf8(initial_details_summary),
+                
+                # Populating Police Station Selection
+                selected_police_station=safe_utf8(n_data.get("selected_police_station")),
+                police_station_reason=safe_utf8(n_data.get("police_station_reason")),
+                station_confidence=safe_utf8(n_data.get("station_confidence"))
             )
             
             # return ChatStepResponse(status="done", final_response=final_response_obj)

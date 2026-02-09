@@ -127,6 +127,11 @@ class _CognigibleNonCognigibleSeparationScreenState
       // New Fields for Auto-fill
       'incident_address': widget.complaintData?['incident_address'] ?? '',
       'incident_details': widget.complaintData?['incident_details'] ?? '',
+      'incident_date': widget.complaintData?['incident_date'] ??
+          widget.complaintData?['date_of_complaint'] ??
+          '',
+      'selected_police_station':
+          widget.complaintData?['selected_police_station'] ?? '',
       'evidencePaths': widget.evidencePaths,
       'classification': widget.classification, // Pass BNS Section info
     };
