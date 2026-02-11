@@ -178,19 +178,46 @@ class ComplaintResponse(BaseModel):
 
 # === Helpers ===
 
+LANGUAGE_NAMES = {
+    "en": "English",
+    "te": "Telugu",
+    "hi": "Hindi",
+    "ta": "Tamil",
+    "kn": "Kannada",
+    "ml": "Malayalam",
+    "mr": "Marathi",
+    "gu": "Gujarati",
+    "bn": "Bengali",
+    "pa": "Punjabi",
+    "ur": "Urdu",
+    "or": "Odia",
+    "as": "Assamese",
+    "mai": "Maithili",
+    "sa": "Sanskrit",
+    "ne": "Nepali",
+    "sd": "Sindhi",
+    "ks": "Kashmiri",
+    "kok": "Konkani",
+    "doi": "Dogri",
+    "mni": "Manipuri",
+    "brx": "Bodo",
+    "sat": "Santali"
+}
+
 def resolve_language(lang: Optional[str]) -> str:
-
     if not lang:
-
         return "en"
-
-    code = lang.lower()
-
-    if code.startswith("te"):
-
-        return "te"
-
+    # Handle "en-US", "hi-IN" etc.
+    code = lang.lower().split('-')[0]
+    
+    if code in LANGUAGE_NAMES:
+        return code
+    
+    # Fallback to English if unknown
     return "en"
+
+def get_language_name(code: str) -> str:
+    return LANGUAGE_NAMES.get(code, "English")
 
 def safe_utf8(text: Optional[str]) -> Optional[str]:
     if text is None:
@@ -204,10 +231,10 @@ def safe_utf8(text: Optional[str]) -> Optional[str]:
     # 3. Explicitly remove the Replacement Character and Null bytes
     clean_text = clean_text.replace("\ufffd", "").replace("\x00", "")
     
-    # 4. Nuclear Option: Remove anything that is NOT a valid printable character
-    # Keep Telugu (\u0C00-\u0C7F), ASCII printable, and common symbols.
-    # Strip everything else including invisible control chars.
-    return re.sub(r'[^\u0C00-\u0C7F\x20-\x7E\n]', '', clean_text)
+    # 4. Filter Control Characters only (Keep Newlines/Tabs)
+    # Remove C0 control chars (00-1F) except 09 (Tab), 0A (LF), 0D (CR)
+    clean_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', clean_text)
+    return clean_text
 
 
 
@@ -312,35 +339,25 @@ def _looks_romanized_telugu(text: str) -> bool:
 
 
 
-def translate_to_telugu(text: str) -> str:
-
+def translate_text(text: str, target_lang_code: str) -> str:
     """
-
-    Convert user text into Telugu script:
-
-      - If the text is English, translate it into natural Telugu.
-
-      - If the text is Telugu written with English letters (romanized), transliterate it to Telugu script.
-
-    Falls back to the original text if translation is not possible.
-
+    Translate text into the target language using LLM.
+    Handles romanized input if consistent with the target language context.
     """
+    if not GEMINI_API_KEY or not text:
+        return text
 
-    if not GEMINI_API_KEY or not _needs_translation(text):
+    target_lang_name = get_language_name(target_lang_code)
+    if target_lang_name == "English":
         return text
 
     try:
         model = genai.GenerativeModel(LLM_MODEL)
         
         prompt = (
-            "You will receive text entered by a Telugu speaker.\n"
-            "Sometimes it is English sentences needing translation, other times it is Telugu words typed using English letters "
-            "(romanized Telugu such as 'ela unnaru' or 'meeru ekkada unnaru').\n"
-            "Convert the input into natural Telugu script suitable for official police documentation.\n"
-            "If the input is romanized Telugu, transliterate it faithfully.\n"
-            "If the input is English, translate it into Telugu.\n"
+            f"Translate the following text into {target_lang_name}.\n"
             "Preserve personal names, places, and numbers exactly as provided.\n"
-            "Return only the final Telugu text without quotes or commentary.\n\n"
+            "Return only the final translated text without quotes or commentary.\n\n"
             f"Input Text: {text}"
         )
 
@@ -358,6 +375,10 @@ def translate_to_telugu(text: str) -> str:
     except Exception as exc:
         logger.warning(f"Translation failed; using original text. Reason: {exc}")
         return text
+
+# Backward compatibility (alias)
+def translate_to_telugu(text: str) -> str:
+    return translate_text(text, "te")
 
 
 
@@ -656,15 +677,15 @@ def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
     # "Details" -> Full detailed narrative
     narrative_full = req.incident_details.strip() if req.incident_details else incident_short
 
-    if language == "te":
-        full_name = translate_to_telugu(full_name)
-        address = translate_to_telugu(address)
-        incident_short = translate_to_telugu(incident_short)
-        narrative_full = translate_to_telugu(narrative_full)
-        # Translate the base complaint type (e.g. "Theft") to Telugu
+    if language != "en":
+        full_name = translate_text(full_name, language)
+        address = translate_text(address, language)
+        incident_short = translate_text(incident_short, language)
+        narrative_full = translate_text(narrative_full, language)
+        # Translate the base complaint type (e.g. "Theft") to Target Language
         # But KEEP the official label (e.g. IPC 378) in English/Official format
         cleaned_type = req.complaint_type.strip()
-        translated_type = translate_to_telugu(cleaned_type)
+        translated_type = translate_text(cleaned_type, language)
         if official_label:
             complaint_type_line = f"{translated_type} ({official_label})"
         else:
@@ -904,7 +925,7 @@ def _build_classification_context(
     
     segments = [complaint_type or "", full_narrative or ""]
 
-    if language == "te" and localized_fields:
+    if language != "en" and localized_fields:
         segments.append(localized_fields.get("complaint_type", ""))
         # Also include translated full narrative if available
         segments.append(localized_fields.get("incident_details", localized_fields.get("details", "")))
@@ -1120,8 +1141,8 @@ async def process_complaint(payload: ComplaintRequest):
         )
         classification_for_logs = classification
         classification_display = classification
-        if language == "te" and classification:
-            classification_display = translate_to_telugu(classification)
+        if language != "en" and classification:
+            classification_display = translate_text(classification, language)
 
         logger.info(f"Classification decided → {classification_display}")
 
@@ -1472,7 +1493,7 @@ async def chat_step(
         if not skip_llm:
             # 3. Build Context for LLM
             # Use the "STRICT RULES" prompt from user
-            display_lang = "Telugu" if language == "te" else "English"
+            display_lang = get_language_name(language)
 
 
 
@@ -1894,16 +1915,18 @@ INFORMATION:
 {transcript}
 """         
             # Adjust prompt for language if needed
-            if language == 'te':
-                 summary_prompt = summary_prompt.replace("in plain English", "in Telugu (translated)")
-                 summary_prompt += ("\n\nIMPORTANT TELUGU RULES:\n"
-                                    "- Write the 'details' narrative as a FORMAL PETITION to the Station House Officer.\n"
-                                    "- Use FIRST PERSON ('Nenu...', 'Maaku...').\n"
-                                    "- NEVER start with 'You said' ('Meeru chepparu') or 'The user said'.\n"
-                                    "- NEVER mention 'We asked questions'.\n"
-                                    "- Output must be continuous Telugu text describing the incident formally.\n"
-                                    "- Output the JSON values in Telugu where appropriate (narrative), but keep keys in English.\n"
-                                    "- Need description like full narrative of the complaint not like just description.")
+            # Adjust prompt for language if needed
+            if language != 'en':
+                 lang_name = get_language_name(language)
+                 # summary_prompt = summary_prompt.replace("in plain English", f"in {lang_name} (translated)")
+                 summary_prompt += (f"\n\nIMPORTANT {lang_name.upper()} RULES:\n"
+                                    f"- Write the 'details' narrative as a FORMAL PETITION to the Station House Officer in {lang_name}.\n"
+                                    f"- Use FIRST PERSON.\n"
+                                    f"- NEVER start with 'You said' or 'The user said'.\n"
+                                    f"- NEVER mention 'We asked questions'.\n"
+                                    f"- Output must be continuous {lang_name} text describing the incident formally.\n"
+                                    f"- Output the JSON values in {lang_name} where appropriate (narrative), but keep keys in English.\n"
+                                    f"- Need description like full narrative of the complaint not like just description.")
 
             try:
                 model = genai.GenerativeModel(LLM_MODEL)
@@ -2073,8 +2096,8 @@ INFORMATION:
             
             # Translation of Classification Label
             final_classification_str = classification
-            if language == "te":
-                final_classification_str = translate_to_telugu(classification)
+            if language != "en":
+                final_classification_str = translate_text(classification, language)
             
             final_response_obj = ComplaintResponse(
                 formal_summary=safe_utf8(formal_summary_text), # Standard format

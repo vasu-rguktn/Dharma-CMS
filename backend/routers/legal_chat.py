@@ -151,15 +151,100 @@ async def legal_chat(
 
     # 3️⃣ Construct Gemini Content
     # Gemini uses a simpler format: system prompt + user content (text + images)
-    full_prompt = SYSTEM_PROMPT + f"\n{files_info}\n\n{final_text_prompt}".strip()
+# ---------------- HELPERS ----------------
+LANGUAGE_NAMES = {
+    "en": "English",
+    "te": "Telugu",
+    "hi": "Hindi",
+    "ta": "Tamil",
+    "kn": "Kannada",
+    "ml": "Malayalam",
+    "mr": "Marathi",
+    "gu": "Gujarati",
+    "bn": "Bengali",
+    "pa": "Punjabi",
+    "ur": "Urdu",
+    "or": "Odia",
+    "as": "Assamese",
+}
+
+def get_language_name(code: str) -> str:
+    return LANGUAGE_NAMES.get(code.split('-')[0].lower(), "English")
+
+# ... existing code ...
+
+@router.post("/", response_model=LegalChatResponse)
+async def legal_chat(
+    sessionId: str = Form(...),
+    message: str = Form(...),
+    language: str = Form("en"),
+    files: list[UploadFile] = File(None)
+):
+    """
+    Handles Legal Chat with optional Multiple File Uploads (PDF/Image).
+    """
+    clean_query = sanitize_input(message)
+    target_lang = get_language_name(language)
     
-    # Build content: if images exist, use list format; otherwise just the prompt string
+    file_context = ""
+    # Gemini supports multiple images in content list
+    gemini_content = []
+    
+    # 1️⃣ Process Query
+    context_block = ""
+    if rag_enabled():
+        try:
+             context_text, _ = retrieve_context(clean_query, top_k=3)
+             if context_text:
+                 context_block = f"\n[RAG CONTEXT FROM BNS/BNSS]:\n{context_text}\n"
+        except Exception as e:
+            print(f"RAG Error: {e}")
+
+    final_text_prompt = f"{context_block}User Query: {clean_query}\nAnswer in {target_lang}."
+    
+    # 2️⃣ Process Files
+    files_info = ""
+    if files:
+        print(f"DEBUG: Received {len(files)} files.")
+        files_info = f"[SYSTEM: User attached {len(files)} file(s). Analyze them.]"
+        
+        for file in files:
+            print(f"DEBUG: Processing file {file.filename} ({file.content_type})")
+            file_bytes = await file.read()
+            
+            if file.content_type == "application/pdf":
+                extracted_text = extract_pdf_text(file_bytes)
+                print(f"DEBUG: Extracted PDF text length: {len(extracted_text)}")
+                
+                if len(extracted_text.strip()) < 50:
+                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n[WARNING: This PDF appears to be empty or scanned. Cannot extract text. treat it as unreadable.]"
+                else:
+                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n{extracted_text[:10000]}..." 
+            
+            elif file.content_type.startswith("image/"):
+                b64 = encode_image(file_bytes)
+                print(f"DEBUG: Encoded image. Length: {len(b64)}")
+                # Determine MIME type
+                mime_type = file.content_type or "image/jpeg"
+                # Add image using Gemini's inline_data format
+                gemini_content.append({
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": b64
+                    }
+                })
+        
+        if file_context:
+            final_text_prompt += file_context
+
+    # 3️⃣ Construct Gemini Content
+    # Gemini uses a simpler format: system prompt + user content (text + images)
+    full_prompt = SYSTEM_PROMPT + f"\n[INSTRUCTION]: You MUST answer in {target_lang}.\n" + f"\n{files_info}\n\n{final_text_prompt}".strip()
+    
     if gemini_content:
-        # Images present: text first, then images
         gemini_content.insert(0, full_prompt)
         content_to_send = gemini_content
     else:
-        # Text only: just send the prompt string
         content_to_send = full_prompt
     
     print(f"DEBUG: Sending to Gemini. Content type: {type(content_to_send).__name__}")

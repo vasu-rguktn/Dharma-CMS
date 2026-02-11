@@ -15,34 +15,43 @@ service cloud.firestore {
     // Modified to allow custom document IDs (Dharma_Name_Date) 
     // by checking the 'uid' field inside the document instead of the document name.
     match /users/{userId} {
-      // Allow read if:
-      // 1. The document's uid field matches the authenticated user's uid
-      // 2. OR the document ID matches the authenticated user's uid (Fallback)
-      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid);
-      
-      // Allow create if:
-      // 1. The new document's 'uid' matches the logged-in user
-      // 2. OR the document ID matches the logged-in user
-      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || userId == request.auth.uid);
-      
-      // Allow update if:
-      // 1. The existing document belongs to the user (uid field check)
-      // 2. OR the document ID matches the user's uid (Fallback for missing uid field)
-      allow update: if request.auth != null && (resource.data.uid == request.auth.uid || userId == request.auth.uid);
+      // ⭐ Police/Admin = full control
+      allow read, update, delete: if isPolice();
+
+      // ⭐ Citizen = only own data
+      // CHANGED: 'get' to 'read' to allow queries (collection.where('uid', ==, ...))
+      allow read: if request.auth != null &&
+        resource.data.uid == request.auth.uid;
+
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
+
+      allow update: if request.auth != null &&
+        resource.data.uid == request.auth.uid;
     }
 
     // POLICE COLLECTION (for police-specific data)
     match /police/{policeId} {
-      // Allow read if authenticated and (uid field matches OR document ID matches)
-      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || policeId == request.auth.uid);
+      // ⭐ FIX: Added 'create' here so Admins/Approved Police can register new officers
+      allow read, create, update, delete: if isPolice();
+
+      // ⭐ Individual officer → own profile only (e.g., for self-registration or login)
+      // CHANGED: Added 'read' so citizens can check if they are police (auth flow) and unapproved officers can see their profiles
+      allow read, create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
       
-      // Allow create if (uid field matches OR document ID matches)
-      allow create: if request.auth != null && (request.resource.data.uid == request.auth.uid || policeId == request.auth.uid);
+      // Note: for read, it uses resource.data, for create it uses request.resource.data.
+      // Combining them in one line is tricky if fields differ, better to separate or use logic.
+      // Re-separating for clarity and correctness:
       
-      // Allow update if (uid field matches OR document ID matches)
-      allow update: if request.auth != null && (resource.data.uid == request.auth.uid || policeId == request.auth.uid);
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+
+      allow update: if request.auth != null &&
+        resource.data.uid == request.auth.uid;
     }
-    
+
     // CASES COLLECTION (FIRs)
     match /cases/{caseId} {
       // Allow authenticated users to create a case where userId matches their uid
@@ -53,6 +62,7 @@ service cloud.firestore {
       // Police (stored in /police/{uid} with role == 'police'): all cases
       allow read: if request.auth != null && (
         resource.data.userId == request.auth.uid ||
+        // Use isPolice() OR check if the user is a police officer by querying logic if needed
         isPolice()
       );
 
@@ -314,6 +324,27 @@ service cloud.firestore {
         allow delete: if request.auth != null &&
           get(/databases/$(database)/documents/legal_queries_chats/$(sessionId)).data.userId == request.auth.uid;
       }
+    }
+    
+    // FCM TOKENS COLLECTION (for push notifications)
+    // Users can register and manage their own FCM device tokens
+    match /fcm_tokens/{tokenId} {
+      // Allow users to create their own FCM tokens
+      // The userId field must match the authenticated user's uid
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can only read their own FCM tokens
+      allow read: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+      
+      // Users can update their own FCM tokens (e.g., refreshing token, marking inactive)
+      allow update: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own FCM tokens
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
     }
     
   }
