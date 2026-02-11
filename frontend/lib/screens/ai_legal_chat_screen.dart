@@ -95,6 +95,137 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   // Complaint Flow State
   String _complaintForWho = 'Self'; // 'Self' or 'Other'
 
+  static final Map<String, String> _supportedLanguages = {
+    'en': 'English',
+    'te': 'Telugu',
+    'hi': 'Hindi',
+    'ta': 'Tamil',
+    'kn': 'Kannada',
+    'ml': 'Malayalam',
+    'mr': 'Marathi',
+    'gu': 'Gujarati',
+    'bn': 'Bengali',
+    'pa': 'Punjabi',
+    'ur': 'Urdu',
+    'or': 'Odia',
+    'as': 'Assamese',
+  };
+
+  void _showLanguageSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (bottomSheetContext) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Select Chat Language",
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: Consumer<SettingsProvider>(
+                builder: (context, provider, _) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _supportedLanguages.length,
+                    itemBuilder: (context, index) {
+                      final code = _supportedLanguages.keys.elementAt(index);
+                      final name = _supportedLanguages.values.elementAt(index);
+
+                      // Check priority: chatLanguageCode -> locale -> 'en'
+                      final currentCode = provider.chatLanguageCode ??
+                          provider.locale?.languageCode ??
+                          'en';
+                      final isSelected = currentCode == code;
+
+                      return InkWell(
+                        onTap: () {
+                          // Update ONLY the chatbot language
+                          provider.setChatLanguage(code);
+                          Navigator.pop(bottomSheetContext);
+                          // Also update STT language if needed
+                          if (_isRecording) {
+                            _toggleRecording(); // Stop current
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.1)
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.grey[300]!,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isSelected
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey[800],
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check_circle,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 24),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<bool> _showPetitionTypeDialog() async {
     final localizations = AppLocalizations.of(context)!;
 
@@ -1066,20 +1197,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Determine base URL robustly
     String baseUrl;
-    if (kIsWeb) {
-      // on web you probably want to call your absolute backend URL
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else {
-      // iOS simulator / other platforms
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    }
+    // if (kIsWeb) {
+    //   // on web you probably want to call your absolute backend URL
+    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    // } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    //   // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    // } else {
+    //   // iOS simulator / other platforms
+    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    // }
 
-    // baseUrl = "http://127.0.0.1:8000";
+    baseUrl = "http://127.0.0.1:8000";
     final settings = context.read<SettingsProvider>();
-    final localeCode = settings.locale?.languageCode ??
+    final localeCode = settings.chatLanguageCode ??
+        settings.locale?.languageCode ??
         Localizations.localeOf(context).languageCode;
 
     // Construct Payload using FormData to support Files
@@ -2157,6 +2289,39 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
+  String _getSttLocaleId(String code) {
+    switch (code) {
+      case 'en':
+        return 'en-US';
+      case 'te':
+        return 'te-IN';
+      case 'hi':
+        return 'hi-IN';
+      case 'ta':
+        return 'ta-IN';
+      case 'kn':
+        return 'kn-IN';
+      case 'ml':
+        return 'ml-IN';
+      case 'mr':
+        return 'mr-IN';
+      case 'gu':
+        return 'gu-IN';
+      case 'bn':
+        return 'bn-IN';
+      case 'pa':
+        return 'pa-IN';
+      case 'ur':
+        return 'ur-IN';
+      case 'or':
+        return 'or-IN';
+      case 'as':
+        return 'as-IN';
+      default:
+        return 'en-US';
+    }
+  }
+
   /// Toggle recording on/off for speech-to-text
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
@@ -2166,16 +2331,24 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (!status.isGranted) {
       status = await Permission.microphone.request();
       if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Microphone permission is required')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission is required')),
+          );
+        }
         return;
       }
     }
 
-    final langCode = Localizations.localeOf(context).languageCode;
-    // Map 'te' to 'te-IN', 'en' to 'en-US' (Android uses hyphen format)
-    String sttLang = langCode == 'te' ? 'te-IN' : 'en-US';
+    if (!mounted) return;
+
+    // Use Chat Language if set, otherwise fallback to Locale/English
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final langCode = settings.chatLanguageCode ??
+        settings.locale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    String sttLang = _getSttLocaleId(langCode);
 
     if (_isRecording) {
       // Stop recording manually
@@ -2428,8 +2601,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
   Future<void> _speak(String text) async {
     if (text.trim().isEmpty) return;
-    final langCode = Localizations.localeOf(context).languageCode;
-    String ttsLang = langCode == 'te' ? 'te-IN' : 'en-US';
+
+    // Prioritize Chat Language for TTS
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final langCode = settings.chatLanguageCode ??
+        settings.locale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    String ttsLang = _getSttLocaleId(langCode);
+
+    // Fallback: If text explicitly contains Telugu chars, force Telugu
     if (_textContainsTelugu(text)) ttsLang = 'te-IN';
 
     try {
@@ -2828,48 +3009,41 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             },
           ),
           actions: [
-            // Language Selector
+            // Chat Language Selector
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  dropdownColor: const Color(0xFFFC633C),
-                  value: Localizations.localeOf(context).languageCode == 'te'
-                      ? 'Telugu'
-                      : 'English',
-                  icon: const Icon(Icons.language, color: Colors.white),
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      // Switch Language
-                      Locale newLocale = newValue == 'Telugu'
-                          ? const Locale('te', 'IN')
-                          : const Locale('en', 'US');
-                      // Use SettingsProvider to update app-wide language
-                      Provider.of<SettingsProvider>(context, listen: false)
-                          .setLanguage(newLocale.languageCode);
+              child: Consumer<SettingsProvider>(
+                builder: (context, provider, _) {
+                  final currentCode = provider.chatLanguageCode ??
+                      provider.locale?.languageCode ??
+                      'en';
+                  final langName =
+                      _supportedLanguages[currentCode] ?? 'English';
 
-                      // Update STT/TTS language
-                      setState(() {
-                        // This will trigger rebuild with new locale
-                        // Restart ASR if recording?
-                        if (_isRecording) {
-                          _toggleRecording(); // Toggle off
-                        }
-                      });
-                    }
-                  },
-                  items: <String>['English', 'Telugu']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
+                  return TextButton.icon(
+                    onPressed: _showLanguageSheet,
+                    icon: const Icon(Icons.translate,
+                        color: Colors.white, size: 20),
+                    label: Text(
+                      langName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                  );
+                },
               ),
             ),
+
             // Save Draft Button
             IconButton(
               icon: const Icon(Icons.save, color: Colors.white),
@@ -2878,7 +3052,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             ),
           ],
           title: Text(
-            localizations.aiLegalAssistant ?? 'AI Legal Assistant',
+            localizations.aiLegalAssistant,
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold),
           ),

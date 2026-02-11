@@ -258,10 +258,10 @@ class DashboardBody extends StatelessWidget {
     return [
       _quickActionCard(
           ctx, localizations.aiChat, Icons.chat, '/ai-legal-chat', Colors.blue),
-      _quickActionCard(ctx, localizations.legalQueries, Icons.psychology,
-          '/legal-queries', Colors.purple),
-      _quickActionCard(ctx, localizations.legalSuggestion, Icons.gavel,
-          '/legal-suggestion', Colors.red.shade700),
+      // _quickActionCard(ctx, localizations.legalQueries, Icons.psychology,
+      //     '/legal-queries', Colors.purple),
+      // _quickActionCard(ctx, localizations.legalSuggestion, Icons.gavel,
+      //     '/legal-suggestion', Colors.red.shade700),
       _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
           '/complaints', Colors.orange.shade700),
       // _quickActionCard(ctx, localizations.witnessPrep, Icons.people,
