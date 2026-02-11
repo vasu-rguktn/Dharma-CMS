@@ -8,10 +8,11 @@ class Validators {
 
   // Police Email validation
   static bool isValidPoliceEmail(String email) {
-    return RegExp(
-      r'^[a-zA-Z][a-zA-Z0-9._%+-]*@(mail\.gov\.in|police\.gov\.in|nic\.in|.*\.gov\.in)$',
-    ).hasMatch(email.trim());
-  }
+  return RegExp(
+    r'^[a-zA-Z][a-zA-Z0-9._%+-]*@(mail\.gov\.in|police\.gov\.in|appolice\.gov\.in|nic\.in|.*\.gov\.in)$',
+  ).hasMatch(email.trim());
+}
+
 
   // Indian phone number
   static bool isValidIndianPhone(String phone) {
