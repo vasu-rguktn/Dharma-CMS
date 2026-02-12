@@ -278,7 +278,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 const SizedBox(height: 16),
 
                 Text(
-                  "Who is this complaint for?",
+                  AppLocalizations.of(context)!.whoIsComplaintFor,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -291,7 +291,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 // Option 1: Complaint for Self
                 _buildTypeOption(
                   context,
-                  title: "Complaint for Self",
+                  title: AppLocalizations.of(context)!.complaintForSelf,
                   icon: Icons.person,
                   color: Colors.blue.shade700,
                   onTap: () {
@@ -308,7 +308,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 // Option 2: Complaint for Others
                 _buildTypeOption(
                   context,
-                  title: "Complaint for Others",
+                  title: AppLocalizations.of(context)!.complaintForOthers,
                   icon: Icons.group,
                   color: Colors.purple.shade700,
                   onTap: () {
@@ -473,7 +473,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _speech = stt.SpeechToText();
     _nativeSpeech = NativeSpeechRecognizer();
     _flutterTts = FlutterTts();
-    _flutterTts.setSpeechRate(0.45);
+
+    // Configure TTS for better pronunciation
+    _flutterTts.setVolume(1.0);
+    _flutterTts.setSpeechRate(0.25); // Significantly slower for better clarity
     _flutterTts.setPitch(1.0);
 
     // Setup TTS-ASR coordination to prevent feedback loop
@@ -668,7 +671,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Example: current="hello", ASR="hello world welcome", suffix="world welcome"
     // "world" doesn't match end of "hello", so it was likely removed - skip it
 
-    // Strategy: If suffix has multiple words and first word doesn't match current end,
+    // Strategy: If suffix has multiple words and first word doesn't match last word of current,
     // skip the first word (it's likely a removed word that ASR is re-adding)
     int startIndex = 0;
     if (currentWords.isNotEmpty && suffixWordsNormalized.length > 1) {
@@ -1196,8 +1199,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     });
 
     // Determine base URL robustly
+    // Determine base URL robustly
     String baseUrl;
-    // if (kIsWeb) {
+     // if (kIsWeb) {
     //   // on web you probably want to call your absolute backend URL
     //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     // } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -1207,8 +1211,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     //   // iOS simulator / other platforms
     //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     // }
-
-    baseUrl = "http://127.0.0.1:8000";
+    if (kIsWeb) {
+      baseUrl = "http://127.0.0.1:8000";
+    } else if (Platform.isAndroid) {
+      // Android Emulator uses 10.0.2.2 to access host localhost
+      baseUrl = "http://10.0.2.2:8000";
+    } else {
+      // iOS Simulator and others
+      baseUrl = "http://127.0.0.1:8000";
+    }
     final settings = context.read<SettingsProvider>();
     final localeCode = settings.chatLanguageCode ??
         settings.locale?.languageCode ??
@@ -2614,13 +2625,60 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (_textContainsTelugu(text)) ttsLang = 'te-IN';
 
     try {
+      // Configure speech parameters based on language
+      if (ttsLang != 'en-US') {
+        // Slower speech for Indian languages (better pronunciation)
+        await _flutterTts.setSpeechRate(0.5);
+        await _flutterTts.setPitch(1.1);
+      } else {
+        await _flutterTts.setSpeechRate(0.5);
+        await _flutterTts.setPitch(1.0);
+      }
+
       await _flutterTts.setLanguage(ttsLang);
+
+      // Try to select best available voice for the language
+      if (!kIsWeb && Platform.isAndroid) {
+        try {
+          final voices = await _flutterTts.getVoices;
+          if (voices != null && voices is List && voices.isNotEmpty) {
+            // Find voices for this language
+            final langVoices = voices.where((voice) {
+              final v = voice as Map<dynamic, dynamic>;
+              final locale = v['locale']?.toString().toLowerCase() ?? '';
+              return locale.contains(ttsLang.toLowerCase().split('-')[0]);
+            }).toList();
+
+            if (langVoices.isNotEmpty) {
+              // Prefer female or high-quality voices
+              var bestVoice = langVoices.firstWhere(
+                (voice) {
+                  final v = voice as Map<dynamic, dynamic>;
+                  final name = v['name']?.toString().toLowerCase() ?? '';
+                  return name.contains('female') || name.contains('quality');
+                },
+                orElse: () => langVoices.first,
+              );
+
+              final v = bestVoice as Map<dynamic, dynamic>;
+              await _flutterTts
+                  .setVoice({'name': v['name'], 'locale': v['locale']});
+              print('Using voice: ${v['name']}');
+            }
+          }
+        } catch (e) {
+          print('Voice selection error: $e');
+        }
+      }
+
       await _flutterTts.speak(text);
     } catch (e) {
       print('TTS Error: $e');
-      // Fallback to English if Telugu fails or generic error
+      // Fallback to English if Telugu fails
       if (ttsLang == 'te-IN') {
         try {
+          await _flutterTts.setSpeechRate(0.5);
+          await _flutterTts.setPitch(1.0);
           await _flutterTts.setLanguage('en-US');
           await _flutterTts.speak(text);
         } catch (_) {}

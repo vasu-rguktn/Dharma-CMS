@@ -7,6 +7,18 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
 import 'app_localizations_te.dart';
+import 'app_localizations_hi.dart';
+import 'app_localizations_mr.dart';
+import 'app_localizations_ta.dart';
+import 'app_localizations_kn.dart';
+import 'app_localizations_ml.dart';
+import 'app_localizations_gu.dart';
+import 'app_localizations_bn.dart';
+import 'app_localizations_pa.dart';
+import 'app_localizations_ur.dart';
+import 'app_localizations_or.dart';
+import 'app_localizations_as.dart';
+
 // ignore_for_file: type=lint
 
 /// Callers can lookup localized strings with an instance of AppLocalizations
@@ -94,7 +106,18 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('te')
+    Locale('te'),
+    Locale('hi'),
+    Locale('mr'),
+    Locale('ta'),
+    Locale('kn'),
+    Locale('ml'),
+    Locale('gu'),
+    Locale('bn'),
+    Locale('pa'),
+    Locale('ur'),
+    Locale('or'),
+    Locale('as')
   ];
 
   /// The name of the application
@@ -3149,6 +3172,10 @@ abstract class AppLocalizations {
   String get draftDeletedOn;
   String get failedToSaveDraft;
 
+  String get whoIsComplaintFor;
+  String get complaintForSelf;
+  String get complaintForOthers;
+
   String errorSubmittingFeedback(String error);
 }
 
@@ -3162,8 +3189,21 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'te'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+        'en',
+        'te',
+        'hi',
+        'mr',
+        'ta',
+        'kn',
+        'ml',
+        'gu',
+        'bn',
+        'pa',
+        'ur',
+        'or',
+        'as'
+      ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -3175,7 +3215,29 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
     case 'en':
       return AppLocalizationsEn();
     case 'te':
-      return AppLocalizationsTe(); // Ensure AppLocalizationsTe is defined in the correct context.
+      return AppLocalizationsTe();
+    case 'hi':
+      return AppLocalizationsHi();
+    case 'mr':
+      return AppLocalizationsMr();
+    case 'ta':
+      return AppLocalizationsTa();
+    case 'kn':
+      return AppLocalizationsKn();
+    case 'ml':
+      return AppLocalizationsMl();
+    case 'gu':
+      return AppLocalizationsGu();
+    case 'bn':
+      return AppLocalizationsBn();
+    case 'pa':
+      return AppLocalizationsPa();
+    case 'ur':
+      return AppLocalizationsUr();
+    case 'or':
+      return AppLocalizationsOr();
+    case 'as':
+      return AppLocalizationsAs();
   }
 
   throw FlutterError(
