@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
-
 
 import 'package:Dharma/utils/validators.dart';
 import 'package:Dharma/screens/consent_pdf_viewer.dart';
@@ -79,7 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       try {
         final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
         final userType = args?['userType'] as String? ?? 'citizen';
-        
+
         final extra = <String, dynamic>{
           'personal': personalData,
           'userType': userType,
@@ -96,7 +95,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else {
       debugPrint('Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(localizations?.fillFieldsCorrectly ?? 'Please fill all fields correctly')),
+        SnackBar(
+            content: Text(localizations?.fillFieldsCorrectly ??
+                'Please fill all fields correctly')),
       );
     }
   }
@@ -120,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (addressFromArgs != null) _incomingAddress = addressFromArgs;
     }
     final screenHeight = MediaQuery.of(context).size.height;
-    final localizations=AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       body: Column(
         children: [
@@ -159,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   right: 0,
                   bottom: 0,
                   child: Transform.translate(
-                    offset: const Offset(0,0),
+                    offset: const Offset(0, 0),
                     child: Image.asset(
                       'assets/police_logo.png',
                       fit: BoxFit.contain,
@@ -195,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      localizations?.register??'Register',
+                      localizations?.register ?? 'Register',
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
@@ -216,7 +217,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.person, color: Colors.black),
+                        prefixIcon:
+                            const Icon(Icons.person, color: Colors.black),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 20.0,
                           horizontal: 16.0,
@@ -231,25 +233,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.black, width: 2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
+                        errorStyle:
+                            const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return localizations?.pleaseEnterName ?? 'Please enter your name';
+                          return localizations?.pleaseEnterName ??
+                              'Please enter your name';
                         }
                         if (!Validators.isValidName(value)) {
-                          return localizations?.nameOnlyLetters ?? 'Name can only contain letters and spaces';
+                          return localizations?.nameOnlyLetters ??
+                              'Name can only contain letters and spaces';
                         }
                         return null;
                       },
@@ -267,7 +275,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.email, color: Colors.black),
+                        prefixIcon:
+                            const Icon(Icons.email, color: Colors.black),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 20.0,
                           horizontal: 16.0,
@@ -282,28 +291,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.black, width: 2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
+                        errorStyle:
+                            const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                       keyboardType: TextInputType.emailAddress,
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return localizations?.pleaseEnterEmail ?? 'Please enter your email';
+                          return localizations?.pleaseEnterEmail ??
+                              'Please enter your email';
                         }
                         if (!Validators.isValidEmail(value)) {
-                          return localizations?.pleaseEnterValidEmail ?? 'Please enter a valid email';
+                          return localizations?.pleaseEnterValidEmail ??
+                              'Please enter a valid email';
                         }
-                  
+
                         return null;
                       },
                     ),
@@ -320,7 +335,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.phone, color: Colors.black),
+                        prefixIcon:
+                            const Icon(Icons.phone, color: Colors.black),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 20.0,
                           horizontal: 16.0,
@@ -335,27 +351,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.black, width: 2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
+                        errorStyle:
+                            const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                       keyboardType: TextInputType.phone,
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return localizations?.pleaseEnterPhone ?? 'Please enter your phone number';
+                          return localizations?.pleaseEnterPhone ??
+                              'Please enter your phone number';
                         }
                         if (!Validators.isValidIndianPhone(value)) {
-
-                          return localizations?.pleaseEnterValidPhone ?? 'Please enter a valid phone number';
+                          return localizations?.pleaseEnterValidPhone ??
+                              'Please enter a valid phone number';
                         }
                         return null;
                       },
@@ -366,7 +387,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _dobController,
                       readOnly: true, // Prevent manual text input
                       decoration: InputDecoration(
-                        labelText: localizations?.dateOfBirth ?? 'Date of Birth (YYYY-MM-DD)',
+                        labelText: localizations?.dateOfBirth ??
+                            'Date of Birth (YYYY-MM-DD)',
                         labelStyle: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -374,7 +396,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.calendar_today, color: Colors.black),
+                        prefixIcon: const Icon(Icons.calendar_today,
+                            color: Colors.black),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 20.0,
                           horizontal: 16.0,
@@ -389,27 +412,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.black, width: 2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
+                        errorStyle:
+                            const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
-                      onTap: () => _selectDate(context), // Show date picker on tap
+                      onTap: () =>
+                          _selectDate(context), // Show date picker on tap
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return localizations?.pleaseSelectDOB ?? 'Please select your date of birth';
+                          return localizations?.pleaseSelectDOB ??
+                              'Please select your date of birth';
                         }
-                       if (!Validators.isValidDOB(value)) {
-
-                          return localizations?.enterValidDateFormat ?? 'You must be at least 18 years old to register';
+                        if (!Validators.isValidDOB(value)) {
+                          return localizations?.enterValidDateFormat ??
+                              'You must be at least 18 years old to register';
                         }
                         return null;
                       },
@@ -419,9 +448,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     DropdownButtonFormField<String>(
                       value: _gender,
                       items: [
-                        DropdownMenuItem(value: 'Male', child: Text(localizations?.male ?? 'Male')),
-                        DropdownMenuItem(value: 'Female', child: Text(localizations?.female ?? 'Female')),
-                        DropdownMenuItem(value: 'Other', child: Text(localizations?.other ?? 'Other')),
+                        DropdownMenuItem(
+                            value: 'Male',
+                            child: Text(localizations?.male ?? 'Male')),
+                        DropdownMenuItem(
+                            value: 'Female',
+                            child: Text(localizations?.female ?? 'Female')),
+                        DropdownMenuItem(
+                            value: 'Other',
+                            child: Text(localizations?.other ?? 'Other')),
                       ],
                       onChanged: (value) {
                         setState(() => _gender = value!);
@@ -435,7 +470,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.person_outline, color: Colors.black),
+                        prefixIcon: const Icon(Icons.person_outline,
+                            color: Colors.black),
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: 20.0,
                           horizontal: 16.0,
@@ -450,22 +486,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.black, width: 2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
                         ),
-                        errorStyle: const TextStyle(fontSize: 14, color: Colors.black),
+                        errorStyle:
+                            const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
                         if (value == null) {
-                          return localizations?.pleaseSelectGender ?? 'Please select your gender';
+                          return localizations?.pleaseSelectGender ??
+                              'Please select your gender';
                         }
                         return null;
                       },
@@ -489,7 +530,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const ConsentPdfViewer(
-                                    assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
+                                    assetPath:
+                                        'assets/data/Dharma_Citizen_Consent.pdf',
                                     title: 'Terms & Conditions',
                                   ),
                                 ),
@@ -497,11 +539,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             },
                             child: RichText(
                               text: TextSpan(
-                                text: '${AppLocalizations.of(context)!.iAgreeToThe} ',
-                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                                text:
+                                    '${AppLocalizations.of(context)!.iAgreeToThe} ',
+                                style: const TextStyle(
+                                    color: Colors.black, fontSize: 14),
                                 children: [
                                   TextSpan(
-                                    text: '${AppLocalizations.of(context)!.termsAndConditions}',
+                                    text:
+                                        '${AppLocalizations.of(context)!.termsAndConditions}',
                                     style: const TextStyle(
                                       color: Color(0xFFFC633C),
                                       fontWeight: FontWeight.bold,

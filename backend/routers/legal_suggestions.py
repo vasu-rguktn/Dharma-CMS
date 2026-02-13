@@ -12,15 +12,17 @@ router = APIRouter(
     tags=["AI Legal Section Suggester"]
 )
 
+from loguru import logger
+
 # ===================== GEMINI API KEY =====================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_LEGAL_SUGGESTIONS") or os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY_LEGAL_SUGGESTIONS or GEMINI_API_KEY not set")
-
-genai.configure(api_key=GEMINI_API_KEY)
-
-# ===================== MODEL (UNCHANGED) =====================
-model = genai.GenerativeModel("gemini-2.5-flash")
+    logger.warning("GEMINI_API_KEY_LEGAL_SUGGESTIONS or GEMINI_API_KEY not set. Legal suggestions will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # ===================== MODEL (UNCHANGED) =====================
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
 # ===================== REQUEST SCHEMA =====================
 class LegalSuggestionRequest(BaseModel):

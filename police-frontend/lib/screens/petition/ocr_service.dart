@@ -32,9 +32,9 @@ class OcrService {
     }
 
     candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    candidates.add('http://localhost:8080');
-    candidates.add('http://localhost:8000');
-    candidates.add('http://localhost');
+    // candidates.add('http://localhost:8080');
+    // candidates.add('http://localhost:8000');
+    // candidates.add('http://localhost');
 
     String? resolved;
     for (final base in candidates) {

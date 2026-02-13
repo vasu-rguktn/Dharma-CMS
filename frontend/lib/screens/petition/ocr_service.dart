@@ -38,17 +38,19 @@ class OcrService {
       if (!const bool.fromEnvironment('dart.vm.product')) {
         final uri = Uri.base;
         final host = uri.host.isNotEmpty ? uri.host : 'localhost';
-        candidates.add('http://$host:8000');
-        candidates.add('http://$host:8080');
+        candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
+        // candidates.add('http://$host:8000');
+        // candidates.add('http://$host:8080');
       }
     } else if (defaultTargetPlatform == TargetPlatform.android) {
+      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
       // Android Emulator
-      candidates.add('http://10.0.2.2:8000');
+      // candidates.add('http://10.0.2.2:8000');
     }
-
+    candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
     // Default localhost fallbacks
-    candidates.add('http://localhost:8000');
-    candidates.add('http://localhost:8080');
+    // candidates.add('http://localhost:8000');
+    // candidates.add('http://localhost:8080');
 
     String? resolved;
     for (final base in candidates) {

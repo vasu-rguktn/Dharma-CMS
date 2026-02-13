@@ -107,17 +107,18 @@ import traceback
 # ───────────────── LOAD ENV ─────────────────
 load_dotenv()
 
+from loguru import logger
+
 # Use the investigation key as requested/verified
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
 
 if not GEMINI_API_KEY:
-    # Fail fast if key is missing
-    print("CRITICAL: GEMINI_API_KEY_INVESTIGATION not found in env.")
-    raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not found environment variables")
-
-genai.configure(api_key=GEMINI_API_KEY)
-# We use the same model for drafting and generic OCR here
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+    logger.warning("GEMINI_API_KEY_INVESTIGATION not set. Document drafting will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # We use the same model for drafting and generic OCR here
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ───────────────── ROUTER ─────────────────
 router = APIRouter(
@@ -242,6 +243,8 @@ Draft the document now:
 
         # 3. Call Gemini API
         try:
+            if model is None:
+                raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
             response = model.generate_content(prompt)
         except Exception as gemini_error:
             print(f"Gemini API Error: {str(gemini_error)}")
@@ -279,3 +282,36 @@ Draft the document now:
             status_code=500,
             detail=f"Draft generation failed: {str(e)}"
         )
+
+from fastapi.responses import StreamingResponse
+import io
+from docx import Document
+
+@router.post("/download-docx")
+async def download_draft_docx(
+    draftText: str = Form(...)
+):
+    try:
+        doc = Document()
+        doc.add_heading('LEGAL DRAFT', 0)
+        
+        # Split by newlines and add paragraphs
+        for line in draftText.split('\n'):
+            if line.strip():
+                doc.add_paragraph(line)
+            else:
+                doc.add_paragraph("") # maintain spacing
+            
+        byte_io = io.BytesIO()
+        doc.save(byte_io)
+        byte_io.seek(0)
+        
+        return StreamingResponse(
+            byte_io,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": "attachment; filename=draft_document.docx"}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"DOCX generation failed: {str(e)}")

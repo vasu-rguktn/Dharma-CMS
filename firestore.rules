@@ -204,6 +204,20 @@ service cloud.firestore {
       allow update, delete: if isPolice() &&
         resource.data.officerUid == request.auth.uid;
     }
+    
+    
+    
+    match /prompts/{promptId} {
+      allow read: if isPolice();      // only admin/police can view
+      allow create: if isPolice();    // only admin can add
+      allow update, delete: if isPolice();
+    }
+
+    match /chargesheets/{docId} {
+      allow read, create: if isPolice();
+      allow update, delete: if isPolice() && resource.data.officerId == request.auth.uid;
+    }
+
 
     // CRIME DETAILS COLLECTION
     // Stores detailed crime scene information for each case

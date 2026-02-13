@@ -35,6 +35,11 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setChatLanguage(String languageCode) async {
     await _prefs?.setString(_chatLanguageKey, languageCode);
     _chatLanguageCode = languageCode;
+
+    // CRITICAL: Also update the app's locale so AppLocalizations updates
+    await _prefs?.setString(_languageKey, languageCode);
+    _locale = Locale(languageCode);
+
     notifyListeners();
   }
 }

@@ -48,9 +48,46 @@ async def generate_chargesheet(
         
         return JSONResponse(content={"chargeSheet": draft})
         
-    except HTTPException as he:
-        raise he
     except Exception as e:
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+from fastapi.responses import StreamingResponse
+import io
+from docx import Document
+from docx.shared import Pt
+
+@router.post("/download-docx")
+async def download_chargesheet_docx(
+    chargesheetText: str = Form(...)
+):
+    try:
+        doc = Document()
+        # Add styled Heading
+        heading = doc.add_heading('CHARGE SHEET', 0)
+        heading.alignment = 1  # Center alignment
+        run = heading.runs[0]
+        run.bold = True
+        run.font.size = Pt(16)  # 16pt bold
+        
+        # Split by newlines and add paragraphs
+        for line in chargesheetText.split('\n'):
+            if line.strip():
+                doc.add_paragraph(line)
+            else:
+                doc.add_paragraph("") # maintain spacing
+            
+        byte_io = io.BytesIO()
+        doc.save(byte_io)
+        byte_io.seek(0)
+        
+        return StreamingResponse(
+            byte_io,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": "attachment; filename=chargesheet.docx"}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"DOCX generation failed: {str(e)}")

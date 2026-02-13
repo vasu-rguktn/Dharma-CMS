@@ -9,6 +9,22 @@ import 'package:Dharma/services/onboarding_service.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  static const List<Map<String, String>> _validLanguages = [
+    {'code': 'en', 'name': 'English'},
+    {'code': 'te', 'name': 'Telugu (తెలుగు)'},
+    {'code': 'hi', 'name': 'Hindi (हिन्दी)'},
+    {'code': 'ta', 'name': 'Tamil (தமிழ்)'},
+    {'code': 'kn', 'name': 'Kannada (ಕನ್ನಡ)'},
+    {'code': 'ml', 'name': 'Malayalam (മലയാളം)'},
+    {'code': 'mr', 'name': 'Marathi (मराठी)'},
+    {'code': 'gu', 'name': 'Gujarati (ગુજરાતી)'},
+    {'code': 'bn', 'name': 'Bengali (বাংলা)'},
+    {'code': 'pa', 'name': 'Punjabi (ਪੰਜਾਬੀ)'},
+    {'code': 'ur', 'name': 'Urdu (اردو)'},
+    {'code': 'or', 'name': 'Odia (ଓଡ଼ିଆ)'},
+    {'code': 'as', 'name': 'Assamese (অসমীয়া)'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
@@ -158,105 +174,8 @@ class SettingsScreen extends StatelessWidget {
                         title: Text(localizations.language),
                         subtitle: Text(currentLanguage),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            backgroundColor: Colors.transparent,
-                            isScrollControlled: true,
-                            builder: (bottomSheetContext) => Container(
-                              decoration: BoxDecoration(
-                                color:
-                                    Theme.of(context).scaffoldBackgroundColor,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(24),
-                                  topRight: Radius.circular(24),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    spreadRadius: 0,
-                                    offset: const Offset(0, -2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Drag handle
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        top: 12, bottom: 8),
-                                    width: 40,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[300],
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  // Title
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24.0, vertical: 16.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.language,
-                                          color: Theme.of(context).primaryColor,
-                                          size: 28,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          localizations.language,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 20,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Divider(height: 1, color: Colors.grey[200]),
-                                  const SizedBox(height: 8),
-                                  // Language options
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16.0),
-                                    child: Column(
-                                      children: [
-                                        _buildLanguageOption(
-                                          context: context,
-                                          bottomSheetContext:
-                                              bottomSheetContext,
-                                          settingsProvider: settingsProvider,
-                                          currentLocale: currentLocale,
-                                          languageCode: 'en',
-                                          languageName: localizations.english,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        _buildLanguageOption(
-                                          context: context,
-                                          bottomSheetContext:
-                                              bottomSheetContext,
-                                          settingsProvider: settingsProvider,
-                                          currentLocale: currentLocale,
-                                          languageCode: 'te',
-                                          languageName: localizations.telugu,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                        onTap: () =>
+                            _showAppLanguageSheet(context, settingsProvider),
                       );
                     },
                   ),
@@ -306,7 +225,7 @@ class SettingsScreen extends StatelessWidget {
                     title: Text(localizations.privacyPolicy),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Handle privacy policy
+                      context.push('/privacy');
                     },
                   ),
                   const Divider(height: 1),
@@ -315,7 +234,7 @@ class SettingsScreen extends StatelessWidget {
                     title: Text(localizations.termsOfService),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Handle terms of service
+                      context.push('/terms');
                     },
                   ),
                   // Reset Onboarding (Visible to all for testing)
@@ -423,112 +342,116 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildLanguageOption({
-    required BuildContext context,
-    required BuildContext bottomSheetContext,
-    required SettingsProvider settingsProvider,
-    required Locale currentLocale,
-    required String languageCode,
-    required String languageName,
-  }) {
-    final isSelected = currentLocale.languageCode == languageCode;
+  static String _getLanguageName(String code) {
+    return _validLanguages.firstWhere(
+      (lang) => lang['code'] == code,
+      orElse: () => {'name': 'English'},
+    )['name']!;
+  }
 
-    return InkWell(
-      onTap: () {
-        settingsProvider.setLanguage(languageCode);
-        Navigator.pop(bottomSheetContext);
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+  static void _showAppLanguageSheet(
+      BuildContext context, SettingsProvider settingsProvider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (bottomSheetContext) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).primaryColor.withOpacity(0.1)
-              : Colors.transparent,
-          border: Border.all(
-            color:
-                isSelected ? Theme.of(context).primaryColor : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
-          borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                languageName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey[800],
-                ),
+                AppLocalizations.of(context)!.language,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).primaryColor,
-                size: 24,
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _validLanguages.length,
+                itemBuilder: (context, index) {
+                  final lang = _validLanguages[index];
+                  final isSelected =
+                      settingsProvider.locale?.languageCode == lang['code'];
+
+                  return InkWell(
+                    onTap: () {
+                      settingsProvider.setLanguage(lang['code']!);
+                      Navigator.pop(bottomSheetContext);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(context).primaryColor.withOpacity(0.1)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey[300]!,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              lang['name']!,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(Icons.check_circle,
+                                color: Theme.of(context).primaryColor,
+                                size: 24),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  static String _getLanguageName(String code) {
-    switch (code) {
-      case 'en':
-        return 'English';
-      case 'te':
-        return 'Telugu (తెలుగు)';
-      case 'hi':
-        return 'Hindi (हिन्दी)';
-      case 'ta':
-        return 'Tamil (தமிழ்)';
-      case 'kn':
-        return 'Kannada (ಕನ್ನಡ)';
-      case 'ml':
-        return 'Malayalam (മലയാളം)';
-      case 'mr':
-        return 'Marathi (मराठी)';
-      case 'gu':
-        return 'Gujarati (ગુજરાતી)';
-      case 'bn':
-        return 'Bengali (বাংলা)';
-      case 'pa':
-        return 'Punjabi (ਪੰਜਾਬੀ)';
-      case 'ur':
-        return 'Urdu (اردو)';
-      case 'or':
-        return 'Odia (ଓଡ଼ିଆ)';
-      case 'as':
-        return 'Assamese (অসমীয়া)';
-      default:
-        return 'English';
-    }
-  }
-
   static void _showChatLanguageSheet(
       BuildContext context, SettingsProvider provider) {
-    final languages = [
-      {'code': 'en', 'name': 'English'},
-      {'code': 'te', 'name': 'Telugu (తెలుగు)'},
-      {'code': 'hi', 'name': 'Hindi (हिन्दी)'},
-      {'code': 'ta', 'name': 'Tamil (தமிழ்)'},
-      {'code': 'kn', 'name': 'Kannada (ಕನ್ನಡ)'},
-      {'code': 'ml', 'name': 'Malayalam (മലയാളം)'},
-      {'code': 'mr', 'name': 'Marathi (मराठी)'},
-      {'code': 'gu', 'name': 'Gujarati (ગુજરાતી)'},
-      {'code': 'bn', 'name': 'Bengali (বাংলা)'},
-      {'code': 'pa', 'name': 'Punjabi (ਪੰਜਾਬੀ)'},
-      {'code': 'ur', 'name': 'Urdu (اردو)'},
-      {'code': 'or', 'name': 'Odia (ଓଡ଼ିଆ)'},
-      {'code': 'as', 'name': 'Assamese (অসমীয়া)'},
-    ];
+    // Reuse _validLanguages
 
     showModalBottomSheet(
       context: context,
@@ -567,9 +490,9 @@ class SettingsScreen extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: languages.length,
+                itemCount: _validLanguages.length,
                 itemBuilder: (context, index) {
-                  final lang = languages[index];
+                  final lang = _validLanguages[index];
                   final isSelected =
                       provider.chatLanguageCode == lang['code'] ||
                           (provider.chatLanguageCode == null &&

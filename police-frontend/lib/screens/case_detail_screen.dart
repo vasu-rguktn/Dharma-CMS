@@ -34,14 +34,15 @@ class CaseDetailScreen extends StatefulWidget {
   State<CaseDetailScreen> createState() => _CaseDetailScreenState();
 }
 
-class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerProviderStateMixin {
+class _CaseDetailScreenState extends State<CaseDetailScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<CaseJournalEntry> _journalEntries = [];
   List<MediaAnalysisRecord> _mediaAnalyses = [];
   bool _isLoadingJournal = false;
   bool _isLoadingMedia = false;
   bool _isAnalyzingScene = false;
-  
+
   // New: Multiple Crime Scenes List
   List<CrimeDetails> _crimeScenes = [];
   bool _isLoadingScenes = true;
@@ -57,7 +58,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     _fetchCrimeScenes();
     _fetchMediaAnalyses();
     _fetchCrimeSceneEvidence(); // NEW: Load saved evidence
-    
+
     // Auto-fetch if first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // ...
@@ -105,13 +106,14 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
       setState(() {
         _mediaAnalyses = snapshot.docs.map((doc) {
           final data = doc.data();
-          // Map dynamic AI analysis to structured MediaAnalysisRecord if possible, 
+          // Map dynamic AI analysis to structured MediaAnalysisRecord if possible,
           // or create a generic record to display the text.
           return MediaAnalysisRecord(
             id: doc.id,
             caseId: widget.caseId,
             userId: data['analyzedBy'] ?? 'AI', // Map 'analyzedBy' to 'userId'
-            imageDataUri: (data['evidenceFiles'] as List?)?.firstOrNull ?? '', // Map 'evidenceFiles' first item to 'imageDataUri'
+            imageDataUri: (data['evidenceFiles'] as List?)?.firstOrNull ??
+                '', // Map 'evidenceFiles' first item to 'imageDataUri'
             originalFileName: 'AI Analysis Report',
             identifiedElements: [], // Text analysis doesn't strictly follow this structure yet
             sceneNarrative: data['analysisText'] ?? '',
@@ -172,9 +174,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           .get();
 
       setState(() {
-        _linkedPetitions = snapshot.docs
-            .map((doc) => Petition.fromFirestore(doc))
-            .toList();
+        _linkedPetitions =
+            snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
       });
     } catch (e) {
       print('Error fetching linked petitions: $e');
@@ -220,10 +221,9 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     try {
       debugPrint('💾 [SAVING_EVIDENCE] Case: ${widget.caseId}');
       debugPrint('💾 [SAVING_EVIDENCE] Files: $_crimeSceneAttachments');
-      
-      final sanitizedPaths = _crimeSceneAttachments
-          .where((p) => !p.startsWith('blob:'))
-          .toList();
+
+      final sanitizedPaths =
+          _crimeSceneAttachments.where((p) => !p.startsWith('blob:')).toList();
 
       await FirebaseFirestore.instance
           .collection('cases')
@@ -237,6 +237,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       debugPrint('✅ [SAVING_EVIDENCE] Success for ${widget.caseId}');
+
+      // AUTO-UPDATE CASE STATUS: If case is New, move to Under Investigation
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
+      final currentCase =
+          caseProvider.cases.firstWhere((c) => c.id == widget.caseId);
+      if (currentCase.status == CaseStatus.newCase) {
+        await caseProvider.updateCaseStatus(
+            widget.caseId, CaseStatus.underInvestigation);
+      }
     } catch (e) {
       debugPrint('❌ [SAVING_EVIDENCE] Error: $e');
       if (mounted) {
@@ -295,8 +304,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
 
     try {
       final baseUrl = await _resolveBackendBaseUrl();
-      final endpoint =
-          '$baseUrl/api/cases/${widget.caseId}/document-relevance';
+      final endpoint = '$baseUrl/api/cases/${widget.caseId}/document-relevance';
 
       final resp = await http
           .post(
@@ -515,8 +523,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           );
         }
 
-        final url =
-            await StorageService.uploadFile(file: platformFile, path: storagePath);
+        final url = await StorageService.uploadFile(
+            file: platformFile, path: storagePath);
         if (url == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -547,13 +555,13 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
       setState(() {
         _crimeSceneAttachments.add(finalPath);
       });
-      
+
       // Save to Firestore
       await _saveCrimeSceneEvidence();
 
       // AI relevance check (FIR vs uploaded evidence)
       await _analyzeEvidenceRelevance([finalPath]);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -569,7 +577,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     try {
       final ImagePicker picker = ImagePicker();
       final loc = AppLocalizations.of(context)!;
-      
+
       // Show options: Image or Video
       final result = await showDialog<String>(
         context: context,
@@ -606,7 +614,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           type: FileType.custom,
           allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
         );
-        
+
         if (fileResult != null && fileResult.files.isNotEmpty) {
           // Always upload documents to Firebase Storage (Web + Native) so the URL
           // can be analyzed by backend AI and viewed across devices.
@@ -696,14 +704,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
           );
         }
 
-        final url =
-            await StorageService.uploadFile(file: platformFile, path: storagePath);
+        final url = await StorageService.uploadFile(
+            file: platformFile, path: storagePath);
 
         if (url == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(AppLocalizations.of(context)!.failedUploadEvidence),
+                content:
+                    Text(AppLocalizations.of(context)!.failedUploadEvidence),
                 backgroundColor: Colors.red,
               ),
             );
@@ -744,7 +753,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     if (_crimeSceneAttachments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.pleaseCapturUploadEvidenceFirst),
+          content: Text(
+              AppLocalizations.of(context)!.pleaseCapturUploadEvidenceFirst),
           backgroundColor: Colors.orange,
         ),
       );
@@ -759,14 +769,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
     try {
       // Initialize Gemini AI
       if (!dotenv.isInitialized) {
-        throw Exception('DotEnv is not initialized. Please ensure assets/env.txt exists and is loaded in main.dart');
+        throw Exception(
+            'DotEnv is not initialized. Please ensure assets/env.txt exists and is loaded in main.dart');
       }
-      
+
       final apiKey = dotenv.maybeGet('GEMINI_API_KEY');
       if (apiKey == null || apiKey.isEmpty) {
         throw Exception('GEMINI_API_KEY not found in assets/env.txt file');
       }
-      
+
       final model = GenerativeModel(
         model: 'gemini-2.0-flash',
         apiKey: apiKey,
@@ -776,7 +787,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> with SingleTickerPr
       final languageCode = Localizations.localeOf(context).languageCode;
       String languageInstruction = "Provide the response in English.";
       if (languageCode == 'te') {
-        languageInstruction = "Provide the response in Telugu language (తెలుగు). Ensure technical forensic terms are explained clearly in Telugu.";
+        languageInstruction =
+            "Provide the response in Telugu language (తెలుగు). Ensure technical forensic terms are explained clearly in Telugu.";
       }
 
       // Prepare the prompt
@@ -798,7 +810,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
       final imagePath = _crimeSceneAttachments.firstWhere(
         (path) {
           final p = path.toLowerCase().split('?').first;
-          return p.endsWith('.jpg') || p.endsWith('.jpeg') || p.endsWith('.png');
+          return p.endsWith('.jpg') ||
+              p.endsWith('.jpeg') ||
+              p.endsWith('.png');
         },
         orElse: () => _crimeSceneAttachments.first,
       );
@@ -868,7 +882,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     } catch (e) {
       setState(() {
         _isAnalyzingScene = false;
-        _sceneAnalysisResult = 'Error analyzing scene: $e\n\nPlease ensure you have configured your Gemini API key.';
+        _sceneAnalysisResult =
+            'Error analyzing scene: $e\n\nPlease ensure you have configured your Gemini API key.';
       });
 
       if (mounted) {
@@ -887,7 +902,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     final fileName = filePath.split('/').last;
     final isVideo = filePath.toLowerCase().endsWith('.mp4') ||
         filePath.toLowerCase().endsWith('.mov');
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -910,7 +925,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                
+
                 // Title
                 Text(
                   fileName,
@@ -921,7 +936,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Download option
                 ListTile(
                   leading: Container(
@@ -939,7 +954,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     _downloadEvidence(filePath);
                   },
                 ),
-                
+
                 // Analyze option (only for images)
                 if (!isVideo)
                   ListTile(
@@ -949,16 +964,18 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                         color: Colors.purple.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.auto_awesome, color: Colors.purple),
+                      child:
+                          const Icon(Icons.auto_awesome, color: Colors.purple),
                     ),
                     title: Text(AppLocalizations.of(context)!.analyzeWithAI),
-                    subtitle: Text(AppLocalizations.of(context)!.getForensicAnalysis),
+                    subtitle:
+                        Text(AppLocalizations.of(context)!.getForensicAnalysis),
                     onTap: () {
                       Navigator.pop(context);
                       _analyzeSingleEvidence(filePath);
                     },
                   ),
-                
+
                 const SizedBox(height: 10),
               ],
             ),
@@ -977,12 +994,12 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
         // Try generic launch
         try {
           if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-             // Fallback
-             await launchUrl(url, mode: LaunchMode.platformDefault);
+            // Fallback
+            await launchUrl(url, mode: LaunchMode.platformDefault);
           }
         } catch (e) {
-             // Last resort fallback
-             await launchUrl(url, mode: LaunchMode.platformDefault);
+          // Last resort fallback
+          await launchUrl(url, mode: LaunchMode.platformDefault);
         }
         return;
       }
@@ -997,20 +1014,20 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
       final fileName = filePath.split('/').last;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final evidenceFileName = 'EVIDENCE_${timestamp}_$fileName';
-      
+
       // Use app's documents directory (no special permissions needed)
       final Directory? appDocDir = await getApplicationDocumentsDirectory();
-      
+
       if (appDocDir == null) {
         throw Exception('Could not access app storage');
       }
-      
+
       // Create Evidence folder in app documents
       final evidenceDir = Directory('${appDocDir.path}/Evidence');
       if (!await evidenceDir.exists()) {
         await evidenceDir.create(recursive: true);
       }
-      
+
       final newPath = '${evidenceDir.path}/$evidenceFileName';
       await file.copy(newPath);
 
@@ -1070,14 +1087,15 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 
     try {
       if (!dotenv.isInitialized) {
-        throw Exception('DotEnv is not initialized. Please ensure assets/env.txt exists and is loaded in main.dart');
+        throw Exception(
+            'DotEnv is not initialized. Please ensure assets/env.txt exists and is loaded in main.dart');
       }
 
       final apiKey = dotenv.maybeGet('GEMINI_API_KEY');
       if (apiKey == null || apiKey.isEmpty) {
         throw Exception('GEMINI_API_KEY not found in assets/env.txt file');
       }
-      
+
       final model = GenerativeModel(
         model: 'gemini-2.0-flash',
         apiKey: apiKey,
@@ -1096,7 +1114,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 ''';
 
       Uint8List imageBytes;
-      final isUrl = filePath.startsWith('http://') || filePath.startsWith('https://');
+      final isUrl =
+          filePath.startsWith('http://') || filePath.startsWith('https://');
 
       if (kIsWeb && filePath.startsWith('blob:')) {
         imageBytes = await XFile(filePath).readAsBytes();
@@ -1172,15 +1191,21 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
   }
 
   // Edit Crime Details
-    void _showEditCrimeDetailsDialog(ThemeData theme, [CrimeDetails? existingScene]) {
-    final crimeTypeController = TextEditingController(text: existingScene?.crimeType ?? '');
-    final placeController = TextEditingController(text: existingScene?.placeOfOccurrenceDescription ?? '');
-    final evidenceController = TextEditingController(text: existingScene?.physicalEvidenceDescription ?? '');
-    
+  void _showEditCrimeDetailsDialog(ThemeData theme,
+      [CrimeDetails? existingScene]) {
+    final crimeTypeController =
+        TextEditingController(text: existingScene?.crimeType ?? '');
+    final placeController = TextEditingController(
+        text: existingScene?.placeOfOccurrenceDescription ?? '');
+    final evidenceController = TextEditingController(
+        text: existingScene?.physicalEvidenceDescription ?? '');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(existingScene == null ? AppLocalizations.of(context)!.addCrimeScene : AppLocalizations.of(context)!.editCrimeScene),
+        title: Text(existingScene == null
+            ? AppLocalizations.of(context)!.addCrimeScene
+            : AppLocalizations.of(context)!.editCrimeScene),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1214,7 +1239,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 child: TextField(
                   controller: evidenceController,
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.physicalEvidenceDescription,
+                    labelText: AppLocalizations.of(context)!
+                        .physicalEvidenceDescription,
                     border: const OutlineInputBorder(),
                     alignLabelWithHint: true,
                   ),
@@ -1235,15 +1261,16 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              
-              final user = Provider.of<AuthProvider>(context, listen: false).user;
+
+              final user =
+                  Provider.of<AuthProvider>(context, listen: false).user;
               if (user == null) return;
 
               final data = {
                 'crimeType': crimeTypeController.text,
                 'placeOfOccurrenceDescription': placeController.text,
                 'physicalEvidenceDescription': evidenceController.text,
-                'firNumber': existingScene?.firNumber ?? '', 
+                'firNumber': existingScene?.firNumber ?? '',
                 'userId': user.uid,
                 'updatedAt': FieldValue.serverTimestamp(),
               };
@@ -1262,12 +1289,25 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   // Update Existing
                   await collection.doc(existingScene.id).update(data);
                 }
-                
+
                 _fetchCrimeScenes();
-                
+
+                // AUTO-UPDATE CASE STATUS: If case is New, move to Under Investigation
+                final caseProvider =
+                    Provider.of<CaseProvider>(context, listen: false);
+                final currentCase =
+                    caseProvider.cases.firstWhere((c) => c.id == widget.caseId);
+                if (currentCase.status == CaseStatus.newCase) {
+                  await caseProvider.updateCaseStatus(
+                      widget.caseId, CaseStatus.underInvestigation);
+                }
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(existingScene == null ? AppLocalizations.of(context)!.crimeSceneAdded : AppLocalizations.of(context)!.crimeSceneUpdated)),
+                    SnackBar(
+                        content: Text(existingScene == null
+                            ? AppLocalizations.of(context)!.crimeSceneAdded
+                            : AppLocalizations.of(context)!.crimeSceneUpdated)),
                   );
                 }
               } catch (e) {
@@ -1294,116 +1334,133 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           SnackBar(content: Text(AppLocalizations.of(context)!.generatingPDF)),
         );
       }
-      
+
       // Fetch Case Details
       final caseProvider = Provider.of<CaseProvider>(context, listen: false);
       final caseDoc = caseProvider.cases.firstWhere(
         (c) => c.id == widget.caseId,
-        orElse: () => CaseDoc(id: widget.caseId, title: 'Case', firNumber: 'N/A', userId: '', dateFiled: Timestamp.now(), lastUpdated: Timestamp.now(), status: CaseStatus.newCase),
+        orElse: () => CaseDoc(
+            id: widget.caseId,
+            title: 'Case',
+            firNumber: 'N/A',
+            userId: '',
+            dateFiled: Timestamp.now(),
+            lastUpdated: Timestamp.now(),
+            status: CaseStatus.newCase),
       );
 
       final pdf = pw.Document();
-      
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
           header: (pw.Context context) {
             return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('Crime Scene Analysis Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                pw.Divider(),
-                pw.SizedBox(height: 10),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Case: ${caseDoc.title}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text('FIR: ${caseDoc.firNumber}'),
-                  ],
-                ),
-                pw.SizedBox(height: 5),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Date: ${_formatTimestamp(report.createdAt)}'),
-                    pw.Text('ID: ${widget.caseId}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey)),
-                  ],
-                ),
-                pw.SizedBox(height: 20),
-              ]
-            );
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Crime Scene Analysis Report',
+                      style: pw.TextStyle(
+                          fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Divider(),
+                  pw.SizedBox(height: 10),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Case: ${caseDoc.title}',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Text('FIR: ${caseDoc.firNumber}'),
+                    ],
+                  ),
+                  pw.SizedBox(height: 5),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Date: ${_formatTimestamp(report.createdAt)}'),
+                      pw.Text('ID: ${widget.caseId}',
+                          style: const pw.TextStyle(
+                              fontSize: 10, color: PdfColors.grey)),
+                    ],
+                  ),
+                  pw.SizedBox(height: 20),
+                ]);
           },
           footer: (pw.Context context) {
             return pw.Container(
               alignment: pw.Alignment.centerRight,
               margin: const pw.EdgeInsets.only(top: 10),
-              child: pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
+              child: pw.Text(
+                  'Page ${context.pageNumber} of ${context.pagesCount}',
                   style: const pw.TextStyle(color: PdfColors.grey)),
             );
           },
           build: (pw.Context context) {
             final List<pw.Widget> content = [
-               pw.Text('Analysis Details:', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-               pw.SizedBox(height: 10),
+              pw.Text('Analysis Details:',
+                  style: pw.TextStyle(
+                      fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 10),
             ];
 
             final paragraphs = report.sceneNarrative.split('\n');
             for (final para in paragraphs) {
-               if (para.trim().isNotEmpty) {
-                 content.add(
-                   pw.Text(
-                     para.trim(),
-                     style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
-                     textAlign: pw.TextAlign.justify,
-                   )
-                 );
-                 content.add(pw.SizedBox(height: 6));
-               }
+              if (para.trim().isNotEmpty) {
+                content.add(pw.Text(
+                  para.trim(),
+                  style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
+                  textAlign: pw.TextAlign.justify,
+                ));
+                content.add(pw.SizedBox(height: 6));
+              }
             }
 
             content.add(pw.SizedBox(height: 20));
-            content.add(pw.Text('Generated by Dharma CMS', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey)));
-            
+            content.add(pw.Text('Generated by Dharma CMS',
+                style:
+                    const pw.TextStyle(fontSize: 10, color: PdfColors.grey)));
+
             return content;
           },
         ),
       );
-      
+
       final bytes = await pdf.save();
-      final fileName = 'Analysis_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      
+      final fileName =
+          'Analysis_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
       // Upload to Storage to get a URL (works for both Web and Native validation)
       // Path: cases/{caseId}/reports/{fileName}
-       final storagePath = 'case-documents/${widget.caseId}/$fileName';
-       
-       // Need PlatformFile for StorageService
-       final platformFile = PlatformFile(
-         name: fileName,
-         size: bytes.length,
-         bytes: bytes,
-       );
-       
-       final url = await StorageService.uploadFile(file: platformFile, path: storagePath);
-       
-       if (url != null) {
-          // Launch the URL to download/view
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri) || kIsWeb) {
-             // Web fallback often needs tolerant launch
-             await launchUrl(uri, mode: LaunchMode.externalApplication); 
-          } else {
-             await launchUrl(uri, mode: LaunchMode.platformDefault);
-          }
-       } else {
-         throw Exception('Failed to generate download link');
-       }
+      final storagePath = 'case-documents/${widget.caseId}/$fileName';
 
+      // Need PlatformFile for StorageService
+      final platformFile = PlatformFile(
+        name: fileName,
+        size: bytes.length,
+        bytes: bytes,
+      );
+
+      final url = await StorageService.uploadFile(
+          file: platformFile, path: storagePath);
+
+      if (url != null) {
+        // Launch the URL to download/view
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri) || kIsWeb) {
+          // Web fallback often needs tolerant launch
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+        }
+      } else {
+        throw Exception('Failed to generate download link');
+      }
     } catch (e) {
       print('PDF Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error downloading PDF: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Error downloading PDF: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -1423,7 +1480,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red)),
+            child: Text(AppLocalizations.of(context)!.delete,
+                style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1451,7 +1509,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting report: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Error deleting report: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -1479,13 +1539,17 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
             Navigator.of(context).pop();
           },
         ),
-        title: Text(caseDoc.title),
+        title: Text(
+          caseDoc.title,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: AppLocalizations.of(context)!.editCase,
             onPressed: () {
-               context.push('/cases/new', extra: caseDoc);
+              context.push('/cases/new', extra: caseDoc);
             },
           ),
         ],
@@ -1552,7 +1616,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
   }
 
   Widget _buildFIRDetailsTab(CaseDoc caseDoc, ThemeData theme) {
-    String _boolText(bool? value) => value == true ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no;
+    String _boolText(bool? value) => value == true
+        ? AppLocalizations.of(context)!.yes
+        : AppLocalizations.of(context)!.no;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -1648,12 +1714,17 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
             theme,
             AppLocalizations.of(context)!.caseInformation,
             [
-              _buildInfoRow(AppLocalizations.of(context)!.firNumber, caseDoc.firNumber),
-              if (caseDoc.year != null) _buildInfoRow(AppLocalizations.of(context)!.year, caseDoc.year!),
+              _buildInfoRow(
+                  AppLocalizations.of(context)!.firNumber, caseDoc.firNumber),
+              if (caseDoc.year != null)
+                _buildInfoRow(
+                    AppLocalizations.of(context)!.year, caseDoc.year!),
               if (caseDoc.originalComplaintId != null)
-                _buildInfoRow(AppLocalizations.of(context)!.complaintId, caseDoc.originalComplaintId!),
+                _buildInfoRow(AppLocalizations.of(context)!.complaintId,
+                    caseDoc.originalComplaintId!),
               if (caseDoc.date != null)
-                _buildInfoRow(AppLocalizations.of(context)!.firDate, caseDoc.date!),
+                _buildInfoRow(
+                    AppLocalizations.of(context)!.firDate, caseDoc.date!),
               if (caseDoc.firFiledTimestamp != null)
                 _buildInfoRow(
                   AppLocalizations.of(context)!.firFiledAt,
@@ -1662,7 +1733,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               if (caseDoc.district != null)
                 _buildInfoRow('District', caseDoc.district!),
               if (caseDoc.policeStation != null)
-                _buildInfoRow(AppLocalizations.of(context)!.policeStation, caseDoc.policeStation!),
+                _buildInfoRow(AppLocalizations.of(context)!.policeStation,
+                    caseDoc.policeStation!),
             ],
           ),
 
@@ -1679,7 +1751,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               AppLocalizations.of(context)!.occurrenceOfOffence,
               [
                 if (caseDoc.occurrenceDay != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.dayOfOccurrence, caseDoc.occurrenceDay!),
+                  _buildInfoRow(AppLocalizations.of(context)!.dayOfOccurrence,
+                      caseDoc.occurrenceDay!),
                 if (caseDoc.occurrenceDateTimeFrom != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.from,
@@ -1691,14 +1764,16 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     caseDoc.occurrenceDateTimeTo!,
                   ),
                 if (caseDoc.timePeriod != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.timePeriod, caseDoc.timePeriod!),
+                  _buildInfoRow(AppLocalizations.of(context)!.timePeriod,
+                      caseDoc.timePeriod!),
                 if (caseDoc.priorToDateTimeDetails != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.priorToDateTimeDetails,
                     caseDoc.priorToDateTimeDetails!,
                   ),
                 if (caseDoc.beatNumber != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.beatNumber, caseDoc.beatNumber!),
+                  _buildInfoRow(AppLocalizations.of(context)!.beatNumber,
+                      caseDoc.beatNumber!),
                 if (caseDoc.placeOfOccurrenceStreet != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.streetVillage,
@@ -1720,7 +1795,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     caseDoc.placeOfOccurrenceState!,
                   ),
                 if (caseDoc.placeOfOccurrencePin != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.pin, caseDoc.placeOfOccurrencePin!),
+                  _buildInfoRow(AppLocalizations.of(context)!.pin,
+                      caseDoc.placeOfOccurrencePin!),
                 if (caseDoc.placeOfOccurrenceLatitude != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.latitude,
@@ -1770,7 +1846,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     caseDoc.generalDiaryEntryNumber!,
                   ),
                 if (caseDoc.informationType != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.typeOfInformation, caseDoc.informationType!),
+                  _buildInfoRow(AppLocalizations.of(context)!.typeOfInformation,
+                      caseDoc.informationType!),
               ],
             ),
 
@@ -1782,7 +1859,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               theme,
               AppLocalizations.of(context)!.complainantInformantDetails,
               [
-                _buildInfoRow(AppLocalizations.of(context)!.name, caseDoc.complainantName!),
+                _buildInfoRow(AppLocalizations.of(context)!.name,
+                    caseDoc.complainantName!),
                 if (caseDoc.complainantFatherHusbandName != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.fatherHusbandName,
@@ -1791,7 +1869,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 if (caseDoc.complainantGender != null)
                   _buildInfoRow('Gender', caseDoc.complainantGender!),
                 if (caseDoc.complainantDob != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.dob, caseDoc.complainantDob!),
+                  _buildInfoRow(AppLocalizations.of(context)!.dob,
+                      caseDoc.complainantDob!),
                 if (caseDoc.complainantAge != null)
                   _buildInfoRow('Age', caseDoc.complainantAge!),
                 if (caseDoc.complainantNationality != null)
@@ -1800,7 +1879,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     caseDoc.complainantNationality!,
                   ),
                 if (caseDoc.complainantCaste != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.caste, caseDoc.complainantCaste!),
+                  _buildInfoRow(AppLocalizations.of(context)!.caste,
+                      caseDoc.complainantCaste!),
                 if (caseDoc.complainantOccupation != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.occupation,
@@ -1848,7 +1928,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
               AppLocalizations.of(context)!.victimDetails,
               [
                 if (caseDoc.victimName != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.name, caseDoc.victimName!),
+                  _buildInfoRow(
+                      AppLocalizations.of(context)!.name, caseDoc.victimName!),
                 if (caseDoc.victimFatherHusbandName != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.fatherHusbandName,
@@ -1857,22 +1938,27 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 if (caseDoc.victimGender != null)
                   _buildInfoRow('Gender', caseDoc.victimGender!),
                 if (caseDoc.victimDob != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.dob, caseDoc.victimDob!),
+                  _buildInfoRow(
+                      AppLocalizations.of(context)!.dob, caseDoc.victimDob!),
                 if (caseDoc.victimAge != null)
                   _buildInfoRow('Age', caseDoc.victimAge!),
                 if (caseDoc.victimNationality != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.nationality, caseDoc.victimNationality!),
+                  _buildInfoRow(AppLocalizations.of(context)!.nationality,
+                      caseDoc.victimNationality!),
                 if (caseDoc.victimReligion != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.religion, caseDoc.victimReligion!),
+                  _buildInfoRow(AppLocalizations.of(context)!.religion,
+                      caseDoc.victimReligion!),
                 if (caseDoc.victimCaste != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.caste, caseDoc.victimCaste!),
+                  _buildInfoRow(AppLocalizations.of(context)!.caste,
+                      caseDoc.victimCaste!),
                 if (caseDoc.victimOccupation != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.occupation,
                     caseDoc.victimOccupation!,
                   ),
                 if (caseDoc.victimAddress != null)
-                  _buildInfoRow(AppLocalizations.of(context)!.address, caseDoc.victimAddress!),
+                  _buildInfoRow(AppLocalizations.of(context)!.address,
+                      caseDoc.victimAddress!),
                 if (caseDoc.isComplainantAlsoVictim != null)
                   _buildInfoRow(
                     AppLocalizations.of(context)!.complainantAlsoVictim,
@@ -1933,19 +2019,24 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                           ),
                         ),
                         const SizedBox(height: 8),
-                        _buildInfoRow(AppLocalizations.of(context)!.name, valueOrEmpty('name')),
+                        _buildInfoRow(AppLocalizations.of(context)!.name,
+                            valueOrEmpty('name')),
                         _buildInfoRow(
                           AppLocalizations.of(context)!.fatherHusbandName,
                           valueOrEmpty('fatherHusbandName'),
                         ),
                         _buildInfoRow('Gender', valueOrEmpty('gender')),
                         _buildInfoRow('Age', valueOrEmpty('age')),
-                        _buildInfoRow(AppLocalizations.of(context)!.nationality, valueOrEmpty('nationality')),
-                        _buildInfoRow(AppLocalizations.of(context)!.caste, valueOrEmpty('caste')),
-                        _buildInfoRow(AppLocalizations.of(context)!.occupation, valueOrEmpty('occupation')),
+                        _buildInfoRow(AppLocalizations.of(context)!.nationality,
+                            valueOrEmpty('nationality')),
+                        _buildInfoRow(AppLocalizations.of(context)!.caste,
+                            valueOrEmpty('caste')),
+                        _buildInfoRow(AppLocalizations.of(context)!.occupation,
+                            valueOrEmpty('occupation')),
                         _buildInfoRow('Cell No.', valueOrEmpty('cellNo')),
                         _buildInfoRow('Email', valueOrEmpty('email')),
-                        _buildInfoRow(AppLocalizations.of(context)!.address, valueOrEmpty('address')),
+                        _buildInfoRow(AppLocalizations.of(context)!.address,
+                            valueOrEmpty('address')),
                         _buildInfoRow(
                           'Physical Features',
                           physicalFeatures,
@@ -2107,6 +2198,55 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     AppLocalizations.of(context)!.signatureThumbImpression,
                     caseDoc.complainantSignatureNote!,
                   ),
+                const SizedBox(height: 24),
+                if (caseDoc.status != CaseStatus.closed)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            title: const Text('Close Case'),
+                            content: const Text(
+                                'Are you sure you want to mark this case as Closed? This action indicates the investigation and legal proceedings are finalized.'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(c, false),
+                                  child: const Text('Cancel')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(c, true),
+                                  child: const Text('Close Case',
+                                      style: TextStyle(color: Colors.red))),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await Provider.of<CaseProvider>(context,
+                                  listen: false)
+                              .updateCaseStatus(
+                                  widget.caseId, CaseStatus.closed);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Case marked as Closed'),
+                                  backgroundColor: Colors.green),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.lock_outline),
+                      label: const Text('Close Case'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
               ],
             ),
         ],
@@ -2122,7 +2262,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
 
   Widget _buildCrimeSceneTab(CaseDoc caseDoc, ThemeData theme) {
     const orange = Color(0xFFFC633C);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -2138,105 +2278,138 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                       Row(
-                         children: [
-                           const Icon(Icons.location_on, color: Colors.blue),
-                           const SizedBox(width: 8),
-                           Text(
-                             AppLocalizations.of(context)!.crimeScenes,
-                             style: theme.textTheme.titleLarge?.copyWith(
-                               fontWeight: FontWeight.bold,
-                             ),
-                           ),
-                         ],
-                       ),
-                       IconButton(
-                         icon: const Icon(Icons.add_location_alt, color: orange),
-                         tooltip: AppLocalizations.of(context)!.addScene,
-                         onPressed: () => _showEditCrimeDetailsDialog(theme),
-                       ),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            AppLocalizations.of(context)!.crimeScenes,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_location_alt, color: orange),
+                        tooltip: AppLocalizations.of(context)!.addScene,
+                        onPressed: () => _showEditCrimeDetailsDialog(theme),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
                   if (_isLoadingScenes)
                     const Center(child: CircularProgressIndicator())
                   else if (_crimeScenes.isEmpty)
                     Text(AppLocalizations.of(context)!.noCrimeScenesLinked)
                   else
                     ..._crimeScenes.map((scene) {
-                       return Container(
-                         margin: const EdgeInsets.only(bottom: 12),
-                         padding: const EdgeInsets.all(12),
-                         decoration: BoxDecoration(
-                           border: Border.all(color: Colors.grey.shade300),
-                           borderRadius: BorderRadius.circular(8),
-                         ),
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             Row(
-                               children: [
-                                 Text(
-                                   scene.crimeType ?? AppLocalizations.of(context)!.unknownType,
-                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                 ),
-                                 const Spacer(),
-                                 IconButton(
-                                   icon: const Icon(Icons.edit, size: 20, color: Colors.blueGrey),
-                                   onPressed: () => _showEditCrimeDetailsDialog(theme, scene),
-                                   visualDensity: VisualDensity.compact,
-                                 ),
-                                 IconButton(
-                                   icon: const Icon(Icons.delete, size: 20, color: Colors.redAccent),
-                                   onPressed: () async {
-                                      final confirm = await showDialog<bool>(
-                                        context: context,
-                                        builder: (c) => AlertDialog(
-                                          title: Text(AppLocalizations.of(context)!.deleteScene),
-                                          content: Text(AppLocalizations.of(context)!.areSureDeleteScene),
-                                          actions: [
-                                            TextButton(onPressed: ()=>Navigator.pop(c, false), child: Text(AppLocalizations.of(context)!.cancel)),
-                                            TextButton(onPressed: ()=>Navigator.pop(c, true), child: Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red))),
-                                          ],
-                                        ),
-                                      );
-                                      
-                                      if (confirm == true && scene.id != null) {
-                                         await FirebaseFirestore.instance
-                                            .collection('cases')
-                                            .doc(widget.caseId)
-                                            .collection('crimeScenes')
-                                            .doc(scene.id)
-                                            .delete();
-                                         _fetchCrimeScenes();
-                                      }
-                                   },
-                                   visualDensity: VisualDensity.compact,
-                                 ),
-                               ],
-                             ),
-                             const Divider(height: 12),
-                             if (scene.placeOfOccurrenceDescription?.isNotEmpty == true)
-                               _buildInfoRow(AppLocalizations.of(context)!.place, scene.placeOfOccurrenceDescription!),
-                             if (scene.physicalEvidenceDescription?.isNotEmpty == true)
-                               _buildInfoRow(AppLocalizations.of(context)!.physicalEvidence, scene.physicalEvidenceDescription!),
-                             
-                             const SizedBox(height: 4),
-                             Text(
-                               'Recorded: ${_formatTimestamp(scene.createdAt)}',
-                               style:const TextStyle(fontSize: 10, color: Colors.grey),
-                             ),
-                           ],
-                         ),
-                       );
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    scene.crimeType ??
+                                        AppLocalizations.of(context)!
+                                            .unknownType,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      size: 20, color: Colors.blueGrey),
+                                  onPressed: () =>
+                                      _showEditCrimeDetailsDialog(theme, scene),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      size: 20, color: Colors.redAccent),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (c) => AlertDialog(
+                                        title: Text(
+                                            AppLocalizations.of(context)!
+                                                .deleteScene),
+                                        content: Text(
+                                            AppLocalizations.of(context)!
+                                                .areSureDeleteScene),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(c, false),
+                                              child: Text(
+                                                  AppLocalizations.of(context)!
+                                                      .cancel)),
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(c, true),
+                                              child: Text(
+                                                  AppLocalizations.of(context)!
+                                                      .delete,
+                                                  style: TextStyle(
+                                                      color: Colors.red))),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true && scene.id != null) {
+                                      await FirebaseFirestore.instance
+                                          .collection('cases')
+                                          .doc(widget.caseId)
+                                          .collection('crimeScenes')
+                                          .doc(scene.id)
+                                          .delete();
+                                      _fetchCrimeScenes();
+                                    }
+                                  },
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 12),
+                            if (scene
+                                    .placeOfOccurrenceDescription?.isNotEmpty ==
+                                true)
+                              _buildInfoRow(AppLocalizations.of(context)!.place,
+                                  scene.placeOfOccurrenceDescription!),
+                            if (scene.physicalEvidenceDescription?.isNotEmpty ==
+                                true)
+                              _buildInfoRow(
+                                  AppLocalizations.of(context)!
+                                      .physicalEvidence,
+                                  scene.physicalEvidenceDescription!),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Recorded: ${_formatTimestamp(scene.createdAt)}',
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      );
                     }),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Evidence Capture Section
           Card(
             elevation: 3,
@@ -2251,7 +2424,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          AppLocalizations.of(context)!.captureCrimeSceneEvidence,
+                          AppLocalizations.of(context)!
+                              .captureCrimeSceneEvidence,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -2260,13 +2434,14 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Capture Buttons Row
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _captureSceneEvidence(CaptureMode.image),
+                          onPressed: () =>
+                              _captureSceneEvidence(CaptureMode.image),
                           icon: const Icon(Icons.camera),
                           label: Text(AppLocalizations.of(context)!.photo),
                           style: ElevatedButton.styleFrom(
@@ -2279,7 +2454,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _captureSceneEvidence(CaptureMode.video),
+                          onPressed: () =>
+                              _captureSceneEvidence(CaptureMode.video),
                           icon: const Icon(Icons.videocam),
                           label: Text(AppLocalizations.of(context)!.video),
                           style: ElevatedButton.styleFrom(
@@ -2304,7 +2480,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       ),
                     ],
                   ),
-                  
+
                   // Attachment Preview
                   if (_crimeSceneAttachments.isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -2324,12 +2500,13 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                         itemCount: _crimeSceneAttachments.length,
                         itemBuilder: (context, index) {
                           final filePath = _crimeSceneAttachments[index];
-                          final fpLower = filePath.toLowerCase().split('?').first;
-                          final isVideo =
-                              fpLower.endsWith('.mp4') || fpLower.endsWith('.mov');
+                          final fpLower =
+                              filePath.toLowerCase().split('?').first;
+                          final isVideo = fpLower.endsWith('.mp4') ||
+                              fpLower.endsWith('.mov');
                           final isUrl = filePath.startsWith('http://') ||
                               filePath.startsWith('https://');
-                          
+
                           return GestureDetector(
                             onTap: () => _showEvidenceOptions(filePath, index),
                             child: Container(
@@ -2337,7 +2514,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                               margin: const EdgeInsets.only(right: 12),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: orange.withOpacity(0.3), width: 2),
+                                border: Border.all(
+                                    color: orange.withOpacity(0.3), width: 2),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.1),
@@ -2365,27 +2543,31 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                             ? Image.network(
                                                 filePath,
                                                 fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (context, error, stackTrace) {
+                                                errorBuilder: (context, error,
+                                                    stackTrace) {
                                                   return Container(
                                                     color: Colors.grey.shade300,
-                                                    child: const Icon(Icons.image, size: 40),
+                                                    child: const Icon(
+                                                        Icons.image,
+                                                        size: 40),
                                                   );
                                                 },
                                               )
                                             : Image.file(
                                                 File(filePath),
                                                 fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (context, error, stackTrace) {
+                                                errorBuilder: (context, error,
+                                                    stackTrace) {
                                                   return Container(
                                                     color: Colors.grey.shade300,
-                                                    child: const Icon(Icons.image, size: 40),
+                                                    child: const Icon(
+                                                        Icons.image,
+                                                        size: 40),
                                                   );
                                                 },
                                               )),
                                   ),
-                                  
+
                                   // Tap indicator overlay
                                   Container(
                                     decoration: BoxDecoration(
@@ -2400,7 +2582,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                       ),
                                     ),
                                   ),
-                                  
+
                                   // Tap icon
                                   Center(
                                     child: Container(
@@ -2416,7 +2598,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                       ),
                                     ),
                                   ),
-                                  
+
                                   // Remove button
                                   Positioned(
                                     top: 4,
@@ -2424,13 +2606,17 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                     child: GestureDetector(
                                       onTap: () async {
                                         setState(() {
-                                          _crimeSceneAttachments.removeAt(index);
+                                          _crimeSceneAttachments
+                                              .removeAt(index);
                                         });
                                         await _saveCrimeSceneEvidence();
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
-                                              content: Text(AppLocalizations.of(context)!.evidenceRemoved),
+                                              content: Text(
+                                                  AppLocalizations.of(context)!
+                                                      .evidenceRemoved),
                                               duration: Duration(seconds: 1),
                                             ),
                                           );
@@ -2450,7 +2636,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                       ),
                                     ),
                                   ),
-                                  
+
                                   // GEO badge
                                   Positioned(
                                     bottom: 4,
@@ -2493,7 +2679,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     if (_isCheckingRelevance) ...[
                       const SizedBox(height: 6),
                       const LinearProgressIndicator(),
@@ -2503,12 +2689,11 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     if (_latestRelevanceAnalysis != null) ...[
                       Builder(
                         builder: (context) {
-                          final overall =
-                              (_latestRelevanceAnalysis!['overall'] is Map)
-                                  ? Map<String, dynamic>.from(
-                                      _latestRelevanceAnalysis!['overall']
-                                          as Map)
-                                  : <String, dynamic>{};
+                          final overall = (_latestRelevanceAnalysis!['overall']
+                                  is Map)
+                              ? Map<String, dynamic>.from(
+                                  _latestRelevanceAnalysis!['overall'] as Map)
+                              : <String, dynamic>{};
                           final colorStr = (overall['color'] ?? '').toString();
                           final scoreStr = (overall['score'] ?? '').toString();
                           final summaryStr =
@@ -2550,8 +2735,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                                 ),
                                 const SizedBox(width: 10),
                                 TextButton(
-                                  onPressed: () =>
-                                      _showRelevanceDialog(_latestRelevanceAnalysis!),
+                                  onPressed: () => _showRelevanceDialog(
+                                      _latestRelevanceAnalysis!),
                                   child: const Text('View'),
                                 ),
                               ],
@@ -2586,7 +2771,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       ),
                     ),
                   ],
-                  
+
                   // AI Analysis Result
                   if (_sceneAnalysisResult != null) ...[
                     const SizedBox(height: 16),
@@ -2602,7 +2787,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.auto_awesome, color: Colors.purple),
+                              const Icon(Icons.auto_awesome,
+                                  color: Colors.purple),
                               const SizedBox(width: 8),
                               Text(
                                 AppLocalizations.of(context)!.aiSceneAnalysis,
@@ -2627,7 +2813,7 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Media Analysis Reports
           Card(
             child: Padding(
@@ -2641,7 +2827,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          AppLocalizations.of(context)!.crimeSceneAnalysisReports,
+                          AppLocalizations.of(context)!
+                              .crimeSceneAnalysisReports,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -2655,7 +2842,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                   else if (_mediaAnalyses.isEmpty)
                     Text(AppLocalizations.of(context)!.noAnalysisReportsFound)
                   else
-                    ..._mediaAnalyses.map((report) => _buildMediaReportCard(report, theme)).toList(),
+                    ..._mediaAnalyses
+                        .map((report) => _buildMediaReportCard(report, theme))
+                        .toList(),
                 ],
               ),
             ),
@@ -2798,12 +2987,14 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
       itemCount: _journalEntries.length,
       itemBuilder: (context, index) {
         final entry = _journalEntries[index];
-        return _buildTimelineItem(entry, theme, index == _journalEntries.length - 1);
+        return _buildTimelineItem(
+            entry, theme, index == _journalEntries.length - 1);
       },
     );
   }
 
-  Widget _buildTimelineItem(CaseJournalEntry entry, ThemeData theme, bool isLast) {
+  Widget _buildTimelineItem(
+      CaseJournalEntry entry, ThemeData theme, bool isLast) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2876,9 +3067,9 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     final hasCrimeSceneEvidence = _crimeSceneAttachments.isNotEmpty;
     final hasMediaAnalyses = _mediaAnalyses.isNotEmpty;
 
-    final isLoading = _isLoadingJournal || 
-                      _isLoadingPetitions || 
-                      _isLoadingMedia; // Note: _isLoadingScenes not strictly checked here as it refers to CrimeDetails list
+    final isLoading = _isLoadingJournal ||
+        _isLoadingPetitions ||
+        _isLoadingMedia; // Note: _isLoadingScenes not strictly checked here as it refers to CrimeDetails list
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -2894,7 +3085,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     const CircularProgressIndicator(),
                     const SizedBox(height: 12),
                     Text(
-                      AppLocalizations.of(context)!.loadingEvidenceFromAllSources,
+                      AppLocalizations.of(context)!
+                          .loadingEvidenceFromAllSources,
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: Colors.grey[700]),
                       textAlign: TextAlign.center,
@@ -2903,9 +3095,11 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 ),
               ),
             ),
-          
-          if (!isLoading && 
-              !(hasJournalEvidence || hasPetitionEvidence || hasCrimeSceneEvidence || hasMediaAnalyses))
+          if (!isLoading &&
+              !(hasJournalEvidence ||
+                  hasPetitionEvidence ||
+                  hasCrimeSceneEvidence ||
+                  hasMediaAnalyses))
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -2931,30 +3125,26 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                 ),
               ),
             ),
-
           if (hasCrimeSceneEvidence)
             _buildSection(
               theme,
               AppLocalizations.of(context)!.crimeSceneCaptures,
               _buildCrimeSceneEvidenceWidgets(theme),
             ),
-
           if (hasJournalEvidence)
             _buildSection(
               theme,
               AppLocalizations.of(context)!.fromInvestigationDiary,
               _buildJournalEvidenceWidgets(theme),
             ),
-
           if (hasPetitionEvidence)
             _buildSection(
               theme,
               AppLocalizations.of(context)!.fromPetitions,
               _buildPetitionEvidenceWidgets(theme),
             ),
-
           if (hasMediaAnalyses)
-             _buildSection(
+            _buildSection(
               theme,
               AppLocalizations.of(context)!.forensicAnalysisReports,
               _buildMediaAnalysisWidgets(theme),
@@ -2968,14 +3158,18 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
     if (_crimeSceneAttachments.isEmpty) return [];
 
     return [
-       Wrap(
+      Wrap(
         spacing: 12,
         runSpacing: 12,
         children: List.generate(_crimeSceneAttachments.length, (index) {
           final filePath = _crimeSceneAttachments[index];
           final isVideo = filePath.toLowerCase().endsWith('.mp4') ||
-                          filePath.toLowerCase().endsWith('.mov');
-          final fileName = filePath.split('/').last.split('?').first; // Handle URLs with params
+              filePath.toLowerCase().endsWith('.mov');
+          final fileName = filePath
+              .split('/')
+              .last
+              .split('?')
+              .first; // Handle URLs with params
 
           return InkWell(
             onTap: () => _showEvidenceOptions(filePath, index),
@@ -3020,21 +3214,21 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
   }
 
   List<Widget> _buildMediaAnalysisWidgets(ThemeData theme) {
-     return _mediaAnalyses.map((report) {
-       return Padding(
-         padding: const EdgeInsets.only(bottom: 8.0),
-         child: ListTile(
-           contentPadding: EdgeInsets.zero,
-           leading: const Icon(Icons.description, color: Colors.purple),
-           title: Text(report.originalFileName),
-           subtitle: Text('Analyzed on ${_formatTimestamp(report.createdAt)}'),
-           trailing: IconButton(
-             icon: const Icon(Icons.picture_as_pdf),
-             onPressed: () => _downloadAnalysisPdf(report),
-           ),
-         ),
-       );
-     }).toList();
+    return _mediaAnalyses.map((report) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.description, color: Colors.purple),
+          title: Text(report.originalFileName),
+          subtitle: Text('Analyzed on ${_formatTimestamp(report.createdAt)}'),
+          trailing: IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () => _downloadAnalysisPdf(report),
+          ),
+        ),
+      );
+    }).toList();
   }
 
   List<Widget> _buildJournalEvidenceWidgets(ThemeData theme) {
@@ -3243,7 +3437,8 @@ Provide a professional, detailed analysis suitable for law enforcement documenta
                     }
                   },
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: Text(AppLocalizations.of(context)!.downloadViewFinalReportPDF),
+                  label: Text(
+                      AppLocalizations.of(context)!.downloadViewFinalReportPDF),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepOrange,
                     foregroundColor: Colors.white,

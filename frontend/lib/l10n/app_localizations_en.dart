@@ -11,14 +11,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appTitle => 'Dharma CMS';
 
-
   String get dharma => 'Dharma';
 
   @override
   String get dharmaPortal => 'Dharma Portal';
 
   @override
-  String get welcomeDescription => 'Digital hub for Andhra Pradesh Police records, management and analytics';
+  String get welcomeDescription =>
+      'Digital hub for Andhra Pradesh Police records, management and analytics';
 
   @override
   String get loginAs => 'Login as';
@@ -386,7 +386,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get typeMessage => 'Type a message...';
 
   @override
-  String get askLegalQuestions => 'Ask legal questions and get AI-powered answers';
+  String get askLegalQuestions =>
+      'Ask legal questions and get AI-powered answers';
 
   @override
   String get submitQuery => 'Submit Query';
@@ -519,66 +520,72 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get areYouSureSignOut => 'Are you sure you want to sign out?';
-  
+
   @override
   String get wantToUtiliseFeature => 'Want to utilise this feature?';
-  
+
   @override
   String get utilise => 'Utilise';
-  
+
   @override
   String get skip => 'Skip';
-  
+
   @override
   String get fullNameQuestion => 'What is your full name?';
-  
+
   @override
   String get addressQuestion => 'Where do you live (place / area)?';
-  
+
   @override
   String get phoneQuestion => 'What is your phone number?';
-  
+
   @override
-  String get complaintTypeQuestion => 'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)';
-  
+  String get complaintTypeQuestion =>
+      'What type of complaint do you want to file? (Theft, Harassment, Missing person, etc.)';
+
   @override
   String get detailsQuestion => 'Please describe your complaint in detail.';
-  
+
   @override
   String get loading => 'Loading...';
-  
+
   @override
   String get pleaseEnterYourAnswer => 'Please enter your answer';
-  
+
   @override
   String get voiceInputComingSoon => 'Voice input (coming soon)';
-  
+
   @override
   String get welcomeToDharma => 'Welcome to Dharma';
-  
+
   @override
   String get letUsBegin => 'Let us begin...';
-  
+
   @override
-  String pleaseAnswerAllQuestions(String missing) => 'Please answer all questions before submitting. Missing: $missing';
-  
+  String pleaseAnswerAllQuestions(String missing) =>
+      'Please answer all questions before submitting. Missing: $missing';
+
   @override
   String get complaintSummary => 'Complaint Summary:';
-  
+
   @override
-  String classification(String classification) => 'Classification: $classification';
-  
+  String classification(String classification) =>
+      'Classification: $classification';
+
   @override
-  String get somethingWentWrong => 'Sorry, something went wrong. Please try again later.';
-  
+  String get somethingWentWrong =>
+      'Sorry, something went wrong. Please try again later.';
+
   @override
   String unexpectedErrorMessage(String error) => 'Unexpected error: $error';
 
   @override
-  String get viewAndManageComplaints => 'View and manage your saved complaint drafts';
+  String get viewAndManageComplaints =>
+      'View and manage your saved complaint drafts';
 
   @override
-  String get savedComplaintsAppearHere => 'Your saved complaint drafts will appear here';
+  String get savedComplaintsAppearHere =>
+      'Your saved complaint drafts will appear here';
 
   @override
   String get untitledComplaint => 'Untitled Complaint';
@@ -590,7 +597,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteComplaint => 'Delete Complaint';
 
   @override
-  String get deleteComplaintConfirmation => 'Are you sure you want to delete this complaint?';
+  String get deleteComplaintConfirmation =>
+      'Are you sure you want to delete this complaint?';
 
   @override
   String get basicInformation => 'Basic Information';
@@ -659,7 +667,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPetitionsYet => 'No Petitions Yet';
 
   @override
-  String get createFirstPetition => 'Create your first petition using the "Create New" tab';
+  String get createFirstPetition =>
+      'Create your first petition using the "Create New" tab';
 
   @override
   String createdDate(String date) => 'Created: $date';
@@ -719,7 +728,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryDetails => 'Query Details';
 
   @override
-  String get enterFirAndIncidentDetails => 'Please enter both FIR and incident details.';
+  String get enterFirAndIncidentDetails =>
+      'Please enter both FIR and incident details.';
 
   @override
   String get legalSuggestionsGenerated => 'Legal Section Suggester generated.';
@@ -730,13 +740,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get provideFirDetailsDesc => 'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.';
+  String get provideFirDetailsDesc =>
+      'Provide FIR and incident details to get AI-powered suggestions for applicable legal sections under BNS, BNSS, BSA, and other special acts.';
 
   @override
-  String get enterFirDetailsHint => 'Enter comprehensive details from the First Information Report...';
+  String get enterFirDetailsHint =>
+      'Enter comprehensive details from the First Information Report...';
 
   @override
-  String get describeIncidentHint => 'Describe the incident in detail, including sequence of events, actions taken, etc...';
+  String get describeIncidentHint =>
+      'Describe the incident in detail, including sequence of events, actions taken, etc...';
 
   @override
   String get processing => 'Processing...';
@@ -745,13 +758,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get getLegalSuggestions => 'Get Legal Section Suggester';
 
   @override
-  String get analyzingInformation => 'Analyzing information and generating suggestions...';
+  String get analyzingInformation =>
+      'Analyzing information and generating suggestions...';
 
   @override
   String get aiLegalSuggestions => 'AI Legal Section Suggester';
 
   @override
-  String get reviewSuggestionsDesc => 'Review the suggested legal sections and reasoning. This is for informational purposes only.';
+  String get reviewSuggestionsDesc =>
+      'Review the suggested legal sections and reasoning. This is for informational purposes only.';
 
   @override
   String get suggestedSections => 'Suggested Sections';
@@ -766,10 +781,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noReasoningProvided => 'No reasoning provided';
 
   @override
-  String get aiDisclaimer => 'AI-generated content. Always consult with a legal expert for official advice.';
+  String get aiDisclaimer =>
+      'AI-generated content. Always consult with a legal expert for official advice.';
 
   @override
-  String get provideCaseDataAndRecipient => 'Please provide case data and select a recipient type.';
+  String get provideCaseDataAndRecipient =>
+      'Please provide case data and select a recipient type.';
 
   @override
   String get documentDraftGenerated => 'Document draft generated.';
@@ -780,19 +797,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get documentDraftingDesc => 'Generate document drafts based on case data for specific recipients like medical officers or forensic experts.';
+  String get documentDraftingDesc =>
+      'Generate document drafts based on case data for specific recipients like medical officers or forensic experts.';
 
   @override
-  String get pasteCaseDataHint => 'Paste all relevant case data: complaint transcripts, witness statements, FIR details, investigation notes, etc...';
+  String get pasteCaseDataHint =>
+      'Paste all relevant case data: complaint transcripts, witness statements, FIR details, investigation notes, etc...';
 
   @override
   String get selectRecipientType => 'Select recipient type';
 
   @override
-  String get additionalInstructionsOptional => 'Additional Instructions (Optional)';
+  String get additionalInstructionsOptional =>
+      'Additional Instructions (Optional)';
 
   @override
-  String get additionalInstructionsHint => 'E.g., \'Focus on injuries sustained\', \'Request specific tests for DNA analysis\', \'Keep the tone formal and urgent\'...';
+  String get additionalInstructionsHint =>
+      'E.g., \'Focus on injuries sustained\', \'Request specific tests for DNA analysis\', \'Keep the tone formal and urgent\'...';
 
   @override
   String get drafting => 'Drafting...';
@@ -807,13 +828,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generatedDocumentDraft => 'Generated Document Draft';
 
   @override
-  String get reviewDraftDesc => 'Review the generated draft. You can copy and edit it as needed.';
+  String get reviewDraftDesc =>
+      'Review the generated draft. You can copy and edit it as needed.';
 
   @override
   String get noDraftGenerated => 'No draft generated';
 
   @override
-  String get aiDraftDisclaimer => 'AI-generated content. Verify and adapt for official use.';
+  String get aiDraftDisclaimer =>
+      'AI-generated content. Verify and adapt for official use.';
 
   @override
   String get draftCopied => 'Draft copied to clipboard';
@@ -843,7 +866,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get chargesheetGeneratorDesc => 'Upload relevant documents (FIR, witness statements, evidence reports in .doc, .docx, .pdf, .txt) and provide additional instructions. The AI will formulate a draft charge sheet based on the provided template.';
+  String get chargesheetGeneratorDesc =>
+      'Upload relevant documents (FIR, witness statements, evidence reports in .doc, .docx, .pdf, .txt) and provide additional instructions. The AI will formulate a draft charge sheet based on the provided template.';
 
   @override
   String get caseDocuments => 'Case Documents';
@@ -855,7 +879,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadedFiles => 'Uploaded Files:';
 
   @override
-  String get chargesheetInstructionsHint => 'E.g., \'Focus on connecting Accused A to the weapon found.\', \'Emphasize the premeditation aspect based on Witness B\'s statement.\'...';
+  String get chargesheetInstructionsHint =>
+      'E.g., \'Focus on connecting Accused A to the weapon found.\', \'Emphasize the premeditation aspect based on Witness B\'s statement.\'...';
 
   @override
   String get generating => 'Generating...';
@@ -864,19 +889,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateDraftChargeSheet => 'Generate Draft Charge Sheet';
 
   @override
-  String get generatingChargeSheetWait => 'Generating charge sheet, this may take a moment...';
+  String get generatingChargeSheetWait =>
+      'Generating charge sheet, this may take a moment...';
 
   @override
   String get generatedDraftChargeSheet => 'Generated Draft Charge Sheet';
 
   @override
-  String get reviewChargeSheetDesc => 'Review the generated draft. This is a starting point and requires legal review and verification against original documents.';
+  String get reviewChargeSheetDesc =>
+      'Review the generated draft. This is a starting point and requires legal review and verification against original documents.';
 
   @override
   String get noChargeSheetGenerated => 'No charge sheet generated';
 
   @override
-  String get aiChargeSheetDisclaimer => 'AI-generated content. Must be reviewed and verified by a legal professional.';
+  String get aiChargeSheetDisclaimer =>
+      'AI-generated content. Must be reviewed and verified by a legal professional.';
 
   @override
   String fileContentLoaded(String fileName) {
@@ -889,10 +917,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pleaseUploadOrPasteChargesheet => 'Please upload or paste the charge sheet content.';
+  String get pleaseUploadOrPasteChargesheet =>
+      'Please upload or paste the charge sheet content.';
 
   @override
-  String get chargesheetVettedSuccess => 'Charge sheet vetted and suggestions provided.';
+  String get chargesheetVettedSuccess =>
+      'Charge sheet vetted and suggestions provided.';
 
   @override
   String failedToVetChargesheet(String error) {
@@ -903,7 +933,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chargesheetVettingAI => 'Charge Sheet Vetting AI';
 
   @override
-  String get chargesheetVettingDesc => 'Upload or paste an existing charge sheet. The AI will review it and suggest improvements to strengthen the case.';
+  String get chargesheetVettingDesc =>
+      'Upload or paste an existing charge sheet. The AI will review it and suggest improvements to strengthen the case.';
 
   @override
   String get uploadChargesheet => 'Upload Charge Sheet (.txt file)';
@@ -918,7 +949,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orPasteChargesheet => 'Or Paste Charge Sheet Content';
 
   @override
-  String get pasteChargesheetHint => 'Paste the full content of the charge sheet here...';
+  String get pasteChargesheetHint =>
+      'Paste the full content of the charge sheet here...';
 
   @override
   String get vetting => 'Vetting...';
@@ -933,19 +965,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiVettingSuggestions => 'AI Vetting Suggestions';
 
   @override
-  String get reviewSuggestionsToImprove => 'Review the suggestions to improve the charge sheet.';
+  String get reviewSuggestionsToImprove =>
+      'Review the suggestions to improve the charge sheet.';
 
   @override
   String get noSuggestionsProvided => 'No suggestions provided';
 
   @override
-  String get aiVettingDisclaimer => 'AI-generated suggestions. Legal expertise is required for final decisions.';
+  String get aiVettingDisclaimer =>
+      'AI-generated suggestions. Legal expertise is required for final decisions.';
 
   @override
-  String get pleaseFillAllWitnessFields => 'Please fill in all fields: case details, witness statement, and witness name.';
+  String get pleaseFillAllWitnessFields =>
+      'Please fill in all fields: case details, witness statement, and witness name.';
 
   @override
-  String get witnessPreparationComplete => 'Witness preparation session complete.';
+  String get witnessPreparationComplete =>
+      'Witness preparation session complete.';
 
   @override
   String failedToPrepareWitness(String error) {
@@ -956,16 +992,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiWitnessPreparation => 'AI Witness Preparation';
 
   @override
-  String get witnessPreparationDesc => 'Simulate a mock trial experience for a witness. The AI assistant will ask potential cross-examination questions.';
+  String get witnessPreparationDesc =>
+      'Simulate a mock trial experience for a witness. The AI assistant will ask potential cross-examination questions.';
 
   @override
   String get enterWitnessNameHint => 'Enter the witness\'s full name';
 
   @override
-  String get caseDetailsHint => 'Provide comprehensive case details: charges, evidence, known facts, etc.';
+  String get caseDetailsHint =>
+      'Provide comprehensive case details: charges, evidence, known facts, etc.';
 
   @override
-  String get witnessStatementHint => 'Enter the witness\'s statement that will be used for the mock trial.';
+  String get witnessStatementHint =>
+      'Enter the witness\'s statement that will be used for the mock trial.';
 
   @override
   String get preparing => 'Preparing...';
@@ -1003,7 +1042,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noImprovementsSuggested => 'No improvements suggested';
 
   @override
-  String get aiSimulationDisclaimer => 'This is an AI simulation. Real trial conditions may vary.';
+  String get aiSimulationDisclaimer =>
+      'This is an AI simulation. Real trial conditions may vary.';
 
   @override
   String get imageSizeLimit => 'Please select an image smaller than 10MB.';
@@ -1026,7 +1066,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseSelectImageToAnalyze => 'Please select an image to analyze.';
 
   @override
-  String get analysisComplete => 'Analysis complete. Review the AI-generated findings below.';
+  String get analysisComplete =>
+      'Analysis complete. Review the AI-generated findings below.';
 
   @override
   String failedToAnalyzeMedia(String error) {
@@ -1037,7 +1078,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiCrimeSceneInvestigator => 'AI Crime Scene Investigator';
 
   @override
-  String get mediaAnalysisDesc => 'Upload an image (max 10MB) for crime scene analysis. The AI will identify elements, describe the scene, and provide a summary.';
+  String get mediaAnalysisDesc =>
+      'Upload an image (max 10MB) for crime scene analysis. The AI will identify elements, describe the scene, and provide a summary.';
 
   @override
   String get uploadImage => 'Upload Image';
@@ -1046,10 +1088,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseImage => 'Choose Image';
 
   @override
-  String get contextInstructions => 'Context / Specific Instructions (Optional)';
+  String get contextInstructions =>
+      'Context / Specific Instructions (Optional)';
 
   @override
-  String get contextInstructionsHint => 'E.g., \'Focus on potential weapons.\', \'Is there any sign of forced entry?\', \'What is written on the note on the table?\'';
+  String get contextInstructionsHint =>
+      'E.g., \'Focus on potential weapons.\', \'Is there any sign of forced entry?\', \'What is written on the note on the table?\'';
 
   @override
   String get analyzing => 'Analyzing...';
@@ -1061,7 +1105,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analyzingImageWait => 'AI is analyzing the image, please wait...';
 
   @override
-  String get analyzingComplexityNote => '(This may take a moment depending on image complexity)';
+  String get analyzingComplexityNote =>
+      '(This may take a moment depending on image complexity)';
 
   @override
   String get crimeSceneAnalysisReport => 'Crime Scene Analysis Report';
@@ -1082,22 +1127,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get category => 'Category';
 
   @override
-  String get noElementsIdentified => 'No specific elements prominently identified or analysis incomplete.';
+  String get noElementsIdentified =>
+      'No specific elements prominently identified or analysis incomplete.';
 
   @override
   String get sceneNarrativeEditable => 'Scene Narrative (Editable)';
 
   @override
-  String get sceneNarrativeHint => 'AI-generated scene narrative will appear here. You can edit it.';
+  String get sceneNarrativeHint =>
+      'AI-generated scene narrative will appear here. You can edit it.';
 
   @override
-  String get caseFileSummaryEditable => 'Case File Summary & Hypotheses (Editable)';
+  String get caseFileSummaryEditable =>
+      'Case File Summary & Hypotheses (Editable)';
 
   @override
-  String get caseFileSummaryHint => 'AI-generated summary and hypotheses will appear here. You can edit it.';
+  String get caseFileSummaryHint =>
+      'AI-generated summary and hypotheses will appear here. You can edit it.';
 
   @override
-  String get aiAnalysisDisclaimer => 'AI-generated analysis. Verify with physical investigation.';
+  String get aiAnalysisDisclaimer =>
+      'AI-generated analysis. Verify with physical investigation.';
 
   @override
   String get download => 'Download';
@@ -1161,13 +1211,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get caseJournalDesc => 'View investigation diaries and case activity logs';
+  String get caseJournalDesc =>
+      'View investigation diaries and case activity logs';
 
   @override
   String get selectCase => 'Select Case';
 
   @override
-  String get noCasesAvailable => 'No cases available. Please register a case first.';
+  String get noCasesAvailable =>
+      'No cases available. Please register a case first.';
 
   @override
   String get chooseCaseToViewJournal => 'Choose a case to view journal';
@@ -1185,7 +1237,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noJournalEntries => 'No journal entries yet';
 
   @override
-  String get noJournalEntriesDesc => 'Journal entries will appear here as the investigation progresses.';
+  String get noJournalEntriesDesc =>
+      'Journal entries will appear here as the investigation progresses.';
 
   @override
   String get ref => 'Ref';
@@ -1250,336 +1303,332 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appVersion => '1.0.0';
 
   @override
-  String get appDescription => 'Legal assistance platform powered by AI technology.';
+  String get appDescription =>
+      'Legal assistance platform powered by AI technology.';
 
   @override
   String get signOutConfirmation => 'Are you sure you want to sign out?';
 
-
-
-@override
-String get loginWithPhone => 'Login with Phone';
-
-@override
-String get mobileNumber => 'Mobile Number';
-
-@override
-String get sendOtp => 'Send OTP';
-
-@override
-String get verifyOtp => 'Verify OTP';
-
-@override
-String get otpSent => 'OTP sent!';
-
-@override
-String get otpResent => 'OTP resent!';
-
-@override
-String get enterValidNumber => 'Enter valid 10-digit number';
-
-@override
-String get enterOtp => 'Enter 6-digit OTP';
-
-@override
-String resendIn(int seconds) => 'Resend in $seconds sec';
-
-@override
-String get resendOtp => 'Resend OTP';
-
-@override
-String get loginSuccessful => 'Login Successful!';
-
-@override
-String get wrongOtp => 'Wrong OTP';
-
-@override
-String get otpExpired => 'OTP expired';
-
-@override
-String get invalidOtp => 'Invalid OTP';
-
-@override
-String get backToEmailLogin => 'Back to Email Login';
-
-
-@override
-String get emergencyHelplines => 'Emergency Helplines';
-
-@override
-String get sos112 => 'SOS 112';
-
-@override
-String get helplineEmergencyAll => 'Emergency (All-in-One)';
-
-@override
-String get helplineEmergencyAllDesc => 'Police, Fire, Ambulance';
-
-@override
-String get helplinePolice => 'Police Control Room';
-
-@override
-String get helplinePoliceDesc => 'Crime / Emergencies';
-
-@override
-String get helplineFire => 'Fire & Rescue';
-
-@override
-String get helplineFireDesc => 'Fire accidents & rescue';
-
-@override
-String get helplineAmbulance => 'Ambulance';
-
-@override
-String get helplineAmbulanceDesc => 'Medical emergencies';
-
-@override
-String get helplineAmbulanceAlt => 'Ambulance (Alternative)';
-
-@override
-String get helplineAmbulanceAltDesc => 'Emergency medical service';
-
-@override
-String get helplineWomen => 'Women Helpline';
-
-@override
-String get helplineWomenDesc => 'Support for women safety';
-
-@override
-String get helplineDomestic => 'Domestic Violence';
-
-@override
-String get helplineDomesticDesc => 'Help against abuse';
-
-@override
-String get helplineChild => 'Child Helpline';
-
-@override
-String get helplineChildDesc => 'Children in trouble';
-
-@override
-String get helplineCyber => 'Cyber Crime';
-
-@override
-String get helplineCyberDesc => 'Fraud, cyber threats';
-
-@override
-String get support => 'Support';
-
-@override
-String get closed => 'Closed'; 
-
-@override
-String get inProgress => 'In Progress';
-
-@override
-String get yourLegalAssistanceHub => 'Your Legal Assistance Hub';
-
-
-@override
-String get received => 'Received';
-
-@override
-String get welcome => 'Welcome';
-
-@override
-String get policeCommandCenter => 'Police Command Centre';
-
-
-
-@override
-String get petitionOverview => 'Petition Overview';
-
-
-@override
+  @override
+  String get loginWithPhone => 'Login with Phone';
 
   @override
-  String get recentActivityDescription => 'Shows the most recent actions or updates related to your account'; 
+  String get mobileNumber => 'Mobile Number';
+
+  @override
+  String get sendOtp => 'Send OTP';
+
+  @override
+  String get verifyOtp => 'Verify OTP';
+
+  @override
+  String get otpSent => 'OTP sent!';
+
+  @override
+  String get otpResent => 'OTP resent!';
+
+  @override
+  String get enterValidNumber => 'Enter valid 10-digit number';
+
+  @override
+  String get enterOtp => 'Enter 6-digit OTP';
+
+  @override
+  String resendIn(int seconds) => 'Resend in $seconds sec';
+
+  @override
+  String get resendOtp => 'Resend OTP';
+
+  @override
+  String get loginSuccessful => 'Login Successful!';
+
+  @override
+  String get wrongOtp => 'Wrong OTP';
+
+  @override
+  String get otpExpired => 'OTP expired';
+
+  @override
+  String get invalidOtp => 'Invalid OTP';
+
+  @override
+  String get backToEmailLogin => 'Back to Email Login';
+
+  @override
+  String get emergencyHelplines => 'Emergency Helplines';
+
+  @override
+  String get sos112 => 'SOS 112';
+
+  @override
+  String get helplineEmergencyAll => 'Emergency (All-in-One)';
+
+  @override
+  String get helplineEmergencyAllDesc => 'Police, Fire, Ambulance';
+
+  @override
+  String get helplinePolice => 'Police Control Room';
+
+  @override
+  String get helplinePoliceDesc => 'Crime / Emergencies';
+
+  @override
+  String get helplineFire => 'Fire & Rescue';
+
+  @override
+  String get helplineFireDesc => 'Fire accidents & rescue';
+
+  @override
+  String get helplineAmbulance => 'Ambulance';
+
+  @override
+  String get helplineAmbulanceDesc => 'Medical emergencies';
+
+  @override
+  String get helplineAmbulanceAlt => 'Ambulance (Alternative)';
+
+  @override
+  String get helplineAmbulanceAltDesc => 'Emergency medical service';
+
+  @override
+  String get helplineWomen => 'Women Helpline';
+
+  @override
+  String get helplineWomenDesc => 'Support for women safety';
+
+  @override
+  String get helplineDomestic => 'Domestic Violence';
+
+  @override
+  String get helplineDomesticDesc => 'Help against abuse';
+
+  @override
+  String get helplineChild => 'Child Helpline';
+
+  @override
+  String get helplineChildDesc => 'Children in trouble';
+
+  @override
+  String get helplineCyber => 'Cyber Crime';
+
+  @override
+  String get helplineCyberDesc => 'Fraud, cyber threats';
+
+  @override
+  String get support => 'Support';
+
+  @override
+  String get closed => 'Closed';
+
+  @override
+  String get inProgress => 'In Progress';
+
+  @override
+  String get yourLegalAssistanceHub => 'Your Legal Assistance Hub';
+
+  @override
+  String get received => 'Received';
+
+  @override
+  String get welcome => 'Welcome';
+
+  @override
+  String get policeCommandCenter => 'Police Command Centre';
+
+  @override
+  String get petitionOverview => 'Petition Overview';
+
+  @override
+  @override
+  String get recentActivityDescription =>
+      'Shows the most recent actions or updates related to your account';
 
   @override
   String get helpline => 'Helpline';
 
-@override
-String get userNotRegistered => 'User not registered';
+  @override
+  String get userNotRegistered => 'User not registered';
 
-@override
-String get registeredAs => 'You are registered as a';
+  @override
+  String get registeredAs => 'You are registered as a';
 
-@override
-String get tryingToLoginAs => 'but trying to login as a';
+  @override
+  String get tryingToLoginAs => 'but trying to login as a';
 
-@override
-String get selectCorrectOption => 'Please select the correct option';
+  @override
+  String get selectCorrectOption => 'Please select the correct option';
 
-@override
-String get loginFailed => 'Login Failed';
+  @override
+  String get loginFailed => 'Login Failed';
 
-@override
-String get googleLoginSuccessful => 'Google Login Successful';
+  @override
+  String get googleLoginSuccessful => 'Google Login Successful';
 
 // Police Login & Registration
-@override
-String get policeLogin => 'Police Login';
+  @override
+  String get policeLogin => 'Police Login';
 
-@override
-String get policeRegistration => 'Police Registration';
+  @override
+  String get policeRegistration => 'Police Registration';
 
-@override
-String get policeLoginSuccessful => 'Police login successful';
+  @override
+  String get policeLoginSuccessful => 'Police login successful';
 
-@override
-String get policeRegisteredSuccessfully => 'Police registered successfully';
+  @override
+  String get policeRegisteredSuccessfully => 'Police registered successfully';
 
-@override
-String get dontHavePoliceAccount => "Don't have a police account? ";
+  @override
+  String get dontHavePoliceAccount => "Don't have a police account? ";
 
-@override
-String get invalidName => 'Invalid name';
+  @override
+  String get invalidName => 'Invalid name';
 
-@override
-String get invalidEmailShort => 'Invalid email';
+  @override
+  String get invalidEmailShort => 'Invalid email';
 
-@override
-String get passwordMinRequirement => 'Min 8 chars, 1 number';
+  @override
+  String get passwordMinRequirement => 'Min 8 chars, 1 number';
 
-@override
-String get rank => 'Rank';
+  @override
+  String get rank => 'Rank';
 
-@override
-String get selectRank => 'Select Rank';
+  @override
+  String get selectRank => 'Select Rank';
 
-@override
-String get selectDistrict => 'Select District';
+  @override
+  String get selectDistrict => 'Select District';
 
-@override
-String get selectPoliceStationText => 'Select Police Station';
+  @override
+  String get selectPoliceStationText => 'Select Police Station';
 
-@override
-String get pleaseSelectAllDropdownFields => 'Please select all dropdown fields';
+  @override
+  String get pleaseSelectAllDropdownFields =>
+      'Please select all dropdown fields';
 
-@override
-String get searchHint => 'Search...';
+  @override
+  String get searchHint => 'Search...';
 
-@override
-String selectLabel(String label) {
-  return 'Select $label';
-}
+  @override
+  String selectLabel(String label) {
+    return 'Select $label';
+  }
 
-@override
-String get aiInvestigationGuidelines => 'AI Investigation Guidelines';
+  @override
+  String get aiInvestigationGuidelines => 'AI Investigation Guidelines';
 
-@override
-String get enterFirNumber => 'Enter FIR Number (Case ID)';
+  @override
+  String get enterFirNumber => 'Enter FIR Number (Case ID)';
 
-@override
-String get startInvestigation => 'Start Investigation';
+  @override
+  String get startInvestigation => 'Start Investigation';
 
-@override
-String get enterOfficerResponse => 'Enter officer response...';
+  @override
+  String get enterOfficerResponse => 'Enter officer response...';
 
-@override
-String get errorContactingInvestigationAI => 'Error contacting investigation AI';
+  @override
+  String get errorContactingInvestigationAI =>
+      'Error contacting investigation AI';
 
-@override
-String get districtAndFirDetails => 'District and FIR Details';
+  @override
+  String get districtAndFirDetails => 'District and FIR Details';
 
-@override
-String get occurenceOfOffence => 'Occurence of Offence';
+  @override
+  String get occurenceOfOffence => 'Occurence of Offence';
 
-@override
-String get dayOfOccurrence => 'Day of Occurrence';
+  @override
+  String get dayOfOccurrence => 'Day of Occurrence';
 
-@override
-String get dateTimeFrom => 'Date/Time From';
+  @override
+  String get dateTimeFrom => 'Date/Time From';
 
-@override
-String get dateTimeTo => 'Date/Time To';
+  @override
+  String get dateTimeTo => 'Date/Time To';
 
-@override
-String get selectDateAndTime => 'Select date and time';
+  @override
+  String get selectDateAndTime => 'Select date and time';
 
-@override
-String get timePeriod => 'Time Period';
+  @override
+  String get timePeriod => 'Time Period';
 
-@override
-String get priorToDateTimeDetails => 'Prior to Date/Time (Details)';
+  @override
+  String get priorToDateTimeDetails => 'Prior to Date/Time (Details)';
 
-@override
-String get beatNumber => 'Beat Number';
+  @override
+  String get beatNumber => 'Beat Number';
 
-@override
-String get placeOfOccurrence => 'Place of Occurrence';
+  @override
+  String get placeOfOccurrence => 'Place of Occurrence';
 
-@override
-String get streetVillage => 'Street/Village';
+  @override
+  String get streetVillage => 'Street/Village';
 
-@override
-String get areaMandal => 'Area/Mandal';
+  @override
+  String get areaMandal => 'Area/Mandal';
 
-@override
-String get cityDistrict => 'City/District';
+  @override
+  String get cityDistrict => 'City/District';
 
-@override
-String get pin => 'PIN';
+  @override
+  String get pin => 'PIN';
 
-@override
-String get latitude => 'Latitude';
+  @override
+  String get latitude => 'Latitude';
 
-@override
-String get longitude => 'Longitude';
+  @override
+  String get longitude => 'Longitude';
 
-@override
-String get map => 'Map';
+  @override
+  String get map => 'Map';
 
-@override
-String get viewMap => 'View Map'; 
+  @override
+  String get viewMap => 'View Map';
 
-@override
-String get listening => 'Listening...';
+  @override
+  String get listening => 'Listening...';
 
-@override
-String get tapToStopRecording => 'Tap the microphone icon to stop recording';
+  @override
+  String get tapToStopRecording => 'Tap the microphone icon to stop recording';
 
-@override
-String get imageLab => 'Image Lab';
+  @override
+  String get imageLab => 'Image Lab';
 
-@override
-String get addPolice => 'Add Police';
+  @override
+  String get addPolice => 'Add Police';
 
-@override
-String get submitOfflinePetition => 'Submit Offline Petition';
+  @override
+  String get submitOfflinePetition => 'Submit Offline Petition';
 
-@override
-String get offlinePetitions => 'Offline Petitions';
+  @override
+  String get offlinePetitions => 'Offline Petitions';
 
-@override
-String get assignedPetitions => 'Assigned Petitions';
+  @override
+  String get assignedPetitions => 'Assigned Petitions';
 
+  @override
+  String get escalated => 'Escalated';
 
-@override
-String get escalated => 'Escalated';
+  @override
+  String get filters => 'Filters:';
 
-@override
-String get filters => 'Filters:';
+  @override
+  String get range => 'Range';
 
-@override
-String get range => 'Range';
+  @override
+  String get age => 'Age';
 
-@override
-String get age => 'Age';
+  @override
+  String get viewDetails => 'View Details';
 
-@override
-String get viewDetails => 'View Details';
+  @override
+  String get yourAccessLevel => 'Your Access Level';
 
-@override
-String get yourAccessLevel => 'Your Access Level';
+  @override
+  String get filterCasesUsingFilters =>
+      'Filter cases using the dropdown filters.';
 
-@override
-String get filterCasesUsingFilters => 'Filter cases using the dropdown filters.';
-
-@override
-String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you are involved in.';
-
+  @override
+  String get casesScreenSubtitle =>
+      'Manage and view details of FIRs / Cases you are involved in.';
 
   @override
   String get crimeScene => 'Crime Scene';
@@ -1599,7 +1648,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   String get caseInformation => 'Case Information';
 
-
   @override
   String get year => 'Year';
 
@@ -1611,7 +1659,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   String get firFiledAt => 'FIR Filed At';
-
 
   @override
   String get occurrenceOfOffence => 'Occurrence of Offence';
@@ -1761,7 +1808,8 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get deleteScene => 'Delete Scene';
 
   @override
-  String get areSureDeleteScene => 'Are you sure you want to delete this scene?';
+  String get areSureDeleteScene =>
+      'Are you sure you want to delete this scene?';
 
   @override
   String get place => 'Place';
@@ -1789,7 +1837,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   String get analyzeSceneWithAI => 'Analyze Scene with AI';
-
 
   @override
   String get aiSceneAnalysis => 'AI Scene Analysis';
@@ -1822,34 +1869,42 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get noEvidenceDocumentsFound => 'No evidence documents found';
 
   @override
-  String get attachedDocumentsWillAppearHere => 'Attached documents from case journal, petitions and crime scene captures will appear here.';
+  String get attachedDocumentsWillAppearHere =>
+      'Attached documents from case journal, petitions and crime scene captures will appear here.';
 
   @override
-  String get noDocumentsAttachedJournal => 'No documents attached to investigation diary yet.';
+  String get noDocumentsAttachedJournal =>
+      'No documents attached to investigation diary yet.';
 
   @override
-  String get noPetitionDocumentsLinked => 'No petition documents linked to this case yet.';
+  String get noPetitionDocumentsLinked =>
+      'No petition documents linked to this case yet.';
 
   @override
-  String get finalInvestigationReport => 'Final Investigation Report / Court Document';
+  String get finalInvestigationReport =>
+      'Final Investigation Report / Court Document';
 
   @override
   String get generatedOn => 'Generated On:';
 
   @override
-  String get noFinalReportAttached => 'No final investigation report attached to this case yet.';
+  String get noFinalReportAttached =>
+      'No final investigation report attached to this case yet.';
 
   @override
-  String get onceSomeoneGeneratesReport => 'Once the Investigating Officer generates and confirms an AI-assisted investigation report from the Case Journal screen, the final PDF will be linked here.';
+  String get onceSomeoneGeneratesReport =>
+      'Once the Investigating Officer generates and confirms an AI-assisted investigation report from the Case Journal screen, the final PDF will be linked here.';
 
   @override
-  String get courtReadyReportGenerated => 'Court-ready investigation report PDF has been generated and attached to this case.';
+  String get courtReadyReportGenerated =>
+      'Court-ready investigation report PDF has been generated and attached to this case.';
 
   @override
   String get downloadViewFinalReportPDF => 'Download / View Final Report PDF';
 
   @override
-  String get loadingEvidenceFromAllSources => 'Loading evidence from all sources...';
+  String get loadingEvidenceFromAllSources =>
+      'Loading evidence from all sources...';
 
   @override
   String get addCrimeScene => 'Add Crime Scene';
@@ -1866,8 +1921,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   String get physicalEvidenceDescription => 'Physical Evidence Description';
 
-
-
   @override
   String get crimeSceneAdded => 'Crime scene added';
 
@@ -1876,7 +1929,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   String get errorSavingCrimeScene => 'Error:';
-
 
   @override
   String get uploadingCapturedEvidence => 'Uploading captured evidence...';
@@ -1921,7 +1973,8 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get errorUploadingFile => 'Error uploading file:';
 
   @override
-  String get pleaseCapturUploadEvidenceFirst => 'Please capture or upload evidence first';
+  String get pleaseCapturUploadEvidenceFirst =>
+      'Please capture or upload evidence first';
 
   @override
   String get sceneAnalysisComplete => 'Scene analysis complete!';
@@ -1948,7 +2001,8 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get deleteReport => 'Delete Report';
 
   @override
-  String get deleteReportConfirmation => 'Are you sure you want to delete this analysis report? This cannot be undone.';
+  String get deleteReportConfirmation =>
+      'Are you sure you want to delete this analysis report? This cannot be undone.';
 
   @override
   String get reportDeleted => 'Report deleted';
@@ -1965,7 +2019,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   String get analyzedOn => 'Analyzed On';
 
-
   @override
   String get sceneNarrative => 'Scene Narrative:';
 
@@ -1976,7 +2029,8 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get filedOn => 'Filed On:';
 
   @override
-  String get accessViaFileManager => 'Access via File Manager → Dharma → Evidence';
+  String get accessViaFileManager =>
+      'Access via File Manager → Dharma → Evidence';
 
   @override
   String get evidenceDownloaded => 'Evidence downloaded!';
@@ -1986,7 +2040,6 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   String get downloadFailed => 'Download failed:';
-
 
   @override
   String get analysisErrorEvidence => 'Error analyzing evidence:';
@@ -1998,7 +2051,8 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get selectPetitionType => 'Select Petition Type';
 
   @override
-  String get petitionTypeDescription => 'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.';
+  String get petitionTypeDescription =>
+      'Choose how you want to file your complaint.\n\nAnonymous: Your name and address will not be recorded (only mobile number required).\n\nNormal: All details will be recorded.';
 
   @override
   String get anonymousPetition => 'Anonymous Petition';
@@ -2007,12 +2061,13 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   String get normalPetition => 'Normal Petition';
 
   @override
-  String get anonymousPetitionConfirm => 'You have selected Anonymous Petition Mode. Your name and address will not be recorded.';
+  String get anonymousPetitionConfirm =>
+      'You have selected Anonymous Petition Mode. Your name and address will not be recorded.';
 
   @override
   // TODO: implement profileUpdated
   String get profileUpdated => "Profile Updated";
-  
+
   @override
   // TODO: implement ok
   String get ok => 'ok';
@@ -2020,128 +2075,136 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
   @override
   String get Saved => 'Saved';
 
-  @override 
+  @override
   String get Drafts => 'Drafts';
 
   @override
-String get aiChatInProgressTitle => 'AI Chat in Progress';
+  String get aiChatInProgressTitle => 'AI Chat in Progress';
 
-@override
-String get aiChatInProgressMessage => 'Do you want to stop using the AI chatbot?';
+  @override
+  String get aiChatInProgressMessage =>
+      'Do you want to stop using the AI chatbot?';
 
-@override
-String get clearChat => 'CLEAR CHAT';
+  @override
+  String get clearChat => 'CLEAR CHAT';
 
-@override
-String get closeChat => 'CLOSE CHAT';
+  @override
+  String get closeChat => 'CLOSE CHAT';
 
-@override
-String get iAgreeToThe => 'I agree to the';
+  @override
+  String get iAgreeToThe => 'I agree to the';
 
-@override
-String get termsAndConditions => 'Terms & Conditions';
+  @override
+  String get termsAndConditions => 'Terms & Conditions';
 
-@override
-String get enterEmailForPasswordReset =>
-    'Enter your email address to receive a password reset link.';
+  @override
+  String get enterEmailForPasswordReset =>
+      'Enter your email address to receive a password reset link.';
 
-@override
-String get sendResetLink => 'Send Reset Link';
+  @override
+  String get sendResetLink => 'Send Reset Link';
 
-@override
-String get emailSent => 'Email Sent';
-  
-@override
-String get theEmail => 'The email,';
+  @override
+  String get emailSent => 'Email Sent';
 
-@override
-String get isNotRegisteredWithUs => 'is not registered with us';
+  @override
+  String get theEmail => 'The email,';
 
-@override
-String get passwordResetLinkSentTo =>
-    'A password reset link has been sent to,';
+  @override
+  String get isNotRegisteredWithUs => 'is not registered with us';
 
-@override
-String get pleaseCheckYourInbox => 'Please check your inbox';
+  @override
+  String get passwordResetLinkSentTo =>
+      'A password reset link has been sent to,';
 
-@override
-String get rateOfficerAndFeedback => 'Rate Officer & Feedback';
+  @override
+  String get pleaseCheckYourInbox => 'Please check your inbox';
 
-@override
-String get pleaseRateOfficerHandling =>
-    "Please rate the officer's handling of your case.";
+  @override
+  String get rateOfficerAndFeedback => 'Rate Officer & Feedback';
 
-@override
-String get writeYourFeedbackOptional =>
-    'Write your feedback (optional)...';
+  @override
+  String get pleaseRateOfficerHandling =>
+      "Please rate the officer's handling of your case.";
 
-@override
-String get submitFeedback => 'Submit Feedback';
+  @override
+  String get writeYourFeedbackOptional => 'Write your feedback (optional)...';
 
-@override
-String get feedbackSubmittedSuccessfully =>
-    'Feedback submitted successfully!';
+  @override
+  String get submitFeedback => 'Submit Feedback';
 
-@override
-String errorSubmittingFeedback(String error) =>
-    'Error submitting feedback: $error';
+  @override
+  String get feedbackSubmittedSuccessfully =>
+      'Feedback submitted successfully!';
 
-@override
-String get incidentAddress => 'Incident Address';
+  @override
+  String errorSubmittingFeedback(String error) =>
+      'Error submitting feedback: $error';
 
-@override
-String get incidentDate => 'Incident Date';
+  @override
+  String get incidentAddress => 'Incident Address';
 
-@override
-String get jurisdictionForFilingComplaint =>
-    'Jurisdiction for Filing Complaint';
-@override
-String get caseProgressUpdates => 'Case Progress Updates';
+  @override
+  String get incidentDate => 'Incident Date';
 
-@override
-String get trackCaseProgressDescription =>
-    'Track the progress of your petition here. Police will add updates about the work done on your case.';
+  @override
+  String get jurisdictionForFilingComplaint =>
+      'Jurisdiction for Filing Complaint';
+  @override
+  String get caseProgressUpdates => 'Case Progress Updates';
 
-@override
-String get noUpdatesYet => 'No Updates Yet';
+  @override
+  String get trackCaseProgressDescription =>
+      'Track the progress of your petition here. Police will add updates about the work done on your case.';
 
-@override
-String get policeWillAddUpdatesHere =>
-    'The police will add updates about your case here';
+  @override
+  String get noUpdatesYet => 'No Updates Yet';
 
-@override
-String get uploadedDocuments => 'Uploaded Documents';
+  @override
+  String get policeWillAddUpdatesHere =>
+      'The police will add updates about your case here';
 
-@override
-String get proofDocuments => 'Proof Documents';
+  @override
+  String get uploadedDocuments => 'Uploaded Documents';
 
+  @override
+  String get proofDocuments => 'Proof Documents';
 
   @override
   // TODO: implement from
   String get from => 'from';
-  
+
   @override
   // TODO: implement to
   String get to => 'to';
 
   @override
-String get submitted => 'Submitted';
+  String get submitted => 'Submitted';
 
-@override
-String get Login_With => 'Login With';
+  @override
+  String get Login_With => 'Login With';
 
-@override
-String get draftSaved => 'Draft saved Successfully';
+  @override
+  String get draftSaved => 'Draft saved Successfully';
 
-@override
-String get failedToSaveDraft => 'Failed to save draft';
+  @override
+  String get failedToSaveDraft => 'Failed to save draft';
 
-@override
-String get draftSavedOn => 'Draft saved on';
+  @override
+  String get draftSavedOn => 'Draft saved on';
 
-@override
-String get draftDeleted => 'Draft deleted';
+  @override
+  String get draftDeleted => 'Draft deleted';
 
-@override
-String get draftDeletedOn => 'Draft deleted on';
+  @override
+  String get draftDeletedOn => 'Draft deleted on';
+
+  @override
+  String get whoIsComplaintFor => 'Who is this complaint for?';
+
+  @override
+  String get complaintForSelf => 'Complaint for Self';
+
+  @override
+  String get complaintForOthers => 'Complaint for Others';
 }

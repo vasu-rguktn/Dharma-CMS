@@ -9,11 +9,9 @@ import 'package:Dharma/screens/welcome_screen.dart';
 import 'package:Dharma/screens/PoliceAuth/police_login_screen.dart';
 import 'package:Dharma/screens/PoliceAuth/police_registration_screen.dart';
 
-
 // ───────────────── DASHBOARDS ─────────────────
 
 import 'package:Dharma/screens/police_dashboard_screen.dart';
-
 
 // ───────────────── FEATURES ─────────────────
 import 'package:Dharma/screens/cases_screen.dart';
@@ -34,12 +32,7 @@ import 'package:Dharma/screens/Investigation_Guidelines/AI_Investigation_Guideli
 import 'package:Dharma/screens/image_lab_screen.dart';
 import 'package:Dharma/screens/profile_screen.dart';
 
-
-
 // ───────────────── AI ─────────────────
-
-
-
 
 // ───────────────── PETITIONS ─────────────────
 import 'package:Dharma/screens/petition/petitions_screen.dart';
@@ -48,13 +41,10 @@ import 'package:Dharma/screens/petition/create_petition_form.dart';
 import 'package:Dharma/screens/petition/submit_offline_petition_screen.dart';
 import 'package:Dharma/screens/petition/offline_petitions_screen.dart';
 
-
-
-
 // ───────────────── UI ─────────────────
 import 'package:Dharma/widgets/app_scaffold.dart';
-
-
+import 'package:Dharma/screens/consent_pdf_viewer.dart';
+import 'package:Dharma/screens/privacy_policy_screen.dart';
 
 // ───────────────── ROUTER ─────────────────
 
@@ -74,6 +64,8 @@ class AppRouter {
         '/login',
         '/police-login',
         '/signup/police',
+        '/privacy',
+        '/terms',
       ];
 
       // List of routes that require authentication
@@ -208,7 +200,18 @@ class AppRouter {
         builder: (context, state) => const PoliceRegistrationScreen(),
       ),
 
+      GoRoute(
+        path: '/privacy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
 
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) => const ConsentPdfViewer(
+          assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
+          title: 'Terms of Service',
+        ),
+      ),
 
       // ───────────── PROTECTED ROUTES ─────────────
 
@@ -224,10 +227,6 @@ class AppRouter {
             path: '/police-dashboard',
             builder: (context, state) => const PoliceDashboardScreen(),
           ),
-
-
-
-
 
           // ─── POLICE-ONLY SCREENS (Protected, Police-only) ───
           GoRoute(
@@ -260,13 +259,13 @@ class AppRouter {
             builder: (context, state) {
               // Try to get caseId from query parameters first
               String? caseId = state.uri.queryParameters['caseId'];
-              
+
               // If not in query params, try to get from extra data
               if (caseId == null && state.extra != null) {
                 final extraData = state.extra as Map<String, dynamic>?;
                 caseId = extraData?['caseId'] as String?;
               }
-              
+
               return AiInvestigationGuidelinesScreen(caseId: caseId);
             },
           ),

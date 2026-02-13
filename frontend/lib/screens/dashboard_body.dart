@@ -56,10 +56,17 @@ class DashboardBody extends StatelessWidget {
           Text(localizations.quickActions,
               style: theme.textTheme.titleLarge?.copyWith(color: orange)),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: _citizenActions(context),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              mainAxisExtent: 130, // Fixed height for all boxes
+            ),
+            itemCount: _citizenActions(context).length,
+            itemBuilder: (context, index) => _citizenActions(context)[index],
           ),
 
           const SizedBox(height: 32),
@@ -210,42 +217,42 @@ class DashboardBody extends StatelessWidget {
   // ── QUICK ACTION CARD ──
   Widget _quickActionCard(BuildContext ctx, String title, IconData icon,
       String route, Color iconColor) {
-    return SizedBox(
-      width: (MediaQuery.of(ctx).size.width - 48) / 2,
-      child: Card(
-        elevation: 2,
-        child: InkWell(
-          onTap: () {
-            // Log this activity
-            Provider.of<ActivityProvider>(ctx, listen: false).logActivity(
-              title: title,
-              icon: icon,
-              route: route,
-              color: iconColor,
-            );
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: () {
+          // Log this activity
+          Provider.of<ActivityProvider>(ctx, listen: false).logActivity(
+            title: title,
+            icon: icon,
+            route: route,
+            color: iconColor,
+          );
 
-            print('🚀 [NAVIGATION] Pushing route: $route');
-            ctx.push(route).then((_) {
-              print('🔙 [NAVIGATION] Returned from: $route');
-            });
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Icon(icon, color: iconColor, size: 40),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(ctx)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+          print('🚀 [NAVIGATION] Pushing route: $route');
+          ctx.push(route).then((_) {
+            print('🔙 [NAVIGATION] Returned from: $route');
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(ctx)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            ],
           ),
         ),
       ),

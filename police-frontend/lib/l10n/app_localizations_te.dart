@@ -2006,4 +2006,10 @@ String get casesScreenSubtitle => 'మీకు సంబంధించిన F
 
   @override
   String get jurisdictionForFilingComplaint => 'ఫిర్యాదు దాఖలు చేయవలసిన పరిధి';
+
+  @override
+  String get iAgreeToThe => 'నేను అంగీకరిస్తున్నాను';
+
+  @override
+  String get termsAndConditions => 'నిబంధనలు మరియు షరతులు';
 }

@@ -6,14 +6,31 @@ import 'package:Dharma/l10n/app_localizations.dart';
 class LanguageSelectionDialog extends StatelessWidget {
   const LanguageSelectionDialog({super.key});
 
+  final List<Map<String, String>> languages = const [
+    {'code': 'en', 'name': 'English'},
+    {'code': 'te', 'name': 'తెలుగు'}, // Telugu
+    {'code': 'hi', 'name': 'हिंदी'}, // Hindi
+    {'code': 'mr', 'name': 'मराठी'}, // Marathi
+    {'code': 'ta', 'name': 'தமிழ்'}, // Tamil
+    {'code': 'kn', 'name': 'ಕನ್ನಡ'}, // Kannada
+    {'code': 'ml', 'name': 'മലയാളം'}, // Malayalam
+    {'code': 'gu', 'name': 'ગુજરાતી'}, // Gujarati
+    {'code': 'bn', 'name': 'বাংলা'}, // Bengali
+    {'code': 'pa', 'name': 'ਪੰਜਾਬੀ'}, // Punjabi
+    {'code': 'ur', 'name': 'اردو'}, // Urdu
+    {'code': 'or', 'name': 'ଓଡ଼ିଆ'}, // Odia
+    {'code': 'as', 'name': 'অসমীয়া'}, // Assamese
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    final settingsProvider =
+        Provider.of<SettingsProvider>(context, listen: false);
     final localizations = AppLocalizations.of(context)!;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.4, // 👈 50% height
-      maxChildSize: 0.4,
+      initialChildSize: 0.7, // Increased height
+      maxChildSize: 0.9,
       minChildSize: 0.4,
       builder: (context, scrollController) {
         return Container(
@@ -31,61 +48,57 @@ class LanguageSelectionDialog extends StatelessWidget {
               ),
             ],
           ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              children: [
-                const SizedBox(height: 14),
+          child: Column(
+            children: [
+              const SizedBox(height: 14),
 
-                // Drag handle
-                Container(
-                  width: 60,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[350],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+              // Drag handle
+              Container(
+                width: 60,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: Colors.grey[350],
+                  borderRadius: BorderRadius.circular(20),
                 ),
+              ),
 
-                const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
-                // Title
-                Text(
-                  localizations.language,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+              // Title
+              Text(
+                localizations.language,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                // Language buttons
-                Padding(
+              // Language buttons list
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 36),
-                  child: Column(
-                    children: [
-                      _LanguageButton(
-                        name: 'English',
-                        languageCode: 'en',
-                        isSelected: settingsProvider.locale?.languageCode == 'en',
-                        onTap: () => _selectLanguage(context, 'en'),
-                      ),
-                      const SizedBox(height:25),
-                      _LanguageButton(
-                        name: 'తెలుగు',
-                        languageCode: 'te',
-                        isSelected: settingsProvider.locale?.languageCode == 'te',
-                        onTap: () => _selectLanguage(context, 'te'),
-                      ),
-                    ],
-                  ),
+                  itemCount: languages.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final language = languages[index];
+                    return _LanguageButton(
+                      name: language['name']!,
+                      languageCode: language['code']!,
+                      isSelected: settingsProvider.locale?.languageCode ==
+                          language['code'],
+                      onTap: () => _selectLanguage(context, language['code']!),
+                    );
+                  },
                 ),
+              ),
 
-                const SizedBox(height: 20),
-              ],
-            ),
+              const SizedBox(height: 20),
+            ],
           ),
         );
       },

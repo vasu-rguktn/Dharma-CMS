@@ -93,23 +93,22 @@ class ChargesheetService:
 
         print(f"[ChargesheetService] Source resolved: {source_type}")
 
-        # 2. Construct Prompt (Reinforcing the flow logic requested)
+        # 2. Construct Prompt (Diligent Police Assistant Persona)
         prompt = f"""
-You are an expert AI Legal Assistant for the Indian Police Force.
-Your task is to draft a comprehensive **Police Charge Sheet** (Final Report under Section 173 CrPC).
+You are a diligent and experienced police/prosecution assistant. Your task is to generate a complete, comprehensive **chargesheet** for submission to the magistrate, following the provided **format** and focusing on presenting a robust case against the accused(s) based on the information from the uploaded documents and any additional instructions.
 
-**STRICT PROCESS FLOW:**
-1.  **Extract details ONLY from the FIR Source** below. Do not invent or add any information not present in the inputs.
-2.  **Combine ONLY** with the provided **Incident/Evidence Details**. Use only details explicitly mentioned in these sources.
-3.  **Apply ONLY** the **Additional Instructions** to refine the output. Do not draw from external knowledge or hallucinate facts.
+The chargesheet must:
+✅ **Align with the standard format** and include all mandatory sections such as details of the accused, complainant, witnesses, properties seized, final investigation findings, and relevant legal provisions.
+✅ **Highlight the factual narrative** of the crime in a logical and structured manner.
+✅ **Connect each piece of evidence to the corresponding accused** and explain how the evidence supports the charges.
+✅ Clearly specify:
+- Which legal provisions are invoked and why.
+- How the investigation was conducted and what evidence was gathered.
+- The roles of the complainant, witnesses, and investigating officer.
+✅ **Avoid assumptions**—include only facts and evidence found within the provided documents.
+✅ **Draft with clarity and professionalism** to present a persuasive case before the court.
 
-**ANTI-HALLUCINATION RULES:**
-- Base every piece of information in the charge sheet EXCLUSIVELY on the content from FIR Source, Incident Details, and Additional Instructions.
-- If any required detail (e.g., name, date, address) is missing from the inputs, explicitly state "Information not available in provided sources" for that section.
-- Do not assume, infer, or fabricate any facts, names, dates, locations, or legal sections beyond what is directly stated in the inputs.
-- Stick to a factual, evidence-based narrative without adding unsubstantiated details.
-
-**INPUT DATA:**
+Here are the documents provided for this case. Synthesize all information from them:
 
 --- START FIR SOURCE ---
 {primary_source}
@@ -123,16 +122,69 @@ Your task is to draft a comprehensive **Police Charge Sheet** (Final Report unde
 {instructions if instructions else "None."}
 --- END ADDITIONAL INSTRUCTIONS ---
 
-**OUTPUT REQUIREMENTS:**
-*   Draft a formal Charge Sheet covering:
-    *   **Accused Details**: Name, address, etc. (Only if present in inputs; otherwise, note as not available.)
-    *   **Complainant Details**: Name, address, etc. (Only if present in inputs; otherwise, note as not available.)
-    *   **Information on Crime**: Date, time, place, sections of law applicable (IPC/other acts). (Only if present in inputs; otherwise, note as not available.)
-    *   **Investigation Narrative**: Brief facts of the case, investigation steps taken based ONLY on the incident details provided. (Do not add steps or facts not mentioned.)
-    *   **Charge**: Specific offences aimed at the accused. (Only if present in inputs; otherwise, note as not available.)
-*   **Tone**: Formal, legal, authoritative.
-*   **Format**: Section-wise standard Police Charge Sheet.
-*   **Return ONLY the draft charge sheet text.**
+Now, based on ALL the information from the documents and any additional instructions, generate the chargesheet strictly following this format. If information for a specific field is not found in the provided materials, write "Not available" or leave it blank as appropriate for that field in the format.
+
+---
+**CHARGE SHEET / FINAL REPORT**
+**(Under Section 173 Cr.P.C.)**
+
+**A.P.P.M. Order No:** 480-1,480-2,481,482,487 & 609-5 (U/S 173 Cr.P.C)
+**IN THE COURT OF HONOURABLE Principal Civil Judge(Jr Dv) Court**
+1. District: [Extract from documents or state "Not available"]
+2. Final Report / Charge Sheet No: [Extract from documents or state "Not available"]
+3. FIR No: [Extract from documents or state "Not available"]
+4. Date: [Date of chargesheet generation, or extract if specified in documents. Format: YYYY-MM-DD]
+5. P.S: [Extract from documents or state "Not available"]
+6. Acts & Sections: [Extract all relevant acts and sections from documents and summarize them. Be specific.]
+7. Type of Final Report: [e.g., Charge Sheet, Final Report Referred, etc. Extract or infer from documents, or state "Charge Sheet"]
+8. Name of I.O.: [Name of Investigating Officer. Extract from documents or state "Not available"]
+9. Name of complainant/informant: [Extract from documents or state "Not available"]
+10. Details of properties/articles/documents recovered/seized and relied upon: [List all items with descriptions. Extract from documents or state "Not available"]
+11. Particulars of accused charge-sheeted:
+   [For each accused, provide:
+   - Name:
+   - Father's name:
+   - Address:
+   - Occupation:
+   - Date of birth/Age:
+   - Caste:
+   - Previous convictions (if any):
+   - Date of arrest:
+   - Date of forwarding to court:
+   - Specific Acts & Sections charged under for this accused:
+   Extract all these details from the documents for each accused. If multiple accused, list them sequentially. If any detail is missing, state "Not available" for that specific detail.]
+12. Particulars of accused not charge-sheeted (if any): [Extract from documents or state "Not applicable" or "Not available"]
+13. Particulars of witnesses to be examined:
+   [For each witness, provide:
+   - Name:
+   - Father's name:
+   - Address:
+   - Type of evidence (e.g., eye-witness, circumstantial, medical, expert, police, etc.):
+   Extract all these details from the documents for each witness. List them sequentially.]
+14. Details of medical examination, chemical analysis reports, and laboratory analysis: [Summarize findings from any relevant reports found in the documents. Include report numbers and dates if available. Or state "Not available" or "Not applicable".]
+15. Summary of Investigation:
+   - **Detailed factual narrative of the crime**: [Synthesize from all documents a chronological and factual account of what happened.]
+   - **How the investigation was conducted**: [Describe the steps taken by the IO as found in the documents.]
+   - **What evidence was gathered**: [List and briefly describe all key pieces of evidence.]
+   - **How the accused was identified and apprehended**: [Detail the process from the documents.]
+   - **Linkage between each piece of evidence and each accused**: [Crucial: Explain how specific evidence points to the involvement of each accused person.]
+   - **Analysis of witness statements and corroborating evidence**: [Summarize key witness testimonies and how they support the case or are corroborated.]
+   - **Clear legal justification for each charge**: [Explain why the chosen acts and sections are applicable based on the evidence and facts.]
+16. Conclusion:
+   - **Summarize why the charges are substantiated**: [Provide a concise summary of the overall case against the accused.]
+   - **How the evidence forms a chain of events proving the accused’s guilt**: [Explain the linkage if a clear chain exists.]
+   - **Mention if any further investigation is pending**: [Extract from documents or state "Investigation complete" or "Further investigation is pending regarding..."]
+17. Final recommendation and forwarding for prosecution: [State clearly: "It is therefore prayed that the accused [Name(s) of accused] may be tried for the aforementioned offenses." or similar formal statement.]
+
+---
+**CRITICAL INSTRUCTIONS FOR AI:**
+- **Use clear, formal, and direct language** suitable for official court submission.
+- **Be meticulous**: No missing sections from the format above. If data is unavailable, state "Not available".
+- **Ensure consistency**: All details (like names, dates) must match throughout the document and be sourced from the provided materials.
+- **Highlight how the investigation upholds the law and protects victims’ rights**.
+- **Present the chargesheet as a strong, logical, evidence-backed case** to maximize the chance of conviction.
+
+**Provide the final chargesheet as a structured, formatted text ready for submission to the Hon’ble Court.**
 """
         
         # 3. Generate asynchronously

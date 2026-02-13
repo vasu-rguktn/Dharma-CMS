@@ -11,12 +11,14 @@ load_dotenv()
 # Use the vetting-specific key, fallback to investigation key, then main key
 GEMINI_API_KEY = os.getenv("GEMINI_KEY_VETTING") or os.getenv("GEMINI_API_KEY_INVESTIGATION") or os.getenv("GEMINI_API_KEY")
 
-if not GEMINI_API_KEY:
-    print("CRITICAL: GEMINI_KEY_VETTING, GEMINI_API_KEY_INVESTIGATION, or GEMINI_API_KEY not found in env.")
-    raise RuntimeError("GEMINI_KEY_VETTING, GEMINI_API_KEY_INVESTIGATION, or GEMINI_API_KEY not found in environment variables")
+from loguru import logger
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_KEY_VETTING, GEMINI_API_KEY_INVESTIGATION, or GEMINI_API_KEY not found in env. Chargesheet vetting will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ───────────────── ROUTER ─────────────────
 router = APIRouter(
@@ -94,6 +96,8 @@ Please provide your vetting suggestions now:
 
         # Call Gemini API
         try:
+            if model is None:
+                raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
             response = model.generate_content(prompt)
         except Exception as gemini_error:
             error_msg = str(gemini_error)
@@ -136,3 +140,37 @@ Please provide your vetting suggestions now:
             status_code=500,
             detail=f"Charge sheet vetting failed: {str(e)}"
         )
+
+from fastapi.responses import StreamingResponse
+import io
+from docx import Document
+from fastapi import Form
+
+@router.post("/download-docx")
+async def download_vetting_docx(
+    vettingText: str = Form(...)
+):
+    try:
+        doc = Document()
+        doc.add_heading('CHARGESHEET VETTING REPORT', 0)
+        
+        # Split by newlines and add paragraphs
+        for line in vettingText.split('\n'):
+            if line.strip():
+                doc.add_paragraph(line)
+            else:
+                doc.add_paragraph("") # maintain spacing
+            
+        byte_io = io.BytesIO()
+        doc.save(byte_io)
+        byte_io.seek(0)
+        
+        return StreamingResponse(
+            byte_io,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": "attachment; filename=vetting_report.docx"}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"DOCX generation failed: {str(e)}")

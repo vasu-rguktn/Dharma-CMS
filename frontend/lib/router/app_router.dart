@@ -43,6 +43,8 @@ import 'package:Dharma/widgets/app_scaffold.dart';
 // ───────────────── ONBOARDING ─────────────────
 import 'package:Dharma/screens/onboarding/onboarding_screen.dart';
 import 'package:Dharma/services/onboarding_service.dart';
+import 'package:Dharma/screens/consent_pdf_viewer.dart';
+import 'package:Dharma/screens/privacy_policy_screen.dart';
 
 // ───────────────── ROUTER ─────────────────
 
@@ -66,6 +68,8 @@ class AppRouter {
         '/login_details',
         '/otp_verification',
         '/onboarding',
+        '/privacy',
+        '/terms',
       ];
 
       // Citizen routes that require authentication
@@ -147,6 +151,19 @@ class AppRouter {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+
+      GoRoute(
+        path: '/privacy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) => const ConsentPdfViewer(
+          assetPath: 'assets/Data/Dharma_Citizen_Consent.pdf',
+          title: 'Terms of Service',
+        ),
       ),
 
       // ───────────── PROTECTED ROUTES ─────────────

@@ -95,10 +95,7 @@ class MyApp extends StatelessWidget {
             themeMode: ThemeMode.light,
             routerConfig: AppRouter.router,
             locale: settingsProvider.locale,
-            supportedLocales: const [
-              Locale('en'),
-              Locale('te'),
-            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,

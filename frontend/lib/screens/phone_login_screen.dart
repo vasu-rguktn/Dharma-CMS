@@ -294,7 +294,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 
 // Fix name conflict: your own AuthProvider (not the one from firebase_auth)
 import 'package:Dharma/providers/auth_provider.dart' as MyAuth;
-import 'package:Dharma/screens/consent_pdf_viewer.dart';
+// import 'package:Dharma/screens/consent_pdf_viewer.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
   const PhoneLoginScreen({super.key});
@@ -431,7 +431,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
       setState(() => _isSendOtpDisabled = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed: $e', maxLines: 4, overflow: TextOverflow.ellipsis),
+          content:
+              Text('Failed: $e', maxLines: 4, overflow: TextOverflow.ellipsis),
           duration: const Duration(seconds: 5),
         ),
       );
@@ -474,10 +475,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
         );
         // Go to dashboard first
         context.go('/dashboard');
-        
+
         // Check if onboarding is needed
         final showOnboarding = await OnboardingService.shouldShowOnboarding();
-        
+
         // Only push AI chat if onboarding is NOT needed (returning user)
         if (!showOnboarding) {
           // Wait a moment for dashboard to load, then push to AI chat
@@ -529,15 +530,15 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Responsive header height: smaller on small screens
     final headerHeight = (screenHeight * 0.25).clamp(180.0, 250.0);
     final logoSize = (headerHeight * 0.45).clamp(80.0, 120.0);
-    
+
     // Responsive PIN field dimensions
     final pinFieldHeight = (screenWidth * 0.12).clamp(45.0, 58.0);
     final pinFieldWidth = (screenWidth * 0.11).clamp(40.0, 50.0);
-    final localizations = AppLocalizations.of(context)!;
+    // final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Column(
@@ -580,7 +581,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
                   left: 0,
                   right: 0,
                   bottom: 10,
-                  child: Image.asset('assets/police_logo.png', height: logoSize),
+                  child:
+                      Image.asset('assets/police_logo.png', height: logoSize),
                 ),
               ],
             ),
@@ -590,187 +592,218 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
 
           Expanded(
             child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.loginWithPhone,
-                      style: TextStyle(
-                        fontSize: (screenWidth * 0.075).clamp(24.0, 32.0),
-                        fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.loginWithPhone,
+                    style: TextStyle(
+                      fontSize: (screenWidth * 0.075).clamp(24.0, 32.0),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.025),
+
+                  // Phone Number
+                  if (!_otpSent)
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: _inputDecoration(
+                        AppLocalizations.of(context)!.mobileNumber,
+                        prefixText: '+91 ',
                       ),
                     ),
-                    SizedBox(height: screenHeight * 0.025),
 
-                    // Phone Number
-                    if (!_otpSent)
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: _inputDecoration(
-                          AppLocalizations.of(context)!.mobileNumber,
-                          prefixText: '+91 ',
+                  // OTP PIN Field - Responsive sizing
+                  if (_otpSent)
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.02,
+                          ),
+                          child: PinCodeTextField(
+                            appContext: context,
+                            length: 6,
+                            controller: _otpController,
+                            autoFocus: true,
+                            keyboardType: TextInputType.number,
+                            textStyle: TextStyle(
+                              fontSize:
+                                  (pinFieldHeight * 0.35).clamp(16.0, 20.0),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            pinTheme: PinTheme(
+                              shape: PinCodeFieldShape.box,
+                              borderRadius: BorderRadius.circular(8),
+                              fieldHeight: pinFieldHeight,
+                              fieldWidth: pinFieldWidth,
+                              activeFillColor: Colors.white,
+                              selectedFillColor: Colors.white,
+                              inactiveFillColor: Colors.white,
+                              activeColor: const Color(0xFFFC633C),
+                              selectedColor: const Color(0xFFFC633C),
+                              inactiveColor: Colors.grey.shade300,
+                            ),
+                            enableActiveFill: true,
+                            onChanged: (_) {},
+                            onCompleted: (_) => _verifyOtp(),
+                          ),
                         ),
                       ),
+                    ),
 
-                    // OTP PIN Field - Responsive sizing
-                    if (_otpSent)
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.02,
-                        ),
-                        child: PinCodeTextField(
-                          appContext: context,
-                          length: 6,
-                          controller: _otpController,
-                          autoFocus: true,
-                          keyboardType: TextInputType.number,
-                          textStyle: TextStyle(
-                            fontSize: (pinFieldHeight * 0.35).clamp(16.0, 20.0),
-                            fontWeight: FontWeight.bold,
-                          ),
-                          pinTheme: PinTheme(
-                            shape: PinCodeFieldShape.box,
-                            borderRadius: BorderRadius.circular(8),
-                            fieldHeight: pinFieldHeight,
-                            fieldWidth: pinFieldWidth,
-                            activeFillColor: Colors.white,
-                            selectedFillColor: Colors.white,
-                            inactiveFillColor: Colors.white,
+                  SizedBox(height: screenHeight * 0.03),
+
+                  // Consent Checkbox
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _isConsentAccepted,
                             activeColor: const Color(0xFFFC633C),
-                            selectedColor: const Color(0xFFFC633C),
-                            inactiveColor: Colors.grey.shade300,
-                          ),
-                          enableActiveFill: true,
-                          onChanged: (_) {},
-                          onCompleted: (_) => _verifyOtp(),
-                        ),
-                      ),
-
-                    SizedBox(height: screenHeight * 0.03),
-
-                    // Consent Checkbox
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _isConsentAccepted,
-                          activeColor: const Color(0xFFFC633C),
-                          onChanged: (val) {
-                            setState(() => _isConsentAccepted = val ?? false);
-                          },
-                        ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              // Open PDF Viewer
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ConsentPdfViewer(
-                                    assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
-                                    title: localizations.termsAndConditions,
-                                  ),
-                                ),
-                              );
+                            onChanged: (val) {
+                              setState(() => _isConsentAccepted = val ?? false);
                             },
-                            child: RichText(
-                              text: TextSpan(
-                                text: '${AppLocalizations.of(context)!.iAgreeToThe} ',
-                                style: const TextStyle(color: Colors.black, fontSize: 14),
-                                children: [
-                                  TextSpan(
-                                    text: '${AppLocalizations.of(context)!.termsAndConditions}',
-                                    style: const TextStyle(
-                                      color: Color(0xFFFC633C),
-                                      fontWeight: FontWeight.bold,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    // Main Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: (_isLoading || (!_otpSent && _isSendOtpDisabled))
-                            ? null
-                            : () {
-                                if (!_isConsentAccepted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Please accept the Terms & Conditions')),
-                                  );
-                                  return;
-                                }
-                                if (_otpSent) {
-                                  _verifyOtp();
-                                } else {
-                                  _sendOtp();
-                                }
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                // Handled by TextSpans
                               },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: (!_otpSent && _isSendOtpDisabled)
-                              ? Colors.grey
-                              : const Color(0xFFFC633C),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              )
-                            : Text(
-                                _otpSent
-                                    ? AppLocalizations.of(context)!.verifyOtp
-                                    : AppLocalizations.of(context)!.sendOtp,
-                                style: TextStyle(
-                                  fontSize: (screenWidth * 0.05).clamp(18.0, 22.0),
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                              child: RichText(
+                                text: TextSpan(
+                                  text:
+                                      '${AppLocalizations.of(context)!.iAgreeToThe} ',
+                                  style: const TextStyle(
+                                      color: Colors.black, fontSize: 13),
+                                  children: [
+                                    WidgetSpan(
+                                      child: GestureDetector(
+                                        onTap: () => context.push('/terms'),
+                                        child: Text(
+                                          '${AppLocalizations.of(context)!.termsAndConditions}',
+                                          style: const TextStyle(
+                                            color: Color(0xFFFC633C),
+                                            fontWeight: FontWeight.bold,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const TextSpan(text: ' & '),
+                                    WidgetSpan(
+                                      child: GestureDetector(
+                                        onTap: () => context.push('/privacy'),
+                                        child: Text(
+                                          '${AppLocalizations.of(context)!.privacyPolicy}',
+                                          style: const TextStyle(
+                                            color: Color(0xFFFC633C),
+                                            fontWeight: FontWeight.bold,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-
-                    // Resend Timer
-                    if (_otpSent) ...[
-                      SizedBox(height: screenHeight * 0.02),
-                      _countdown > 0
-                          ? Text(
-                              'Resend in $_countdown sec',
-                              style: const TextStyle(color: Colors.grey),
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  // Main Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed:
+                          (_isLoading || (!_otpSent && _isSendOtpDisabled))
+                              ? null
+                              : () {
+                                  if (!_isConsentAccepted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Please accept the Terms & Conditions')),
+                                    );
+                                    return;
+                                  }
+                                  if (_otpSent) {
+                                    _verifyOtp();
+                                  } else {
+                                    _sendOtp();
+                                  }
+                                },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: (!_otpSent && _isSendOtpDisabled)
+                            ? Colors.grey
+                            : const Color(0xFFFC633C),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
                             )
-                          : TextButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () => _sendOtp(isResend: true),
-                              child: Text(
-                                AppLocalizations.of(context)!.resendOtp,
-                                style: const TextStyle(color: Color(0xFFFC633C)),
+                          : Text(
+                              _otpSent
+                                  ? AppLocalizations.of(context)!.verifyOtp
+                                  : AppLocalizations.of(context)!.sendOtp,
+                              style: TextStyle(
+                                fontSize:
+                                    (screenWidth * 0.05).clamp(18.0, 22.0),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
                             ),
-                    ],
-
-                    SizedBox(height: screenHeight * 0.03),
-                    TextButton(
-                      onPressed: () => context.go('/login'),
-                      child: Text(AppLocalizations.of(context)!.backToEmailLogin),
                     ),
+                  ),
+
+                  // Resend Timer
+                  if (_otpSent) ...[
                     SizedBox(height: screenHeight * 0.02),
+                    _countdown > 0
+                        ? Text(
+                            'Resend in $_countdown sec',
+                            style: const TextStyle(color: Colors.grey),
+                          )
+                        : TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => _sendOtp(isResend: true),
+                            child: Text(
+                              AppLocalizations.of(context)!.resendOtp,
+                              style: const TextStyle(color: Color(0xFFFC633C)),
+                            ),
+                          ),
                   ],
-                ),
+
+                  SizedBox(height: screenHeight * 0.03),
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: Text(AppLocalizations.of(context)!.backToEmailLogin),
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }

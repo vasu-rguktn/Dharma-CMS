@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -625,8 +626,114 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
           String? selectedSubStatus = petition.policeSubStatus;
           bool loading = false;
 
+          // State variables for translation (Moved OUTSIDE StatefulBuilder to persist state)
+          Map<String, String>? translatedContent;
+          bool isTranslating = false;
+          String currentLanguage = 'English'; // Default assumption
+
           return StatefulBuilder(
             builder: (context, setModal) {
+              Future<void> translatePetition(String targetLang) async {
+                if (currentLanguage == targetLang &&
+                    translatedContent != null) {
+                  return; // Already in this language
+                }
+
+                // If switching back to original (assuming original is English for now, or just clearing translation)
+                // Actually, since we don't know original language, best to translate always or keep original if same.
+                // Let's assume we always translate for now to ensure consistency.
+
+                try {
+                  setModal(() => isTranslating = true);
+
+                  final auth =
+                      Provider.of<AuthProvider>(context, listen: false);
+                  final token = await auth.user?.getIdToken();
+
+                  // Construct backend URL (Handle Android Emulator)
+                  String baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
+                  try {
+                    if (!kIsWeb && Platform.isAndroid) {
+                      baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
+                    }
+                  } catch (e) {
+                    // Ignore platform check errors (e.g. on web if not handled by kIsWeb guard properly)
+                  }
+
+                  final response = await http.post(
+                    Uri.parse('$baseUrl/api/ai/translate/petition'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer $token',
+                    },
+                    body: jsonEncode({
+                      'title': petition.title,
+                      'grounds': petition.grounds,
+                      'prayerRelief': petition.prayerRelief ?? '',
+                      'incidentAddress': petition.incidentAddress ?? '',
+                      'address': petition.address ?? '', // Petitioner Address
+                      'petitionType': petition.type.displayName,
+                      'status': petition.status.displayName,
+                      'petitionerName': petition.petitionerName,
+                      'district': petition.district ?? '',
+                      'stationName': petition.stationName ?? '',
+                      'targetLanguage': targetLang,
+                    }),
+                  );
+
+                  if (response.statusCode == 200) {
+                    final jsonResponse = jsonDecode(response.body);
+                    setModal(() {
+                      translatedContent = {
+                        'title':
+                            jsonResponse['title']?.toString() ?? petition.title,
+                        'grounds': jsonResponse['grounds']?.toString() ??
+                            petition.grounds,
+                        'prayerRelief':
+                            jsonResponse['prayerRelief']?.toString() ??
+                                petition.prayerRelief ??
+                                '',
+                        'incidentAddress':
+                            jsonResponse['incidentAddress']?.toString() ??
+                                petition.incidentAddress ??
+                                '',
+                        'address': jsonResponse['address']?.toString() ??
+                            petition.address ??
+                            '',
+                        'petitionType':
+                            jsonResponse['petitionType']?.toString() ??
+                                petition.type.displayName,
+                        'status': jsonResponse['status']?.toString() ??
+                            petition.status.displayName,
+                        'petitionerName':
+                            jsonResponse['petitionerName']?.toString() ??
+                                petition.petitionerName,
+                        'district': jsonResponse['district']?.toString() ??
+                            petition.district ??
+                            '',
+                        'stationName':
+                            jsonResponse['stationName']?.toString() ??
+                                petition.stationName ??
+                                '',
+                      };
+                      currentLanguage = targetLang;
+                      isTranslating = false;
+                    });
+                  } else {
+                    throw Exception(
+                        'Backend error: ${response.statusCode} - ${response.body}');
+                  }
+                } catch (e) {
+                  debugPrint('Translation error: $e');
+                  setModal(() => isTranslating = false);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Translation failed: $e')),
+                    );
+                  }
+                }
+              }
+
               return SingleChildScrollView(
                 controller: controller,
                 padding: const EdgeInsets.all(24),
@@ -634,12 +741,93 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
-                            petition.title,
+                            translatedContent?['title'] ?? petition.title,
                             style: const TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        // Translation Controls (Enhanced UI)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.translate,
+                                  size: 16, color: Colors.grey.shade700),
+                              const SizedBox(width: 6),
+                              if (isTranslating)
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 8),
+                                  child: SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                ),
+
+                              // English Button
+                              InkWell(
+                                onTap: isTranslating
+                                    ? null
+                                    : () => translatePetition('English'),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  child: Text(
+                                    'En',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: currentLanguage == 'English'
+                                          ? Colors.blue.shade700
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              Container(
+                                height: 16,
+                                width: 1,
+                                color: Colors.grey.shade300,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                              ),
+
+                              // Telugu Button
+                              InkWell(
+                                onTap: isTranslating
+                                    ? null
+                                    : () => translatePetition('Telugu'),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  child: Text(
+                                    'తె',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: currentLanguage == 'Telugu'
+                                          ? Colors.orange.shade700
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         IconButton(
@@ -660,9 +848,15 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     const SizedBox(height: 12),
 
                     _buildDetailRow('Petition ID', petition.id ?? '-'),
-                    _buildDetailRow('Petition Type', petition.type.displayName),
+                    _buildDetailRow(
+                        'Petition Type',
+                        translatedContent?['petitionType'] ??
+                            petition.type.displayName),
                     _buildDetailRow('Status', petition.status.displayName),
-                    _buildDetailRow('Petitioner Name', petition.petitionerName),
+                    _buildDetailRow(
+                        'Petitioner Name',
+                        translatedContent?['petitionerName'] ??
+                            petition.petitionerName),
                     _buildDetailRow(
                       'Phone Number',
                       petition.phoneNumber == null
@@ -673,17 +867,24 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                     ),
                     if (petition.address != null &&
                         petition.address!.isNotEmpty)
-                      _buildDetailRow('Address', petition.address!),
+                      _buildDetailRow('Address',
+                          translatedContent?['address'] ?? petition.address!),
                     if (petition.district != null &&
                         petition.district!.isNotEmpty)
-                      _buildDetailRow('District', petition.district!),
+                      _buildDetailRow('District',
+                          translatedContent?['district'] ?? petition.district!),
                     if (petition.stationName != null &&
                         petition.stationName!.isNotEmpty)
-                      _buildDetailRow('Police Station', petition.stationName!),
+                      _buildDetailRow(
+                          'Police Station',
+                          translatedContent?['stationName'] ??
+                              petition.stationName!),
                     if (petition.incidentAddress != null &&
                         petition.incidentAddress!.isNotEmpty)
                       _buildDetailRow(
-                          'Incident Address', petition.incidentAddress!),
+                          'Incident Address',
+                          translatedContent?['incidentAddress'] ??
+                              petition.incidentAddress!),
                     if (petition.incidentDate != null)
                       _buildDetailRow('Incident Date',
                           _formatTimestamp(petition.incidentDate!)),
@@ -712,7 +913,7 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                           border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: Text(
-                          petition.grounds,
+                          translatedContent?['grounds'] ?? petition.grounds,
                           style: const TextStyle(fontSize: 14),
                         ),
                       ),
@@ -737,7 +938,8 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                           border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: Text(
-                          petition.prayerRelief!,
+                          translatedContent?['prayerRelief'] ??
+                              petition.prayerRelief!,
                           style: const TextStyle(fontSize: 14),
                         ),
                       ),
