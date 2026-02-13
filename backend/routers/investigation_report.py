@@ -10,12 +10,12 @@ from pydantic import BaseModel, Field
 
 import google.generativeai as genai
 
-try:
-    GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
-except KeyError as exc:  # Fail fast in production if not configured
-    raise RuntimeError("GEMINI_API_KEY environment variable is required for investigation report generation") from exc
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-genai.configure(api_key=GEMINI_API_KEY)
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY not set. Investigation report generation will fail at runtime.")
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 router = APIRouter(prefix="/api", tags=["investigation-report"])
 
@@ -149,6 +149,9 @@ Now draft the full Investigation Report as per the mandatory sections above.
 
 
 def _generate_report_text_with_gemini(payload: GenerateInvestigationReportRequest) -> str:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured. Investigation report generation disabled.")
+    
     prompt = _build_investigation_prompt(payload)
     logger.info("Calling Gemini API for investigation report generation")
     try:

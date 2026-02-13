@@ -225,7 +225,7 @@ class SettingsScreen extends StatelessWidget {
                     title: Text(localizations.privacyPolicy),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Handle privacy policy
+                      context.push('/privacy');
                     },
                   ),
                   const Divider(height: 1),
@@ -234,7 +234,7 @@ class SettingsScreen extends StatelessWidget {
                     title: Text(localizations.termsOfService),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Handle terms of service
+                      context.push('/terms');
                     },
                   ),
                   // Reset Onboarding (Visible to all for testing)

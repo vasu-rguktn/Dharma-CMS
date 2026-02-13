@@ -6,6 +6,7 @@ import 'package:Dharma/providers/case_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/models/case_doc.dart';
 import 'package:Dharma/models/case_journal_entry.dart';
+import 'package:Dharma/models/case_status.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -90,7 +91,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
   Future<void> _loadProfileAndFetch() async {
     final auth = context.read<AuthProvider>();
-    
+
     if (auth.role == 'police') {
       final policeProvider = context.read<PoliceAuthProvider>();
       await policeProvider.loadPoliceProfileIfLoggedIn();
@@ -140,7 +141,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   Future<void> _fetchData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final caseProvider = Provider.of<CaseProvider>(context, listen: false);
-    
+
     String? targetDistrict;
     String? targetStation;
 
@@ -148,7 +149,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       // 1. Station Level: Must filter by assigned station
       if (_isStationLevel() && _policeStation != null) {
         targetStation = _policeStation;
-        targetDistrict = _policeDistrict; 
+        targetDistrict = _policeDistrict;
       }
       // 2. District Level (SP, ASP):
       else if (_districtLevelRanks.contains(_policeRank)) {
@@ -156,7 +157,7 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
         if (_selectedStation != null) {
           targetStation = _selectedStation;
           targetDistrict = _selectedDistrict ?? _policeDistrict;
-        } 
+        }
         // Otherwise, filter by their district (SHOW ALL STATIONS IN DISTRICT)
         else {
           targetStation = null; // Important: Clear station filter
@@ -167,14 +168,14 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       else if (_rangeLevelRanks.contains(_policeRank)) {
         if (_selectedStation != null) {
           targetStation = _selectedStation;
-          targetDistrict = _selectedDistrict; 
+          targetDistrict = _selectedDistrict;
         } else if (_selectedDistrict != null) {
           targetStation = null;
           targetDistrict = _selectedDistrict;
         } else if (_policeRange != null) {
           // Fallback to no filter essentially, or filtered by range if backend supported it
           targetStation = null;
-          targetDistrict = null; 
+          targetDistrict = null;
         }
       }
       // 4. State Level (DGP):
@@ -189,12 +190,13 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       }
       // Fallback
       else {
-         targetStation = _selectedStation;
-         targetDistrict = _selectedDistrict ?? _policeDistrict;
+        targetStation = _selectedStation;
+        targetDistrict = _selectedDistrict ?? _policeDistrict;
       }
     }
 
-    print('📖 [JOURNAL] Fetching with District=$targetDistrict, Station=$targetStation');
+    print(
+        '📖 [JOURNAL] Fetching with District=$targetDistrict, Station=$targetStation');
     await caseProvider.fetchCases(
       userId: auth.user?.uid,
       isAdmin: auth.role == 'police',
@@ -213,14 +215,14 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   bool _canFilterByDistrict() {
     if (_policeRank == null) return false;
     return _stateLevelRanks.contains(_policeRank) ||
-           _rangeLevelRanks.contains(_policeRank);
+        _rangeLevelRanks.contains(_policeRank);
   }
 
   bool _canFilterByStation() {
     if (_policeRank == null) return false;
     return _stateLevelRanks.contains(_policeRank) ||
-           _rangeLevelRanks.contains(_policeRank) ||
-           _districtLevelRanks.contains(_policeRank);
+        _rangeLevelRanks.contains(_policeRank) ||
+        _districtLevelRanks.contains(_policeRank);
   }
 
   bool _isStationLevel() {
@@ -231,8 +233,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
   List<String> _getAvailableRanges() => _policeHierarchy.keys.toList();
 
   List<String> _getAvailableDistricts() {
-    if (_selectedRange != null) return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
-    if (_policeRange != null) return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
+    if (_selectedRange != null)
+      return _policeHierarchy[_selectedRange]?.keys.toList() ?? [];
+    if (_policeRange != null)
+      return _policeHierarchy[_policeRange]?.keys.toList() ?? [];
     return [];
   }
 
@@ -242,10 +246,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
     if (targetRange == null && targetDistrict != null) {
       for (var range in _policeHierarchy.keys) {
-         if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
-           targetRange = range;
-           break;
-         }
+        if (_policeHierarchy[range]?.containsKey(targetDistrict) ?? false) {
+          targetRange = range;
+          break;
+        }
       }
     }
 
@@ -308,7 +312,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.errorLoadingJournal(e.toString())),
+            content: Text(AppLocalizations.of(context)!
+                .errorLoadingJournal(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -331,7 +336,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
     if (authProvider.user?.uid != entry.officerUid) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(localizations.errorAddingEntry('You can only edit your own entries')),
+          content: Text(localizations
+              .errorAddingEntry('You can only edit your own entries')),
           backgroundColor: Colors.red,
         ),
       );
@@ -348,7 +354,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) {
           Future<void> pickFiles() async {
-            final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+            final result =
+                await FilePicker.platform.pickFiles(allowMultiple: true);
             if (result != null) {
               setState(() {
                 newFiles = result.files;
@@ -357,7 +364,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
           }
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('Edit journal entry'),
             content: SingleChildScrollView(
               child: Column(
@@ -367,7 +375,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     value: selectedActivity,
                     decoration: InputDecoration(
                       labelText: localizations.activityType,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     items: [
                       localizations.firRegistered,
@@ -379,7 +388,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                       localizations.documentSubmitted,
                       localizations.hearingAttended,
                       localizations.other,
-                    ].map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                    ]
+                        .map((type) =>
+                            DropdownMenuItem(value: type, child: Text(type)))
+                        .toList(),
                     onChanged: (value) => selectedActivity = value!,
                   ),
                   const SizedBox(height: 16),
@@ -389,7 +401,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     decoration: InputDecoration(
                       labelText: localizations.entryDetails,
                       hintText: localizations.entryDetailsHint,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       filled: true,
                       fillColor: Colors.grey[50],
                     ),
@@ -420,7 +433,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         Flexible(
                           child: Text(
                             '${newFiles.length} new file(s) selected',
-                            style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                            style: TextStyle(
+                                color: Colors.grey[700], fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -431,7 +445,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+                onPressed:
+                    isSubmitting ? null : () => Navigator.pop(dialogContext),
                 child: Text(localizations.cancel),
               ),
               ElevatedButton(
@@ -441,7 +456,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     : () async {
                         if (entryController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(localizations.pleaseEnterEntryDetails), backgroundColor: Colors.red),
+                            SnackBar(
+                                content:
+                                    Text(localizations.pleaseEnterEntryDetails),
+                                backgroundColor: Colors.red),
                           );
                           return;
                         }
@@ -450,9 +468,11 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           setState(() => isSubmitting = true);
 
                           // Upload any newly added files and append to existing URLs
-                          List<String> allUrls = List<String>.from(entry.attachmentUrls ?? []);
-                          print('[DEBUG] Base URLs before merge: ${allUrls.length}');
-                          
+                          List<String> allUrls =
+                              List<String>.from(entry.attachmentUrls ?? []);
+                          print(
+                              '[DEBUG] Base URLs before merge: ${allUrls.length}');
+
                           if (newFiles.isNotEmpty) {
                             final timestamp = DateTime.now()
                                 .toString()
@@ -460,20 +480,23 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                 .first
                                 .replaceAll(':', '-')
                                 .replaceAll(' ', '_');
-                            final folderPath = 'case_journal/${entry.caseId}/entries/$timestamp';
-                            final newUrls = await StorageService.uploadMultipleFiles(
+                            final folderPath =
+                                'case_journal/${entry.caseId}/entries/$timestamp';
+                            final newUrls =
+                                await StorageService.uploadMultipleFiles(
                               files: newFiles,
                               folderPath: folderPath,
                             );
 
                             if (newUrls.isEmpty) {
-                               throw Exception("Upload failed: No files were successfully uploaded.");
+                              throw Exception(
+                                  "Upload failed: No files were successfully uploaded.");
                             }
-                            
+
                             allUrls.addAll(newUrls);
                             print('[DEBUG] New URLs added: ${newUrls.length}');
                           }
-                          
+
                           print('[DEBUG] Final Update URLs: ${allUrls.length}');
 
                           await FirebaseFirestore.instance
@@ -518,7 +541,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : Text(localizations.save),
@@ -543,7 +567,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) {
           Future<void> pickFiles() async {
-            final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+            final result =
+                await FilePicker.platform.pickFiles(allowMultiple: true);
             if (result != null) {
               setState(() {
                 selectedFiles = result.files;
@@ -552,7 +577,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
           }
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text(localizations.addJournalEntry),
             content: SingleChildScrollView(
               child: Column(
@@ -562,7 +588,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     value: selectedActivity,
                     decoration: InputDecoration(
                       labelText: localizations.activityType,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     items: [
                       localizations.firRegistered,
@@ -574,7 +601,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                       localizations.documentSubmitted,
                       localizations.hearingAttended,
                       localizations.other,
-                    ].map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                    ]
+                        .map((type) =>
+                            DropdownMenuItem(value: type, child: Text(type)))
+                        .toList(),
                     onChanged: (value) => selectedActivity = value!,
                   ),
                   const SizedBox(height: 16),
@@ -584,7 +614,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     decoration: InputDecoration(
                       labelText: localizations.entryDetails,
                       hintText: localizations.entryDetailsHint,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       filled: true,
                       fillColor: Colors.grey[50],
                     ),
@@ -618,7 +649,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         Flexible(
                           child: Text(
                             '${selectedFiles.length} file(s) selected',
-                            style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                            style: TextStyle(
+                                color: Colors.grey[700], fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -629,7 +661,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+                onPressed:
+                    isSubmitting ? null : () => Navigator.pop(dialogContext),
                 child: Text(localizations.cancel),
               ),
               ElevatedButton(
@@ -639,7 +672,10 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                     : () async {
                         if (entryController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(localizations.pleaseEnterEntryDetails), backgroundColor: Colors.red),
+                            SnackBar(
+                                content:
+                                    Text(localizations.pleaseEnterEntryDetails),
+                                backgroundColor: Colors.red),
                           );
                           return;
                         }
@@ -655,22 +691,28 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                 .first
                                 .replaceAll(':', '-')
                                 .replaceAll(' ', '_');
-                            final folderPath = 'case_journal/$_selectedCaseId/entries/$timestamp';
-                            attachmentUrls = await StorageService.uploadMultipleFiles(
+                            final folderPath =
+                                'case_journal/$_selectedCaseId/entries/$timestamp';
+                            attachmentUrls =
+                                await StorageService.uploadMultipleFiles(
                               files: selectedFiles,
                               folderPath: folderPath,
                             );
 
                             if (attachmentUrls.isEmpty) {
-                               throw Exception("Upload failed: No files were successfully uploaded. Please check your connection or try again.");
+                              throw Exception(
+                                  "Upload failed: No files were successfully uploaded. Please check your connection or try again.");
                             }
                           }
 
                           final entry = CaseJournalEntry(
                             caseId: _selectedCaseId!,
                             officerUid: authProvider.user!.uid,
-                            officerName: authProvider.userProfile?.displayName ?? 'Officer',
-                            officerRank: authProvider.userProfile?.rank ?? 'N/A',
+                            officerName:
+                                authProvider.userProfile?.displayName ??
+                                    'Officer',
+                            officerRank:
+                                authProvider.userProfile?.rank ?? 'N/A',
                             dateTime: Timestamp.now(),
                             entryText: entryController.text.trim(),
                             activityType: selectedActivity,
@@ -680,18 +722,36 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           await FirebaseFirestore.instance
                               .collection('caseJournalEntries')
                               .add(entry.toMap());
+
+                          // AUTO-UPDATE CASE STATUS: If case is New, move to Under Investigation
+                          final caseProvider =
+                              Provider.of<CaseProvider>(context, listen: false);
+                          final currentCase = caseProvider.cases
+                              .firstWhere((c) => c.id == _selectedCaseId);
+                          if (currentCase.status == CaseStatus.newCase) {
+                            await caseProvider.updateCaseStatus(
+                                _selectedCaseId!,
+                                CaseStatus.underInvestigation);
+                          }
+
                           Navigator.pop(dialogContext);
                           await _fetchJournalEntries(_selectedCaseId!);
 
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(localizations.journalEntryAddedSuccess), backgroundColor: Colors.green),
+                              SnackBar(
+                                  content: Text(
+                                      localizations.journalEntryAddedSuccess),
+                                  backgroundColor: Colors.green),
                             );
                           }
                         } catch (e) {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(localizations.errorAddingEntry(e.toString())), backgroundColor: Colors.red),
+                              SnackBar(
+                                  content: Text(localizations
+                                      .errorAddingEntry(e.toString())),
+                                  backgroundColor: Colors.red),
                             );
                           }
                         } finally {
@@ -706,7 +766,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : Text(localizations.addEntry),
@@ -767,13 +828,15 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
     return evidence;
   }
 
-  Future<void> _generateInvestigationReport({required bool finaliseWithOverride}) async {
+  Future<void> _generateInvestigationReport(
+      {required bool finaliseWithOverride}) async {
     final caseProvider = Provider.of<CaseProvider>(context, listen: false);
 
     if (_selectedCaseId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select a case to generate the investigation report.'),
+          content: Text(
+              'Please select a case to generate the investigation report.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -807,7 +870,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
     try {
       final firPayload = _buildFirPayload(selectedCase);
-      final journalPayload = _journalEntries.map(_buildJournalEntryPayload).toList();
+      final journalPayload =
+          _journalEntries.map(_buildJournalEntryPayload).toList();
       final evidenceList = _deriveEvidenceList();
 
       final Map<String, dynamic> requestBody = {
@@ -909,7 +973,12 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         Icons.arrow_back_rounded,
                         color: orange,
                         size: 32,
-                        shadows: const [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))],
+                        shadows: const [
+                          Shadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: Offset(0, 2))
+                        ],
                       ),
                     ),
                   ),
@@ -917,7 +986,11 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                   Expanded(
                     child: Text(
                       localizations.caseJournal,
-                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87, letterSpacing: -0.3),
+                      style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          letterSpacing: -0.3),
                     ),
                   ),
                 ],
@@ -929,7 +1002,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
               padding: const EdgeInsets.fromLTRB(56, 0, 24, 24),
               child: Text(
                 localizations.caseJournalDesc,
-                style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.4),
+                style: TextStyle(
+                    fontSize: 15, color: Colors.grey[700], height: 1.4),
               ),
             ),
 
@@ -941,8 +1015,9 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // HIERARCHY FILTERS (Only for Police)
-                    if (Provider.of<AuthProvider>(context).role == 'police' && !_hierarchyLoading)
-                       Container(
+                    if (Provider.of<AuthProvider>(context).role == 'police' &&
+                        !_hierarchyLoading)
+                      Container(
                         margin: const EdgeInsets.only(bottom: 24),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -955,7 +1030,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.security, size: 20, color: Colors.blue.shade900),
+                                Icon(Icons.security,
+                                    size: 20, color: Colors.blue.shade900),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Jurisdiction Filter',
@@ -968,7 +1044,6 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            
                             if (_canFilterByRange()) ...[
                               _buildFilterDropdown(
                                 label: 'Range',
@@ -978,7 +1053,6 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               ),
                               const SizedBox(height: 8),
                             ],
-
                             if (_canFilterByDistrict()) ...[
                               _buildFilterDropdown(
                                 label: 'District',
@@ -988,7 +1062,6 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               ),
                               const SizedBox(height: 8),
                             ],
-
                             if (_canFilterByStation()) ...[
                               _buildFilterDropdown(
                                 label: 'Station',
@@ -997,23 +1070,24 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                 onChanged: _onStationChanged,
                               ),
                             ],
-                            
                             if (_isStationLevel() && _policeStation != null)
                               Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(
-                                  'Station: $_policeStation', 
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  'Station: $_policeStation',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600),
                                 ),
                               ),
                           ],
                         ),
-                       ),
+                      ),
 
                     // Case Selector Card
                     Card(
                       elevation: 6,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       child: Padding(
                         padding: const EdgeInsets.all(20),
                         child: Column(
@@ -1021,27 +1095,36 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.folder_open_rounded, color: orange, size: 28),
+                                Icon(Icons.folder_open_rounded,
+                                    color: orange, size: 28),
                                 const SizedBox(width: 12),
-                                Text(localizations.selectCase, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                Text(localizations.selectCase,
+                                    style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold)),
                               ],
                             ),
                             const SizedBox(height: 20),
                             if (caseProvider.cases.isEmpty)
-                              Text(localizations.noCasesAvailable, style: TextStyle(color: Colors.grey[600]))
+                              Text(localizations.noCasesAvailable,
+                                  style: TextStyle(color: Colors.grey[600]))
                             else
                               DropdownButtonFormField<String>(
                                 value: _selectedCaseId,
                                 isExpanded: true,
                                 decoration: InputDecoration(
-                                  hintText: localizations.chooseCaseToViewJournal,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  hintText:
+                                      localizations.chooseCaseToViewJournal,
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                   filled: true,
                                   fillColor: Colors.grey[50],
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
                                 ),
                                 selectedItemBuilder: (BuildContext context) {
-                                  return caseProvider.cases.map<Widget>((caseDoc) {
+                                  return caseProvider.cases
+                                      .map<Widget>((caseDoc) {
                                     return Text(
                                       '${caseDoc.firNumber} - ${caseDoc.title}',
                                       maxLines: 1,
@@ -1061,7 +1144,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                   );
                                 }).toList(),
                                 onChanged: (value) {
-                                  if (value != null) _fetchJournalEntries(value);
+                                  if (value != null)
+                                    _fetchJournalEntries(value);
                                 },
                               ),
                           ],
@@ -1098,7 +1182,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.open_in_new),
                                     tooltip: localizations.openCaseDetails,
-                                    onPressed: () => context.go('/cases/$_selectedCaseId'),
+                                    onPressed: () =>
+                                        context.go('/cases/$_selectedCaseId'),
                                   ),
                                 ],
                               ),
@@ -1123,11 +1208,16 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                               height: 18,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                        Color>(Colors.white),
                                               ),
                                             )
-                                          : const Icon(Icons.description_rounded, size: 20),
-                                      label: const Text('Generate Court Document'),
+                                          : const Icon(
+                                              Icons.description_rounded,
+                                              size: 20),
+                                      label:
+                                          const Text('Generate Court Document'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: orange,
                                         foregroundColor: Colors.white,
@@ -1136,7 +1226,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                           vertical: 12,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
                                     ),
@@ -1157,13 +1248,15 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                       ),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: orange,
-                                        side: BorderSide(color: orange.withOpacity(0.5)),
+                                        side: BorderSide(
+                                            color: orange.withOpacity(0.5)),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 12,
                                           vertical: 12,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
                                     ),
@@ -1174,7 +1267,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
 
                               if (_isLoading)
                                 const Center(
-                                  child: CircularProgressIndicator(color: orange),
+                                  child:
+                                      CircularProgressIndicator(color: orange),
                                 )
                               else if (_journalEntries.isEmpty)
                                 Padding(
@@ -1196,7 +1290,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                       ),
                                       Text(
                                         localizations.noJournalEntriesDesc,
-                                        style: TextStyle(color: Colors.grey[600]),
+                                        style:
+                                            TextStyle(color: Colors.grey[600]),
                                         textAlign: TextAlign.center,
                                       ),
                                     ],
@@ -1213,7 +1308,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                       const SizedBox(height: 24),
                       Card(
                         elevation: 6,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -1221,12 +1317,15 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.gavel_rounded, color: orange, size: 28),
+                                  Icon(Icons.gavel_rounded,
+                                      color: orange, size: 28),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       'Investigation Report Draft',
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ],
@@ -1237,16 +1336,21 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.orange[50],
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.orange[200]!),
+                                  border:
+                                      Border.all(color: Colors.orange[200]!),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+                                    const Icon(Icons.info_outline,
+                                        size: 18, color: Colors.orange),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         'AI-generated draft – Verified by Investigating Officer',
-                                        style: TextStyle(color: Colors.orange[800], fontSize: 13, fontWeight: FontWeight.w600),
+                                        style: TextStyle(
+                                            color: Colors.orange[800],
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                   ],
@@ -1255,7 +1359,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 'Review and edit the draft before finalising and generating the court PDF.',
-                                style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                                style: TextStyle(
+                                    color: Colors.grey[700], fontSize: 14),
                               ),
                               const SizedBox(height: 12),
                               SizedBox(
@@ -1265,11 +1370,14 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                   maxLines: null,
                                   expands: true,
                                   decoration: InputDecoration(
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                     filled: true,
                                     fillColor: Colors.grey[50],
                                   ),
-                                  style: const TextStyle(fontSize: 14, height: 1.4),
+                                  style: const TextStyle(
+                                      fontSize: 14, height: 1.4),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -1279,7 +1387,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                     onPressed: _isSavingFinalReport
                                         ? null
                                         : () {
-                                            _generateInvestigationReport(finaliseWithOverride: true);
+                                            _generateInvestigationReport(
+                                                finaliseWithOverride: true);
                                           },
                                     icon: _isSavingFinalReport
                                         ? const SizedBox(
@@ -1287,16 +1396,23 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                             height: 18,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
                                             ),
                                           )
-                                        : const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                                        : const Icon(
+                                            Icons.picture_as_pdf_rounded,
+                                            size: 20),
                                     label: const Text('Confirm & Generate PDF'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: orange,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -1304,12 +1420,15 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                                     OutlinedButton.icon(
                                       onPressed: () async {
                                         // Resolve relative URLs (e.g. "/static/reports/...") against the FastAPI backend.
-                                        final String resolvedUrl = _finalPdfUrl!.startsWith('http')
+                                        final String resolvedUrl = _finalPdfUrl!
+                                                .startsWith('http')
                                             ? _finalPdfUrl!
                                             : 'https://fastapi-app-335340524683.asia-south1.run.app$_finalPdfUrl';
 
                                         final url = Uri.parse(resolvedUrl);
-                                        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                                        if (!await launchUrl(url,
+                                            mode: LaunchMode
+                                                .externalApplication)) {
                                           debugPrint('Could not open $url');
                                         }
                                       },
@@ -1394,7 +1513,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
             Expanded(
               child: Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1420,7 +1540,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
                                 color: orange.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
@@ -1438,13 +1559,17 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(entry.entryText, style: const TextStyle(height: 1.5)),
+                      Text(entry.entryText,
+                          style: const TextStyle(height: 1.5)),
                       const SizedBox(height: 16),
                       Row(
                         children: [
                           Icon(Icons.person, size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 6),
-                          Text(entry.officerName, style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                          Text(entry.officerName,
+                              style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500)),
                           const Spacer(),
                           IconButton(
                             icon: const Icon(Icons.edit, size: 18),
@@ -1457,7 +1582,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                          Icon(Icons.access_time,
+                              size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 6),
                           Text(
                             'Created: ${_formatTimestamp(entry.dateTime)}',
@@ -1469,7 +1595,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.edit_calendar, size: 16, color: Colors.grey[600]),
+                            Icon(Icons.edit_calendar,
+                                size: 16, color: Colors.grey[600]),
                             const SizedBox(width: 6),
                             Text(
                               'Edited: ${_formatTimestamp(entry.modifiedAt!)}',
@@ -1482,9 +1609,11 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                            Icon(Icons.info_outline,
+                                size: 16, color: Colors.blue[700]),
                             const SizedBox(width: 6),
-                            Text('Ref: ${entry.relatedDocumentId}', style: TextStyle(color: Colors.blue[700])),
+                            Text('Ref: ${entry.relatedDocumentId}',
+                                style: TextStyle(color: Colors.blue[700])),
                           ],
                         ),
                       ],
@@ -1495,13 +1624,17 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                           spacing: 8,
                           runSpacing: 4,
                           children: [
-                            for (int i = 0; i < entry.attachmentUrls!.length; i++)
+                            for (int i = 0;
+                                i < entry.attachmentUrls!.length;
+                                i++)
                               ActionChip(
                                 avatar: const Icon(Icons.attach_file, size: 16),
                                 label: Text('Document ${i + 1}'),
                                 onPressed: () async {
-                                  final url = Uri.parse(entry.attachmentUrls![i]);
-                                  if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                                  final url =
+                                      Uri.parse(entry.attachmentUrls![i]);
+                                  if (!await launchUrl(url,
+                                      mode: LaunchMode.externalApplication)) {
                                     debugPrint('Could not open $url');
                                   }
                                 },
@@ -1622,7 +1755,8 @@ class _CaseJournalScreenState extends State<CaseJournalScreen> {
                 value ?? 'All $label',
                 style: TextStyle(
                   color: value == null ? Colors.grey.shade600 : Colors.black,
-                  fontWeight: value == null ? FontWeight.normal : FontWeight.bold,
+                  fontWeight:
+                      value == null ? FontWeight.normal : FontWeight.bold,
                 ),
               ),
             ),

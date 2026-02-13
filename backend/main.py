@@ -23,6 +23,8 @@ from routers.legal_suggestions import router as legal_suggester_router
 from routers.image_lab.person_router import router as person_router
 from routers.chargesheet_vetting import router as chargesheet_vetting_router
 from routers.document_relevance import router as document_relevance_router
+from routers.chatbot_summary_pdf import router as chatbot_summary_pdf_router
+from routers.media_analysis import router as media_analysis_router
 
 
 # Initialize Firebase Admin SDK
@@ -104,7 +106,10 @@ app.include_router(person_router)
 app.include_router(chargesheet_vetting_router)
 from routers.cases import router as cases_router
 app.include_router(cases_router)
+app.include_router(cases_router)
 app.include_router(document_relevance_router)
+app.include_router(chatbot_summary_pdf_router)
+app.include_router(media_analysis_router)
 
 from routers.case_lookup import router as case_lookup_router
 app.include_router(case_lookup_router)
@@ -114,6 +119,9 @@ app.include_router(fcm_router)
 
 from routers.petition_updates import router as petition_updates_router
 app.include_router(petition_updates_router)
+
+from routers.ai_translation import router as ai_translation_router
+app.include_router(ai_translation_router)
 
 
 @app.get("/")

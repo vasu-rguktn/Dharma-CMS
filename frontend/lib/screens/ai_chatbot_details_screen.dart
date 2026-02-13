@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:http/http.dart' as http;
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:dio/dio.dart';
+
+import 'package:flutter/foundation.dart'; // for kIsWeb
 
 class AiChatbotDetailsScreen extends StatefulWidget {
   final Map<String, String> answers;
@@ -55,6 +62,181 @@ class AiChatbotDetailsScreen extends StatefulWidget {
 
 class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
   bool _isSavingDraft = false;
+  bool _isGeneratingQr = false;
+
+  Future<void> _generateQrCode() async {
+    setState(() {
+      _isGeneratingQr = true;
+    });
+
+    try {
+      // 1. Prepare data payload
+      // We need to match ChatbotSummaryRequest in backend
+      final payload = {
+        "answers": widget.answers,
+        "summary": widget.summary,
+        "classification": widget.classification,
+        // "originalReportId": widget.draftId // Optional
+      };
+
+    
+
+      // String baseUrl = "http://127.0.0.1:8000"; // Default for local web
+      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      //   // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
+      //   // baseUrl = "http://10.0.2.2:8000";
+      //   baseUrl = "http://10.5.40.156:8000";
+      // }
+
+      // Override if we can find a better source later.
+      // But effectively, let's try to use the `dio` from `AuthProvider` if it exposes it? No.
+      String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app"; // Default for local web
+
+      final dio = Dio();
+      final response = await dio.post(
+        '$baseUrl/api/generate-chatbot-summary-pdf',
+        data: payload,
+      );
+
+      if (response.statusCode == 200) {
+        final pdfRelativeUrl = response.data['pdf_url'];
+        final fullPdfUrl = '$baseUrl$pdfRelativeUrl';
+
+        if (mounted) {
+          _showQrDialog(fullPdfUrl);
+        }
+      } else {
+        throw Exception("Failed to generate PDF: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error generating QR: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to generate QR code: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingQr = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _printPdf(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => response.bodyBytes,
+          name: 'Chatbot_Summary.pdf',
+        );
+      } else {
+        throw Exception(
+            "Failed to fetch PDF for printing: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error printing PDF: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to print PDF: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _generateAndPrint() async {
+    setState(() {
+      _isGeneratingQr = true;
+    });
+
+    try {
+      final payload = {
+        "answers": widget.answers,
+        "summary": widget.summary,
+        "classification": widget.classification,
+      };
+
+      String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      //   // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
+      //   // Since we can't easily detect physical device, defaulting to LAN IP for now
+      //   // baseUrl = "http://10.0.2.2:8000";
+      //   baseUrl = "http://10.5.40.156:8000";
+      // }
+
+      final dio = Dio();
+      final response = await dio.post(
+        '$baseUrl/api/generate-chatbot-summary-pdf',
+        data: payload,
+      );
+
+      if (response.statusCode == 200) {
+        final pdfRelativeUrl = response.data['pdf_url'];
+        final fullPdfUrl = '$baseUrl$pdfRelativeUrl';
+
+        if (mounted) {
+          await _printPdf(fullPdfUrl);
+        }
+      } else {
+        throw Exception("Failed to generate PDF: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error generating for print: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to generate PDF for printing: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingQr = false;
+        });
+      }
+    }
+  }
+
+  void _showQrDialog(String data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Scan to Download Summary"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 200,
+              height: 200,
+              child: QrImageView(
+                data: data,
+                version: QrVersions.auto,
+                size: 200.0,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Scan this QR code with another device to view and download the PDF summary.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              data,
+              style: const TextStyle(fontSize: 10, color: Colors.blue),
+            )
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _saveDraft() async {
     if (widget.chatData == null) {
@@ -290,7 +472,40 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
               child: Text(widget.classification,
                   style: const TextStyle(fontSize: 15)),
             ),
-            const SizedBox(height: 28),
+            Center(
+              child: _isGeneratingQr
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      children: [
+                        TextButton.icon(
+                          onPressed: _generateQrCode,
+                          icon: const Icon(Icons.qr_code),
+                          label: const Text("Generate QR Code for PDF"),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFFC633C),
+                          ),
+                        ),
+                        // Add Print Button if we have something to print or as a shortcut
+                        // For now, let's make it easy to print the summary
+                        TextButton.icon(
+                          onPressed: () async {
+                            // If we already have the QR dialog showing or if we want to trigger generation first
+                            // Ideally we might want to cache the fullPdfUrl
+                            // For now, let's just trigger generation or use a placeholder if we haven't generated yet
+                            // BUT wait, let's check if fullPdfUrl is stored. It's not.
+                            // Let's refactor _generateQrCode slightly to return the URL or store it.
+                            _generateAndPrint();
+                          },
+                          icon: const Icon(Icons.print),
+                          label: const Text("Print PDF Summary"),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFFC633C),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

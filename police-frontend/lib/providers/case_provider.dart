@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:Dharma/models/case_doc.dart';
-import 'package:dio/dio.dart';
+import 'package:Dharma/models/case_status.dart';
 
 class CaseProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -56,10 +56,10 @@ class CaseProvider with ChangeNotifier {
       // DIRECT FIRESTORE WRITE: Bypassing API due to server error (500)
       // This ensures the case is created immediately in the database.
       // Note: Backend side-effects (like PDF generation) might be skipped until the API is fixed.
-      
+
       final docRef = await _firestore.collection('cases').add(caseDoc.toMap());
       debugPrint('✅ Case created in Firestore with ID: ${docRef.id}');
-      
+
       await fetchCases();
 
       /* 
@@ -116,6 +116,19 @@ class CaseProvider with ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       debugPrint('Error updating case: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateCaseStatus(String caseId, CaseStatus newStatus) async {
+    try {
+      await updateCase(caseId, {
+        'status': newStatus.displayName,
+        'lastUpdated': Timestamp.now(),
+      });
+      debugPrint('✅ Case $caseId status updated to: ${newStatus.displayName}');
+    } catch (e) {
+      debugPrint('❌ Error updating case status: $e');
       rethrow;
     }
   }

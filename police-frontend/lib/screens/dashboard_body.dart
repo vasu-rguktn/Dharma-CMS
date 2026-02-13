@@ -64,11 +64,25 @@ class DashboardBody extends StatelessWidget {
           Text(localizations.quickActions,
               style: theme.textTheme.titleLarge?.copyWith(color: orange)),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children:
-                isPolice ? _policeActions(context) : _citizenActions(context),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+              final actions =
+                  isPolice ? _policeActions(context) : _citizenActions(context);
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  mainAxisExtent: 130, // Fixed height for all boxes
+                ),
+                itemCount: actions.length,
+                itemBuilder: (context, index) => actions[index],
+              );
+            },
           ),
 
           const SizedBox(height: 32),
@@ -110,14 +124,24 @@ class DashboardBody extends StatelessWidget {
 
     // Define all cards
     final cards = [
-      _statCard(ctx, localizations.totalPetitions, '${stats['total']}', Icons.gavel, Colors.deepPurple, PetitionFilter.all),
-      _statCard(ctx, localizations.received, '${stats['received']}', Icons.call_received, Colors.blue.shade700, PetitionFilter.received),
-      _statCard(ctx, localizations.inProgress, '${stats['inProgress']}', Icons.sync, Colors.orange.shade700, PetitionFilter.inProgress),
-      _statCard(ctx, localizations.closed, '${stats['closed']}', Icons.task_alt, Colors.green.shade700, PetitionFilter.closed),
+      _statCard(ctx, localizations.totalPetitions, '${stats['total']}',
+          Icons.gavel, Colors.deepPurple, PetitionFilter.all),
+      _statCard(ctx, localizations.received, '${stats['received']}',
+          Icons.call_received, Colors.blue.shade700, PetitionFilter.received),
+      _statCard(ctx, localizations.inProgress, '${stats['inProgress']}',
+          Icons.sync, Colors.orange.shade700, PetitionFilter.inProgress),
+      _statCard(ctx, localizations.closed, '${stats['closed']}', Icons.task_alt,
+          Colors.green.shade700, PetitionFilter.closed),
     ];
 
     if (isPolice) {
-      cards.add(_statCard(ctx, localizations.escalated, '${stats['escalated'] ?? 0}', Icons.report_problem, Colors.red.shade700, PetitionFilter.escalated));
+      cards.add(_statCard(
+          ctx,
+          localizations.escalated,
+          '${stats['escalated'] ?? 0}',
+          Icons.report_problem,
+          Colors.red.shade700,
+          PetitionFilter.escalated));
     }
 
     return LayoutBuilder(
@@ -130,7 +154,8 @@ class DashboardBody extends StatelessWidget {
               final card = entry.value;
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: index < cards.length - 1 ? 12.0 : 0),
+                  padding: EdgeInsets.only(
+                      right: index < cards.length - 1 ? 12.0 : 0),
                   child: card,
                 ),
               );
@@ -234,43 +259,42 @@ class DashboardBody extends StatelessWidget {
   // ── QUICK ACTION CARD ──
   Widget _quickActionCard(BuildContext ctx, String title, IconData icon,
       String route, Color iconColor) {
-    return SizedBox(
-      width: (MediaQuery.of(ctx).size.width - 48) / 2,
-      child: Card(
-        elevation: 2,
-        child: InkWell(
-          onTap: () {
-            // Log this activity
-            Provider.of<ActivityProvider>(ctx, listen: false).logActivity(
-              title: title,
-              icon: icon,
-              route: route,
-              color: iconColor,
-            );
-            
-            print('🚀 [NAVIGATION] Pushing route: $route');
-            ctx.push(route).then((_) {
-              print('🔙 [NAVIGATION] Returned from: $route');
-            });
-          },
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: () {
+          // Log this activity
+          Provider.of<ActivityProvider>(ctx, listen: false).logActivity(
+            title: title,
+            icon: icon,
+            route: route,
+            color: iconColor,
+          );
 
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Icon(icon, color: iconColor, size: 40),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(ctx)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+          print('🚀 [NAVIGATION] Pushing route: $route');
+          ctx.push(route).then((_) {
+            print('🔙 [NAVIGATION] Returned from: $route');
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center, // Center icon and text
+            children: [
+              Icon(icon, color: iconColor, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(ctx)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            ],
           ),
         ),
       ),
@@ -301,12 +325,12 @@ class DashboardBody extends StatelessWidget {
   // ── POLICE QUICK ACTIONS ──
   List<Widget> _policeActions(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
-    
+
     // Get police rank to check if officer can submit offline petitions
     final auth = Provider.of<AuthProvider>(ctx, listen: false);
     final policeProfile = auth.userProfile;
     final policeRank = policeProfile?.rank;
-    
+
     // Ranks eligible for offline petition submission
     final spLevelRanks = [
       'Superintendent of Police',
@@ -316,9 +340,10 @@ class DashboardBody extends StatelessWidget {
       'Director General of Police',
       'Additional Director General of Police',
     ];
-    
-    final canSubmitOffline = policeRank != null && spLevelRanks.contains(policeRank);
-    
+
+    final canSubmitOffline =
+        policeRank != null && spLevelRanks.contains(policeRank);
+
     final actions = [
       _quickActionCard(ctx, localizations.documentDrafting, Icons.edit_document,
           '/document-drafting', Colors.green),
@@ -344,12 +369,12 @@ class DashboardBody extends StatelessWidget {
       _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
           '/complaints', Colors.orange.shade700),
 
-      _quickActionCard(
-          ctx, localizations.imageLab, Icons.camera_alt, '/image-lab', Colors.deepPurple),
-      _quickActionCard(
-          ctx, localizations.addPolice, Icons.person_add, '/signup/police', Colors.blueGrey.shade700),
+      _quickActionCard(ctx, localizations.imageLab, Icons.camera_alt,
+          '/image-lab', Colors.deepPurple),
+      _quickActionCard(ctx, localizations.addPolice, Icons.person_add,
+          '/signup/police', Colors.blueGrey.shade700),
     ];
-    
+
     // Add offline petition submission if officer is SP-level or above
     if (canSubmitOffline) {
       actions.insert(
@@ -362,7 +387,7 @@ class DashboardBody extends StatelessWidget {
           Colors.teal.shade600,
         ),
       );
-      
+
       // Add Offline Petitions (Sent & Assigned) button for high-level officers
       actions.insert(
         1, // Add right after Submit Offline Petition
@@ -388,13 +413,12 @@ class DashboardBody extends StatelessWidget {
       );
     }
 
-    
     return actions;
   }
 
-
   // ── RECENT ACTIVITY SECTION ──
-  Widget _buildRecentActivitySection(BuildContext ctx, ActivityProvider provider) {
+  Widget _buildRecentActivitySection(
+      BuildContext ctx, ActivityProvider provider) {
     return Consumer<ActivityProvider>(
       builder: (context, activityProvider, _) {
         final displayItems = activityProvider.activities.take(3).toList();
@@ -421,7 +445,7 @@ class DashboardBody extends StatelessWidget {
 
   Widget _userActivityCard(BuildContext ctx, UserActivity activity) {
     final theme = Theme.of(ctx);
-    
+
     return Container(
       width: MediaQuery.of(ctx).size.width * 0.7,
       margin: const EdgeInsets.only(right: 12),
@@ -484,7 +508,6 @@ class DashboardBody extends StatelessWidget {
     );
   }
 
-
   Widget _noActivityCard(BuildContext ctx) {
     final localizations = AppLocalizations.of(ctx)!;
     return Card(
@@ -525,7 +548,7 @@ class DashboardBody extends StatelessWidget {
 
   String _getLocalizedActivityTitle(BuildContext context, String title) {
     final localizations = AppLocalizations.of(context)!;
-    
+
     // Map activity titles to localization keys
     switch (title) {
       case "AI Chat":

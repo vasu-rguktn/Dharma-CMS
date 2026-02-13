@@ -2027,4 +2027,10 @@ String get casesScreenSubtitle => 'Manage and view details of FIRs / Cases you a
 
   @override
   String get jurisdictionForFilingComplaint => 'Jurisdiction for Filing Complaint';
+
+  @override
+  String get iAgreeToThe => 'I agree to the';
+
+  @override
+  String get termsAndConditions => 'Terms and Conditions';
 }

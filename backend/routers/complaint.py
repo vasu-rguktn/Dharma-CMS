@@ -2071,9 +2071,10 @@ INFORMATION:
             localized_fields['incident_address'] = short_incident # Keep consistent
             
             # Add Police Station fields to localized_fields to ensure availability in frontend
-            localized_fields['selected_police_station'] = safe_utf8(n_data.get("selected_police_station"))
-            localized_fields['police_station_reason'] = safe_utf8(n_data.get("police_station_reason"))
-            localized_fields['station_confidence'] = safe_utf8(n_data.get("station_confidence"))
+            # Ensure they are strings (empty if None) to satisfy Dict[str, str]
+            localized_fields['selected_police_station'] = safe_utf8(n_data.get("selected_police_station")) or ""
+            localized_fields['police_station_reason'] = safe_utf8(n_data.get("police_station_reason")) or ""
+            localized_fields['station_confidence'] = safe_utf8(n_data.get("station_confidence")) or ""
             
             # Extract incident_date from LLM response
             incident_date_str = n_data.get("incident_date", "")
@@ -2106,7 +2107,8 @@ INFORMATION:
                 raw_conversation=safe_utf8(transcript), # DIRECT TRANSCRIPT (No static Qs)
                 timestamp=get_timestamp(),
                 # localized_fields=localized_fields,
-                localized_fields={k: safe_utf8(v) for k, v in localized_fields.items()},
+                # Ensure all values are strings (no None)
+                localized_fields={k: (safe_utf8(v) or "") for k, v in localized_fields.items()},
                 incident_details=safe_utf8(narrative),
                 incident_address=None,
                 incident_date=incident_date_str if incident_date_str else None,  # Add incident date

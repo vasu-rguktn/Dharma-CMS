@@ -9,7 +9,7 @@ aiofiles
 google-cloud-speech
 google-cloud-storage
 reportlab
-numpy
+numpy<2.0.0
 opencv-python-headless
 Pillow
 ultralytics==8.3.240
@@ -30,3 +30,4 @@ chromadb>=0.4.0
 sentence-transformers
 requests
 httpx>=0.23.0
+python-docx

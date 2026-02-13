@@ -1201,25 +1201,25 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Determine base URL robustly
     // Determine base URL robustly
     String baseUrl;
-     // if (kIsWeb) {
-    //   // on web you probably want to call your absolute backend URL
-    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    // } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    //   // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    // } else {
-    //   // iOS simulator / other platforms
-    //   baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    // }
-    if (kIsWeb) {
-      baseUrl = "http://127.0.0.1:8000";
-    } else if (Platform.isAndroid) {
-      // Android Emulator uses 10.0.2.2 to access host localhost
-      baseUrl = "http://10.0.2.2:8000";
+     if (kIsWeb) {
+      // on web you probably want to call your absolute backend URL
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     } else {
-      // iOS Simulator and others
-      baseUrl = "http://127.0.0.1:8000";
+      // iOS simulator / other platforms
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     }
+    // if (kIsWeb) {
+    //   baseUrl = "http://127.0.0.1:8000";
+    // } else if (Platform.isAndroid) {
+    //   // Android Emulator uses 10.0.2.2 to access host localhost
+    //   baseUrl = "http://10.0.2.2:8000";
+    // } else {
+    //   // iOS Simulator and others
+    //   baseUrl = "http://127.0.0.1:8000";
+    // }
     final settings = context.read<SettingsProvider>();
     final localeCode = settings.chatLanguageCode ??
         settings.locale?.languageCode ??

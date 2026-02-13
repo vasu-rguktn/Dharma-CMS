@@ -78,6 +78,7 @@ dependencies:
   
   # PDF Generation
   pdf: ^3.10.7
+  printing: ^5.11.0
   
   # Notifications
   fluttertoast: ^8.2.4
@@ -97,6 +98,7 @@ dependencies:
   
   # Onboarding
   smooth_page_indicator: ^1.1.0
+  syncfusion_flutter_pdfviewer: ^32.1.25
 
 dev_dependencies:
   flutter_test:
@@ -136,6 +138,7 @@ flutter:
     - assets/DyCM.png
     - assets/HomeMinister.jpg
     - assets/env.txt
+    - assets/data/Dharma_Citizen_Consent.pdf
 
 
 

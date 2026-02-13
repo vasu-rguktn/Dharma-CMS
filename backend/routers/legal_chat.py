@@ -11,13 +11,16 @@ from services.legal_rag import rag_enabled, retrieve_context
 
 # ---------------- LOAD ENV ----------------
 load_dotenv()
+from loguru import logger
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
 
 if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not set")
-
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+    logger.warning("GEMINI_API_KEY_INVESTIGATION not set. Legal Chat will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ---------------- ROUTER ----------------
 router = APIRouter(
@@ -251,6 +254,9 @@ async def legal_chat(
 
     try:
         # 4️⃣ Generate Answer with Gemini
+        if model is None:
+            raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
+
         answer_response = model.generate_content(content_to_send)
 
         reply = answer_response.text.strip() if answer_response.text else "I apologize, but I couldn't generate a response. Please try again."

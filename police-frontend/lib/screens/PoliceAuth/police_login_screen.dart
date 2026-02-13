@@ -20,6 +20,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
 
   bool _obscureText = true;
   bool _isLoading = false;
+  bool _isConsentAccepted = false;
 
   static const Color orange = Color(0xFFFC633C);
 
@@ -37,7 +38,8 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.policeLoginSuccessful)),
+        SnackBar(
+            content: Text(AppLocalizations.of(context)!.policeLoginSuccessful)),
       );
 
       // ✅ Navigate to police dashboard
@@ -85,7 +87,8 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                         final email = emailController.text.trim();
                         if (email.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please enter your email")),
+                            const SnackBar(
+                                content: Text("Please enter your email")),
                           );
                           return;
                         }
@@ -181,8 +184,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
           // 🔐 FORM
           Expanded(
             child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -200,10 +202,11 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration:
-                          _inputDecoration(AppLocalizations.of(context)!.email, Icons.email),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? AppLocalizations.of(context)!.pleaseEnterEmail : null,
+                      decoration: _inputDecoration(
+                          AppLocalizations.of(context)!.email, Icons.email),
+                      validator: (v) => v == null || v.isEmpty
+                          ? AppLocalizations.of(context)!.pleaseEnterEmail
+                          : null,
                     ),
 
                     const SizedBox(height: 20),
@@ -213,7 +216,8 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                       controller: _passwordController,
                       obscureText: _obscureText,
                       decoration: _inputDecoration(
-                              AppLocalizations.of(context)!.password, Icons.lock)
+                              AppLocalizations.of(context)!.password,
+                              Icons.lock)
                           .copyWith(
                         suffixIcon: IconButton(
                           icon: Icon(_obscureText
@@ -223,8 +227,9 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                               setState(() => _obscureText = !_obscureText),
                         ),
                       ),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? AppLocalizations.of(context)!.passwordEmpty : null,
+                      validator: (v) => v == null || v.isEmpty
+                          ? AppLocalizations.of(context)!.passwordEmpty
+                          : null,
                     ),
 
                     Align(
@@ -244,12 +249,68 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
 
                     const SizedBox(height: 10),
 
+                    // Consent Checkbox
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _isConsentAccepted,
+                          activeColor: orange,
+                          onChanged: (val) {
+                            setState(() => _isConsentAccepted = val ?? false);
+                          },
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              text:
+                                  '${AppLocalizations.of(context)!.iAgreeToThe} ',
+                              style: const TextStyle(
+                                  color: Colors.black, fontSize: 13),
+                              children: [
+                                WidgetSpan(
+                                  child: GestureDetector(
+                                    onTap: () => context.push('/terms'),
+                                    child: Text(
+                                      '${AppLocalizations.of(context)!.termsAndConditions}',
+                                      style: const TextStyle(
+                                        color: orange,
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const TextSpan(text: ' & '),
+                                WidgetSpan(
+                                  child: GestureDetector(
+                                    onTap: () => context.push('/privacy'),
+                                    child: Text(
+                                      '${AppLocalizations.of(context)!.privacyPolicy}',
+                                      style: const TextStyle(
+                                        color: orange,
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
                     // Login Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed:
-                            _isLoading ? null : _loginPolice,
+                        onPressed: (_isLoading || !_isConsentAccepted)
+                            ? null
+                            : _loginPolice,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: orange,
                           padding: const EdgeInsets.symmetric(vertical: 18),

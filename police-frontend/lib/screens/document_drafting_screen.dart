@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:Dharma/utils/file_downloader/file_downloader.dart';
 
@@ -26,10 +27,12 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
 
   // Use 10.0.2.2 for Android emulator, localhost for web/iOS
   final _dio = Dio(BaseOptions(
-      baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app'));
-
+    baseUrl: 'https://fastapi-app-335340524683.asia-south1.run.app',
+    // baseUrl: kIsWeb ? 'http://127.0.0.1:8000' : 'http://10.0.2.2:8000',
+  ));
   String? _recipientType;
   bool _isLoading = false;
+  bool _isDownloading = false;
   Map<String, dynamic>? _draft;
 
   // New state for file
@@ -66,6 +69,100 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
     setState(() {
       _attachedFile = null;
     });
+  }
+
+  Future<void> _printDraft() async {
+    if (_draft == null || _draft!['draft'] == null) return;
+
+    // Simple clean for print as well
+    String cleanText = (_draft!['draft'] as String)
+        .replaceAll('**', '')
+        .replaceAll('###', '')
+        .replaceAll('##', '#');
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async {
+        final pdf = pw.Document();
+        final paragraphs = cleanText.split('\n');
+
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: format,
+            margin: const pw.EdgeInsets.all(40),
+            build: (pw.Context context) {
+              return paragraphs.map((para) {
+                if (para.trim().isEmpty) return pw.SizedBox(height: 10);
+                return pw.Paragraph(text: para);
+              }).toList();
+            },
+          ),
+        );
+        return pdf.save();
+      },
+    );
+  }
+
+  Future<void> _downloadDocx() async {
+    if (_draft == null || _draft!['draft'] == null) return;
+    setState(() => _isDownloading = true);
+
+    try {
+      // Clean artifacts before sending
+      final cleanText = (_draft!['draft'] as String)
+          .replaceAll('**', '')
+          .replaceAll('__', '')
+          .replaceAll('### ', '')
+          .replaceAll('###', '')
+          .replaceAll('## ', '')
+          .replaceAll('##', '')
+          .replaceAll('# ', '')
+          .replaceAll('#', '');
+
+      final formData = FormData.fromMap({
+        'draftText': cleanText,
+      });
+
+      final response = await _dio.post(
+        '/api/document-drafting/download-docx',
+        data: formData,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final fileName = 'draft_${DateTime.now().millisecondsSinceEpoch}.docx';
+      final savedPath = await downloadFile(response.data, fileName);
+
+      if (mounted) {
+        // Check success based on platform quirks
+        bool success = savedPath != null;
+        if (kIsWeb) success = true;
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Draft saved successfully!\n📂 $fileName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Download failed.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error downloading DOCX: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      setState(() => _isDownloading = false);
+    }
   }
 
   Future<void> _downloadDraftAsPDF() async {
@@ -532,11 +629,15 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                                   Icon(Icons.description,
                                       color: orange, size: 28),
                                   const SizedBox(width: 12),
-                                  Text(
-                                    localizations.generatedDocumentDraft,
-                                    style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
+                                  Expanded(
+                                    child: Text(
+                                      localizations.generatedDocumentDraft,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -569,40 +670,74 @@ class _DocumentDraftingScreenState extends State<DocumentDraftingScreen> {
                               const SizedBox(height: 20),
 
                               // ACTIONS ROW
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  // COPY BUTTON
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      Clipboard.setData(ClipboardData(
-                                          text: _draftController.text));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                localizations.draftCopied)),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.copy, size: 18),
-                                    label: Text(localizations.copyDraft),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: orange,
-                                      side: BorderSide(color: orange),
+                              Container(
+                                width: double.infinity,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                child: Wrap(
+                                  alignment: WrapAlignment.end,
+                                  spacing: 8.0,
+                                  runSpacing: 12.0,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        Clipboard.setData(ClipboardData(
+                                            text: _draftController.text));
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  localizations.draftCopied)),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.copy, size: 18),
+                                      label: Text(localizations.copyDraft),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: orange,
+                                        side: BorderSide(color: orange),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  // DOWNLOAD PDF BUTTON
-                                  ElevatedButton.icon(
-                                    onPressed: _downloadDraftAsPDF,
-                                    icon: const Icon(Icons.download, size: 18),
-                                    label: const Text('Download PDF'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: orange,
-                                      foregroundColor: Colors.white,
+                                    OutlinedButton.icon(
+                                      onPressed: _printDraft,
+                                      icon: const Icon(Icons.print, size: 18),
+                                      label: const Text("Print"),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: orange,
+                                        side: BorderSide(color: orange),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    ElevatedButton.icon(
+                                      onPressed: _downloadDraftAsPDF,
+                                      icon: const Icon(Icons.picture_as_pdf,
+                                          size: 18),
+                                      label: const Text('PDF'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: orange,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed:
+                                          _isDownloading ? null : _downloadDocx,
+                                      icon: _isDownloading
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white),
+                                            )
+                                          : const Icon(Icons.description,
+                                              size: 18),
+                                      label:
+                                          Text(_isDownloading ? '...' : 'DOCX'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: orange,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

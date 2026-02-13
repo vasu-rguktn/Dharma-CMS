@@ -3122,6 +3122,10 @@ String get ok;
 
   String get jurisdictionForFilingComplaint;
 
+  String get iAgreeToThe;
+
+  String get termsAndConditions;
+
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

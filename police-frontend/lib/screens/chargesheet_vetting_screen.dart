@@ -11,6 +11,8 @@ import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/screens/petition/ocr_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:Dharma/utils/file_downloader/file_downloader.dart';
 
 class ChargesheetVettingScreen extends StatefulWidget {
@@ -26,7 +28,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
   final _dio = Dio(
     BaseOptions(
       // Local backend (FastAPI) for development
-      // baseUrl: "http://127.0.0.1:8080",
+      // baseUrl: kIsWeb ? 'http://127.0.0.1:8000' : 'http://10.0.2.2:8000',
       baseUrl: "https://fastapi-app-335340524683.asia-south1.run.app",
       headers: {"Content-Type": "application/json"},
       connectTimeout: const Duration(seconds: 15),
@@ -36,6 +38,7 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
   );
 
   bool _isLoading = false;
+  bool _isDownloading = false;
   Map<String, dynamic>? _suggestions;
   final OcrService _ocrService = OcrService();
 
@@ -265,11 +268,117 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
     return text
         .replaceAll('**', '') // Remove bold markers
         .replaceAll('__', '') // Remove alternative bold markers
-        .replaceAll('*', '') // Remove italic markers
-        .replaceAll('_', '') // Remove alternative italic markers
-        .replaceAll('###', '') // Remove heading markers
+        .replaceAll('### ', '') // Remove heading markers (with space)
+        .replaceAll('###', '') // Remove heading markers (without space)
+        .replaceAll('## ', '')
         .replaceAll('##', '')
-        .replaceAll('#', '');
+        .replaceAll('# ', '')
+        .replaceAll('#', '')
+        .replaceAll('* ', '') // Remove list bullets
+        .replaceAll(
+            '*', '') // Remove italic markers (careful not to double remove)
+        .replaceAll('_', '') // Remove alternative italic markers
+        .replaceAll('`', '') // Remove code blocks
+        .replaceAll('[', '') // Remove links
+        .replaceAll(']', '')
+        .replaceAll('(', '')
+        .replaceAll(')', '');
+  }
+
+  Future<void> _printVetting() async {
+    if (_suggestions == null) return;
+    final suggestionsText =
+        _suggestions!['suggestions'] ?? 'No suggestions provided';
+    final cleanedText = _cleanMarkdown(suggestionsText);
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async {
+        final pdf = pw.Document();
+        final paragraphs = cleanedText.split('\n');
+
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: format,
+            margin: const pw.EdgeInsets.all(40),
+            build: (pw.Context context) {
+              return paragraphs.map((para) {
+                if (para.trim().isEmpty) {
+                  return pw.SizedBox(height: 10);
+                }
+                return pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 8),
+                  child: pw.Text(
+                    para,
+                    style: const pw.TextStyle(fontSize: 12, lineSpacing: 1.5),
+                    textAlign: pw.TextAlign.left,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        );
+        return pdf.save();
+      },
+    );
+  }
+
+  Future<void> _downloadDocx() async {
+    if (_suggestions == null) return;
+
+    setState(() => _isDownloading = true);
+
+    try {
+      final text = _suggestions!['suggestions'] ?? '';
+      // Clean artifacts before sending
+      final cleanText = _cleanMarkdown(text);
+
+      final formData = FormData.fromMap({
+        'vettingText': cleanText,
+      });
+
+      final response = await _dio.post(
+        '/api/chargesheet-vetting/download-docx',
+        data: formData,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final fileName =
+          'vetting_report_${DateTime.now().millisecondsSinceEpoch}.docx';
+
+      final savedPath = await downloadFile(response.data, fileName);
+
+      if (mounted) {
+        // Check success based on platform quirks
+        bool success = savedPath != null;
+        if (kIsWeb) success = true;
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ DOCX saved successfully!\n📂 $fileName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Download failed.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error downloading DOCX: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      setState(() => _isDownloading = false);
+    }
   }
 
   Future<void> _downloadSuggestionsAsPDF() async {
@@ -317,7 +426,11 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
       print('📥 downloadFile returned: $savedPath');
 
       if (mounted) {
-        if (savedPath != null && savedPath.isNotEmpty) {
+        // Check success based on platform quirks
+        bool success = savedPath != null;
+        if (kIsWeb) success = true;
+
+        if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -564,10 +677,15 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                                   Icon(Icons.lightbulb_rounded,
                                       color: orange, size: 28),
                                   const SizedBox(width: 12),
-                                  Text(localizations.aiVettingSuggestions,
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold)),
+                                  Expanded(
+                                    child: Text(
+                                        localizations.aiVettingSuggestions,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -610,29 +728,65 @@ class _ChargesheetVettingScreenState extends State<ChargesheetVettingScreen> {
                               const SizedBox(height: 16),
 
                               // Action Buttons
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  OutlinedButton.icon(
-                                    onPressed: _copyToClipboard,
-                                    icon: const Icon(Icons.copy, size: 18),
-                                    label: const Text('Copy'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: orange,
-                                      side: BorderSide(color: orange),
+                              Container(
+                                width: double.infinity,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                child: Wrap(
+                                  alignment: WrapAlignment.end,
+                                  spacing: 8.0,
+                                  runSpacing: 12.0,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      onPressed: _copyToClipboard,
+                                      icon: const Icon(Icons.copy, size: 18),
+                                      label: const Text('Copy'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: orange,
+                                        side: BorderSide(color: orange),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  ElevatedButton.icon(
-                                    onPressed: _downloadSuggestionsAsPDF,
-                                    icon: const Icon(Icons.download, size: 18),
-                                    label: const Text('Download PDF'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: orange,
-                                      foregroundColor: Colors.white,
+                                    OutlinedButton.icon(
+                                      onPressed: _printVetting,
+                                      icon: const Icon(Icons.print, size: 18),
+                                      label: const Text("Print"),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: orange,
+                                        side: BorderSide(color: orange),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    ElevatedButton.icon(
+                                      onPressed: _downloadSuggestionsAsPDF,
+                                      icon: const Icon(Icons.picture_as_pdf,
+                                          size: 18),
+                                      label: const Text('PDF'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: orange,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed:
+                                          _isDownloading ? null : _downloadDocx,
+                                      icon: _isDownloading
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white),
+                                            )
+                                          : const Icon(Icons.description,
+                                              size: 18),
+                                      label:
+                                          Text(_isDownloading ? '...' : 'DOCX'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: orange,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

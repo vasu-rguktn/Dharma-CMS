@@ -16,25 +16,38 @@ from utils.anpr_utils import read_license_plate, format_license, license_complie
 # ============================================================
 
 
-# ============================================================
-# 📦 LOAD YOLO LICENSE PLATE MODEL (SAFE + PORTABLE)
-# ============================================================
+from functools import lru_cache
+
+# ===================== BASE DIR =====================
 BASE_DIR = Path(__file__).resolve().parents[2]
 MODEL_PATH = BASE_DIR / "models" / "license_plate_detector.pt"
 
-try:
-    logger.info(f"Loading YOLO model from: {MODEL_PATH}")
-    logger.info(f"Model exists: {MODEL_PATH.exists()}")
-    model = YOLO(str(MODEL_PATH))
-    logger.success("YOLO license plate model loaded successfully")
-except Exception:
-    logger.error("FAILED TO LOAD YOLO LICENSE PLATE MODEL", exc_info=True)
-    model = None
+@lru_cache(maxsize=1)
+def get_yolo_model():
+    """Lazy load YOLO model to save memory on startup"""
+    try:
+        logger.info(f"Loading YOLO model from: {MODEL_PATH}")
+        if not MODEL_PATH.exists():
+            logger.error(f"MODEL FILE NOT FOUND: {MODEL_PATH}")
+            return None
+        model = YOLO(str(MODEL_PATH))
+        logger.success("YOLO license plate model loaded successfully")
+        return model
+    except Exception:
+        logger.error("FAILED TO LOAD YOLO LICENSE PLATE MODEL", exc_info=True)
+        return None
 
-# ============================================================
-# 🔤 OCR INITIALIZATION
-# ============================================================
-reader = easyocr.Reader(['en'], gpu=False)
+@lru_cache(maxsize=1)
+def get_ocr_reader():
+    """Lazy load EasyOCR reader to save memory on startup"""
+    try:
+        logger.info("Initializing EasyOCR reader...")
+        reader = easyocr.Reader(['en'], gpu=False)
+        logger.success("EasyOCR reader initialized successfully")
+        return reader
+    except Exception:
+        logger.error("FAILED TO INITIALIZE EASYOCR READER", exc_info=True)
+        return None
 
 # ============================================================
 # 🖼 IMAGE PLATE DETECTION
@@ -45,6 +58,7 @@ def detect_plate_image(file) -> Dict:
         if img is None:
             raise ValueError("Could not read image")
 
+        model = get_yolo_model()
         if model is None:
             raise ValueError("License plate detection model not available")
 
@@ -78,6 +92,9 @@ def detect_plate_image(file) -> Dict:
                     "text_score": float(score) if score else 0.0
                 })
             else:
+                reader = get_ocr_reader()
+                if reader is None:
+                    continue
                 detections = reader.readtext(crop)
                 if detections:
                     ocr_text = detections[0][1].upper().replace(" ", "")
@@ -131,6 +148,7 @@ def detect_plate_video(file, frame_skip: int = 10) -> Dict:
         if not cap.isOpened():
             raise ValueError("Could not open video")
 
+        model = get_yolo_model()
         if model is None:
             raise ValueError("License plate detection model not available")
 
@@ -169,16 +187,18 @@ def detect_plate_video(file, frame_skip: int = 10) -> Dict:
                         "text_score": float(score) if score else 0.0
                     })
                 else:
-                    detections = reader.readtext(crop)
-                    if detections:
-                        ocr_text = detections[0][1].upper().replace(" ", "")
-                        if ocr_text:
-                            frame_plates.append({
-                                "bbox": [x1, y1, x2, y2],
-                                "text": ocr_text,
-                                "confidence": confidence,
-                                "text_score": float(detections[0][2])
-                            })
+                    reader = get_ocr_reader()
+                    if reader:
+                        detections = reader.readtext(crop)
+                        if detections:
+                            ocr_text = detections[0][1].upper().replace(" ", "")
+                            if ocr_text:
+                                frame_plates.append({
+                                    "bbox": [x1, y1, x2, y2],
+                                    "text": ocr_text,
+                                    "confidence": confidence,
+                                    "text_score": float(detections[0][2])
+                                })
 
             if frame_plates:
                 all_plates.append({
