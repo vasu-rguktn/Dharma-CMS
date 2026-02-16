@@ -17,6 +17,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dharmaPortal => 'Dharma Portal';
 
   @override
+  String get filingForSomeoneElse =>
+      'Since you are filing this for someone else, please describe the incident and your relationship to the victim.';
+
+  @override
   String get welcomeDescription =>
       'Digital hub for Andhra Pradesh Police records, management and analytics';
 
@@ -2207,4 +2211,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'Complaint for Others';
+
+  @override
+  String get evidenceRequest =>
+      'Do you have any evidence (photos/documents)? Please attach them now or type \'No\' to continue.';
 }

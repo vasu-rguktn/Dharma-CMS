@@ -36,6 +36,10 @@ class _ChatStateHolder {
   static bool isLoading = false;
   static bool errored = false;
 
+  // New fields for Evidence Check (Soft Block)
+  static bool hasAskedForEvidence = false;
+  static String? pendingBackendQuestion;
+
   static void reset() {
     messages.clear();
     answers.clear();
@@ -45,6 +49,8 @@ class _ChatStateHolder {
     allowInput = false;
     isLoading = false;
     errored = false;
+    hasAskedForEvidence = false;
+    pendingBackendQuestion = null;
   }
 }
 
@@ -1121,8 +1127,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Custom start message for 'Others'
     if (_complaintForWho == 'Other') {
-      startMsg =
-          "Since you are filing this for someone else, please describe the incident and your relationship to the victim.";
+      startMsg = localizations.filingForSomeoneElse;
     }
 
     _addBot(startMsg);
@@ -1201,7 +1206,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Determine base URL robustly
     // Determine base URL robustly
     String baseUrl;
-     if (kIsWeb) {
+    if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
       baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -1286,6 +1291,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     // Add text fields
+    print(
+        '🔍 DEBUG: Building Request. Current Answers: ${_ChatStateHolder.answers}');
     formData.fields.add(
         MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
     formData.fields
@@ -1320,11 +1327,36 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       final data = resp.data;
       print("Backend Response: $data"); // DEBUG LOG
 
-      // Clear attached files after successful send
       if (_attachedFiles.isNotEmpty) {
         setState(() {
           _attachedFiles.clear();
         });
+      }
+
+      // SYNC BACKEND DETECTED INFO (Fix for Name/Address Loop)
+      if (data['detected_info'] != null) {
+        try {
+          // Explicit safe casting
+          final Map<String, dynamic> detected =
+              Map<String, dynamic>.from(data['detected_info']);
+
+          if (detected.containsKey('full_name') &&
+              detected['full_name'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['full_name'] =
+                detected['full_name'].toString();
+          }
+          if (detected.containsKey('address') &&
+              detected['address'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['address'] =
+                detected['address'].toString();
+          }
+          if (detected.containsKey('phone') &&
+              detected['phone'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['phone'] = detected['phone'].toString();
+          }
+        } catch (e) {
+          print('Error syncing detected info: $e');
+        }
       }
 
       if (data['status'] == 'question') {
@@ -1332,6 +1364,36 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         if (question.trim().isEmpty) {
           question = "Could you please provide more details?";
         }
+
+        // Localize the question if it matches known backend strings
+        question = _localizeBackendMessage(question, localizations);
+
+        // --- INTERCEPTION FOR EVIDENCE (Soft Block) ---
+        // If the question is about Personal Details (Name, Address, Phone)
+        // AND we haven't asked for evidence yet
+        // AND no files are attached...
+        final qLowerForEvidence = question.toLowerCase();
+        final isPersonalDetailQuestion = qLowerForEvidence.contains('name') ||
+            qLowerForEvidence.contains('address') ||
+            qLowerForEvidence.contains('phone') ||
+            qLowerForEvidence.contains('contact'); // Broad check
+
+        if (isPersonalDetailQuestion &&
+            _attachedFiles.isEmpty &&
+            !_ChatStateHolder.hasAskedForEvidence) {
+          print('🕵️ Evidence Check Interception: Soft Block triggered');
+
+          // 1. Store the original question to ask LATER
+          _ChatStateHolder.pendingBackendQuestion = question;
+
+          // 2. Mark as asked so we don't ask again
+          _ChatStateHolder.hasAskedForEvidence = true;
+
+          // 3. Ask for evidence locally
+          question = localizations.evidenceRequest ??
+              "Do you have any evidence (photos/documents)? Please attach them now or type 'No' to continue.";
+        }
+        // ----------------------------------------------
 
         // INTERCEPTION: If the AI outputs the summary but backend didn't mark as 'done'
         final qLower = question.toLowerCase();
@@ -1524,6 +1586,31 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
+  /// Helper to map backend English strings to localized versions
+  String _localizeBackendMessage(
+      String message, AppLocalizations localizations) {
+    final lowerMsg = message.toLowerCase().trim();
+
+    // Flexible matching for common backend questions
+    if (lowerMsg.contains('what is your full name')) {
+      return localizations.fullNameQuestion;
+    }
+    if (lowerMsg.contains('where do you live') ||
+        lowerMsg.contains('address')) {
+      return localizations.addressQuestion;
+    }
+    if (lowerMsg.contains('mobile number') ||
+        lowerMsg.contains('phone number')) {
+      return localizations.phoneQuestion;
+    }
+    if (lowerMsg.contains('what type of complaint')) {
+      return localizations.complaintTypeQuestion;
+    }
+
+    // Return original if no match found
+    return message;
+  }
+
   Future<void> _handleFinalResponse(dynamic data) async {
     final localizations = AppLocalizations.of(context)!;
 
@@ -1599,6 +1686,43 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     final Map<String, String> localizedAnswers =
         Map<String, String>.from(_ChatStateHolder.answers);
+
+    // Extract new summary fields explicitly
+    if (data is Map) {
+      if (data['accused_details'] != null)
+        localizedAnswers['accused_details'] =
+            data['accused_details'].toString();
+      if (data['stolen_property'] != null)
+        localizedAnswers['stolen_property'] =
+            data['stolen_property'].toString();
+      if (data['witnesses'] != null)
+        localizedAnswers['witnesses'] = data['witnesses'].toString();
+      if (data['evidence_status'] != null)
+        localizedAnswers['evidence_status'] =
+            data['evidence_status'].toString();
+
+      // Also ensure station details are captured if not already
+      if (data['selected_police_station'] != null)
+        localizedAnswers['selected_police_station'] =
+            data['selected_police_station'].toString();
+      if (data['police_station_reason'] != null)
+        localizedAnswers['police_station_reason'] =
+            data['police_station_reason'].toString();
+      if (data['station_confidence'] != null)
+        localizedAnswers['station_confidence'] =
+            data['station_confidence'].toString();
+      if (data['date_of_complaint'] != null)
+        localizedAnswers['date_of_complaint'] =
+            data['date_of_complaint'].toString();
+      // Ensure incident address is captured
+      if (data['incident_address'] != null)
+        localizedAnswers['incident_address'] =
+            data['incident_address'].toString();
+      if (data['incident_details'] != null)
+        localizedAnswers['incident_details'] =
+            data['incident_details'].toString();
+    }
+
     final localizedFields = (data is Map) ? data['localized_fields'] : null;
     if (localizedFields is Map) {
       localizedFields.forEach((key, value) {
@@ -1746,6 +1870,41 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     setState(() {});
 
     // Explicitly call backend step
+
+    // --- HANDLING EVIDENCE RESPONSE (Soft Block) ---
+    if (_ChatStateHolder.pendingBackendQuestion != null) {
+      // If we have a pending question, it means the LAST question was "Do you have evidence?"
+      // We just added the user's "No" (or whatever text) to the UI history above.
+      // We do NOT want to send this text to the backend as the answer for "Name".
+
+      print('🕵️ Evidence Check Response Handling');
+
+      // Retrieve the original question (Name/Phone)
+      String nextQuestion = _ChatStateHolder.pendingBackendQuestion!;
+      _ChatStateHolder.pendingBackendQuestion = null; // Clear it
+
+      // Verify if user attached files is already handled by _addUser which adds them to _attachedFiles
+      // If user typed "No" (or anything else), we just proceed to ask the Name.
+      // The text they typed is already in the chat UI history (good context).
+
+      // We simulate a "Backend Response" which is just the original question
+      _addBot(nextQuestion);
+      _speak(nextQuestion);
+
+      // Add to history so LLM knows it asked this
+      _dynamicHistory.add({'role': 'assistant', 'content': nextQuestion});
+
+      setState(() {
+        _setIsLoading(false);
+        _setAllowInput(true);
+      });
+      Timer(
+          const Duration(milliseconds: 600), () => _inputFocus.requestFocus());
+
+      return; // CRITICAL: Stop here, do NOT call _processDynamicStep yet
+    }
+    // -----------------------------------------------
+
     _processDynamicStep();
 
     // NOTE: Continuous listening continues automatically

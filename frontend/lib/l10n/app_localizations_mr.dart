@@ -9,6 +9,10 @@ class AppLocalizationsMr extends AppLocalizations {
   AppLocalizationsMr([String locale = 'mr']) : super(locale);
 
   @override
+  String get filingForSomeoneElse =>
+      'तुम्ही हे दुसऱ्या कोणासाठी तरी दाखल करत असल्याने, कृपया घटनेचे आणि पीडितेशी असलेल्या तुमच्या नात्याचे वर्णन करा.';
+
+  @override
   String get appTitle => 'धर्म सीएमएस';
 
   String get dharma => 'धर्म';
@@ -286,7 +290,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String welcomeUser(String name) {
     return 'स्वागत आहे, $name!';
-  }
+    }
 
   @override
   String get legalAssistanceHub => 'तुमचे कायदेशीर सहाय्य केंद्र';
@@ -739,7 +743,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String failedToGenerateSuggestions(String error) {
     return 'Failed to generate Legal Section Suggester: $error';
-  }
+    }
 
   @override
   String get provideFirDetailsDesc =>
@@ -796,7 +800,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String failedToGenerateDraft(String error) {
     return 'Failed to generate document draft: $error';
-  }
+    }
 
   @override
   String get documentDraftingDesc =>
@@ -849,12 +853,12 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String filesAdded(int count) {
     return '$count file(s) added';
-  }
+    }
 
   @override
   String errorPickingFiles(String error) {
     return 'Error picking files: $error';
-  }
+    }
 
   @override
   String get pleaseUploadDocument => 'Please upload at least one document.';
@@ -865,7 +869,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String failedToGenerateChargeSheet(String error) {
     return 'Failed to generate charge sheet: $error';
-  }
+    }
 
   @override
   String get chargesheetGeneratorDesc =>
@@ -911,12 +915,12 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String fileContentLoaded(String fileName) {
     return '$fileName content loaded.';
-  }
+    }
 
   @override
   String errorReadingFile(String error) {
     return 'Error reading file: $error';
-  }
+    }
 
   @override
   String get pleaseUploadOrPasteChargesheet =>
@@ -929,7 +933,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String failedToVetChargesheet(String error) {
     return 'Failed to vet charge sheet: $error';
-  }
+    }
 
   @override
   String get chargesheetVettingAI => 'Charge Sheet Vetting AI';
@@ -988,7 +992,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String failedToPrepareWitness(String error) {
     return 'Failed to conduct witness preparation session: $error';
-  }
+    }
 
   @override
   String get aiWitnessPreparation => 'AI Witness Preparation';
@@ -1023,7 +1027,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String reviewMockTrialFor(String witnessName) {
     return 'Review the mock trial transcript and AI feedback for witness $witnessName.';
-  }
+    }
 
   @override
   String get mockTrialTranscript => 'Mock Trial Transcript';
@@ -1053,7 +1057,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String errorPickingImage(String error) {
     return 'Error picking image: $error';
-  }
+    }
 
   @override
   String get selectImageSource => 'Select Image Source';
@@ -1074,7 +1078,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String failedToAnalyzeMedia(String error) {
     return 'Failed to analyze media: $error';
-  }
+    }
 
   @override
   String get aiCrimeSceneInvestigator => 'AI Crime Scene Investigator';
@@ -1160,7 +1164,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String errorLoadingJournal(String error) {
     return 'Error loading journal: $error';
-  }
+    }
 
   @override
   String get addJournalEntry => 'Add Journal Entry';
@@ -1210,7 +1214,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String errorAddingEntry(String error) {
     return 'Error adding entry: $error';
-  }
+    }
 
   @override
   String get caseJournalDesc =>
@@ -1251,7 +1255,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String errorCreatingCase(String error) {
     return 'Error creating case: $error';
-  }
+    }
 
   @override
   String get caseTitleRequired => 'Case Title *';
@@ -1513,7 +1517,7 @@ class AppLocalizationsMr extends AppLocalizations {
   @override
   String selectLabel(String label) {
     return 'Select $label';
-  }
+    }
 
   @override
   String get aiInvestigationGuidelines => 'AI Investigation Guidelines';
@@ -2201,13 +2205,16 @@ class AppLocalizationsMr extends AppLocalizations {
 
   @override
   String get draftDeletedOn => 'मसुदा हटविला';
-  
+
   @override
   String get complaintForOthers => 'दुसर्यासाठी';
-  
+
   @override
   String get complaintForSelf => 'स्वयंसाठी';
-  
+
   @override
   String get whoIsComplaintFor => 'कोणाची दुसर्यासाठी';
+  
+  @override
+  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
 }

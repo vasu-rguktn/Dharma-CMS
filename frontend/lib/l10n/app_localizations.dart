@@ -132,6 +132,12 @@ abstract class AppLocalizations {
   /// **'Dharma Portal'**
   String get dharmaPortal;
 
+  /// Filing for someone else description
+  ///
+  /// In en, this message translates to:
+  /// **'Since you are filing this for someone else, please describe the incident and your relationship to the victim.'**
+  String get filingForSomeoneElse;
+
   /// Description text on the welcome screen
   ///
   /// In en, this message translates to:
@@ -3177,6 +3183,7 @@ abstract class AppLocalizations {
   String get complaintForOthers;
 
   String errorSubmittingFeedback(String error);
+  String get evidenceRequest;
 }
 
 class _AppLocalizationsDelegate
