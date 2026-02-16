@@ -60,16 +60,47 @@ def _render_summary_pdf(payload: ChatbotSummaryRequest) -> str:
     pdf_path = reports_dir / file_name
 
     # Font registration (borrowed from investigation_report.py)
+    # Font registration (borrowed from investigation_report.py)
     try:
         # Check if font exists, otherwise use standard
-        if os.path.exists("DejaVuSans.ttf"):
+        # Standard Docker path for Noto Sans
+        noto_path = "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"
+        noto_bold_path = "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"
+        
+        # Windows Paths
+        nirmala_path = "C:/Windows/Fonts/Nirmala.ttc" # Use .ttc
+        arial_path = "C:/Windows/Fonts/arial.ttf"
+
+        if os.path.exists(noto_path):
+            pdfmetrics.registerFont(TTFont("NotoSans", noto_path))
+            pdfmetrics.registerFont(TTFont("NotoSans-Bold", noto_bold_path if os.path.exists(noto_bold_path) else noto_path))
+            base_font_name = "NotoSans"
+            bold_font_name = "NotoSans-Bold"
+        elif os.path.exists(nirmala_path):
+            # Windows Indic Support - Nirmala UI (.ttc)
+            # Index 0 = Regular/Semilight, Index 1 = Bold usually (check if index 1 works, else fallback 0)
+            pdfmetrics.registerFont(TTFont("Nirmala", nirmala_path, subfontIndex=0))
+            try:
+                pdfmetrics.registerFont(TTFont("Nirmala-Bold", nirmala_path, subfontIndex=1))
+            except:
+                pdfmetrics.registerFont(TTFont("Nirmala-Bold", nirmala_path, subfontIndex=0))
+                
+            base_font_name = "Nirmala"
+            bold_font_name = "Nirmala-Bold"
+        elif os.path.exists(arial_path):
+            pdfmetrics.registerFont(TTFont("Arial", arial_path))
+            pdfmetrics.registerFont(TTFont("Arial-Bold", "C:/Windows/Fonts/arialbd.ttf"))
+            base_font_name = "Arial"
+            bold_font_name = "Arial-Bold"
+        elif os.path.exists("DejaVuSans.ttf"):
             pdfmetrics.registerFont(TTFont("DejaVuSans", "DejaVuSans.ttf"))
             base_font_name = "DejaVuSans"
             bold_font_name = "DejaVuSans" # fallback if no bold font
         else:
             base_font_name = "Helvetica"
             bold_font_name = "Helvetica-Bold"
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Font loading failed: {e}. Fallback to Helvetica.")
         base_font_name = "Helvetica"
         bold_font_name = "Helvetica-Bold"
 
@@ -154,7 +185,11 @@ def _render_summary_pdf(payload: ChatbotSummaryRequest) -> str:
         ("Address", "address"), 
         ("Phone Number", "phone"),
         ("Complaint Type", "complaint_type"),
-        ("Incident Summary", "incident_address"), # Matched frontend 'Incident Details' (short) but renamed to avoid confusion
+        ("Incident Summary", "incident_address"), 
+        ("Accused Details", "accused_details"), # New
+        ("Stolen Property", "stolen_property"), # New
+        ("Witnesses", "witnesses"), # New
+        ("Evidence Status", "evidence_status"), # New
         ("Selected Police Station", "selected_police_station"),
         ("Reason for Station", "police_station_reason"),
         ("Confidence Level", "station_confidence"),

@@ -9,6 +9,10 @@ class AppLocalizationsBn extends AppLocalizations {
   AppLocalizationsBn([String locale = 'bn']) : super(locale);
 
   @override
+  String get filingForSomeoneElse =>
+      'যেহেতু আপনি এটি অন্য কারও জন্য ফাইল করছেন, তাই দয়া করে ঘটনাটি এবং ভিকটিমের সাথে আপনার সম্পর্ক বর্ণনা করুন।';
+
+  @override
   String get appTitle => 'ধর্ম CMS';
 
   String get dharma => 'ধর্ম';
@@ -147,7 +151,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get enterPoliceStation => 'থানার নাম লিখুন';
 
   @override
-  String get personalDataNotProvided => 'ত্রুটি: ব্যক্তিগত তথ্য প্রদান করা হয়নি';
+  String get personalDataNotProvided =>
+      'ত্রুটি: ব্যক্তিগত তথ্য প্রদান করা হয়নি';
 
   @override
   String get loginDetails => 'লগইন বিবরণ';
@@ -273,7 +278,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get nonCognizable => 'অ-আমলযোগ্য (NON-COGNIZABLE)';
 
   @override
-  String get pleaseContactOfficer => 'অনুগ্রহ করে কর্মকর্তার সাথে যোগাযোগ করুন...';
+  String get pleaseContactOfficer =>
+      'অনুগ্রহ করে কর্মকর্তার সাথে যোগাযোগ করুন...';
 
   @override
   String get fileACase => 'মামলা দায়ের করুন';
@@ -284,7 +290,7 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String welcomeUser(String name) {
     return 'স্বাগতম, $name!';
-  }
+    }
 
   @override
   String get legalAssistanceHub => 'আপনার আইনি সহায়তা কেন্দ্র';
@@ -386,7 +392,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get typeMessage => 'বার্তা লিখুন...';
 
   @override
-  String get askLegalQuestions => 'আইনি প্রশ্ন জিজ্ঞাসা করুন এবং AI থেকে উত্তর নিন';
+  String get askLegalQuestions =>
+      'আইনি প্রশ্ন জিজ্ঞাসা করুন এবং AI থেকে উত্তর নিন';
 
   @override
   String get submitQuery => 'জমা দিন';
@@ -539,10 +546,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get phoneQuestion => 'আপনার ফোন নম্বর কত?';
 
   @override
-  String get complaintTypeQuestion => 'আপনি কী ধরনের অভিযোগ করতে চান? (চুরি, হয়রানি, নিখোঁজ ইত্যাদি)';
+  String get complaintTypeQuestion =>
+      'আপনি কী ধরনের অভিযোগ করতে চান? (চুরি, হয়রানি, নিখোঁজ ইত্যাদি)';
 
   @override
-  String get detailsQuestion => 'অনুগ্রহ করে আপনার অভিযোগ বিস্তারিত বর্ণনা করুন।';
+  String get detailsQuestion =>
+      'অনুগ্রহ করে আপনার অভিযোগ বিস্তারিত বর্ণনা করুন।';
 
   @override
   String get loading => 'লোড হচ্ছে...';
@@ -560,22 +569,26 @@ class AppLocalizationsBn extends AppLocalizations {
   String get letUsBegin => 'চলুন শুরু করি...';
 
   @override
-  String pleaseAnswerAllQuestions(String missing) => 'জমা দেওয়ার আগে সব প্রশ্নের উত্তর দিন। বাকি আছে: $missing';
+  String pleaseAnswerAllQuestions(String missing) =>
+      'জমা দেওয়ার আগে সব প্রশ্নের উত্তর দিন। বাকি আছে: $missing';
 
   @override
   String get complaintSummary => 'অভিযোগের সারসংক্ষেপ:';
 
   @override
-  String classification(String classification) => 'শ্রেণীবিভাগ: $classification';
+  String classification(String classification) =>
+      'শ্রেণীবিভাগ: $classification';
 
   @override
-  String get somethingWentWrong => 'দুঃখিত, কোনো সমস্যা হয়েছে। আবার চেষ্টা করুন।';
+  String get somethingWentWrong =>
+      'দুঃখিত, কোনো সমস্যা হয়েছে। আবার চেষ্টা করুন।';
 
   @override
   String unexpectedErrorMessage(String error) => 'অপ্রত্যাশিত ত্রুটি: $error';
 
   @override
-  String get viewAndManageComplaints => 'আপনার সংরক্ষিত অভিযোগ দেখুন ও পরিচালনা করুন';
+  String get viewAndManageComplaints =>
+      'আপনার সংরক্ষিত অভিযোগ দেখুন ও পরিচালনা করুন';
 
   @override
   String get savedComplaintsAppearHere => 'সংরক্ষিত অভিযোগ এখানে দেখা যাবে';
@@ -590,7 +603,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get deleteComplaint => 'অভিযোগ মুছুন';
 
   @override
-  String get deleteComplaintConfirmation => 'আপনি কি নিশ্চিত যে এই অভিযোগটি মুছতে চান?';
+  String get deleteComplaintConfirmation =>
+      'আপনি কি নিশ্চিত যে এই অভিযোগটি মুছতে চান?';
 
   @override
   String get basicInformation => 'প্রাথমিক তথ্য';
@@ -659,7 +673,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noPetitionsYet => 'এখনো কোনো আবেদন নেই';
 
   @override
-  String get createFirstPetition => '"নতুন তৈরি করুন" ট্যাব ব্যবহার করে প্রথম আবেদনটি করুন';
+  String get createFirstPetition =>
+      '"নতুন তৈরি করুন" ট্যাব ব্যবহার করে প্রথম আবেদনটি করুন';
 
   @override
   String createdDate(String date) => 'তৈরির তারিখ: $date';
@@ -719,16 +734,19 @@ class AppLocalizationsBn extends AppLocalizations {
   String get queryDetails => 'প্রশ্নের বিবরণ';
 
   @override
-  String get enterFirAndIncidentDetails => 'অনুগ্রহ করে FIR এবং ঘটনার বিবরণ দিন।';
+  String get enterFirAndIncidentDetails =>
+      'অনুগ্রহ করে FIR এবং ঘটনার বিবরণ দিন।';
 
   @override
   String get legalSuggestionsGenerated => 'আইনি ধারার পরামর্শ তৈরি করা হয়েছে।';
 
   @override
-  String failedToGenerateSuggestions(String error) => 'ধারা পরামর্শ তৈরিতে ব্যর্থ: $error';
+  String failedToGenerateSuggestions(String error) =>
+      'ধারা পরামর্শ তৈরিতে ব্যর্থ: $error';
 
   @override
-  String get provideFirDetailsDesc => 'BNS, BNSS, BSA এবং অন্যান্য আইনের ধারার পরামর্শ পেতে FIR ও ঘটনার বিবরণ দিন।';
+  String get provideFirDetailsDesc =>
+      'BNS, BNSS, BSA এবং অন্যান্য আইনের ধারার পরামর্শ পেতে FIR ও ঘটনার বিবরণ দিন।';
 
   @override
   String get enterFirDetailsHint => 'FIR থেকে বিস্তারিত তথ্য দিন...';
@@ -743,13 +761,15 @@ class AppLocalizationsBn extends AppLocalizations {
   String get getLegalSuggestions => 'আইনি পরামর্শ নিন';
 
   @override
-  String get analyzingInformation => 'তথ্য বিশ্লেষণ করে পরামর্শ তৈরি করা হচ্ছে...';
+  String get analyzingInformation =>
+      'তথ্য বিশ্লেষণ করে পরামর্শ তৈরি করা হচ্ছে...';
 
   @override
   String get aiLegalSuggestions => 'AI আইনি ধারা পরামর্শক';
 
   @override
-  String get reviewSuggestionsDesc => 'প্রস্তাবিত আইনি ধারা ও কারণগুলো দেখুন। এটি কেবল তথ্যের জন্য।';
+  String get reviewSuggestionsDesc =>
+      'প্রস্তাবিত আইনি ধারা ও কারণগুলো দেখুন। এটি কেবল তথ্যের জন্য।';
 
   @override
   String get suggestedSections => 'প্রস্তাবিত ধারা';
@@ -764,10 +784,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noReasoningProvided => 'কোনো যুক্তি দেওয়া হয়নি';
 
   @override
-  String get aiDisclaimer => 'AI দ্বারা তৈরি। অফিসিয়াল পরামর্শের জন্য আইনি বিশেষজ্ঞের সাহায্য নিন।';
+  String get aiDisclaimer =>
+      'AI দ্বারা তৈরি। অফিসিয়াল পরামর্শের জন্য আইনি বিশেষজ্ঞের সাহায্য নিন।';
 
   @override
-  String get provideCaseDataAndRecipient => 'মামলার তথ্য দিন এবং প্রাপকের ধরন নির্বাচন করুন।';
+  String get provideCaseDataAndRecipient =>
+      'মামলার তথ্য দিন এবং প্রাপকের ধরন নির্বাচন করুন।';
 
   @override
   String get documentDraftGenerated => 'নথি খসড়া তৈরি হয়েছে।';
@@ -776,7 +798,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String failedToGenerateDraft(String error) => 'খসড়া তৈরিতে ব্যর্থ: $error';
 
   @override
-  String get documentDraftingDesc => 'মামলার তথ্যের ভিত্তিতে চিকিৎসা কর্মকর্তা বা ফরেনসিক বিশেষজ্ঞদের জন্য খসড়া তৈরি করুন।';
+  String get documentDraftingDesc =>
+      'মামলার তথ্যের ভিত্তিতে চিকিৎসা কর্মকর্তা বা ফরেনসিক বিশেষজ্ঞদের জন্য খসড়া তৈরি করুন।';
 
   @override
   String get pasteCaseDataHint => 'প্রাসঙ্গিক তথ্য এখানে পেস্ট করুন...';
@@ -788,7 +811,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get additionalInstructionsOptional => 'অতিরিক্ত নির্দেশাবলী (ঐচ্ছিক)';
 
   @override
-  String get additionalInstructionsHint => 'যেমন: \'আঘাতের ওপর গুরুত্ব দিন\', \'DNA পরীক্ষার জন্য অনুরোধ করুন\'...';
+  String get additionalInstructionsHint =>
+      'যেমন: \'আঘাতের ওপর গুরুত্ব দিন\', \'DNA পরীক্ষার জন্য অনুরোধ করুন\'...';
 
   @override
   String get drafting => 'খসড়া তৈরি হচ্ছে...';
@@ -803,13 +827,15 @@ class AppLocalizationsBn extends AppLocalizations {
   String get generatedDocumentDraft => 'তৈরি করা খসড়া';
 
   @override
-  String get reviewDraftDesc => 'তৈরি করা খসড়াটি দেখুন। আপনি এটি কপি বা সম্পাদনা করতে পারেন।';
+  String get reviewDraftDesc =>
+      'তৈরি করা খসড়াটি দেখুন। আপনি এটি কপি বা সম্পাদনা করতে পারেন।';
 
   @override
   String get noDraftGenerated => 'কোনো খসড়া তৈরি হয়নি';
 
   @override
-  String get aiDraftDisclaimer => 'AI দ্বারা তৈরি খসড়া। ব্যবহারের আগে যাচাই করে নিন।';
+  String get aiDraftDisclaimer =>
+      'AI দ্বারা তৈরি খসড়া। ব্যবহারের আগে যাচাই করে নিন।';
 
   @override
   String get draftCopied => 'খসড়াটি ক্লিপবোর্ডে কপি হয়েছে';
@@ -830,10 +856,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get draftChargeSheetGenerated => 'চার্জশিট খসড়া তৈরি হয়েছে।';
 
   @override
-  String failedToGenerateChargeSheet(String error) => 'চার্জশিট তৈরিতে ব্যর্থ: $error';
+  String failedToGenerateChargeSheet(String error) =>
+      'চার্জশিট তৈরিতে ব্যর্থ: $error';
 
   @override
-  String get chargesheetGeneratorDesc => 'প্রাসঙ্গিক নথি আপলোড করুন। AI একটি চার্জশিট খসড়া তৈরি করে দেবে।';
+  String get chargesheetGeneratorDesc =>
+      'প্রাসঙ্গিক নথি আপলোড করুন। AI একটি চার্জশিট খসড়া তৈরি করে দেবে।';
 
   @override
   String get caseDocuments => 'মামলার নথি';
@@ -845,7 +873,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get uploadedFiles => 'আপলোড করা ফাইল:';
 
   @override
-  String get chargesheetInstructionsHint => 'যেমন: \'অভিযুক্তকে অস্ত্র উদ্ধারের সঙ্গে যুক্ত করার বিষয়ে গুরুত্ব দিন।\'...';
+  String get chargesheetInstructionsHint =>
+      'যেমন: \'অভিযুক্তকে অস্ত্র উদ্ধারের সঙ্গে যুক্ত করার বিষয়ে গুরুত্ব দিন।\'...';
 
   @override
   String get generating => 'তৈরি হচ্ছে...';
@@ -854,7 +883,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get generateDraftChargeSheet => 'চার্জশিট খসড়া তৈরি করুন';
 
   @override
-  String get generatingChargeSheetWait => 'চার্জশিট তৈরি হচ্ছে, অপেক্ষা করুন...';
+  String get generatingChargeSheetWait =>
+      'চার্জশিট তৈরি হচ্ছে, অপেক্ষা করুন...';
 
   @override
   String get generatedDraftChargeSheet => 'তৈরি করা চার্জশিট খসড়া';
@@ -866,7 +896,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noChargeSheetGenerated => 'কোনো চার্জশিট তৈরি হয়নি';
 
   @override
-  String get aiChargeSheetDisclaimer => 'AI দ্বারা তৈরি। আইনি বিশেষজ্ঞ দ্বারা যাচাই করা উচিত।';
+  String get aiChargeSheetDisclaimer =>
+      'AI দ্বারা তৈরি। আইনি বিশেষজ্ঞ দ্বারা যাচাই করা উচিত।';
 
   @override
   String fileContentLoaded(String fileName) => '$fileName-এর তথ্য লোড হয়েছে।';
@@ -878,16 +909,19 @@ class AppLocalizationsBn extends AppLocalizations {
   String get pleaseUploadOrPasteChargesheet => 'চার্জশিট আপলোড বা পেস্ট করুন।';
 
   @override
-  String get chargesheetVettedSuccess => 'চার্জশিট যাচাই করা হয়েছে এবং পরামর্শ দেওয়া হয়েছে।';
+  String get chargesheetVettedSuccess =>
+      'চার্জশিট যাচাই করা হয়েছে এবং পরামর্শ দেওয়া হয়েছে।';
 
   @override
-  String failedToVetChargesheet(String error) => 'চার্জশিট যাচাইয়ে ব্যর্থ: $error';
+  String failedToVetChargesheet(String error) =>
+      'চার্জশিট যাচাইয়ে ব্যর্থ: $error';
 
   @override
   String get chargesheetVettingAI => 'AI চার্জশিট পরীক্ষা';
 
   @override
-  String get chargesheetVettingDesc => 'বিদ্যমান চার্জশিট আপলোড করুন। AI উন্নতির জন্য পরামর্শ দেবে।';
+  String get chargesheetVettingDesc =>
+      'বিদ্যমান চার্জশিট আপলোড করুন। AI উন্নতির জন্য পরামর্শ দেবে।';
 
   @override
   String get uploadChargesheet => 'চার্জশিট আপলোড করুন (.txt ফাইল)';
@@ -902,7 +936,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get orPasteChargesheet => 'অথবা চার্জশিট পেস্ট করুন';
 
   @override
-  String get pasteChargesheetHint => 'চার্জশিটের সম্পূর্ণ অংশ এখানে পেস্ট করুন...';
+  String get pasteChargesheetHint =>
+      'চার্জশিটের সম্পূর্ণ অংশ এখানে পেস্ট করুন...';
 
   @override
   String get vetting => 'পরীক্ষা চলছে...';
@@ -911,34 +946,40 @@ class AppLocalizationsBn extends AppLocalizations {
   String get vetChargeSheet => 'চার্জশিট পরীক্ষা করুন';
 
   @override
-  String get vettingChargesheetWait => 'চার্জশিট পরীক্ষা হচ্ছে, অপেক্ষা করুন...';
+  String get vettingChargesheetWait =>
+      'চার্জশিট পরীক্ষা হচ্ছে, অপেক্ষা করুন...';
 
   @override
   String get aiVettingSuggestions => 'AI পরীক্ষার পরামর্শ';
 
   @override
-  String get reviewSuggestionsToImprove => 'চার্জশিট উন্নতির পরামর্শগুলো দেখুন।';
+  String get reviewSuggestionsToImprove =>
+      'চার্জশিট উন্নতির পরামর্শগুলো দেখুন।';
 
   @override
   String get noSuggestionsProvided => 'কোনো পরামর্শ দেওয়া হয়নি';
 
   @override
-  String get aiVettingDisclaimer => 'AI পরামর্শ। চূড়ান্ত সিদ্ধান্তের জন্য আইনি বিশেষজ্ঞ প্রয়োজন।';
+  String get aiVettingDisclaimer =>
+      'AI পরামর্শ। চূড়ান্ত সিদ্ধান্তের জন্য আইনি বিশেষজ্ঞ প্রয়োজন।';
 
   @override
-  String get pleaseFillAllWitnessFields => 'মামলার বিবরণ ও সাক্ষীর জবানবন্দি দিন।';
+  String get pleaseFillAllWitnessFields =>
+      'মামলার বিবরণ ও সাক্ষীর জবানবন্দি দিন।';
 
   @override
   String get witnessPreparationComplete => 'সাক্ষী প্রস্তুতি সেশন সম্পন্ন।';
 
   @override
-  String failedToPrepareWitness(String error) => 'সাক্ষী প্রস্তুতিতে ব্যর্থ: $error';
+  String failedToPrepareWitness(String error) =>
+      'সাক্ষী প্রস্তুতিতে ব্যর্থ: $error';
 
   @override
   String get aiWitnessPreparation => 'AI সাক্ষী প্রস্তুতি';
 
   @override
-  String get witnessPreparationDesc => 'সাক্ষীর জন্য একটি কৃত্রিম বিচারিক অভিজ্ঞতার ব্যবস্থা করুন।';
+  String get witnessPreparationDesc =>
+      'সাক্ষীর জন্য একটি কৃত্রিম বিচারিক অভিজ্ঞতার ব্যবস্থা করুন।';
 
   @override
   String get enterWitnessNameHint => 'সাক্ষীর পুরো নাম লিখুন';
@@ -962,7 +1003,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get mockTrialAndFeedback => 'মক ট্রায়াল ও মতামত';
 
   @override
-  String reviewMockTrialFor(String witnessName) => 'সাক্ষী $witnessName-এর ট্রায়াল ট্রান্সক্রিপ্ট ও AI মতামত দেখুন।';
+  String reviewMockTrialFor(String witnessName) =>
+      'সাক্ষী $witnessName-এর ট্রায়াল ট্রান্সক্রিপ্ট ও AI মতামত দেখুন।';
 
   @override
   String get mockTrialTranscript => 'ট্রায়াল ট্রান্সক্রিপ্ট';
@@ -983,7 +1025,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noImprovementsSuggested => 'কোনো পরামর্শ নেই';
 
   @override
-  String get aiSimulationDisclaimer => 'এটি একটি AI সিমুলেশন। আসল বিচার ভিন্ন হতে পারে।';
+  String get aiSimulationDisclaimer =>
+      'এটি একটি AI সিমুলেশন। আসল বিচার ভিন্ন হতে পারে।';
 
   @override
   String get imageSizeLimit => '১০ মেগাবাইটের কম সাইজের ছবি বাছুন।';
@@ -1004,7 +1047,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get pleaseSelectImageToAnalyze => 'বিশ্লেষণের জন্য একটি ছবি বাছুন।';
 
   @override
-  String get analysisComplete => 'বিশ্লেষণ সম্পন্ন। AI প্রাপ্ত তথ্য নিচে দেখুন।';
+  String get analysisComplete =>
+      'বিশ্লেষণ সম্পন্ন। AI প্রাপ্ত তথ্য নিচে দেখুন।';
 
   @override
   String failedToAnalyzeMedia(String error) => 'বিশ্লেষণ ব্যর্থ: $error';
@@ -1013,7 +1057,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get aiCrimeSceneInvestigator => 'AI ক্রাইম সিন তদন্তকারী';
 
   @override
-  String get mediaAnalysisDesc => 'তদন্তের জন্য ছবি আপলোড করুন। AI বিভিন্ন উপাদান শনাক্ত করবে।';
+  String get mediaAnalysisDesc =>
+      'তদন্তের জন্য ছবি আপলোড করুন। AI বিভিন্ন উপাদান শনাক্ত করবে।';
 
   @override
   String get uploadImage => 'ছবি আপলোড করুন';
@@ -1025,7 +1070,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get contextInstructions => 'সন্দর্ভ / বিশেষ নির্দেশাবলী (ঐচ্ছিক)';
 
   @override
-  String get contextInstructionsHint => 'যেমন: \'অস্ত্রের ওপর গুরুত্ব দিন\', \'জোর করে প্রবেশের চিহ্ন আছে কি?\'';
+  String get contextInstructionsHint =>
+      'যেমন: \'অস্ত্রের ওপর গুরুত্ব দিন\', \'জোর করে প্রবেশের চিহ্ন আছে কি?\'';
 
   @override
   String get analyzing => 'বিশ্লেষণ হচ্ছে...';
@@ -1037,7 +1083,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get analyzingImageWait => 'AI ছবি বিশ্লেষণ করছে, অপেক্ষা করুন...';
 
   @override
-  String get analyzingComplexityNote => '(ছবির জটিলতার ওপর ভিত্তি করে সময় লাগতে পারে)';
+  String get analyzingComplexityNote =>
+      '(ছবির জটিলতার ওপর ভিত্তি করে সময় লাগতে পারে)';
 
   @override
   String get crimeSceneAnalysisReport => 'ক্রাইম সিন বিশ্লেষণ রিপোর্ট';
@@ -1058,7 +1105,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get category => 'বিভাগ';
 
   @override
-  String get noElementsIdentified => 'কোনো উপাদান শনাক্ত হয়নি বা বিশ্লেষণ অসম্পূর্ণ।';
+  String get noElementsIdentified =>
+      'কোনো উপাদান শনাক্ত হয়নি বা বিশ্লেষণ অসম্পূর্ণ।';
 
   @override
   String get sceneNarrativeEditable => 'দৃশ্য বর্ণনা (সম্পাদনাযোগ্য)';
@@ -1070,10 +1118,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get caseFileSummaryEditable => 'মামলা সারসংক্ষেপ (সম্পাদনাযোগ্য)';
 
   @override
-  String get caseFileSummaryHint => 'AI দ্বারা তৈরি সারসংক্ষেপ এখানে দেখা যাবে।';
+  String get caseFileSummaryHint =>
+      'AI দ্বারা তৈরি সারসংক্ষেপ এখানে দেখা যাবে।';
 
   @override
-  String get aiAnalysisDisclaimer => 'AI দ্বারা তৈরি বিশ্লেষণ। সরাসরি তদন্তের মাধ্যমে যাচাই করুন।';
+  String get aiAnalysisDisclaimer =>
+      'AI দ্বারা তৈরি বিশ্লেষণ। সরাসরি তদন্তের মাধ্যমে যাচাই করুন।';
 
   @override
   String get download => 'ডাউনলোড';
@@ -1157,7 +1207,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noJournalEntries => 'এখনো কোনো এন্ট্রি নেই';
 
   @override
-  String get noJournalEntriesDesc => 'তদন্ত এগিয়ে যাওয়ার সঙ্গে এখানে তথ্য দেখা যাবে।';
+  String get noJournalEntriesDesc =>
+      'তদন্ত এগিয়ে যাওয়ার সঙ্গে এখানে তথ্য দেখা যাবে।';
 
   @override
   String get ref => 'সূত্র';
@@ -1361,7 +1412,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get petitionOverview => 'আবেদনের সংক্ষিপ্তসার';
 
   @override
-  String get recentActivityDescription => 'আপনার অ্যাকাউন্টের সাম্প্রতিক কার্যক্রম এখানে দেখুন';
+  String get recentActivityDescription =>
+      'আপনার অ্যাকাউন্টের সাম্প্রতিক কার্যক্রম এখানে দেখুন';
 
   @override
   String get helpline => 'হেল্পলাইন';
@@ -1442,7 +1494,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get enterOfficerResponse => 'কর্মকর্তার মক উত্তর লিখুন...';
 
   @override
-  String get errorContactingInvestigationAI => 'তদন্তকারী AI-র সাথে যোগাযোগে ত্রুটি';
+  String get errorContactingInvestigationAI =>
+      'তদন্তকারী AI-র সাথে যোগাযোগে ত্রুটি';
 
   @override
   String get districtAndFirDetails => 'জেলা ও FIR বিবরণ';
@@ -1541,7 +1594,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get filterCasesUsingFilters => 'ফিল্টার ব্যবহার করে মামলা খুঁজুন।';
 
   @override
-  String get casesScreenSubtitle => 'আপনার মামলাগুলো পরিচালনা করুন ও বিবরণ দেখুন।';
+  String get casesScreenSubtitle =>
+      'আপনার মামলাগুলো পরিচালনা করুন ও বিবরণ দেখুন।';
 
   @override
   String get crimeScene => 'ঘটনাস্থল';
@@ -1688,7 +1742,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get dispatchingOfficerRank => 'প্রেরণকারী কর্মকর্তার পদমর্যাদা';
 
   @override
-  String get firReadAndAdmittedCorrect => 'FIR পাঠ করা হয়েছে ও সঠিক বলে স্বীকৃত';
+  String get firReadAndAdmittedCorrect =>
+      'FIR পাঠ করা হয়েছে ও সঠিক বলে স্বীকৃত';
 
   @override
   String get copyGivenFreeOfCost => 'বিনামূল্যে কপি দেওয়া হয়েছে';
@@ -1799,10 +1854,12 @@ class AppLocalizationsBn extends AppLocalizations {
   String get noFinalReportAttached => 'কোনো চূড়ান্ত রিপোর্ট যুক্ত নেই।';
 
   @override
-  String get onceSomeoneGeneratesReport => 'তদন্ত কর্মকর্তা রিপোর্ট তৈরি করলে এখানে দেখা যাবে।';
+  String get onceSomeoneGeneratesReport =>
+      'তদন্ত কর্মকর্তা রিপোর্ট তৈরি করলে এখানে দেখা যাবে।';
 
   @override
-  String get courtReadyReportGenerated => 'আদালতের জন্য রিপোর্ট তৈরি করা হয়েছে।';
+  String get courtReadyReportGenerated =>
+      'আদালতের জন্য রিপোর্ট তৈরি করা হয়েছে।';
 
   @override
   String get downloadViewFinalReportPDF => 'রিপোর্ট ডাউনলোড / দেখুন';
@@ -1952,7 +2009,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get selectPetitionType => 'আবেদনের ধরন বাছুন';
 
   @override
-  String get petitionTypeDescription => 'অজ্ঞাতনামা: আপনার নাম রেকর্ড হবে না।\nসাধারণ: সব তথ্য রেকর্ড হবে।';
+  String get petitionTypeDescription =>
+      'অজ্ঞাতনামা: আপনার নাম রেকর্ড হবে না।\nসাধারণ: সব তথ্য রেকর্ড হবে।';
 
   @override
   String get anonymousPetition => 'অজ্ঞাতনামা আবেদন';
@@ -2045,7 +2103,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get caseProgressUpdates => 'মামলার অগ্রগতি';
 
   @override
-  String get trackCaseProgressDescription => 'আপনার আবেদনের অগ্রগতি এখানে ট্র্যাক করুন। পুলিশ এখানে আপডেট দেবে।';
+  String get trackCaseProgressDescription =>
+      'আপনার আবেদনের অগ্রগতি এখানে ট্র্যাক করুন। পুলিশ এখানে আপডেট দেবে।';
 
   @override
   String get noUpdatesYet => 'এখনো কোনো আপডেট নেই';
@@ -2094,4 +2153,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'অন্যদের জন্য অভিযোগ';
+  
+  @override
+  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
 }

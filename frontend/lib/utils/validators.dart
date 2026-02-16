@@ -13,7 +13,12 @@ class Validators {
 
   // Name validation
   static bool isValidName(String name) {
-    return RegExp(r'^[a-zA-Z\s]{2,50}$').hasMatch(name.trim());
+    if (name.trim().length < 2) return false;
+    // Relaxed validation: Allow diverse scripts.
+    // Just ensure it doesn't look like a phone number or pure garbage.
+    // Disallow if it contains mostly digits.
+    if (RegExp(r'^\d+$').hasMatch(name.trim())) return false;
+    return true;
   }
 
   // Indian pincode
@@ -25,7 +30,7 @@ class Validators {
   static bool isValidDOB(String dob) {
     try {
       DateTime? date;
-      
+
       // Check for DD/MM/YYYY format (common in India)
       if (dob.contains('/')) {
         final parts = dob.trim().split('/');

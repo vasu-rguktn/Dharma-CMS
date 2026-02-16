@@ -138,10 +138,13 @@ def root_alias():
 def api_health():
     return {"status": "ok"}
 
-
 @app.get("/ocr/health")
 def ocr_health_alias():
     return _ocr_health()
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return JSONResponse(content={}, status_code=204)
 
 
 # Legacy compatibility: POST /extract-case/

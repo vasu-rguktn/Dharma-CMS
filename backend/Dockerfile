@@ -22,7 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender-dev \
     libgomp1 \
     ffmpeg \
+    ffmpeg \
     libgthread-2.0-0 \
+    fonts-noto \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

@@ -9,6 +9,10 @@ class AppLocalizationsTa extends AppLocalizations {
   AppLocalizationsTa([String locale = 'ta']) : super(locale);
 
   @override
+  String get filingForSomeoneElse =>
+      'நீங்கள் இதை வேறு ஒருவருக்காக தாக்கல் செய்வதால், தயவுசெய்து சம்பவத்தையும் பாதிக்கப்பட்டவருடனான உங்கள் உறவையும் விவரிக்கவும்.';
+
+  @override
   String get appTitle => 'தர்ம CMS';
 
   String get dharma => 'தர்ம';
@@ -72,7 +76,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get pleaseEnterName => 'உங்கள் பெயரை உள்ளிடவும்';
 
   @override
-  String get nameOnlyLetters => 'பெயரில் எழுத்துக்கள் மற்றும் இடைவெளிகள் மட்டுமே இருக்க வேண்டும்';
+  String get nameOnlyLetters =>
+      'பெயரில் எழுத்துக்கள் மற்றும் இடைவெளிகள் மட்டுமே இருக்க வேண்டும்';
 
   @override
   String get pleaseEnterEmail => 'உங்கள் மின்னஞ்சலை உள்ளிடவும்';
@@ -156,25 +161,29 @@ class AppLocalizationsTa extends AppLocalizations {
   String get username => 'பயனர் பெயர் *';
 
   @override
-  String get enterUsername => 'பயனர் பெயரை உள்ளிடவும் (குறைந்தது 4 எழுத்துக்கள்)';
+  String get enterUsername =>
+      'பயனர் பெயரை உள்ளிடவும் (குறைந்தது 4 எழுத்துக்கள்)';
 
   @override
   String get usernameEmpty => 'பயனர் பெயரை உள்ளிடவும்';
 
   @override
-  String get usernameMinLength => 'பயனர் பெயர் குறைந்தது 4 எழுத்துக்களாக இருக்க வேண்டும்';
+  String get usernameMinLength =>
+      'பயனர் பெயர் குறைந்தது 4 எழுத்துக்களாக இருக்க வேண்டும்';
 
   @override
   String get password => 'கடவுச்சொல்';
 
   @override
-  String get enterPassword => 'கடவுச்சொல்லை உள்ளிடவும் (குறைந்தது 6 எழுத்துக்கள்)';
+  String get enterPassword =>
+      'கடவுச்சொல்லை உள்ளிடவும் (குறைந்தது 6 எழுத்துக்கள்)';
 
   @override
   String get passwordEmpty => 'கடவுச்சொல்லை உள்ளிடவும்';
 
   @override
-  String get passwordMinLength => 'கடவுச்சொல் குறைந்தது 6 எழுத்துக்களாக இருக்க வேண்டும்';
+  String get passwordMinLength =>
+      'கடவுச்சொல் குறைந்தது 6 எழுத்துக்களாக இருக்க வேண்டும்';
 
   @override
   String get confirmPassword => 'கடவுச்சொல்லை உறுதிப்படுத்தவும்';
@@ -201,7 +210,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get registrationSuccessful => 'பதிவு வெற்றிகரமாக முடிந்தது!';
 
   @override
-  String get emailAlreadyRegistered => 'இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது.';
+  String get emailAlreadyRegistered =>
+      'இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது.';
 
   @override
   String get invalidEmailAddress => 'மின்னஞ்சல் முகவரி தவறானது.';
@@ -264,7 +274,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get offenceClassification => 'குற்ற வகைப்பாடு';
 
   @override
-  String get thisCaseIsClassifiedAs => 'இந்த வழக்கு இவ்வாறு வகைப்படுத்தப்பட்டுள்ளது';
+  String get thisCaseIsClassifiedAs =>
+      'இந்த வழக்கு இவ்வாறு வகைப்படுத்தப்பட்டுள்ளது';
 
   @override
   String get cognizable => 'புலன் விசாரணைக்கு உட்பட்டது (COGNIZABLE)';
@@ -273,7 +284,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get nonCognizable => 'புலன் விசாரணைக்கு உட்படாதது (NON-COGNIZABLE)';
 
   @override
-  String get pleaseContactOfficer => 'தயவுசெய்து அதிகாரியை தொடர்பு கொள்ளவும்...';
+  String get pleaseContactOfficer =>
+      'தயவுசெய்து அதிகாரியை தொடர்பு கொள்ளவும்...';
 
   @override
   String get fileACase => 'வழக்கு பதிவு செய்யவும்';
@@ -284,7 +296,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String welcomeUser(String name) {
     return 'வரவேற்கிறோம், $name!';
-  }
+    }
 
   @override
   String get legalAssistanceHub => 'உங்கள் சட்ட உதவி மையம்';
@@ -402,7 +414,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get noQueriesYet => 'இன்னும் கேள்விகள் இல்லை';
 
   @override
-  String get submitFirstQuery => 'உங்கள் முதல் சட்டக் கேள்வியைச் சமர்ப்பிக்கவும்';
+  String get submitFirstQuery =>
+      'உங்கள் முதல் சட்டக் கேள்வியைச் சமர்ப்பிக்கவும்';
 
   @override
   String get legalSectionSuggester => 'சட்டப்பிரிவு பரிந்துரைப்பான்';
@@ -519,10 +532,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get profileInformation => 'சுயவிவரத் தகவல்';
 
   @override
-  String get areYouSureSignOut => 'நீங்கள் நிச்சயமாக வெளியேற விரும்புகிறீர்களா?';
+  String get areYouSureSignOut =>
+      'நீங்கள் நிச்சயமாக வெளியேற விரும்புகிறீர்களா?';
 
   @override
-  String get wantToUtiliseFeature => 'இந்த வசதியைப் பயன்படுத்த விரும்புகிறீர்களா?';
+  String get wantToUtiliseFeature =>
+      'இந்த வசதியைப் பயன்படுத்த விரும்புகிறீர்களா?';
 
   @override
   String get utilise => 'பயன்படுத்து';
@@ -569,8 +584,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get complaintSummary => 'புகார் சுருக்கம்:';
 
   @override
-  String classification(String classification) =>
-      'வகைப்பாடு: $classification';
+  String classification(String classification) => 'வகைப்பாடு: $classification';
 
   @override
   String get somethingWentWrong =>
@@ -707,7 +721,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get noDocumentsUploaded => 'ஆவணங்கள் பதிவேற்றப்படவில்லை...';
 
   @override
-  String get createFirstCase => 'தொடங்குவதற்கு உங்கள் முதல் வழக்கை உருவாக்கவும்';
+  String get createFirstCase =>
+      'தொடங்குவதற்கு உங்கள் முதல் வழக்கை உருவாக்கவும்';
 
   @override
   String get createNewCase => 'புதிய வழக்கை உருவாக்கு';
@@ -719,7 +734,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get answered => 'பதிலளிக்கப்பட்டது';
 
   @override
-  String get querySubmittedSuccessfully => 'கேள்வி வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது!';
+  String get querySubmittedSuccessfully =>
+      'கேள்வி வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது!';
 
   @override
   String get submitAQuery => 'ஒரு கேள்வியைச் சமர்ப்பிக்கவும்';
@@ -732,12 +748,13 @@ class AppLocalizationsTa extends AppLocalizations {
       'FIR மற்றும் சம்பவ விவரங்கள் இரண்டையும் உள்ளிடவும்.';
 
   @override
-  String get legalSuggestionsGenerated => 'சட்டப்பிரிவு பரிந்துரைகள் உருவாக்கப்பட்டன.';
+  String get legalSuggestionsGenerated =>
+      'சட்டப்பிரிவு பரிந்துரைகள் உருவாக்கப்பட்டன.';
 
   @override
   String failedToGenerateSuggestions(String error) {
     return 'சட்டப்பிரிவு பரிந்துரைகளை உருவாக்குவதில் தோல்வி: $error';
-  }
+    }
 
   @override
   String get provideFirDetailsDesc =>
@@ -794,7 +811,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String failedToGenerateDraft(String error) {
     return 'ஆவண வரைவை உருவாக்குவதில் தோல்வி: $error';
-  }
+    }
 
   @override
   String get documentDraftingDesc =>
@@ -822,7 +839,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get draftDocument => 'ஆவண வரைவு';
 
   @override
-  String get draftingWait => 'ஆவணம் வரைவு செய்யப்படுகிறது, தயவுசெய்து காத்திருக்கவும்...';
+  String get draftingWait =>
+      'ஆவணம் வரைவு செய்யப்படுகிறது, தயவுசெய்து காத்திருக்கவும்...';
 
   @override
   String get generatedDocumentDraft => 'உருவாக்கப்பட்ட ஆவண வரைவு';
@@ -847,23 +865,25 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String filesAdded(int count) {
     return '$count கோப்பு(கள்) சேர்க்கப்பட்டன';
-  }
+    }
 
   @override
   String errorPickingFiles(String error) {
     return 'கோப்புகளைத் தேர்ந்தெடுப்பதில் பிழை: $error';
-  }
+    }
 
   @override
-  String get pleaseUploadDocument => 'தயவுசெய்து குறைந்தது ஒரு ஆவணத்தையாவது பதிவேற்றவும்.';
+  String get pleaseUploadDocument =>
+      'தயவுசெய்து குறைந்தது ஒரு ஆவணத்தையாவது பதிவேற்றவும்.';
 
   @override
-  String get draftChargeSheetGenerated => 'குற்றப்பத்திரிகை வரைவு உருவாக்கப்பட்டது.';
+  String get draftChargeSheetGenerated =>
+      'குற்றப்பத்திரிகை வரைவு உருவாக்கப்பட்டது.';
 
   @override
   String failedToGenerateChargeSheet(String error) {
     return 'குற்றப்பத்திரிகையை உருவாக்குவதில் தோல்வி: $error';
-  }
+    }
 
   @override
   String get chargesheetGeneratorDesc =>
@@ -893,14 +913,16 @@ class AppLocalizationsTa extends AppLocalizations {
       'குற்றப்பத்திரிகை உருவாக்கப்படுகிறது, ஒரு நிமிடம் காத்திருக்கவும்...';
 
   @override
-  String get generatedDraftChargeSheet => 'உருவாக்கப்பட்ட குற்றப்பத்திரிகை வரைவு';
+  String get generatedDraftChargeSheet =>
+      'உருவாக்கப்பட்ட குற்றப்பத்திரிகை வரைவு';
 
   @override
   String get reviewChargeSheetDesc =>
       'உருவாக்கப்பட்ட வரைவை மதிப்பாய்வு செய்யவும். இது ஒரு ஆரம்பப் புள்ளி மட்டுமே, சட்டப்பூர்வ மதிப்பாய்வு அவசியம்.';
 
   @override
-  String get noChargeSheetGenerated => 'குற்றப்பத்திரிகை எதுவும் உருவாக்கப்படவில்லை';
+  String get noChargeSheetGenerated =>
+      'குற்றப்பத்திரிகை எதுவும் உருவாக்கப்படவில்லை';
 
   @override
   String get aiChargeSheetDisclaimer =>
@@ -909,12 +931,12 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String fileContentLoaded(String fileName) {
     return '$fileName உள்ளடக்கம் ஏற்றப்பட்டது.';
-  }
+    }
 
   @override
   String errorReadingFile(String error) {
     return 'கோப்பை வாசிப்பதில் பிழை: $error';
-  }
+    }
 
   @override
   String get pleaseUploadOrPasteChargesheet =>
@@ -927,7 +949,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String failedToVetChargesheet(String error) {
     return 'குற்றப்பத்திரிகையைச் சரிபார்ப்பதில் தோல்வி: $error';
-  }
+    }
 
   @override
   String get chargesheetVettingAI => 'குற்றப்பத்திரிகை சரிபார்ப்பு AI';
@@ -937,16 +959,19 @@ class AppLocalizationsTa extends AppLocalizations {
       'ஏற்கனவே உள்ள குற்றப்பத்திரிகையைப் பதிவேற்றவும் அல்லது ஒட்டவும். வழக்கை வலுப்படுத்த AI மேம்பாடுகளைப் பரிந்துரைக்கும்.';
 
   @override
-  String get uploadChargesheet => 'குற்றப்பத்திரிகையைப் பதிவேற்று (.txt கோப்பு)';
+  String get uploadChargesheet =>
+      'குற்றப்பத்திரிகையைப் பதிவேற்று (.txt கோப்பு)';
 
   @override
   String get chooseFile => 'கோப்பைத் தேர்ந்தெடு';
 
   @override
-  String get fileLoadedEditBelow => 'கோப்பு ஏற்றப்பட்டது. நீங்கள் கீழேயும் திருத்தலாம்.';
+  String get fileLoadedEditBelow =>
+      'கோப்பு ஏற்றப்பட்டது. நீங்கள் கீழேயும் திருத்தலாம்.';
 
   @override
-  String get orPasteChargesheet => 'அல்லது குற்றப்பத்திரிகை உள்ளடக்கத்தை ஒட்டவும்';
+  String get orPasteChargesheet =>
+      'அல்லது குற்றப்பத்திரிகை உள்ளடக்கத்தை ஒட்டவும்';
 
   @override
   String get pasteChargesheetHint =>
@@ -959,7 +984,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get vetChargeSheet => 'குற்றப்பத்திரிகையைச் சரிபார்';
 
   @override
-  String get vettingChargesheetWait => 'குற்றப்பத்திரிகை சரிபார்க்கப்படுகிறது, காத்திருக்கவும்...';
+  String get vettingChargesheetWait =>
+      'குற்றப்பத்திரிகை சரிபார்க்கப்படுகிறது, காத்திருக்கவும்...';
 
   @override
   String get aiVettingSuggestions => 'AI சரிபார்ப்பு பரிந்துரைகள்';
@@ -980,13 +1006,12 @@ class AppLocalizationsTa extends AppLocalizations {
       'வழக்கு விவரங்கள், சாட்சி வாக்குமூலம் மற்றும் சாட்சி பெயர் ஆகிய அனைத்துப் புலங்களையும் நிரப்பவும்.';
 
   @override
-  String get witnessPreparationComplete =>
-      'சாட்சி தயாரிப்பு அமர்வு முடிந்தது.';
+  String get witnessPreparationComplete => 'சாட்சி தயாரிப்பு அமர்வு முடிந்தது.';
 
   @override
   String failedToPrepareWitness(String error) {
     return 'சாட்சி தயாரிப்பு அமர்வை நடத்துவதில் தோல்வி: $error';
-  }
+    }
 
   @override
   String get aiWitnessPreparation => 'AI சாட்சி தயாரிப்பு';
@@ -1021,7 +1046,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String reviewMockTrialFor(String witnessName) {
     return '$witnessName சாட்சிக்கான மாதிரி விசாரணை டிரான்ஸ்கிரிப்ட் மற்றும் AI பின்னூட்டத்தை மதிப்பாய்வு செய்யவும்.';
-  }
+    }
 
   @override
   String get mockTrialTranscript => 'மாதிரி விசாரணை டிரான்ஸ்கிரிப்ட்';
@@ -1039,19 +1064,21 @@ class AppLocalizationsTa extends AppLocalizations {
   String get suggestedImprovements => 'பரிந்துரைக்கப்பட்ட மேம்பாடுகள்';
 
   @override
-  String get noImprovementsSuggested => 'மேம்பாடுகள் எதுவும் பரிந்துரைக்கப்படவில்லை';
+  String get noImprovementsSuggested =>
+      'மேம்பாடுகள் எதுவும் பரிந்துரைக்கப்படவில்லை';
 
   @override
   String get aiSimulationDisclaimer =>
       'இது ஒரு AI உருவகப்படுத்துதல். உண்மையான விசாரணை நிலைமைகள் மாறுபடலாம்.';
 
   @override
-  String get imageSizeLimit => 'தயவுசெய்து 10MB க்கும் குறைவான படத்தை தேர்ந்தெடுக்கவும்.';
+  String get imageSizeLimit =>
+      'தயவுசெய்து 10MB க்கும் குறைவான படத்தை தேர்ந்தெடுக்கவும்.';
 
   @override
   String errorPickingImage(String error) {
     return 'படத்தைத் தேர்ந்தெடுப்பதில் பிழை: $error';
-  }
+    }
 
   @override
   String get selectImageSource => 'படத்தின் மூலத்தைத் தேர்ந்தெடுக்கவும்';
@@ -1063,7 +1090,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get camera => 'கேமரா';
 
   @override
-  String get pleaseSelectImageToAnalyze => 'பகுப்பாய்வு செய்ய ஒரு படத்தைத் தேர்ந்தெடுக்கவும்.';
+  String get pleaseSelectImageToAnalyze =>
+      'பகுப்பாய்வு செய்ய ஒரு படத்தைத் தேர்ந்தெடுக்கவும்.';
 
   @override
   String get analysisComplete =>
@@ -1072,7 +1100,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String failedToAnalyzeMedia(String error) {
     return 'ஊடகத்தைப் பகுப்பாய்வு செய்வதில் தோல்வி: $error';
-  }
+    }
 
   @override
   String get aiCrimeSceneInvestigator => 'AI குற்ற இடப் புலனாய்வாளர்';
@@ -1102,7 +1130,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get analyzeImage => 'படத்தைப் பகுப்பாய்வு செய்';
 
   @override
-  String get analyzingImageWait => 'AI படத்தைப் பகுப்பாய்வு செய்கிறது, காத்திருக்கவும்...';
+  String get analyzingImageWait =>
+      'AI படத்தைப் பகுப்பாய்வு செய்கிறது, காத்திருக்கவும்...';
 
   @override
   String get analyzingComplexityNote =>
@@ -1158,7 +1187,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String errorLoadingJournal(String error) {
     return 'நாட்குறிப்பை ஏற்றுவதில் பிழை: $error';
-  }
+    }
 
   @override
   String get addJournalEntry => 'நாட்குறிப்புப் பதிவைச் சேர்';
@@ -1203,12 +1232,13 @@ class AppLocalizationsTa extends AppLocalizations {
   String get addEntry => 'பதிவைச் சேர்';
 
   @override
-  String get journalEntryAddedSuccess => 'நாட்குறிப்புப் பதிவு வெற்றிகரமாகச் சேர்க்கப்பட்டது';
+  String get journalEntryAddedSuccess =>
+      'நாட்குறிப்புப் பதிவு வெற்றிகரமாகச் சேர்க்கப்பட்டது';
 
   @override
   String errorAddingEntry(String error) {
     return 'பதிவைச் சேர்ப்பதில் பிழை: $error';
-  }
+    }
 
   @override
   String get caseJournalDesc =>
@@ -1222,7 +1252,8 @@ class AppLocalizationsTa extends AppLocalizations {
       'வழக்குகள் எதுவும் இல்லை. முதலில் ஒரு வழக்கை பதிவு செய்யவும்.';
 
   @override
-  String get chooseCaseToViewJournal => 'நாட்குறிப்பைப் பார்க்க ஒரு வழக்கைத் தேர்ந்தெடுக்கவும்';
+  String get chooseCaseToViewJournal =>
+      'நாட்குறிப்பைப் பார்க்க ஒரு வழக்கைத் தேர்ந்தெடுக்கவும்';
 
   @override
   String get investigationDiary => 'புலனாய்வு நாட்குறிப்பு';
@@ -1249,7 +1280,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String errorCreatingCase(String error) {
     return 'வழக்கை உருவாக்குவதில் பிழை: $error';
-  }
+    }
 
   @override
   String get caseTitleRequired => 'வழக்கு தலைப்பு *';
@@ -1306,11 +1337,11 @@ class AppLocalizationsTa extends AppLocalizations {
   String get appVersion => '1.0.0';
 
   @override
-  String get appDescription =>
-      'AI தொழில்நுட்பத்தால் இயங்கும் சட்ட உதவி தளம்.';
+  String get appDescription => 'AI தொழில்நுட்பத்தால் இயங்கும் சட்ட உதவி தளம்.';
 
   @override
-  String get signOutConfirmation => 'நீங்கள் நிச்சயமாக வெளியேற விரும்புகிறீர்களா?';
+  String get signOutConfirmation =>
+      'நீங்கள் நிச்சயமாக வெளியேற விரும்புகிறீர்களா?';
 
   @override
   String get loginWithPhone => 'தொலைபேசி மூலம் உள்நுழை';
@@ -1458,7 +1489,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get tryingToLoginAs => 'ஆனால் இவ்வாறு உள்நுழைய முயல்கிறீர்கள்: ';
 
   @override
-  String get selectCorrectOption => 'தயவுசெய்து சரியான விருப்பத்தைத் தேர்ந்தெடுக்கவும்';
+  String get selectCorrectOption =>
+      'தயவுசெய்து சரியான விருப்பத்தைத் தேர்ந்தெடுக்கவும்';
 
   @override
   String get loginFailed => 'உள்நுழைவு தோல்வியடைந்தது';
@@ -1473,10 +1505,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get policeRegistration => 'காவல்துறை பதிவு';
 
   @override
-  String get policeLoginSuccessful => 'காவல்துறை உள்நுழைவு வெற்றிகரமாக முடிந்தது';
+  String get policeLoginSuccessful =>
+      'காவல்துறை உள்நுழைவு வெற்றிகரமாக முடிந்தது';
 
   @override
-  String get policeRegisteredSuccessfully => 'காவல்துறை வெற்றிகரமாக பதிவு செய்யப்பட்டது';
+  String get policeRegisteredSuccessfully =>
+      'காவல்துறை வெற்றிகரமாக பதிவு செய்யப்பட்டது';
 
   @override
   String get dontHavePoliceAccount => "காவல்துறை கணக்கு இல்லையா? ";
@@ -1512,7 +1546,7 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String selectLabel(String label) {
     return '$label தேர்ந்தெடுக்கவும்';
-  }
+    }
 
   @override
   String get aiInvestigationGuidelines => 'AI புலனாய்வு வழிகாட்டுதல்கள்';
@@ -1524,7 +1558,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get startInvestigation => 'புலனாய்வைத் தொடங்கவும்';
 
   @override
-  String get enterOfficerResponse => 'அதிகாரியின் பதிலைத் தட்டச்சு செய்யவும்...';
+  String get enterOfficerResponse =>
+      'அதிகாரியின் பதிலைத் தட்டச்சு செய்யவும்...';
 
   @override
   String get errorContactingInvestigationAI =>
@@ -1674,7 +1709,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get outsideJurisdiction => 'எல்லைக்கு வெளியே';
 
   @override
-  String get informationReceivedAtPS => 'காவல் நிலையத்திற்குத் தகவல் வந்த நேரம்';
+  String get informationReceivedAtPS =>
+      'காவல் நிலையத்திற்குத் தகவல் வந்த நேரம்';
 
   @override
   String get dateTimeReceived => 'பெறப்பட்ட தேதி மற்றும் நேரம்';
@@ -1686,7 +1722,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get typeOfInformation => 'தகவல் வகை';
 
   @override
-  String get complainantInformantDetails => 'புகார்தாரர் / தகவல் அளிப்பவர் விவரங்கள்';
+  String get complainantInformantDetails =>
+      'புகார்தாரர் / தகவல் அளிப்பவர் விவரங்கள்';
 
   @override
   String get name => 'பெயர்';
@@ -1749,7 +1786,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get actsStatement => 'சட்டங்கள் மற்றும் வாக்குமூலம்';
 
   @override
-  String get actsAndSectionsInvolved => 'சம்பந்தப்பட்ட சட்டங்கள் மற்றும் பிரிவுகள்:';
+  String get actsAndSectionsInvolved =>
+      'சம்பந்தப்பட்ட சட்டங்கள் மற்றும் பிரிவுகள்:';
 
   @override
   String get complaintStatement => 'புகார் / வாக்குமூலம்:';
@@ -1758,7 +1796,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get briefIncidentDetails => 'சம்பவத்தின் சுருக்கமான விவரங்கள்:';
 
   @override
-  String get actionTakenAndConfirmation => 'எடுக்கப்பட்ட நடவடிக்கை மற்றும் உறுதிப்படுத்தல்';
+  String get actionTakenAndConfirmation =>
+      'எடுக்கப்பட்ட நடவடிக்கை மற்றும் உறுதிப்படுத்தல்';
 
   @override
   String get actionTaken => 'எடுக்கப்பட்ட நடவடிக்கை';
@@ -1767,7 +1806,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get investigatingOfficer => 'புலனாய்வு அதிகாரி';
 
   @override
-  String get dispatchToCourtDateTime => 'நீதிமன்றத்திற்கு அனுப்பப்பட்ட தேதி மற்றும் நேரம்';
+  String get dispatchToCourtDateTime =>
+      'நீதிமன்றத்திற்கு அனுப்பப்பட்ட தேதி மற்றும் நேரம்';
 
   @override
   String get dispatchingOfficer => 'அனுப்பிய அதிகாரி';
@@ -1776,7 +1816,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get dispatchingOfficerRank => 'அனுப்பிய அதிகாரியின் பதவி';
 
   @override
-  String get firReadAndAdmittedCorrect => 'FIR வாசிக்கப்பட்டு சரியாக ஒப்புக் கொள்ளப்பட்டது';
+  String get firReadAndAdmittedCorrect =>
+      'FIR வாசிக்கப்பட்டு சரியாக ஒப்புக் கொள்ளப்பட்டது';
 
   @override
   String get copyGivenFreeOfCost => 'நகல் இலவசமாக வழங்கப்பட்டது';
@@ -1800,7 +1841,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get addScene => 'இடத்தைச் சேர்';
 
   @override
-  String get noCrimeScenesLinked => 'இந்த வழக்குடன் இன்னும் குற்ற இடங்கள் இணைக்கப்படவில்லை.';
+  String get noCrimeScenesLinked =>
+      'இந்த வழக்குடன் இன்னும் குற்ற இடங்கள் இணைக்கப்படவில்லை.';
 
   @override
   String get unknownType => 'தெரியாத வகை';
@@ -1809,8 +1851,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get deleteScene => 'இடத்தை நீக்கு';
 
   @override
-  String get areSureDeleteScene =>
-      'இந்த இடத்தை நீக்க விரும்புகிறீர்களா?';
+  String get areSureDeleteScene => 'இந்த இடத்தை நீக்க விரும்புகிறீர்களா?';
 
   @override
   String get place => 'இடம்';
@@ -1846,13 +1887,15 @@ class AppLocalizationsTa extends AppLocalizations {
   String get crimeSceneAnalysisReports => 'குற்ற இடப் பகுப்பாய்வு அறிக்கைகள்';
 
   @override
-  String get noAnalysisReportsFound => 'பகுப்பாய்வு அறிக்கைகள் எதுவும் காணப்படவில்லை.';
+  String get noAnalysisReportsFound =>
+      'பகுப்பாய்வு அறிக்கைகள் எதுவும் காணப்படவில்லை.';
 
   @override
   String get caseJournalIOsDiary => 'வழக்கு நாட்குறிப்பு (IO டைரி)';
 
   @override
-  String get noJournalEntriesYet => 'இந்த வழக்கிற்கு இன்னும் நாட்குறிப்புப் பதிவுகள் இல்லை.';
+  String get noJournalEntriesYet =>
+      'இந்த வழக்கிற்கு இன்னும் நாட்குறிப்புப் பதிவுகள் இல்லை.';
 
   @override
   String get crimeSceneCaptures => 'குற்ற இடப் பிடிப்புகள்';
@@ -1901,7 +1944,8 @@ class AppLocalizationsTa extends AppLocalizations {
       'நீதிமன்றத்திற்குத் தயாரான புலனாய்வு அறிக்கை PDF உருவாக்கப்பட்டு இந்த வழக்குடன் இணைக்கப்பட்டுள்ளது.';
 
   @override
-  String get downloadViewFinalReportPDF => 'இறுதி அறிக்கை PDF-ஐ பதிவிறக்கவும் / பார்க்கவும்';
+  String get downloadViewFinalReportPDF =>
+      'இறுதி அறிக்கை PDF-ஐ பதிவிறக்கவும் / பார்க்கவும்';
 
   @override
   String get loadingEvidenceFromAllSources =>
@@ -1932,16 +1976,19 @@ class AppLocalizationsTa extends AppLocalizations {
   String get errorSavingCrimeScene => 'பிழை:';
 
   @override
-  String get uploadingCapturedEvidence => 'பிடிக்கப்பட்ட ஆதாரங்களைப் பதிவேற்றுகிறது...';
+  String get uploadingCapturedEvidence =>
+      'பிடிக்கப்பட்ட ஆதாரங்களைப் பதிவேற்றுகிறது...';
 
   @override
   String get failedUploadEvidence => 'ஆதாரங்களைப் பதிவேற்றுவதில் தோல்வி';
 
   @override
-  String get geoTaggedPhotoCaptured => 'புவிசார் குறியீட்டுடன் கூடிய புகைப்படம் எடுக்கப்பட்டது';
+  String get geoTaggedPhotoCaptured =>
+      'புவிசார் குறியீட்டுடன் கூடிய புகைப்படம் எடுக்கப்பட்டது';
 
   @override
-  String get geoTaggedVideoCaptured => 'புவிசார் குறியீட்டுடன் கூடிய வீடியோ எடுக்கப்பட்டது';
+  String get geoTaggedVideoCaptured =>
+      'புவிசார் குறியீட்டுடன் கூடிய வீடியோ எடுக்கப்பட்டது';
 
   @override
   String get uploadEvidence => 'ஆதாரத்தைப் பதிவேற்று';
@@ -1987,7 +2034,8 @@ class AppLocalizationsTa extends AppLocalizations {
   String get downloadEvidence => 'ஆதாரத்தைப் பதிவிறக்கு';
 
   @override
-  String get saveToDeviceDownloads => 'சாதனத்தின் பதிவிறக்கங்கள் கோப்புறையில் சேமிக்கவும்';
+  String get saveToDeviceDownloads =>
+      'சாதனத்தின் பதிவிறக்கங்கள் கோப்புறையில் சேமிக்கவும்';
 
   @override
   String get analyzeWithAI => 'AI மூலம் பகுப்பாய்வு செய்';
@@ -2117,7 +2165,8 @@ class AppLocalizationsTa extends AppLocalizations {
       'கடவுச்சொல் மீட்டமைப்பு இணைப்பு அனுப்பப்பட்ட முகவரி: ';
 
   @override
-  String get pleaseCheckYourInbox => 'தயவுசெய்து உங்கள் மின்னஞ்சலைப் பார்க்கவும்';
+  String get pleaseCheckYourInbox =>
+      'தயவுசெய்து உங்கள் மின்னஞ்சலைப் பார்க்கவும்';
 
   @override
   String get rateOfficerAndFeedback => 'அதிகாரியை மதிப்பிடவும் & பின்னூட்டம்';
@@ -2127,7 +2176,8 @@ class AppLocalizationsTa extends AppLocalizations {
       "உங்கள் வழக்கைக் கையாண்ட அதிகாரியின் செயல்பாட்டை மதிப்பிடவும்.";
 
   @override
-  String get writeYourFeedbackOptional => 'உங்கள் பின்னூட்டத்தை எழுதவும் (விருப்பத்தேர்வு)...';
+  String get writeYourFeedbackOptional =>
+      'உங்கள் பின்னூட்டத்தை எழுதவும் (விருப்பத்தேர்வு)...';
 
   @override
   String get submitFeedback => 'பின்னூட்டத்தைச் சமர்ப்பி';
@@ -2205,5 +2255,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'மற்றவர்களுக்காகப் புகார் செய்கிறேன்';
-
+  
+  @override
+  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
 }

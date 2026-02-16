@@ -631,16 +631,16 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     return Scaffold(
         appBar: AppBar(
           title: Text(localizations.createPetition),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/petitions'); // Fallback if no history
-              }
-            },
-          ),
+          // leading: IconButton(
+          //   icon: const Icon(Icons.arrow_back),
+          //   onPressed: () {
+          //     if (context.canPop()) {
+          //       context.pop();
+          //     } else {
+          //       context.go('/petitions'); // Fallback if no history
+          //     }
+          //   },
+          // ),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

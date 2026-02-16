@@ -9,6 +9,10 @@ class AppLocalizationsMl extends AppLocalizations {
   AppLocalizationsMl([String locale = 'ml']) : super(locale);
 
   @override
+  String get filingForSomeoneElse =>
+      'നിങ്ങൾ മറ്റൊരാൾക്ക് വേണ്ടിയാണ് ഇത് ഫയൽ ചെയ്യുന്നത് എന്നതിനാൽ, ദയവായി സംഭവവും ഇരയുമായുള്ള നിങ്ങളുടെ ബന്ധവും വിവരിക്കുക.';
+
+  @override
   String get appTitle => 'ധർമ്മ CMS';
 
   String get dharma => 'ധർമ്മ';
@@ -96,7 +100,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get pleaseSelectGender => 'ദയവായി ലിംഗം തിരഞ്ഞെടുക്കുക';
 
   @override
-  String get fillFieldsCorrectly => 'ദയവായി എല്ലാ വിവരങ്ങളും ശരിയായി പൂരിപ്പിക്കുക';
+  String get fillFieldsCorrectly =>
+      'ദയവായി എല്ലാ വിവരങ്ങളും ശരിയായി പൂരിപ്പിക്കുക';
 
   @override
   String get addressDetails => 'വിലാസ വിവരങ്ങൾ';
@@ -147,7 +152,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get enterPoliceStation => 'പോലീസ് സ്റ്റേഷൻ നൽകുക';
 
   @override
-  String get personalDataNotProvided => 'പിശക്: വ്യക്തിഗത വിവരങ്ങൾ നൽകിയിട്ടില്ല';
+  String get personalDataNotProvided =>
+      'പിശക്: വ്യക്തിഗത വിവരങ്ങൾ നൽകിയിട്ടില്ല';
 
   @override
   String get loginDetails => 'ലോഗിൻ വിവരങ്ങൾ';
@@ -270,7 +276,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get cognizable => 'കോഗ്നിസബിൾ (അറസ്റ്റ് ചെയ്യാവുന്ന കുറ്റകൃത്യം)';
 
   @override
-  String get nonCognizable => 'നോൺ-കോഗ്നിസബിൾ (അറസ്റ്റ് ചെയ്യാൻ പാടില്ലാത്ത കുറ്റകൃത്യം)';
+  String get nonCognizable =>
+      'നോൺ-കോഗ്നിസബിൾ (അറസ്റ്റ് ചെയ്യാൻ പാടില്ലാത്ത കുറ്റകൃത്യം)';
 
   @override
   String get pleaseContactOfficer => 'ദയവായി ഉദ്യോഗസ്ഥനെ ബന്ധപ്പെടുക...';
@@ -284,7 +291,7 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String welcomeUser(String name) {
     return 'സ്വാഗതം, $name!';
-  }
+    }
 
   @override
   String get legalAssistanceHub => 'നിങ്ങളുടെ നിയമ സഹായ കേന്ദ്രം';
@@ -402,7 +409,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get noQueriesYet => 'ചോദ്യങ്ങൾ ഒന്നുമില്ല';
 
   @override
-  String get submitFirstQuery => 'നിങ്ങളുടെ ആദ്യത്തെ ചോദ്യം മുകളിൽ സമർപ്പിക്കുക';
+  String get submitFirstQuery =>
+      'നിങ്ങളുടെ ആദ്യത്തെ ചോദ്യം മുകളിൽ സമർപ്പിക്കുക';
 
   @override
   String get legalSectionSuggester => 'നിയമ വകുപ്പ് സൂചകം';
@@ -534,7 +542,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get fullNameQuestion => 'നിങ്ങളുടെ പൂർണ്ണനാമം എന്താണ്?';
 
   @override
-  String get addressQuestion => 'നിങ്ങൾ എവിടെയാണ് താമസിക്കുന്നത് (സ്ഥലം / പ്രദേശം)?';
+  String get addressQuestion =>
+      'നിങ്ങൾ എവിടെയാണ് താമസിക്കുന്നത് (സ്ഥലം / പ്രദേശം)?';
 
   @override
   String get phoneQuestion => 'നിങ്ങളുടെ ഫോൺ നമ്പർ എന്താണ്?';
@@ -569,15 +578,15 @@ class AppLocalizationsMl extends AppLocalizations {
   String get complaintSummary => 'പരാതിയുടെ സംഗ്രഹം:';
 
   @override
-  String classification(String classification) =>
-      'വർഗ്ഗീകരണം: $classification';
+  String classification(String classification) => 'വർഗ്ഗീകരണം: $classification';
 
   @override
   String get somethingWentWrong =>
       'ക്ഷമിക്കണം, എന്തോ പിശക് സംഭവിച്ചു. ദയവായി പിന്നീട് ശ്രമിക്കുക.';
 
   @override
-  String unexpectedErrorMessage(String error) => 'പ്രതീക്ഷിക്കാത്ത പിശക്: $error';
+  String unexpectedErrorMessage(String error) =>
+      'പ്രതീക്ഷിക്കാത്ത പിശക്: $error';
 
   @override
   String get viewAndManageComplaints =>
@@ -701,13 +710,15 @@ class AppLocalizationsMl extends AppLocalizations {
   String get orderDetails => 'ഉത്തരവ് വിവരങ്ങൾ';
 
   @override
-  String get extractedTextFromDocuments => 'രേഖകളിൽ നിന്ന് വേർതിരിച്ചെടുത്ത ടെക്സ്റ്റ്';
+  String get extractedTextFromDocuments =>
+      'രേഖകളിൽ നിന്ന് വേർതിരിച്ചെടുത്ത ടെക്സ്റ്റ്';
 
   @override
   String get noDocumentsUploaded => 'രേഖകളൊന്നും അപ്‌ലോഡ് ചെയ്തിട്ടില്ല...';
 
   @override
-  String get createFirstCase => 'തുടങ്ങാനായി നിങ്ങളുടെ ആദ്യത്തെ കേസ് രജിസ്റ്റർ ചെയ്യുക';
+  String get createFirstCase =>
+      'തുടങ്ങാനായി നിങ്ങളുടെ ആദ്യത്തെ കേസ് രജിസ്റ്റർ ചെയ്യുക';
 
   @override
   String get createNewCase => 'പുതിയ കേസ് രജിസ്റ്റർ ചെയ്യുക';
@@ -732,24 +743,23 @@ class AppLocalizationsMl extends AppLocalizations {
       'ദയവായി FIR വിവരങ്ങളും സംഭവത്തിന്റെ വിവരങ്ങളും നൽകുക.';
 
   @override
-  String get legalSuggestionsGenerated => 'നിയമ വകുപ്പ് നിർദ്ദേശങ്ങൾ തയ്യാറാക്കി.';
+  String get legalSuggestionsGenerated =>
+      'നിയമ വകുപ്പ് നിർദ്ദേശങ്ങൾ തയ്യാറാക്കി.';
 
   @override
   String failedToGenerateSuggestions(String error) {
     return 'നിയമ വകുപ്പ് നിർദ്ദേശങ്ങൾ തയ്യാറാക്കാൻ സാധിച്ചില്ല: $error';
-  }
+    }
 
   @override
   String get provideFirDetailsDesc =>
       'BNS, BNSS, BSA എന്നിവയ്ക്ക് കീഴിലുള്ള നിയമ വകുപ്പുകൾ അറിയാനായി FIR, സംഭവ വിവരങ്ങൾ എന്നിവ നൽകുക.';
 
   @override
-  String get enterFirDetailsHint =>
-      'FIR-ലെ മുഴുവൻ വിവരങ്ങളും ഇവിടെ നൽകുക...';
+  String get enterFirDetailsHint => 'FIR-ലെ മുഴുവൻ വിവരങ്ങളും ഇവിടെ നൽകുക...';
 
   @override
-  String get describeIncidentHint =>
-      'സംഭവം വിശദമായി വിവരിക്കുക...';
+  String get describeIncidentHint => 'സംഭവം വിശദമായി വിവരിക്കുക...';
 
   @override
   String get processing => 'പ്രോസസ്സ് ചെയ്യുന്നു...';
@@ -794,15 +804,14 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String failedToGenerateDraft(String error) {
     return 'ഡ്രാഫ്റ്റ് തയ്യാറാക്കാൻ സാധിച്ചില്ല: $error';
-  }
+    }
 
   @override
   String get documentDraftingDesc =>
       'മെഡിക്കൽ ഓഫീസർമാർക്കോ ഫോറൻസിക് വിദഗ്ധർക്കോ നൽകാനുള്ള രേഖകൾ തയ്യാറാക്കുക.';
 
   @override
-  String get pasteCaseDataHint =>
-      'കേസ് വിവരങ്ങൾ ഇവിടെ പേസ്റ്റ് ചെയ്യുക...';
+  String get pasteCaseDataHint => 'കേസ് വിവരങ്ങൾ ഇവിടെ പേസ്റ്റ് ചെയ്യുക...';
 
   @override
   String get selectRecipientType => 'സ്വീകർത്താവിനെ തിരഞ്ഞെടുക്കുക';
@@ -847,23 +856,25 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String filesAdded(int count) {
     return '$count ഫയലുകൾ ചേർത്തു';
-  }
+    }
 
   @override
   String errorPickingFiles(String error) {
     return 'ഫയലുകൾ തിരഞ്ഞെടുക്കുന്നതിൽ പിശക്: $error';
-  }
+    }
 
   @override
-  String get pleaseUploadDocument => 'ദയവായി കുറഞ്ഞത് ഒരു രേഖയെങ്കിലും അപ്‌ലോഡ് ചെയ്യുക.';
+  String get pleaseUploadDocument =>
+      'ദയവായി കുറഞ്ഞത് ഒരു രേഖയെങ്കിലും അപ്‌ലോഡ് ചെയ്യുക.';
 
   @override
-  String get draftChargeSheetGenerated => 'കുറ്റപത്രത്തിന്റെ ഡ്രാഫ്റ്റ് തയ്യാറാക്കി.';
+  String get draftChargeSheetGenerated =>
+      'കുറ്റപത്രത്തിന്റെ ഡ്രാഫ്റ്റ് തയ്യാറാക്കി.';
 
   @override
   String failedToGenerateChargeSheet(String error) {
     return 'കുറ്റപത്രം തയ്യാറാക്കാൻ സാധിച്ചില്ല: $error';
-  }
+    }
 
   @override
   String get chargesheetGeneratorDesc =>
@@ -879,8 +890,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get uploadedFiles => 'അപ്‌ലോഡ് ചെയ്ത ഫയലുകൾ:';
 
   @override
-  String get chargesheetInstructionsHint =>
-      'നിർദ്ദേശങ്ങൾ നൽകുക...';
+  String get chargesheetInstructionsHint => 'നിർദ്ദേശങ്ങൾ നൽകുക...';
 
   @override
   String get generating => 'തയ്യാറാക്കുന്നു...';
@@ -909,12 +919,12 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String fileContentLoaded(String fileName) {
     return '$fileName ലോഡ് ചെയ്തു.';
-  }
+    }
 
   @override
   String errorReadingFile(String error) {
     return 'ഫയൽ വായിക്കുന്നതിൽ പിശക്: $error';
-  }
+    }
 
   @override
   String get pleaseUploadOrPasteChargesheet =>
@@ -927,7 +937,7 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String failedToVetChargesheet(String error) {
     return 'കുറ്റപത്രം പരിശോധിക്കാൻ സാധിച്ചില്ല: $error';
-  }
+    }
 
   @override
   String get chargesheetVettingAI => 'AI കുറ്റപത്ര പരിശോധന';
@@ -946,7 +956,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get fileLoadedEditBelow => 'ഫയൽ ലോഡ് ചെയ്തു. താഴെ തിരുത്താവുന്നതാണ്.';
 
   @override
-  String get orPasteChargesheet => 'അല്ലെങ്കിൽ ഉള്ളടക്കം ഇവിടെ പേസ്റ്റ് ചെയ്യുക';
+  String get orPasteChargesheet =>
+      'അല്ലെങ്കിൽ ഉള്ളടക്കം ഇവിടെ പേസ്റ്റ് ചെയ്യുക';
 
   @override
   String get pasteChargesheetHint =>
@@ -959,7 +970,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get vetChargeSheet => 'കുറ്റപത്രം പരിശോധിക്കുക';
 
   @override
-  String get vettingChargesheetWait => 'പരിശോധിക്കുന്നു, ദയവായി കാത്തിരിക്കുക...';
+  String get vettingChargesheetWait =>
+      'പരിശോധിക്കുന്നു, ദയവായി കാത്തിരിക്കുക...';
 
   @override
   String get aiVettingSuggestions => 'AI നിർദ്ദേശങ്ങൾ';
@@ -976,17 +988,15 @@ class AppLocalizationsMl extends AppLocalizations {
       'AI നിർദ്ദേശങ്ങൾ. അന്തിമ തീരുമാനത്തിന് നിയമ വൈദഗ്ധ്യം ആവശ്യമാണ്.';
 
   @override
-  String get pleaseFillAllWitnessFields =>
-      'ദയവായി എല്ലാ വിവരങ്ങളും നൽകുക.';
+  String get pleaseFillAllWitnessFields => 'ദയവായി എല്ലാ വിവരങ്ങളും നൽകുക.';
 
   @override
-  String get witnessPreparationComplete =>
-      'സാക്ഷി തയ്യാറെടുപ്പ് പൂർത്തിയായി.';
+  String get witnessPreparationComplete => 'സാക്ഷി തയ്യാറെടുപ്പ് പൂർത്തിയായി.';
 
   @override
   String failedToPrepareWitness(String error) {
     return 'സാക്ഷി തയ്യാറെടുപ്പ് നടത്താൻ സാധിച്ചില്ല: $error';
-  }
+    }
 
   @override
   String get aiWitnessPreparation => 'AI സാക്ഷി തയ്യാറെടുപ്പ്';
@@ -999,12 +1009,10 @@ class AppLocalizationsMl extends AppLocalizations {
   String get enterWitnessNameHint => 'സാക്ഷിയുടെ പേര് നൽകുക';
 
   @override
-  String get caseDetailsHint =>
-      'കേസ് വിവരങ്ങൾ നൽകുക...';
+  String get caseDetailsHint => 'കേസ് വിവരങ്ങൾ നൽകുക...';
 
   @override
-  String get witnessStatementHint =>
-      'സാക്ഷി മൊഴി നൽകുക...';
+  String get witnessStatementHint => 'സാക്ഷി മൊഴി നൽകുക...';
 
   @override
   String get preparing => 'തയ്യാറെടുക്കുന്നു...';
@@ -1021,7 +1029,7 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String reviewMockTrialFor(String witnessName) {
     return '$witnessName എന്ന സാക്ഷിയുടെ മോക്ക് ട്രയൽ റിപ്പോർട്ട് പരിശോധിക്കുക.';
-  }
+    }
 
   @override
   String get mockTrialTranscript => 'ട്രയൽ ട്രാൻസ്ക്രിപ്റ്റ്';
@@ -1046,12 +1054,13 @@ class AppLocalizationsMl extends AppLocalizations {
       'ഇതൊരു AI സിമുലേഷൻ ആണ്. യഥാർത്ഥ സാഹചര്യങ്ങൾ മാറിയേക്കാം.';
 
   @override
-  String get imageSizeLimit => 'ദയവായി 10MB-യിൽ താഴെയുള്ള ചിത്രം തിരഞ്ഞെടുക്കുക.';
+  String get imageSizeLimit =>
+      'ദയവായി 10MB-യിൽ താഴെയുള്ള ചിത്രം തിരഞ്ഞെടുക്കുക.';
 
   @override
   String errorPickingImage(String error) {
     return 'ചിത്രം തിരഞ്ഞെടുക്കുന്നതിൽ പിശക്: $error';
-  }
+    }
 
   @override
   String get selectImageSource => 'ചിത്രം തിരഞ്ഞെടുക്കേണ്ട ഉറവിടം';
@@ -1063,16 +1072,16 @@ class AppLocalizationsMl extends AppLocalizations {
   String get camera => 'ക്യാമറ';
 
   @override
-  String get pleaseSelectImageToAnalyze => 'വിശകലനം ചെയ്യാൻ ഒരു ചിത്രം തിരഞ്ഞെടുക്കുക.';
+  String get pleaseSelectImageToAnalyze =>
+      'വിശകലനം ചെയ്യാൻ ഒരു ചിത്രം തിരഞ്ഞെടുക്കുക.';
 
   @override
-  String get analysisComplete =>
-      'വിശകലനം പൂർത്തിയായി. വിവരങ്ങൾ താഴെ കാണാം.';
+  String get analysisComplete => 'വിശകലനം പൂർത്തിയായി. വിവരങ്ങൾ താഴെ കാണാം.';
 
   @override
   String failedToAnalyzeMedia(String error) {
     return 'വിശകലനം ചെയ്യാൻ സാധിച്ചില്ല: $error';
-  }
+    }
 
   @override
   String get aiCrimeSceneInvestigator => 'AI കുറ്റാന്വേഷകൻ';
@@ -1102,7 +1111,8 @@ class AppLocalizationsMl extends AppLocalizations {
   String get analyzeImage => 'ചിത്രം വിശകലനം ചെയ്യുക';
 
   @override
-  String get analyzingImageWait => 'AI ചിത്രം വിശകലനം ചെയ്യുന്നു, ദയവായി കാത്തിരിക്കുക...';
+  String get analyzingImageWait =>
+      'AI ചിത്രം വിശകലനം ചെയ്യുന്നു, ദയവായി കാത്തിരിക്കുക...';
 
   @override
   String get analyzingComplexityNote =>
@@ -1127,23 +1137,19 @@ class AppLocalizationsMl extends AppLocalizations {
   String get category => 'വിഭാഗം';
 
   @override
-  String get noElementsIdentified =>
-      'ഘടകങ്ങളൊന്നും കണ്ടെത്താൻ സാധിച്ചില്ല.';
+  String get noElementsIdentified => 'ഘടകങ്ങളൊന്നും കണ്ടെത്താൻ സാധിച്ചില്ല.';
 
   @override
   String get sceneNarrativeEditable => 'വിവരണം (തിരുത്താവുന്നത്)';
 
   @override
-  String get sceneNarrativeHint =>
-      'AI തയ്യാറാക്കിയ വിവരണം ഇവിടെ കാണാം.';
+  String get sceneNarrativeHint => 'AI തയ്യാറാക്കിയ വിവരണം ഇവിടെ കാണാം.';
 
   @override
-  String get caseFileSummaryEditable =>
-      'സംഗ്രഹം (തിരുത്താവുന്നത്)';
+  String get caseFileSummaryEditable => 'സംഗ്രഹം (തിരുത്താവുന്നത്)';
 
   @override
-  String get caseFileSummaryHint =>
-      'AI തയ്യാറാക്കിയ സംഗ്രഹം ഇവിടെ കാണാം.';
+  String get caseFileSummaryHint => 'AI തയ്യാറാക്കിയ സംഗ്രഹം ഇവിടെ കാണാം.';
 
   @override
   String get aiAnalysisDisclaimer =>
@@ -1158,7 +1164,7 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String errorLoadingJournal(String error) {
     return 'ജേണൽ ലോഡ് ചെയ്യുന്നതിൽ പിശക്: $error';
-  }
+    }
 
   @override
   String get addJournalEntry => 'പുതിയ എൻട്രി ചേർക്കുക';
@@ -1208,18 +1214,16 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String errorAddingEntry(String error) {
     return 'ചേർക്കുന്നതിൽ പിശക്: $error';
-  }
+    }
 
   @override
-  String get caseJournalDesc =>
-      'അന്വേഷണ ഡയറികളും കേസ് വിവരങ്ങളും കാണുക';
+  String get caseJournalDesc => 'അന്വേഷണ ഡയറികളും കേസ് വിവരങ്ങളും കാണുക';
 
   @override
   String get selectCase => 'കേസ് തിരഞ്ഞെടുക്കുക';
 
   @override
-  String get noCasesAvailable =>
-      'കേസുകളൊന്നും ലഭ്യമല്ല.';
+  String get noCasesAvailable => 'കേസുകളൊന്നും ലഭ്യമല്ല.';
 
   @override
   String get chooseCaseToViewJournal => 'ജേണൽ കാണാനായി ഒരു കേസ് തിരഞ്ഞെടുക്കുക';
@@ -1249,7 +1253,7 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String errorCreatingCase(String error) {
     return 'രജിസ്റ്റർ ചെയ്യുന്നതിൽ പിശക്: $error';
-  }
+    }
 
   @override
   String get caseTitleRequired => 'കേസ് തലക്കെട്ട് *';
@@ -1503,8 +1507,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get selectPoliceStationText => 'പോലീസ് സ്റ്റേഷൻ തിരഞ്ഞെടുക്കുക';
 
   @override
-  String get pleaseSelectAllDropdownFields =>
-      'എല്ലാ വിവരങ്ങളും തിരഞ്ഞെടുക്കുക';
+  String get pleaseSelectAllDropdownFields => 'എല്ലാ വിവരങ്ങളും തിരഞ്ഞെടുക്കുക';
 
   @override
   String get searchHint => 'തിരയുക...';
@@ -1512,7 +1515,7 @@ class AppLocalizationsMl extends AppLocalizations {
   @override
   String selectLabel(String label) {
     return '$label തിരഞ്ഞെടുക്കുക';
-  }
+    }
 
   @override
   String get aiInvestigationGuidelines => 'AI അന്വേഷണ മാർഗ്ഗനിർദ്ദേശങ്ങൾ';
@@ -1624,12 +1627,10 @@ class AppLocalizationsMl extends AppLocalizations {
   String get yourAccessLevel => 'നിങ്ങളുടെ ആക്‌സസ് ലെവൽ';
 
   @override
-  String get filterCasesUsingFilters =>
-      'കേസുകൾ ഫിൽട്ടർ ചെയ്യുക.';
+  String get filterCasesUsingFilters => 'കേസുകൾ ഫിൽട്ടർ ചെയ്യുക.';
 
   @override
-  String get casesScreenSubtitle =>
-      'FIR-കളും കേസുകളും ഇവിടെ കൈകാര്യം ചെയ്യാം.';
+  String get casesScreenSubtitle => 'FIR-കളും കേസുകളും ഇവിടെ കൈകാര്യം ചെയ്യാം.';
 
   @override
   String get crimeScene => 'കുറ്റകൃത്യ സ്ഥലം';
@@ -1809,8 +1810,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get deleteScene => 'ഡിലീറ്റ് ചെയ്യുക';
 
   @override
-  String get areSureDeleteScene =>
-      'ഡിലീറ്റ് ചെയ്യണമെന്ന് ഉറപ്പാണോ?';
+  String get areSureDeleteScene => 'ഡിലീറ്റ് ചെയ്യണമെന്ന് ഉറപ്പാണോ?';
 
   @override
   String get place => 'സ്ഥലം';
@@ -1870,27 +1870,22 @@ class AppLocalizationsMl extends AppLocalizations {
   String get noEvidenceDocumentsFound => 'രേഖകളൊന്നുമില്ല';
 
   @override
-  String get attachedDocumentsWillAppearHere =>
-      'രേഖകൾ ഇവിടെ കാണാം.';
+  String get attachedDocumentsWillAppearHere => 'രേഖകൾ ഇവിടെ കാണാം.';
 
   @override
-  String get noDocumentsAttachedJournal =>
-      'രേഖകളൊന്നും ചേർത്തിട്ടില്ല.';
+  String get noDocumentsAttachedJournal => 'രേഖകളൊന്നും ചേർത്തിട്ടില്ല.';
 
   @override
-  String get noPetitionDocumentsLinked =>
-      'ഹർജി രേഖകളൊന്നും ചേർത്തിട്ടില്ല.';
+  String get noPetitionDocumentsLinked => 'ഹർജി രേഖകളൊന്നും ചേർത്തിട്ടില്ല.';
 
   @override
-  String get finalInvestigationReport =>
-      'അന്തിമ അന്വേഷണ റിപ്പോർട്ട്';
+  String get finalInvestigationReport => 'അന്തിമ അന്വേഷണ റിപ്പോർട്ട്';
 
   @override
   String get generatedOn => 'തയ്യാറാക്കിയത്:';
 
   @override
-  String get noFinalReportAttached =>
-      'റിപ്പോർട്ടുകളൊന്നും ചേർത്തിട്ടില്ല.';
+  String get noFinalReportAttached => 'റിപ്പോർട്ടുകളൊന്നും ചേർത്തിട്ടില്ല.';
 
   @override
   String get onceSomeoneGeneratesReport =>
@@ -1901,11 +1896,11 @@ class AppLocalizationsMl extends AppLocalizations {
       'റിപ്പോർട്ട് തയ്യാറാക്കി ഈ കേസുമായി ചേർത്തിട്ടുണ്ട്.';
 
   @override
-  String get downloadViewFinalReportPDF => 'റിപ്പോർട്ട് കാണുക / ഡൗൺലോഡ് ചെയ്യുക';
+  String get downloadViewFinalReportPDF =>
+      'റിപ്പോർട്ട് കാണുക / ഡൗൺലോഡ് ചെയ്യുക';
 
   @override
-  String get loadingEvidenceFromAllSources =>
-      'തെളിവുകൾ ശേഖരിക്കുന്നു...';
+  String get loadingEvidenceFromAllSources => 'തെളിവുകൾ ശേഖരിക്കുന്നു...';
 
   @override
   String get addCrimeScene => 'സ്ഥലം ചേർക്കുക';
@@ -1974,8 +1969,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get errorUploadingFile => 'പിശക്:';
 
   @override
-  String get pleaseCapturUploadEvidenceFirst =>
-      'ദയവായി തെളിവുകൾ ശേഖരിക്കുക';
+  String get pleaseCapturUploadEvidenceFirst => 'ദയവായി തെളിവുകൾ ശേഖരിക്കുക';
 
   @override
   String get sceneAnalysisComplete => 'വിശകലനം പൂർത്തിയായി!';
@@ -2002,8 +1996,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get deleteReport => 'ഡിലീറ്റ് ചെയ്യുക';
 
   @override
-  String get deleteReportConfirmation =>
-      'ഉറപ്പാണോ?';
+  String get deleteReportConfirmation => 'ഉറപ്പാണോ?';
 
   @override
   String get reportDeleted => 'ഡിലീറ്റ് ചെയ്തു';
@@ -2030,8 +2023,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get filedOn => 'ഫയൽ ചെയ്തത്:';
 
   @override
-  String get accessViaFileManager =>
-      'ഫയൽ മനേജറിൽ കാണാം';
+  String get accessViaFileManager => 'ഫയൽ മനേജറിൽ കാണാം';
 
   @override
   String get evidenceDownloaded => 'ഡൗൺലോഡ് വിജയിച്ചു!';
@@ -2081,8 +2073,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get aiChatInProgressTitle => 'AI ചാറ്റ് നടന്നുകൊണ്ടിരിക്കുന്നു';
 
   @override
-  String get aiChatInProgressMessage =>
-      'നിർത്താൻ ആഗ്രഹിക്കുന്നുണ്ടോ?';
+  String get aiChatInProgressMessage => 'നിർത്താൻ ആഗ്രഹിക്കുന്നുണ്ടോ?';
 
   @override
   String get clearChat => 'ക്ലിയർ ചാറ്റ്';
@@ -2097,8 +2088,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get termsAndConditions => 'വ്യവസ്ഥകൾ';
 
   @override
-  String get enterEmailForPasswordReset =>
-      'പാസ്‌വേഡ് മാറ്റാനായി ഇമെയിൽ നൽകുക.';
+  String get enterEmailForPasswordReset => 'പാസ്‌വേഡ് മാറ്റാനായി ഇമെയിൽ നൽകുക.';
 
   @override
   String get sendResetLink => 'ലിങ്ക് അയയ്ക്കുക';
@@ -2113,8 +2103,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get isNotRegisteredWithUs => 'രജിസ്റ്റർ ചെയ്തിട്ടില്ല';
 
   @override
-  String get passwordResetLinkSentTo =>
-      'ലിങ്ക് അയച്ചിട്ടുണ്ട്,';
+  String get passwordResetLinkSentTo => 'ലിങ്ക് അയച്ചിട്ടുണ്ട്,';
 
   @override
   String get pleaseCheckYourInbox => 'ദയവായി ഇൻബോക്സ് നോക്കുക';
@@ -2133,12 +2122,10 @@ class AppLocalizationsMl extends AppLocalizations {
   String get submitFeedback => 'സമർപ്പിക്കുക';
 
   @override
-  String get feedbackSubmittedSuccessfully =>
-      'ഫീഡ്‌ബാക്ക് സമർപ്പിച്ചു!';
+  String get feedbackSubmittedSuccessfully => 'ഫീഡ്‌ബാക്ക് സമർപ്പിച്ചു!';
 
   @override
-  String errorSubmittingFeedback(String error) =>
-      'പിശക്: $error';
+  String errorSubmittingFeedback(String error) => 'പിശക്: $error';
 
   @override
   String get incidentAddress => 'സംഭവം നടന്ന വിലാസം';
@@ -2147,8 +2134,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get incidentDate => 'സംഭവം നടന്ന തീയതി';
 
   @override
-  String get jurisdictionForFilingComplaint =>
-      'അധികാരപരിധി';
+  String get jurisdictionForFilingComplaint => 'അധികാരപരിധി';
 
   @override
   String get caseProgressUpdates => 'കേസ് പുരോഗതി';
@@ -2161,8 +2147,7 @@ class AppLocalizationsMl extends AppLocalizations {
   String get noUpdatesYet => 'വിവരങ്ങൾ ലഭ്യമല്ല';
 
   @override
-  String get policeWillAddUpdatesHere =>
-      'പോലീസ് വിവരങ്ങൾ ഇവിടെ നൽകും';
+  String get policeWillAddUpdatesHere => 'പോലീസ് വിവരങ്ങൾ ഇവിടെ നൽകും';
 
   @override
   String get uploadedDocuments => 'അപ്‌ലോഡ് ചെയ്ത രേഖകൾ';
@@ -2205,4 +2190,7 @@ class AppLocalizationsMl extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'മറ്റൊരാൾക്ക് വേണ്ടി';
+  
+  @override
+  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
 }

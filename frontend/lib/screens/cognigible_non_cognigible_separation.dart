@@ -239,7 +239,8 @@ class _CognigibleNonCognigibleSeparationScreenState
                         onPressed: () {
                           print(
                               '🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
-                          context.go('/petitions/create', extra: petitionData);
+                          context.push('/petitions/create',
+                              extra: petitionData);
                         },
                       )
                     else ...[

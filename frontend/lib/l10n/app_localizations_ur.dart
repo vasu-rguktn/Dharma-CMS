@@ -9,6 +9,10 @@ class AppLocalizationsUr extends AppLocalizations {
   AppLocalizationsUr([String locale = 'ur']) : super(locale);
 
   @override
+  String get filingForSomeoneElse =>
+      'چونکہ آپ یہ کسی اور کے لیے داخل کر رہے ہیں، براہ کرم واقعہ اور متاثرہ کے ساتھ اپنے تعلق کی وضاحت کریں۔';
+
+  @override
   String get appTitle => 'دھرما CMS';
 
   String get dharma => 'دھرما';
@@ -96,7 +100,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get pleaseSelectGender => 'براہ کرم اپنی جنس منتخب کریں';
 
   @override
-  String get fillFieldsCorrectly => 'براہ کرم تمام خانوں کو درست طریقے سے پُر کریں';
+  String get fillFieldsCorrectly =>
+      'براہ کرم تمام خانوں کو درست طریقے سے پُر کریں';
 
   @override
   String get addressDetails => 'پتے کی تفصیلات';
@@ -285,7 +290,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String welcomeUser(String name) {
     return 'خوش آمدید، $name!';
   }
-
   @override
   String get legalAssistanceHub => 'آپ کا قانونی امدادی مرکز';
 
@@ -522,7 +526,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get areYouSureSignOut => 'کیا آپ واقعی سائن آؤٹ کرنا چاہتے ہیں؟';
 
   @override
-  String get wantToUtiliseFeature => 'کیا آپ اس فیچر کو استعمال کرنا چاہتے ہیں؟';
+  String get wantToUtiliseFeature =>
+      'کیا آپ اس فیچر کو استعمال کرنا چاہتے ہیں؟';
 
   @override
   String get utilise => 'استعمال کریں';
@@ -569,8 +574,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get complaintSummary => 'شکایت کا خلاصہ:';
 
   @override
-  String classification(String classification) =>
-      'درجہ بندی: $classification';
+  String classification(String classification) => 'درجہ بندی: $classification';
 
   @override
   String get somethingWentWrong =>
@@ -737,7 +741,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String failedToGenerateSuggestions(String error) {
     return 'قانونی دفعات کی تجاویز تیار کرنے میں ناکامی: $error';
-  }
+    }
 
   @override
   String get provideFirDetailsDesc =>
@@ -794,7 +798,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String failedToGenerateDraft(String error) {
     return 'دستاویز کا ڈرافٹ تیار کرنے میں ناکامی: $error';
-  }
+    }
 
   @override
   String get documentDraftingDesc =>
@@ -808,8 +812,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get selectRecipientType => 'وصول کنندہ کی قسم منتخب کریں';
 
   @override
-  String get additionalInstructionsOptional =>
-      'اضافی ہدایات (اختیاری)';
+  String get additionalInstructionsOptional => 'اضافی ہدایات (اختیاری)';
 
   @override
   String get additionalInstructionsHint =>
@@ -822,7 +825,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get draftDocument => 'دستاویز کا ڈرافٹ بنائیں';
 
   @override
-  String get draftingWait => 'دستاویز ڈرافٹ کی جا رہی ہے، براہ کرم انتظار کریں...';
+  String get draftingWait =>
+      'دستاویز ڈرافٹ کی جا رہی ہے، براہ کرم انتظار کریں...';
 
   @override
   String get generatedDocumentDraft => 'تیار کردہ دستاویز کا ڈرافٹ';
@@ -847,15 +851,16 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String filesAdded(int count) {
     return '$count فائل(یں) شامل کر دی گئیں';
-  }
+    }
 
   @override
   String errorPickingFiles(String error) {
     return 'فائلیں منتخب کرنے میں غلطی: $error';
-  }
+    }
 
   @override
-  String get pleaseUploadDocument => 'براہ کرم کم از کم ایک دستاویز اپ لوڈ کریں۔';
+  String get pleaseUploadDocument =>
+      'براہ کرم کم از کم ایک دستاویز اپ لوڈ کریں۔';
 
   @override
   String get draftChargeSheetGenerated => 'فرد جرم کا ڈرافٹ تیار ہو گیا ہے۔';
@@ -863,7 +868,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String failedToGenerateChargeSheet(String error) {
     return 'فرد جرم تیار کرنے میں ناکامی: $error';
-  }
+    }
 
   @override
   String get chargesheetGeneratorDesc =>
@@ -909,12 +914,12 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String fileContentLoaded(String fileName) {
     return '$fileName کا مواد لوڈ ہو گیا۔';
-  }
+    }
 
   @override
   String errorReadingFile(String error) {
     return 'فائل پڑھنے میں غلطی: $error';
-  }
+    }
 
   @override
   String get pleaseUploadOrPasteChargesheet =>
@@ -927,7 +932,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String failedToVetChargesheet(String error) {
     return 'فرد جرم کی جانچ میں ناکامی: $error';
-  }
+    }
 
   @override
   String get chargesheetVettingAI => 'فرد جرم کی جانچ کرنے والا AI';
@@ -943,14 +948,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get chooseFile => 'فائل منتخب کریں';
 
   @override
-  String get fileLoadedEditBelow => 'فائل لوڈ ہو گئی۔ آپ نیچے ایڈٹ بھی کر سکتے ہیں۔';
+  String get fileLoadedEditBelow =>
+      'فائل لوڈ ہو گئی۔ آپ نیچے ایڈٹ بھی کر سکتے ہیں۔';
 
   @override
   String get orPasteChargesheet => 'یا فرد جرم کا مواد پیسٹ کریں';
 
   @override
-  String get pasteChargesheetHint =>
-      'فرد جرم کا مکمل مواد یہاں پیسٹ کریں...';
+  String get pasteChargesheetHint => 'فرد جرم کا مکمل مواد یہاں پیسٹ کریں...';
 
   @override
   String get vetting => 'جانچ جاری ہے...';
@@ -959,7 +964,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get vetChargeSheet => 'فرد جرم کی جانچ کریں';
 
   @override
-  String get vettingChargesheetWait => 'فرد جرم کی جانچ ہو رہی ہے، براہ کرم انتظار کریں...';
+  String get vettingChargesheetWait =>
+      'فرد جرم کی جانچ ہو رہی ہے، براہ کرم انتظار کریں...';
 
   @override
   String get aiVettingSuggestions => 'AI کی جانچ کی تجاویز';
@@ -980,13 +986,12 @@ class AppLocalizationsUr extends AppLocalizations {
       'براہ کرم تمام خانے پُر کریں: کیس کی تفصیلات، گواہ کا بیان، اور گواہ کا نام۔';
 
   @override
-  String get witnessPreparationComplete =>
-      'گواہ کی تیاری کا سیشن مکمل ہوا۔';
+  String get witnessPreparationComplete => 'گواہ کی تیاری کا سیشن مکمل ہوا۔';
 
   @override
   String failedToPrepareWitness(String error) {
     return 'گواہ کی تیاری کا سیشن منعقد کرنے میں ناکامی: $error';
-  }
+    }
 
   @override
   String get aiWitnessPreparation => 'AI گواہ کی تیاری';
@@ -1021,7 +1026,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String reviewMockTrialFor(String witnessName) {
     return 'گواہ $witnessName کے لیے فرضی ٹرائل کی ٹرانسکرپٹ اور AI فیڈ بیک کا جائزہ لیں۔';
-  }
+    }
 
   @override
   String get mockTrialTranscript => 'فرضی ٹرائل کی ٹرانسکرپٹ';
@@ -1051,7 +1056,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String errorPickingImage(String error) {
     return 'تصویر منتخب کرنے میں غلطی: $error';
-  }
+    }
 
   @override
   String get selectImageSource => 'تصویر کا ذریعہ منتخب کریں';
@@ -1063,7 +1068,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get camera => 'کیمرہ';
 
   @override
-  String get pleaseSelectImageToAnalyze => 'تجزیہ کے لیے براہ کرم ایک تصویر منتخب کریں۔';
+  String get pleaseSelectImageToAnalyze =>
+      'تجزیہ کے لیے براہ کرم ایک تصویر منتخب کریں۔';
 
   @override
   String get analysisComplete =>
@@ -1072,7 +1078,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String failedToAnalyzeMedia(String error) {
     return 'میڈیا کا تجزیہ کرنے میں ناکامی: $error';
-  }
+    }
 
   @override
   String get aiCrimeSceneInvestigator => 'AI جائے وقوعہ تفتیش کار';
@@ -1088,8 +1094,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get chooseImage => 'تصویر منتخب کریں';
 
   @override
-  String get contextInstructions =>
-      'سیاق و سباق / مخصوص ہدایات (اختیاری)';
+  String get contextInstructions => 'سیاق و سباق / مخصوص ہدایات (اختیاری)';
 
   @override
   String get contextInstructionsHint =>
@@ -1102,7 +1107,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get analyzeImage => 'تصویر کا تجزیہ کریں';
 
   @override
-  String get analyzingImageWait => 'AI تصویر کا تجزیہ کر رہا ہے، براہ کرم انتظار کریں...';
+  String get analyzingImageWait =>
+      'AI تصویر کا تجزیہ کر رہا ہے، براہ کرم انتظار کریں...';
 
   @override
   String get analyzingComplexityNote =>
@@ -1158,7 +1164,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String errorLoadingJournal(String error) {
     return 'جرنل لوڈ کرنے میں غلطی: $error';
-  }
+    }
 
   @override
   String get addJournalEntry => 'جرنل انٹری شامل کریں';
@@ -1203,12 +1209,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get addEntry => 'انٹری شامل کریں';
 
   @override
-  String get journalEntryAddedSuccess => 'جرنل انٹری کامیابی کے ساتھ شامل ہو گئی';
+  String get journalEntryAddedSuccess =>
+      'جرنل انٹری کامیابی کے ساتھ شامل ہو گئی';
 
   @override
   String errorAddingEntry(String error) {
     return 'انٹری شامل کرنے میں غلطی: $error';
-  }
+    }
 
   @override
   String get caseJournalDesc =>
@@ -1249,7 +1256,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String errorCreatingCase(String error) {
     return 'کیس بنانے میں غلطی: $error';
-  }
+    }
 
   @override
   String get caseTitleRequired => 'کیس کا عنوان *';
@@ -1303,8 +1310,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get appVersion => '1.0.0';
 
   @override
-  String get appDescription =>
-      'AI ٹیکنالوجی سے لیس قانونی امداد کا پلیٹ فارم۔';
+  String get appDescription => 'AI ٹیکنالوجی سے لیس قانونی امداد کا پلیٹ فارم۔';
 
   @override
   String get signOutConfirmation => 'کیا آپ واقعی سائن آؤٹ کرنا چاہتے ہیں؟';
@@ -1474,7 +1480,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get policeLoginSuccessful => 'پولیس لاگ ان کامیاب';
 
   @override
-  String get policeRegisteredSuccessfully => 'پولیس کامیابی کے ساتھ رجسٹر ہو گئی';
+  String get policeRegisteredSuccessfully =>
+      'پولیس کامیابی کے ساتھ رجسٹر ہو گئی';
 
   @override
   String get dontHavePoliceAccount => "پولیس اکاؤنٹ نہیں ہے؟ ";
@@ -1510,7 +1517,7 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String selectLabel(String label) {
     return '$label منتخب کریں';
-  }
+    }
 
   @override
   String get aiInvestigationGuidelines => 'AI تفتیشی رہنما خطوط';
@@ -1586,7 +1593,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get listening => 'سن رہا ہے...';
 
   @override
-  String get tapToStopRecording => 'ریکارڈنگ روکنے کے لیے مائیکروفون آئیکن پر ٹیپ کریں';
+  String get tapToStopRecording =>
+      'ریکارڈنگ روکنے کے لیے مائیکروفون آئیکن پر ٹیپ کریں';
 
   @override
   String get imageLab => 'امیج لیب';
@@ -1684,7 +1692,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get typeOfInformation => 'اطلاع کی قسم';
 
   @override
-  String get complainantInformantDetails => 'شکایت کنندہ / اطلاع دہندہ کی تفصیلات';
+  String get complainantInformantDetails =>
+      'شکایت کنندہ / اطلاع دہندہ کی تفصیلات';
 
   @override
   String get name => 'نام';
@@ -1798,7 +1807,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get addScene => 'منظر شامل کریں';
 
   @override
-  String get noCrimeScenesLinked => 'اس کیس سے ابھی تک کوئی جائے وقوعہ منسلک نہیں ہے۔';
+  String get noCrimeScenesLinked =>
+      'اس کیس سے ابھی تک کوئی جائے وقوعہ منسلک نہیں ہے۔';
 
   @override
   String get unknownType => 'نامعلوم قسم';
@@ -1850,7 +1860,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get caseJournalIOsDiary => 'کیس جرنل (تفتیشی ڈائری)';
 
   @override
-  String get noJournalEntriesYet => 'اس کیس کے لیے ابھی تک کوئی جرنل انٹری نہیں ہے۔';
+  String get noJournalEntriesYet =>
+      'اس کیس کے لیے ابھی تک کوئی جرنل انٹری نہیں ہے۔';
 
   @override
   String get crimeSceneCaptures => 'جائے وقوعہ کی تصاویر/ویڈیوز';
@@ -1880,8 +1891,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس کیس سے ابھی تک کوئی درخواست کی دستاویز منسلک نہیں ہے۔';
 
   @override
-  String get finalInvestigationReport =>
-      'حتمی تفتیشی رپورٹ / عدالتی دستاویز';
+  String get finalInvestigationReport => 'حتمی تفتیشی رپورٹ / عدالتی دستاویز';
 
   @override
   String get generatedOn => 'تیار کردہ بتاریخ:';
@@ -1899,7 +1909,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'عدالت کے لیے تیار تفتیشی رپورٹ PDF تیار ہو کر اس کیس کے ساتھ منسلک کر دی گئی ہے۔';
 
   @override
-  String get downloadViewFinalReportPDF => 'حتمی رپورٹ PDF ڈاؤن لوڈ کریں / دیکھیں';
+  String get downloadViewFinalReportPDF =>
+      'حتمی رپورٹ PDF ڈاؤن لوڈ کریں / دیکھیں';
 
   @override
   String get loadingEvidenceFromAllSources =>
@@ -1930,7 +1941,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get errorSavingCrimeScene => 'غلطی:';
 
   @override
-  String get uploadingCapturedEvidence => 'محفوظ کردہ شواہد اپ لوڈ ہو رہے ہیں...';
+  String get uploadingCapturedEvidence =>
+      'محفوظ کردہ شواہد اپ لوڈ ہو رہے ہیں...';
 
   @override
   String get failedUploadEvidence => 'شواہد اپ لوڈ کرنے میں ناکامی';
@@ -1985,7 +1997,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get downloadEvidence => 'شواہد ڈاؤن لوڈ کریں';
 
   @override
-  String get saveToDeviceDownloads => 'ڈیوائس کے ڈاؤن لوڈز فولڈر میں محفوظ کریں';
+  String get saveToDeviceDownloads =>
+      'ڈیوائس کے ڈاؤن لوڈز فولڈر میں محفوظ کریں';
 
   @override
   String get analyzeWithAI => 'AI کے ذریعے تجزیہ کریں';
@@ -2111,8 +2124,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get isNotRegisteredWithUs => 'ہمارے پاس رجسٹرڈ نہیں ہے';
 
   @override
-  String get passwordResetLinkSentTo =>
-      'پاس ورڈ ری سیٹ لنک بھیج دیا گیا ہے،';
+  String get passwordResetLinkSentTo => 'پاس ورڈ ری سیٹ لنک بھیج دیا گیا ہے،';
 
   @override
   String get pleaseCheckYourInbox => 'براہ کرم اپنا ان باکس چیک کریں';
@@ -2145,8 +2157,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get incidentDate => 'واقعے کی تاریخ';
 
   @override
-  String get jurisdictionForFilingComplaint =>
-      'شکایت درج کرنے کا دائرہ اختیار';
+  String get jurisdictionForFilingComplaint => 'شکایت درج کرنے کا دائرہ اختیار';
 
   @override
   String get caseProgressUpdates => 'کیس کی پیشرفت کی اپ ڈیٹس';
@@ -2203,4 +2214,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'دوسروں کے لیے شکایت';
+  
+  @override
+  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
 }
