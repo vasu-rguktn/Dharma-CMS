@@ -70,7 +70,7 @@ class PetitionProvider with ChangeNotifier {
       _petitions =
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
     } catch (e) {
-      debugPrint("Error fetching petitions: $e");
+      // debugPrint("Error fetching petitions: $e");
     }
 
     _isLoading = false;
@@ -84,7 +84,7 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 Fetching petitions for station: $stationName');
+      // debugPrint('🔍 Fetching petitions for station: $stationName');
 
       final snapshot = await _firestore
           .collection('petitions')
@@ -95,9 +95,9 @@ class PetitionProvider with ChangeNotifier {
       _petitions =
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
 
-      debugPrint('✅ Fetched ${_petitions.length} petitions for station');
+      // debugPrint('✅ Fetched ${_petitions.length} petitions for station');
     } catch (e) {
-      debugPrint('❌ Error fetching station petitions: $e');
+      // debugPrint('❌ Error fetching station petitions: $e');
       _petitions = [];
     }
 
@@ -108,7 +108,7 @@ class PetitionProvider with ChangeNotifier {
   /// 🔍 Fetch a single petition by caseId (for AI Investigation)
   Future<Petition?> fetchPetitionByCaseId(String caseId) async {
     try {
-      debugPrint('🔍 Fetching petition with caseId: $caseId');
+      // debugPrint('🔍 Fetching petition with caseId: $caseId');
 
       final snapshot = await _firestore
           .collection('petitions')
@@ -117,15 +117,15 @@ class PetitionProvider with ChangeNotifier {
           .get();
 
       if (snapshot.docs.isEmpty) {
-        debugPrint('❌ No petition found with caseId: $caseId');
+        // debugPrint('❌ No petition found with caseId: $caseId');
         return null;
       }
 
       final petition = Petition.fromFirestore(snapshot.docs.first);
-      debugPrint('✅ Found petition: ${petition.title}');
+      // debugPrint('✅ Found petition: ${petition.title}');
       return petition;
     } catch (e) {
-      debugPrint('❌ Error fetching petition by caseId: $e');
+      // debugPrint('❌ Error fetching petition by caseId: $e');
       return null;
     }
   }
@@ -160,8 +160,8 @@ class PetitionProvider with ChangeNotifier {
     String? range,
   }) async {
     try {
-      debugPrint(
-          '🔍 fetchPetitionStats called | userId=$userId | officerId=$officerId | station=$stationName | district=$district | range=$range');
+      // debugPrint(
+          // '🔍 fetchPetitionStats called | userId=$userId | officerId=$officerId | station=$stationName | district=$district | range=$range');
 
       // 1️⃣ Query Online Petitions
       Query onlineQuery = _firestore.collection('petitions');
@@ -174,7 +174,7 @@ class PetitionProvider with ChangeNotifier {
       }
 
       final onlineSnapshot = await onlineQuery.get();
-      debugPrint('📊 Online documents found: ${onlineSnapshot.docs.length}');
+      // debugPrint('📊 Online documents found: ${onlineSnapshot.docs.length}');
 
       // 2️⃣ Query Offline Petitions (only for Police mode)
       int offlineTotal = 0;
@@ -226,10 +226,10 @@ class PetitionProvider with ChangeNotifier {
 
         final offlineDocs = offlineDocsMap.values.toList();
         offlineTotal = offlineDocs.length;
-        debugPrint('📊 Offline documents found: $offlineTotal');
+        // debugPrint('📊 Offline documents found: $offlineTotal');
 
         offlineTotal = offlineDocs.length;
-        debugPrint('📊 Offline documents found: $offlineTotal');
+        // debugPrint('📊 Offline documents found: $offlineTotal');
 
         for (var doc in offlineDocs) {
           final data = doc.data() as Map<String, dynamic>;
@@ -314,16 +314,16 @@ class PetitionProvider with ChangeNotifier {
 
       if (userId != null) {
         _userStats = statsMap;
-        debugPrint('✅ Updated USER stats: $_userStats');
+        // debugPrint('✅ Updated USER stats: $_userStats');
       } else {
         _globalStats = statsMap;
         _petitionCount = total;
-        debugPrint('✅ Updated GLOBAL (Police) stats: $_globalStats');
+        // debugPrint('✅ Updated GLOBAL (Police) stats: $_globalStats');
       }
 
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error fetching petition stats: $e');
+      // debugPrint('❌ Error fetching petition stats: $e');
     }
   }
 
@@ -444,7 +444,7 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
     return true;
   } catch (e) {
-    debugPrint("Error creating petition: $e");
+    // debugPrint("Error creating petition: $e");
     return false;
   }
 }
@@ -470,7 +470,7 @@ class PetitionProvider with ChangeNotifier {
       return true;
       return true;
     } catch (e) {
-      debugPrint("Error updating petition: $e");
+      // debugPrint("Error updating petition: $e");
       return false;
     }
   }
@@ -494,7 +494,7 @@ class PetitionProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint("Error submitting feedback: $e");
+      // debugPrint("Error submitting feedback: $e");
       return false;
     }
   }
@@ -509,7 +509,7 @@ class PetitionProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint("Error deleting petition: $e");
+      // debugPrint("Error deleting petition: $e");
       return false;
     }
   }
@@ -528,7 +528,7 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 fetchFilteredPetitions | isPolice=$isPolice | officerId=$officerId | station=$stationName | district=$district | range=$range | filter=$filter');
+      // debugPrint('🔍 fetchFilteredPetitions | isPolice=$isPolice | officerId=$officerId | station=$stationName | district=$district | range=$range | filter=$filter');
       List<Petition> allPetitions = [];
 
       // 1️⃣ Fetch Online Petitions (Citizens usually submit online)
@@ -621,9 +621,9 @@ class PetitionProvider with ChangeNotifier {
         }
       }).toList();
       
-      debugPrint('✅ fetchFilteredPetitions found: ${_petitions.length} petitions');
+      // debugPrint('✅ fetchFilteredPetitions found: ${_petitions.length} petitions');
     } catch (e) {
-      debugPrint('❌ Error fetchFilteredPetitions: $e');
+      // debugPrint('❌ Error fetchFilteredPetitions: $e');
       _petitions = [];
     }
 
@@ -643,14 +643,14 @@ class PetitionProvider with ChangeNotifier {
     List<PlatformFile>? documentFiles,
   }) async {
     try {
-      debugPrint('🚀 [PETITION_UPDATE] Creating update for petition: $petitionId');
+      // debugPrint('🚀 [PETITION_UPDATE] Creating update for petition: $petitionId');
       List<String> photoUrls = [];
       List<Map<String, String>> documents = [];
 
       // Upload photos
       if (photoFiles != null && photoFiles.isNotEmpty) {
         try {
-          debugPrint('📸 [PETITION_UPDATE] Uploading ${photoFiles.length} photos');
+          // debugPrint('📸 [PETITION_UPDATE] Uploading ${photoFiles.length} photos');
           final timestamp = DateTime.now()
               .toString()
               .split('.')
@@ -664,9 +664,9 @@ class PetitionProvider with ChangeNotifier {
             files: photoFiles,
             folderPath: photoFolderPath,
           );
-          debugPrint('✅ [PETITION_UPDATE] Photos uploaded: ${photoUrls.length} URLs');
+          // debugPrint('✅ [PETITION_UPDATE] Photos uploaded: ${photoUrls.length} URLs');
         } catch (photoError) {
-          debugPrint('⚠️ [PETITION_UPDATE] Photo upload error: $photoError');
+          // debugPrint('⚠️ [PETITION_UPDATE] Photo upload error: $photoError');
           // Continue without photos rather than failing completely
         }
       }
@@ -674,7 +674,7 @@ class PetitionProvider with ChangeNotifier {
       // Upload documents
       if (documentFiles != null && documentFiles.isNotEmpty) {
         try {
-          debugPrint('📄 [PETITION_UPDATE] Uploading ${documentFiles.length} documents');
+          // debugPrint('📄 [PETITION_UPDATE] Uploading ${documentFiles.length} documents');
           final timestamp = DateTime.now()
               .toString()
               .split('.')
@@ -698,9 +698,9 @@ class PetitionProvider with ChangeNotifier {
               });
             }
           }
-          debugPrint('✅ [PETITION_UPDATE] Documents uploaded: ${documents.length} with URLs');
+          // debugPrint('✅ [PETITION_UPDATE] Documents uploaded: ${documents.length} with URLs');
         } catch (docError) {
-          debugPrint('⚠️ [PETITION_UPDATE] Document upload error: $docError');
+          // debugPrint('⚠️ [PETITION_UPDATE] Document upload error: $docError');
           // Continue without documents rather than failing completely
         }
       }
@@ -721,10 +721,10 @@ class PetitionProvider with ChangeNotifier {
           .collection('petition_updates')
           .add(update.toMap());
 
-      debugPrint('✅ [PETITION_UPDATE] Petition update created successfully');
+      // debugPrint('✅ [PETITION_UPDATE] Petition update created successfully');
       return true;
     } catch (e) {
-      debugPrint('❌ [PETITION_UPDATE] Error creating petition update: $e');
+      // debugPrint('❌ [PETITION_UPDATE] Error creating petition update: $e');
       return false;
     }
   }
@@ -742,7 +742,7 @@ class PetitionProvider with ChangeNotifier {
           .map((doc) => PetitionUpdate.fromFirestore(doc))
           .toList();
     } catch (e) {
-      debugPrint('❌ Error fetching petition updates: $e');
+      // debugPrint('❌ Error fetching petition updates: $e');
       return [];
     }
   }
@@ -809,7 +809,7 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 Fetching petitions sent by officer: $officerId');
+      // debugPrint('🔍 Fetching petitions sent by officer: $officerId');
 
       final snapshot = await _firestore
           .collection('petitions')
@@ -821,9 +821,9 @@ class PetitionProvider with ChangeNotifier {
       _petitions =
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
 
-      debugPrint('✅ Fetched ${_petitions.length} sent petitions');
+      // debugPrint('✅ Fetched ${_petitions.length} sent petitions');
     } catch (e) {
-      debugPrint('❌ Error fetching sent petitions: $e');
+      // debugPrint('❌ Error fetching sent petitions: $e');
       _petitions = [];
     }
 
@@ -838,7 +838,7 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 Fetching petitions assigned to officer: $officerId');
+      // debugPrint('🔍 Fetching petitions assigned to officer: $officerId');
 
       final snapshot = await _firestore
           .collection('petitions')
@@ -850,9 +850,9 @@ class PetitionProvider with ChangeNotifier {
       _petitions =
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
 
-      debugPrint('✅ Fetched ${_petitions.length} assigned petitions');
+      // debugPrint('✅ Fetched ${_petitions.length} assigned petitions');
     } catch (e) {
-      debugPrint('❌ Error fetching assigned petitions: $e');
+      // debugPrint('❌ Error fetching assigned petitions: $e');
       _petitions = [];
     }
 
@@ -871,7 +871,7 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 Fetching petitions assigned to unit');
+      // debugPrint('🔍 Fetching petitions assigned to unit');
 
       Query query = _firestore
           .collection('petitions')
@@ -879,13 +879,13 @@ class PetitionProvider with ChangeNotifier {
 
       if (stationName != null && stationName.isNotEmpty) {
         query = query.where('assignedToStation', isEqualTo: stationName);
-        debugPrint('📍 Filtering by station: $stationName');
+        // debugPrint('📍 Filtering by station: $stationName');
       } else if (districtName != null && districtName.isNotEmpty) {
         query = query.where('assignedToDistrict', isEqualTo: districtName);
-        debugPrint('📍 Filtering by district: $districtName');
+        // debugPrint('📍 Filtering by district: $districtName');
       } else if (rangeName != null && rangeName.isNotEmpty) {
         query = query.where('assignedToRange', isEqualTo: rangeName);
-        debugPrint('📍 Filtering by range: $rangeName');
+        // debugPrint('📍 Filtering by range: $rangeName');
       }
 
       final snapshot = await query.orderBy('assignedAt', descending: true).get();
@@ -893,9 +893,9 @@ class PetitionProvider with ChangeNotifier {
       _petitions =
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
 
-      debugPrint('✅ Fetched ${_petitions.length} unit-assigned petitions');
+      // debugPrint('✅ Fetched ${_petitions.length} unit-assigned petitions');
     } catch (e) {
-      debugPrint('❌ Error fetching unit-assigned petitions: $e');
+      // debugPrint('❌ Error fetching unit-assigned petitions: $e');
       _petitions = [];
     }
 
@@ -915,7 +915,7 @@ class PetitionProvider with ChangeNotifier {
 
       return snapshot.count ?? 0;
     } catch (e) {
-      debugPrint('❌ Error getting sent petitions count: $e');
+      // debugPrint('❌ Error getting sent petitions count: $e');
       return 0;
     }
   }
@@ -932,7 +932,7 @@ class PetitionProvider with ChangeNotifier {
 
       return snapshot.count ?? 0;
     } catch (e) {
-      debugPrint('❌ Error getting assigned petitions count: $e');
+      // debugPrint('❌ Error getting assigned petitions count: $e');
       return 0;
     }
   }

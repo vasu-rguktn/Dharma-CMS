@@ -35,12 +35,12 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
   @override
   void initState() {
     super.initState();
-    print('🎬 [LEGAL_QUERIES] Screen initialized (initState)');
+    // print('🎬 [LEGAL_QUERIES] Screen initialized (initState)');
   }
 
   @override
   void dispose() {
-    print('🗑️ [LEGAL_QUERIES] Screen disposed (navigating away)');
+    // print('🗑️ [LEGAL_QUERIES] Screen disposed (navigating away)');
     super.dispose();
   }
 
@@ -355,9 +355,9 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
     final provider = context.watch<LegalQueriesProvider>();
 
     // Log navigation stack state when screen is built
-    print('📱 [LEGAL_QUERIES] Screen built');
-    print('📚 [LEGAL_QUERIES] Can pop: ${Navigator.of(context).canPop()}');
-    print('📍 [LEGAL_QUERIES] Current route: ${ModalRoute.of(context)?.settings.name ?? "unnamed"}');
+    // print('📱 [LEGAL_QUERIES] Screen built');
+    // print('📚 [LEGAL_QUERIES] Can pop: ${Navigator.of(context).canPop()}');
+    // print('📍 [LEGAL_QUERIES] Current route: ${ModalRoute.of(context)?.settings.name ?? "unnamed"}');
 
     return Scaffold(
       appBar: AppBar(
@@ -372,7 +372,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           tooltip: 'Back to Dashboard',
           onPressed: () {
-            print('⬅️ [LEGAL_QUERIES] Back button pressed - navigating to dashboard');
+            // print('⬅️ [LEGAL_QUERIES] Back button pressed - navigating to dashboard');
             Navigator.of(context).pop(); // Navigate back to dashboard
           },
         ),
@@ -383,7 +383,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
               icon: const Icon(Icons.history),
               tooltip: 'Chat History',
               onPressed: () {
-                print('📜 [LEGAL_QUERIES] History button tapped - opening drawer');
+                // print('📜 [LEGAL_QUERIES] History button tapped - opening drawer');
                 Scaffold.of(context).openDrawer();
               },
             ),
@@ -424,14 +424,14 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: provider.chatSessionsStream(),
                   builder: (context, snapshot) {
-                    print('🗂️ [LEGAL_QUERIES] History StreamBuilder state:');
-                    print('   - hasData: ${snapshot.hasData}');
-                    print('   - hasError: ${snapshot.hasError}');
-                    print('   - error: ${snapshot.error}');
-                    print('   - connectionState: ${snapshot.connectionState}');
+                    // print('🗂️ [LEGAL_QUERIES] History StreamBuilder state:');
+                    // print('   - hasData: ${snapshot.hasData}');
+                    // print('   - hasError: ${snapshot.hasError}');
+                    // print('   - error: ${snapshot.error}');
+                    // print('   - connectionState: ${snapshot.connectionState}');
                     
                     if (snapshot.hasError) {
-                      print('❌ [LEGAL_QUERIES] History error: ${snapshot.error}');
+                      // print('❌ [LEGAL_QUERIES] History error: ${snapshot.error}');
                       return Center(
                         child: Text('Error: ${snapshot.error}'),
                       );
@@ -444,7 +444,7 @@ class _LegalQueriesScreenState extends State<LegalQueriesScreen> {
                     }
 
                     final sessions = snapshot.data!;
-                    print('   - sessions count: ${sessions.length}');
+                    // print('   - sessions count: ${sessions.length}');
                     
                     if (sessions.isEmpty) {
                       return Center(

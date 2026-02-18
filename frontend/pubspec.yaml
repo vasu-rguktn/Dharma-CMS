@@ -1,7 +1,7 @@
 name: Dharma
 description: Flutter version of Dharma - Legal and Law Enforcement AI Assistant Platform
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -116,19 +116,21 @@ flutter:
   assets:
     - assets/login_design.svg
     - assets/police_logo.png
-    - assets/avatar.png
+    - assets/avatar2.png
     - assets/Frame.svg
     - assets/DashboardFrame.svg
-    - assets/Data/district_police_stations.json
-    - assets/Data/ap_police_hierarchy_complete.json
-    - assets/Data/ap_police_hierarchy_fir.json
-    - assets/Data/pincodes.json
+    - assets/data/district_police_stations.json
+    - assets/data/ap_police_hierarchy_complete.json
+    - assets/data/ap_police_hierarchy_fir.json
+    - assets/data/pincodes.json
     - assets/CM.png
     - assets/DGP.jpg
     - assets/DyCM.png
     - assets/HomeMinister.jpg
-    - assets/Data/Dharma_Citizen_Consent.pdf
+    - assets/data/Dharma_Citizen_Consent.pdf
     - assets/police_avatar.png
+    - assets/avatar.gif
+
     
 
 

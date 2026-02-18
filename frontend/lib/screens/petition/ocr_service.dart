@@ -137,7 +137,7 @@ class OcrService {
 
       for (final url in endpoints) {
         try {
-          debugPrint('OCR attempting: $url');
+          // debugPrint('OCR attempting: $url');
           resp = await _dio.post(url,
               data: formData,
               options: Options(
@@ -150,7 +150,7 @@ class OcrService {
             break;
           }
         } on DioException catch (e) {
-          debugPrint('OCR failed for $url: ${e.message}');
+          // debugPrint('OCR failed for $url: ${e.message}');
           lastErr = e;
         }
       }
@@ -163,7 +163,7 @@ class OcrService {
 
       result = text.isNotEmpty ? {'text': text} : null;
     } catch (e) {
-      debugPrint('OCR Critical Error: $e');
+      // debugPrint('OCR Critical Error: $e');
       result = null;
       rethrow;
     } finally {

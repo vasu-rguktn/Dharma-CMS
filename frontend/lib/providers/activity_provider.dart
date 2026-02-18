@@ -111,7 +111,7 @@ class ActivityProvider with ChangeNotifier {
         _prePopulateDefaultActivities(save: false);
       }
     } catch (e) {
-      debugPrint('Error loading activities: $e');
+      // debugPrint('Error loading activities: $e');
       _prePopulateDefaultActivities(save: false);
     } finally {
       _isLoading = false;
@@ -163,7 +163,7 @@ class ActivityProvider with ChangeNotifier {
       final String encoded = jsonEncode(_activities.map((e) => e.toJson()).toList());
       await prefs.setString(_storageKey, encoded);
     } catch (e) {
-      debugPrint('Error saving activities: $e');
+      // debugPrint('Error saving activities: $e');
     }
   }
 

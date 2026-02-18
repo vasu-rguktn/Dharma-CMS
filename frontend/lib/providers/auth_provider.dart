@@ -76,19 +76,19 @@ class AuthProvider with ChangeNotifier {
         // If session expired (more than 3 hours since last activity), clear it
         // But don't sign out here - Firebase Auth will restore the user, and we'll handle it in _onAuthStateChanged
         if (timeSinceLastActivity > _sessionDuration) {
-          debugPrint(
-              'AuthProvider: Session expired (${timeSinceLastActivity.inHours} hours). Will clear on auth state change...');
+          // debugPrint(
+              // 'AuthProvider: Session expired (${timeSinceLastActivity.inHours} hours). Will clear on auth state change...');
           // Don't sign out here - let Firebase restore first, then we'll check in _onAuthStateChanged
         } else {
-          debugPrint(
-              'AuthProvider: Session valid (${timeSinceLastActivity.inMinutes} minutes since last activity)');
+          // debugPrint(
+              // 'AuthProvider: Session valid (${timeSinceLastActivity.inMinutes} minutes since last activity)');
         }
       } else {
-        debugPrint(
-            'AuthProvider: No existing session found - will save when Firebase restores user');
+        // debugPrint(
+            // 'AuthProvider: No existing session found - will save when Firebase restores user');
       }
     } catch (e) {
-      debugPrint('AuthProvider: Error initializing session: $e');
+      // debugPrint('AuthProvider: Error initializing session: $e');
     }
   }
 
@@ -99,14 +99,14 @@ class AuthProvider with ChangeNotifier {
       final now = DateTime.now();
       await prefs.setString(_sessionTimestampKey, now.toIso8601String());
       await prefs.setString(_lastActivityKey, now.toIso8601String());
-      debugPrint(
-          'AuthProvider: ✅ Session timestamp saved at ${now.toIso8601String()}');
+      // debugPrint(
+          // 'AuthProvider: ✅ Session timestamp saved at ${now.toIso8601String()}');
 
       // Verify it was saved
       final saved = prefs.getString(_lastActivityKey);
-      debugPrint('AuthProvider: ✅ Verified session saved: $saved');
+      // debugPrint('AuthProvider: ✅ Verified session saved: $saved');
     } catch (e) {
-      debugPrint('AuthProvider: ❌ Error saving session timestamp: $e');
+      // debugPrint('AuthProvider: ❌ Error saving session timestamp: $e');
     }
   }
 
@@ -117,7 +117,7 @@ class AuthProvider with ChangeNotifier {
       final now = DateTime.now();
       await prefs.setString(_lastActivityKey, now.toIso8601String());
     } catch (e) {
-      debugPrint('AuthProvider: Error updating last activity: $e');
+      // debugPrint('AuthProvider: Error updating last activity: $e');
     }
   }
 
@@ -127,9 +127,9 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_sessionTimestampKey);
       await prefs.remove(_lastActivityKey);
-      debugPrint('AuthProvider: Session cleared');
+      // debugPrint('AuthProvider: Session cleared');
     } catch (e) {
-      debugPrint('AuthProvider: Error clearing session: $e');
+      // debugPrint('AuthProvider: Error clearing session: $e');
     }
   }
 
@@ -147,7 +147,7 @@ class AuthProvider with ChangeNotifier {
 
       return timeSinceLastActivity <= _sessionDuration;
     } catch (e) {
-      debugPrint('AuthProvider: Error checking session validity: $e');
+      // debugPrint('AuthProvider: Error checking session validity: $e');
       return false;
     }
   }
@@ -164,34 +164,34 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     if (firebaseUser != null) {
-      debugPrint(
-          'AuthProvider: 🔐 auth state changed -> user uid=${firebaseUser.uid}');
+      // debugPrint(
+          // 'AuthProvider: 🔐 auth state changed -> user uid=${firebaseUser.uid}');
 
       // Check if we have a session timestamp - if not, this is a restored session, save it
       final prefs = await SharedPreferences.getInstance();
       final lastActivityStr = prefs.getString(_lastActivityKey);
 
-      debugPrint(
-          'AuthProvider: 📋 Checking session - lastActivityStr: ${lastActivityStr != null ? "exists" : "null"}');
+      // debugPrint(
+          // 'AuthProvider: 📋 Checking session - lastActivityStr: ${lastActivityStr != null ? "exists" : "null"}');
 
       if (lastActivityStr == null) {
         // No session timestamp found - this is likely a restored Firebase session
         // Save the session timestamp to maintain it
-        debugPrint(
-            'AuthProvider: 💾 No session timestamp found, saving restored Firebase session...');
+        // debugPrint(
+            // 'AuthProvider: 💾 No session timestamp found, saving restored Firebase session...');
         await _saveSessionTimestamp();
       } else {
         // We have a session timestamp - check if it's still valid
         final lastActivity = DateTime.parse(lastActivityStr);
         final now = DateTime.now();
         final timeSinceLastActivity = now.difference(lastActivity);
-        debugPrint(
-            'AuthProvider: ⏰ Session check - Last activity: $lastActivity, Now: $now, Duration: ${timeSinceLastActivity.inMinutes} minutes');
+        // debugPrint(
+            // 'AuthProvider: ⏰ Session check - Last activity: $lastActivity, Now: $now, Duration: ${timeSinceLastActivity.inMinutes} minutes');
 
         final sessionValid = await isSessionValid();
         if (!sessionValid) {
-          debugPrint(
-              'AuthProvider: ⏰ Session expired (${timeSinceLastActivity.inHours} hours), signing out...');
+          // debugPrint(
+              // 'AuthProvider: ⏰ Session expired (${timeSinceLastActivity.inHours} hours), signing out...');
           await _auth.signOut();
           await _clearSession();
           _user = null;
@@ -202,8 +202,8 @@ class AuthProvider with ChangeNotifier {
           return;
         } else {
           // Session is valid, update last activity
-          debugPrint(
-              'AuthProvider: ✅ Session valid, updating last activity...');
+          // debugPrint(
+              // 'AuthProvider: ✅ Session valid, updating last activity...');
           await _updateLastActivity();
         }
       }
@@ -211,7 +211,7 @@ class AuthProvider with ChangeNotifier {
       try {
         await _loadUserProfile(firebaseUser.uid);
       } catch (e, st) {
-        debugPrint('AuthProvider: _loadUserProfile threw: $e\n$st');
+        // debugPrint('AuthProvider: _loadUserProfile threw: $e\n$st');
       }
     } else {
       _userProfile = null;
@@ -227,7 +227,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('AuthProvider: checking police collection for uid=$uid');
+      // debugPrint('AuthProvider: checking police collection for uid=$uid');
 
       // 1️⃣ CHECK POLICE COLLECTION FIRST
       final policeQuery = await _firestore
@@ -243,13 +243,13 @@ class AuthProvider with ChangeNotifier {
         // Force role
         _userProfile = _userProfile!.copyWith(role: 'police');
 
-        debugPrint('AuthProvider: police profile loaded for uid=$uid');
+        // debugPrint('AuthProvider: police profile loaded for uid=$uid');
         _isProfileLoading = false;
         notifyListeners();
         return;
       }
 
-      debugPrint('AuthProvider: not police, checking users collection');
+      // debugPrint('AuthProvider: not police, checking users collection');
 
       // 2️⃣ CHECK USERS (CITIZEN)
       final userQuery = await _firestore
@@ -261,16 +261,16 @@ class AuthProvider with ChangeNotifier {
       if (userQuery.docs.isNotEmpty) {
         _userProfile = UserProfile.fromFirestore(userQuery.docs.first);
 
-        debugPrint('AuthProvider: citizen profile loaded for uid=$uid');
+        // debugPrint('AuthProvider: citizen profile loaded for uid=$uid');
 
         // Register FCM token for citizens ONLY (not for police)
         _registerNotificationToken(uid);
       } else {
-        debugPrint('AuthProvider: no profile found for uid=$uid');
+        // debugPrint('AuthProvider: no profile found for uid=$uid');
         _userProfile = null;
       }
     } catch (e, st) {
-      debugPrint('AuthProvider: error loading profile -> $e\n$st');
+      // debugPrint('AuthProvider: error loading profile -> $e\n$st');
       _userProfile = null;
     }
 
@@ -287,11 +287,11 @@ class AuthProvider with ChangeNotifier {
       // Initialize FCM for citizen users only (isCitizen: true)
       await notificationService.initialize(userId, isCitizen: true);
 
-      debugPrint('AuthProvider: ✅ FCM token registered for citizen user');
+      // debugPrint('AuthProvider: ✅ FCM token registered for citizen user');
     } catch (e) {
       // Don't crash - notifications are optional
-      debugPrint(
-          'AuthProvider: FCM token registration failed (non-critical): $e');
+      // debugPrint(
+          // 'AuthProvider: FCM token registration failed (non-critical): $e');
     }
   }
 
@@ -314,7 +314,7 @@ class AuthProvider with ChangeNotifier {
       await _saveSessionTimestamp();
       return credential;
     } on FirebaseAuthException catch (e) {
-      debugPrint('signInWithEmail error: ${e.message}');
+      // debugPrint('signInWithEmail error: ${e.message}');
       rethrow;
     }
   }
@@ -327,9 +327,9 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      debugPrint('Password reset email sent to $email');
+      // debugPrint('Password reset email sent to $email');
     } on FirebaseAuthException catch (e) {
-      debugPrint('sendPasswordResetEmail error: ${e.message}');
+      // debugPrint('sendPasswordResetEmail error: ${e.message}');
       rethrow;
     }
   }
@@ -347,7 +347,7 @@ class AuthProvider with ChangeNotifier {
       );
       return credential;
     } on FirebaseAuthException catch (e) {
-      debugPrint('signUpWithEmail error: ${e.message}');
+      // debugPrint('signUpWithEmail error: ${e.message}');
       rethrow;
     }
   }
@@ -375,7 +375,7 @@ class AuthProvider with ChangeNotifier {
       await _saveSessionTimestamp();
       return credential;
     } on FirebaseAuthException catch (e) {
-      debugPrint('signInWithGoogle error: ${e.message}');
+      // debugPrint('signInWithGoogle error: ${e.message}');
       rethrow;
     }
   }
@@ -629,7 +629,7 @@ class AuthProvider with ChangeNotifier {
       // Reload profile to get fresh data
       await _loadUserProfile(uid);
     } catch (e) {
-      debugPrint('Error updating profile: $e');
+      // debugPrint('Error updating profile: $e');
       rethrow;
     } finally {
       _isLoading = false;

@@ -65,7 +65,7 @@ class WatermarkProcessor {
       
       return permanentFile;
     } catch (e) {
-      print('Error adding watermark to image: $e');
+      // print('Error adding watermark to image: $e');
       rethrow;
     }
   }
@@ -78,7 +78,7 @@ class WatermarkProcessor {
       final permanentFile = await _copyVideoToPermanentLocation(videoFile, watermarkText);
       return permanentFile;
     } catch (e) {
-      print('Error processing video: $e');
+      // print('Error processing video: $e');
       rethrow;
     }
   }
@@ -105,10 +105,10 @@ class WatermarkProcessor {
       final file = File(filePath);
       await file.writeAsBytes(encodedImage);
       
-      print('Saved watermarked image to: $filePath');
+      // print('Saved watermarked image to: $filePath');
       return file;
     } catch (e) {
-      print('Error saving to permanent location: $e');
+      // print('Error saving to permanent location: $e');
       rethrow;
     }
   }
@@ -137,10 +137,10 @@ class WatermarkProcessor {
       final metadataFile = File('${filePath}.txt');
       await metadataFile.writeAsString(watermarkText);
       
-      print('Saved video to: $filePath');
+      // print('Saved video to: $filePath');
       return file;
     } catch (e) {
-      print('Error copying video: $e');
+      // print('Error copying video: $e');
       rethrow;
     }
   }
@@ -163,12 +163,12 @@ class WatermarkProcessor {
           final stat = await entity.stat();
           if (stat.modified.isBefore(cutoffDate)) {
             await entity.delete();
-            print('Deleted old file: ${entity.path}');
+            // print('Deleted old file: ${entity.path}');
           }
         }
       }
     } catch (e) {
-      print('Error cleaning up old files: $e');
+      // print('Error cleaning up old files: $e');
     }
   }
 }

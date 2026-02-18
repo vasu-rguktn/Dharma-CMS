@@ -74,7 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'dob': _dobController.text.trim(),
         'gender': _gender,
       };
-      debugPrint('Submitting personal data: $personalData');
+      // debugPrint('Submitting personal data: $personalData');
       try {
         final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
         final userType = args?['userType'] as String? ?? 'citizen';
@@ -85,15 +85,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         };
         if (_incomingAddress != null) extra['address'] = _incomingAddress;
         context.go('/address', extra: extra);
-        debugPrint('Navigation to /address attempted with userType: $userType');
+        // debugPrint('Navigation to /address attempted with userType: $userType');
       } catch (e) {
-        debugPrint('Navigation error: $e');
+        // debugPrint('Navigation error: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Navigation failed: $e')),
         );
       }
     } else {
-      debugPrint('Form validation failed');
+      // debugPrint('Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(localizations?.fillFieldsCorrectly ??

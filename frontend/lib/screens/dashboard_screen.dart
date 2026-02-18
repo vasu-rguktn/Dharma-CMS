@@ -19,11 +19,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🟢 DashboardScreen initState');
+    // debugPrint('🟢 DashboardScreen initState');
 
     // Fetch petition stats after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      debugPrint('🟢 DashboardScreen PostFrameCallback');
+      // debugPrint('🟢 DashboardScreen PostFrameCallback');
 
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final petitionProvider =
@@ -32,7 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final userId = auth.user?.uid;
       final role = auth.role;
 
-      debugPrint('🟢 userId: $userId, role: $role');
+      // debugPrint('🟢 userId: $userId, role: $role');
 
       // Check if onboarding should be shown for first-time citizen users
       if (role == 'citizen') {
@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (userId != null) {
         // Citizen sees only their petitions
-        debugPrint('🟢 Fetching USER petition stats for userId: $userId');
+        // debugPrint('🟢 Fetching USER petition stats for userId: $userId');
         petitionProvider.fetchPetitionStats(userId: userId);
         petitionProvider.fetchFilteredPetitions(
           isPolice: false,
@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           filter: PetitionFilter.all,
         );
       } else {
-        debugPrint('⚠️ Cannot fetch stats - userId is NULL');
+        // debugPrint('⚠️ Cannot fetch stats - userId is NULL');
       }
     });
   }

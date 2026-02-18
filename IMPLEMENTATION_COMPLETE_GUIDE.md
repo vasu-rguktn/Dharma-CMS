@@ -9,7 +9,7 @@ This document provides a complete overview of the rank-based police registration
 ## 🎯 WHAT WAS IMPLEMENTED
 
 ### **1. JSON Hierarchy Structure** ✅
-**File**: `frontend/assets/Data/ap_police_hierarchy_complete.json`
+**File**: `frontend/assets/data/ap_police_hierarchy_complete.json`
 
 **Structure**:
 ```json
@@ -479,7 +479,7 @@ match /petitions/{petitionId} {
 
 ### **New Files**
 1. ✅ `RANK_BASED_POLICE_SYSTEM_IMPLEMENTATION.md` - Documentation
-2. ✅ `frontend/assets/Data/ap_police_hierarchy_complete.json` - Hierarchy data
+2. ✅ `frontend/assets/data/ap_police_hierarchy_complete.json` - Hierarchy data
 3. ✅ `IMPLEMENTATION_COMPLETE_GUIDE.md` - This file
 
 ### **Modified Files**

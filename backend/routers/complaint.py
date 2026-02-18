@@ -174,6 +174,12 @@ class ComplaintResponse(BaseModel):
     police_station_reason: Optional[str] = None
     station_confidence: Optional[str] = None
 
+    # New fields for PDF Generation (ensure they are passed to frontend)
+    accused_details: Optional[str] = None
+    stolen_property: Optional[str] = None
+    witnesses: Optional[str] = None
+    evidence_status: Optional[str] = None
+
 
 
 # === Helpers ===
@@ -1740,7 +1746,9 @@ async def chat_step(
                 "CRITICAL RULES:\n"
                 "1. NEVER ask about information that is already KNOWN or MENTIONED in the conversation history.\n"
                 "2. Check the 'INFORMATION ALREADY KNOWN' section below carefully.\n"
-                f"3. KNOWN IDENTITY: Name='{payload.full_name or 'Unknown'}', Address='{payload.address or 'Unknown'}', Phone='{payload.phone or 'Unknown'}'. DO NOT ASK FOR THESE AGAIN if they are not 'Unknown'.\n"
+                "3. KNOWN IDENTITY: Name='{payload.full_name or 'Unknown'}', Address='{payload.address or 'Unknown'}', Phone='{payload.phone or 'Unknown'}'.\n"
+                "   - If these are 'Unknown', you must ask for them, but ONE BY ONE.\n"
+                "   - NEVER ask for Name, Address, and Phone in the same message.\n"
                 "4. Ask ONE question at a time. Keep it short and direct.\n"
                 "5. Only ask mandatory case-related questions (Incident Details, Date, Time, Location).\n"
                 "6. End questions with '?'.\n"
@@ -1751,6 +1759,14 @@ async def chat_step(
                 "- KEEP QUESTIONS SHORT (Max 20 words). Do not lecture.\n"
                 "- Use Who, What, When, Where, How, and Why questions logically.\n"
                 "- Briefly summarize information back to the user for confirmation before moving to the next category.\n\n"
+                
+                "IDENTITY GATHERING (If 'Unknown' above):\n"
+                "- Ask for Name FIRST.\n"
+                "- Wait for answer.\n"
+                "- Then ask for Address.\n"
+                "- Wait for answer.\n"
+                "- Then ask for Phone.\n"
+                "- Do NOT combine these.\n\n"
 
                 "INFORMATION TO GATHER (Systematically):\n"
                 "1. Incident Details: Date, time, location (MUST BE SPECIFIC - if user says 'college', ask 'Which college?'; if 'market', ask 'Which market?'; if 'hostel', ask 'Which hostel?'), and detailed narration.\n"
@@ -1791,16 +1807,6 @@ async def chat_step(
             )
             
             # Convert Pydantic chat history to LLM format
-            messages = [{"role": "system", "content": system_prompt}]
-            # Prepend initial details as context from user
-            messages.append({"role": "user", "content": payload.initial_details})
-            
-            # Limit history to last 12 turns to prevent context overflow (Llama-3-8B has 8k limit)
-            recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
-            
-            for msg in recent_history:
-                messages.append({"role": msg.role, "content": msg.content})
-                
             # 4. Call LLM
             if not GEMINI_API_KEY:
                  return ChatStepResponse(status="done", final_response=None)
@@ -1813,25 +1819,24 @@ async def chat_step(
                     # Construct full History for Gemini
                     model = genai.GenerativeModel(LLM_MODEL)
                     
-                    # Instead of list of dicts, Gemini often prefers a single text block or specific Content object structure.
-                    # For simplicity/robustness in Migration, we can flatten to a script or use the chat session.
-                    
-                    full_prompt = f"{system_prompt}{known_facts}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
-                    
+                    # Convert history to text for prompt
+                    history_text = ""
                     # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
                     recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
                     
                     for msg in recent_history:
-                        role = "Police" if msg.role == "assistant" else "User" # or "Model" / "User"
-                        full_prompt += f"{role}: {msg.content}\n"
+                        role = "Police" if msg.role == "assistant" else "User"
+                        history_text += f"{role}: {msg.content}\n"
+                    
+                    full_prompt = f"{system_prompt}{known_facts}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n{history_text}"
                     
                     logger.info(f"--- LLM Prompt Start ---\n{full_prompt}\n--- LLM Prompt End ---")
 
                     response = model.generate_content(
                         full_prompt,
                         generation_config=genai.types.GenerationConfig(
-                            temperature=0.3,
-                            max_output_tokens=2048,
+                            temperature=0.3, # Low temp for consistency
+                            max_output_tokens=1024,
                         ),
                         safety_settings=[
                             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
@@ -1841,16 +1846,24 @@ async def chat_step(
                         ]
                     )
                     
-                    raw_content = response.text or ""
-                    logger.info(f"--- LLM Raw Response ---\n{raw_content}\n--- End Response ---")
+                    raw_reply = response.text or ""
+                    logger.info(f"--- LLM Raw Response ---\n{raw_reply}\n--- End Response ---")
                     
-                    reply = raw_content.strip()
-                    decision_upper = reply.upper().replace('"', '').replace("'", "")
+                    # PARSE STRUCTURED OUTPUT
+                    reply = raw_reply
+                    if "RESPONSE:" in raw_reply:
+                        # Extract everything after RESPONSE:
+                        parts = raw_reply.split("RESPONSE:", 1)
+                        reply = parts[1].strip()
+                        logger.info("Parsed Structured Output -> Sending only RESPONSE part.")
+                    else:
+                        # Fallback: regex clean-up like before
+                        reply = re.sub(r"^\*?Word count:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = re.sub(r"^Let's check.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = re.sub(r"^Thinking Process:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = re.sub(r"^Internal Log:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = reply.strip()
 
-                    if "DONE" in decision_upper and len(decision_upper) < 10:
-                        is_done = True
-                        reply = "DONE"
-                    
                     # Sanitize and Log
                     reply = safe_utf8(reply)
 
@@ -2194,8 +2207,8 @@ INFORMATION:
             # 2. 'incident_details' -> Where/When incident happened (Short Incident)
             
             localized_fields["details"] = initial_details_summary
-            localized_fields['incident_details'] = narrative
-            localized_fields['incident_address'] = short_incident # Keep consistent
+            localized_fields['incident_details'] = narrative or "Detailed narrative not available."
+            localized_fields['incident_address'] = short_incident or "Location details not available." # Keep consistent
             
             # Add Police Station fields to localized_fields to ensure availability in frontend
             # Ensure they are strings (empty if None) to satisfy Dict[str, str]
@@ -2247,15 +2260,15 @@ INFORMATION:
                 initial_details=safe_utf8(initial_details_summary),
                 
                 # Populating Police Station Selection
-                selected_police_station=safe_utf8(n_data.get("selected_police_station")),
-                police_station_reason=safe_utf8(n_data.get("police_station_reason")),
-                station_confidence=safe_utf8(n_data.get("station_confidence")),
+                selected_police_station=safe_utf8(n_data.get("selected_police_station")) or "Station Unknown",
+                police_station_reason=safe_utf8(n_data.get("police_station_reason")) or "Reason not provided",
+                station_confidence=safe_utf8(n_data.get("station_confidence")) or "Low",
                 date_of_complaint=today_date_str_formatted(),
                 # Mapped Missing Fields
-                accused_details=safe_utf8(n_data.get("accused_details")),
-                stolen_property=safe_utf8(n_data.get("stolen_property")),
-                witnesses=safe_utf8(n_data.get("witnesses")),
-                evidence_status=safe_utf8(n_data.get("evidence_status")),
+                accused_details=safe_utf8(n_data.get("accused_details")) or "Unknown",
+                stolen_property=safe_utf8(n_data.get("stolen_property")) or "N/A",
+                witnesses=safe_utf8(n_data.get("witnesses")) or "None",
+                evidence_status=safe_utf8(n_data.get("evidence_status")) or "None mentioned",
             )
             
             # return ChatStepResponse(status="done", final_response=final_response_obj)

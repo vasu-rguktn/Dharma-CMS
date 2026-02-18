@@ -8,7 +8,7 @@ loguru
 aiofiles
 google-cloud-speech
 google-cloud-storage
-reportlab
+reportlab>=4.0.7
 numpy<2.0.0
 opencv-python-headless
 Pillow
@@ -31,3 +31,5 @@ sentence-transformers
 requests
 httpx>=0.23.0
 python-docx
+
+uharfbuzz

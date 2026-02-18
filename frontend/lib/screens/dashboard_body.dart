@@ -229,9 +229,9 @@ class DashboardBody extends StatelessWidget {
             color: iconColor,
           );
 
-          print('🚀 [NAVIGATION] Pushing route: $route');
+          // print('🚀 [NAVIGATION] Pushing route: $route');
           ctx.push(route).then((_) {
-            print('🔙 [NAVIGATION] Returned from: $route');
+            // print('🔙 [NAVIGATION] Returned from: $route');
           });
         },
         borderRadius: BorderRadius.circular(12),

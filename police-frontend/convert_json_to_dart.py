@@ -1,7 +1,7 @@
 import json
 import os
 
-JSON_PATH = r'assets/Data/ap_police_hierarchy_fir.json'
+JSON_PATH = r'assets/data/ap_police_hierarchy_fir.json'
 OUTPUT_DART_PATH = r'lib/data/police_hierarchy_data.dart'
 
 def main():

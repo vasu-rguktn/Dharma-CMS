@@ -70,8 +70,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     final petitionProvider =
         Provider.of<PetitionProvider>(context, listen: false);
     if (petitionProvider.tempEvidence.isNotEmpty) {
-      debugPrint(
-          '📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
+      // debugPrint(
+          // '📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
       setState(() {
         // Avoid duplicates in case of re-entry
         final existingNames = _proofFiles.map((e) => e.name).toSet();
@@ -174,13 +174,13 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
           if (incidentDateData is String) {
             String dateStr = incidentDateData.trim();
             parsedDate = DateTime.tryParse(dateStr);
-            debugPrint(
-                '✅ Parsed incident date from string: $parsedDate (raw: "$dateStr")');
+            // debugPrint(
+                // '✅ Parsed incident date from string: $parsedDate (raw: "$dateStr")');
           }
           // Handle Timestamp object format
           else if (incidentDateData is Timestamp) {
             parsedDate = incidentDateData.toDate();
-            debugPrint('✅ Parsed incident date from Timestamp: $parsedDate');
+            // debugPrint('✅ Parsed incident date from Timestamp: $parsedDate');
           }
           // Handle serialized Map format
           else if (incidentDateData is Map) {
@@ -189,16 +189,16 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
             if (seconds != null) {
               parsedDate =
                   Timestamp(seconds as int, nanoseconds as int).toDate();
-              debugPrint('✅ Parsed incident date from Map: $parsedDate');
+              // debugPrint('✅ Parsed incident date from Map: $parsedDate');
             }
           }
 
           if (parsedDate != null) {
             _incidentDate = parsedDate;
-            debugPrint('✅ Incident date autofilled: $_incidentDate');
+            // debugPrint('✅ Incident date autofilled: $_incidentDate');
           }
         } catch (e) {
-          debugPrint('❌ Error parsing incident date: $e');
+          // debugPrint('❌ Error parsing incident date: $e');
         }
       }
     }
@@ -225,7 +225,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         _autofillJurisdiction(data);
       });
     } catch (e) {
-      debugPrint('Error loading district data: $e');
+      // debugPrint('Error loading district data: $e');
       setState(() => _dataLoading = false);
     }
   }
@@ -237,7 +237,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         widget.initialData!['selected_police_station']?.toString().trim();
     if (targetStation == null || targetStation.isEmpty) return;
 
-    debugPrint('🤖 Attempting to autofill jurisdiction for: $targetStation');
+    // debugPrint('🤖 Attempting to autofill jurisdiction for: $targetStation');
 
     String? foundDistrict;
     String? foundStation;
@@ -261,13 +261,13 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     }
 
     if (foundDistrict != null) {
-      debugPrint('✅ Found District: $foundDistrict for Station: $foundStation');
+      // debugPrint('✅ Found District: $foundDistrict for Station: $foundStation');
       setState(() {
         _districtController.text = foundDistrict!;
         _stationController.text = foundStation!;
       });
     } else {
-      debugPrint('⚠️ Station "$targetStation" not found in district database.');
+      // debugPrint('⚠️ Station "$targetStation" not found in district database.');
     }
   }
 

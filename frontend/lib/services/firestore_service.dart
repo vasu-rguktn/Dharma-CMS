@@ -17,7 +17,7 @@ class FirestoreService {
     if (user == null) {
       throw Exception('Not authenticated'); // or show UI error
     }
-    print('creating petition as uid=${user.uid}'); // debug
+    // print('creating petition as uid=${user.uid}'); // debug
 
     await _db.collection('petitions').add({
       'title': title,

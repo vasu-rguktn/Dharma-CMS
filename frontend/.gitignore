@@ -61,3 +61,6 @@ firebase_options.dart
 # Generated files
 *.g.dart
 *.freezed.dart
+
+# Heap dumps
+*.hprof

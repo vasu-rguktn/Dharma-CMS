@@ -323,14 +323,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   void initState() {
     super.initState();
     if (!kIsWeb) {
-      debugPrint('📲 PhoneLoginScreen initState -> starting OTP listener');
+      // debugPrint('📲 PhoneLoginScreen initState -> starting OTP listener');
       _listenForOtp();
     }
   }
 
   @override
   void dispose() {
-    debugPrint('🧹 PhoneLoginScreen dispose -> stopping listeners');
+    // debugPrint('🧹 PhoneLoginScreen dispose -> stopping listeners');
     if (!kIsWeb) {
       cancel(); // From CodeAutoFill mixin
       SmsAutoFill().unregisterListener(); // CORRECT: SmsAutoFill()
@@ -344,7 +344,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
   Future<void> _listenForOtp() async {
     try {
       final signature = await SmsAutoFill().getAppSignature;
-      debugPrint('📱 App signature (add to OTP SMS): $signature');
+      // debugPrint('📱 App signature (add to OTP SMS): $signature');
 
       // restart listeners to avoid stale state
       await SmsAutoFill().unregisterListener();
@@ -354,15 +354,15 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> with CodeAutoFill {
 
       // SmsAutoFill listener (note the parentheses)
       await SmsAutoFill().listenForCode();
-      debugPrint('✅ SMS auto-fill listener started/restarted');
+      // debugPrint('✅ SMS auto-fill listener started/restarted');
     } catch (e) {
-      debugPrint('❌ Failed to start SMS listener: $e');
+      // debugPrint('❌ Failed to start SMS listener: $e');
     }
   }
 
   @override
   void codeUpdated() {
-    debugPrint('📩 codeUpdated fired with code: $code');
+    // debugPrint('📩 codeUpdated fired with code: $code');
     if (code != null && code!.length == 6) {
       setState(() => _otpController.text = code!);
       _verifyOtp(); // Auto verify instantly

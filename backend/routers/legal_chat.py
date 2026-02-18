@@ -174,8 +174,8 @@ LANGUAGE_NAMES = {
 def get_language_name(code: str) -> str:
     return LANGUAGE_NAMES.get(code.split('-')[0].lower(), "English")
 
-# ... existing code ...
-
+# ---------------- ENDPOINT ---------------- 
+# Using "/" with redirect_slashes=False in main.py prevents redirects
 @router.post("/", response_model=LegalChatResponse)
 async def legal_chat(
     sessionId: str = Form(...),
@@ -242,7 +242,11 @@ async def legal_chat(
 
     # 3️⃣ Construct Gemini Content
     # Gemini uses a simpler format: system prompt + user content (text + images)
-    full_prompt = SYSTEM_PROMPT + f"\n[INSTRUCTION]: You MUST answer in {target_lang}.\n" + f"\n{files_info}\n\n{final_text_prompt}".strip()
+    full_prompt = SYSTEM_PROMPT + f"\n[INSTRUCTION]: You MUST answer in {target_lang}.\n" + \
+                  "OUTPUT FORMAT (MANDATORY):\n" + \
+                  "THOUGHTS: [Your internal reasoning]\n" + \
+                  "RESPONSE: [Your final message to the user]\n" + \
+                  f"\n{files_info}\n\n{final_text_prompt}".strip()
     
     if gemini_content:
         gemini_content.insert(0, full_prompt)
@@ -260,6 +264,20 @@ async def legal_chat(
         answer_response = model.generate_content(content_to_send)
 
         reply = answer_response.text.strip() if answer_response.text else "I apologize, but I couldn't generate a response. Please try again."
+
+        # PARSE STRUCTURED OUTPUT
+        if "RESPONSE:" in reply:
+            parts = reply.split("RESPONSE:", 1)
+            reply = parts[1].strip()
+        else:
+            # Fallback regex just in case
+            reply = re.sub(r"^\*?Word count:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+            reply = re.sub(r"^Let's check.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+            reply = re.sub(r"^Thinking Process:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+            reply = re.sub(r"^Internal Log:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+            reply = re.sub(r"^Note:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+            reply = re.sub(r"^Analysis:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+            reply = reply.strip()
 
         # 4️⃣ Generate Title
         title = generate_chat_title(clean_query)

@@ -481,7 +481,7 @@ class DistrictTranslations {
       
       return localizedData;
     } catch (e) {
-      debugPrint('Error loading police stations: $e');
+      // debugPrint('Error loading police stations: $e');
       return {};
     }
   }
@@ -506,7 +506,7 @@ class DistrictTranslations {
       
       return [];
     } catch (e) {
-      debugPrint('Error loading police stations for district: $e');
+      // debugPrint('Error loading police stations for district: $e');
       return [];
     }
   }

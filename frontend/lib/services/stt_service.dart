@@ -54,7 +54,7 @@ class SttService {
       _channel!.stream.listen(
         (data) {
           try {
-            print('Received from WebSocket: $data (type: ${data.runtimeType})');
+            // print('Received from WebSocket: $data (type: ${data.runtimeType})');
             
             // Handle both String and Map responses
             dynamic json;
@@ -63,14 +63,14 @@ class SttService {
             } else if (data is Map) {
               json = data;
             } else {
-              print('Unknown data type: ${data.runtimeType}');
+              // print('Unknown data type: ${data.runtimeType}');
               return;
             }
             
-            print('Parsed JSON: $json');
+            // print('Parsed JSON: $json');
             
             if (json.containsKey('error')) {
-              print('Error from backend: ${json['error']}');
+              // print('Error from backend: ${json['error']}');
               _transcriptController.addError(json['error']);
             } else if (json.containsKey('transcript')) {
               final result = SttResult(
@@ -79,23 +79,23 @@ class SttService {
                 confidence: (json['confidence'] ?? 0.0).toDouble(),
               );
               _lastTranscript = result.transcript;  // Store last transcript
-              print('Adding transcript: ${result.transcript} (final: ${result.isFinal})');
+              // print('Adding transcript: ${result.transcript} (final: ${result.isFinal})');
               _transcriptController.add(result);
             } else {
-              print('JSON missing transcript key: $json');
+              // print('JSON missing transcript key: $json');
             }
           } catch (e, stackTrace) {
-            print('Error parsing STT response: $e');
-            print('Stack trace: $stackTrace');
-            print('Raw data: $data');
+            // print('Error parsing STT response: $e');
+            // print('Stack trace: $stackTrace');
+            // print('Raw data: $data');
           }
         },
         onError: (error) {
-          print('WebSocket error: $error');
+          // print('WebSocket error: $error');
           _transcriptController.addError(error);
         },
         onDone: () {
-          print('WebSocket closed');
+          // print('WebSocket closed');
         },
       );
     } catch (e) {
@@ -121,12 +121,12 @@ class SttService {
             try {
               _channel!.sink.add(chunk);
             } catch (e) {
-              print('Error sending audio chunk: $e');
+              // print('Error sending audio chunk: $e');
             }
           }
         },
         onError: (error) {
-          print('Recording error: $error');
+          // print('Recording error: $error');
           stopRecording();
         },
       );
@@ -146,14 +146,14 @@ class SttService {
       await _recorder.stop();
       
       // Wait a bit for any final transcripts to arrive
-      print('Waiting for final transcripts...');
+      // print('Waiting for final transcripts...');
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Close WebSocket
       _channel?.sink.close();
-      print('WebSocket closed');
+      // print('WebSocket closed');
     } catch (e) {
-      print('Error stopping recording: $e');
+      // print('Error stopping recording: $e');
     }
   }
   

@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import os
 
-EXCEL_PATH = r'assets/Data/Revised AP Police Organisation 31-01-26.xlsx'
+EXCEL_PATH = r'assets/data/Revised AP Police Organisation 31-01-26.xlsx'
 OUTPUT_DART_PATH = r'lib/data/police_hierarchy_data.dart'
 
 def clean_name(name):

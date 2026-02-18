@@ -29,7 +29,7 @@ class OnboardingContent {
     try {
       final locale = Localizations.localeOf(context);
       final isTelugu = locale.languageCode == 'te';
-      debugPrint('🌍 Onboarding Locale: ${locale.languageCode}, isTelugu: $isTelugu');
+      // debugPrint('🌍 Onboarding Locale: ${locale.languageCode}, isTelugu: $isTelugu');
 
       if (isTelugu) {
         return [
@@ -121,7 +121,7 @@ class OnboardingContent {
         ];
       }
     } catch (e) {
-      debugPrint('Error getting locale: $e');
+      // debugPrint('Error getting locale: $e');
       // Fallback to English
     }
     

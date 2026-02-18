@@ -70,7 +70,7 @@ class _PetitionsListTabState extends State<PetitionsListTab> {
     );
 
     if (petition.id != null) {
-      debugPrint('[PetitionsListTab] Auto-opening petition: ${petition.id}');
+      // debugPrint('[PetitionsListTab] Auto-opening petition: ${petition.id}');
       PetitionDetailBottomSheet.show(context, petition);
     }
   }

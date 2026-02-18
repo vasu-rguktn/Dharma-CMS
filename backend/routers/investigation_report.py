@@ -212,9 +212,26 @@ def _render_pdf(report_text: str, metadata: InvestigationReportMetadata) -> str:
     pdf_path = reports_dir / file_name
 
     # Attempt to register a common font if available, else fall back to default
+    # Attempt to register a common font if available, else fall back to default
     try:
-        pdfmetrics.registerFont(TTFont("DejaVuSans", "DejaVuSans.ttf"))
-        base_font_name = "DejaVuSans"
+        # Local Custom Fonts (Highest Priority)
+        local_telugu_reg = Path("fonts/NotoSansTelugu-Regular.ttf")
+        local_telugu_bold = Path("fonts/NotoSansTelugu-Bold.ttf")
+
+        if local_telugu_reg.exists():
+            pdfmetrics.registerFont(TTFont("NotoSansTelugu", str(local_telugu_reg)))
+            if local_telugu_bold.exists():
+                pdfmetrics.registerFont(TTFont("NotoSansTelugu-Bold", str(local_telugu_bold)))
+            else:
+                pdfmetrics.registerFont(TTFont("NotoSansTelugu-Bold", str(local_telugu_reg)))
+            
+            base_font_name = "NotoSansTelugu"
+            logger.info(f"Loaded Local Telugu Font: {base_font_name}")
+            
+        else:
+            pdfmetrics.registerFont(TTFont("DejaVuSans", "DejaVuSans.ttf"))
+            base_font_name = "DejaVuSans"
+
     except Exception:  # pragma: no cover
         base_font_name = "Helvetica"
 

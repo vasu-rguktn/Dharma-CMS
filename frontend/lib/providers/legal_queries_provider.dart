@@ -109,12 +109,12 @@ class LegalQueriesProvider with ChangeNotifier {
         'message': backendMessage,
         'language': language, // Send language to backend
       });
-      debugPrint(
-          "DEBUG: LegalQueriesProvider sending to backend with language: $language");
-      debugPrint("DEBUG: Appended Prompt Message: $backendMessage");
+      // debugPrint(
+          // "DEBUG: LegalQueriesProvider sending to backend with language: $language");
+      // debugPrint("DEBUG: Appended Prompt Message: $backendMessage");
 
       if (attachments != null) {
-        debugPrint("DEBUG: Preparing ${attachments.length} attachments...");
+        // debugPrint("DEBUG: Preparing ${attachments.length} attachments...");
         for (var file in attachments) {
           final bytes = file['bytes'] as Uint8List;
           final name = file['name'] as String;
@@ -168,9 +168,9 @@ class LegalQueriesProvider with ChangeNotifier {
         'lastMessageAt': FieldValue.serverTimestamp(),
       });
     } on DioException catch (e) {
-      debugPrint("Legal Chat DioError: ${e.message}");
-      debugPrint("Status: ${e.response?.statusCode}");
-      debugPrint("Response: ${e.response?.data}");
+      // debugPrint("Legal Chat DioError: ${e.message}");
+      // debugPrint("Status: ${e.response?.statusCode}");
+      // debugPrint("Response: ${e.response?.data}");
       // Graceful fallback
       final errorMsg = e.response?.data?['detail'] ??
           e.message ??
@@ -181,7 +181,7 @@ class LegalQueriesProvider with ChangeNotifier {
         'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      debugPrint("Legal Chat Error: $e");
+      // debugPrint("Legal Chat Error: $e");
       // Graceful fallback
       await sessionRef.collection('messages').add({
         'sender': 'ai',
@@ -197,7 +197,7 @@ class LegalQueriesProvider with ChangeNotifier {
   /* ---------------- CHAT HISTORY STREAM ---------------- */
   Stream<List<Map<String, dynamic>>> chatSessionsStream() {
     final uid = _auth.currentUser!.uid;
-    debugPrint('🔍 [LEGAL_QUERIES] Querying chat sessions for userId: $uid');
+    // debugPrint('🔍 [LEGAL_QUERIES] Querying chat sessions for userId: $uid');
 
     return _firestore
         .collection('legal_queries_chats')
@@ -205,11 +205,11 @@ class LegalQueriesProvider with ChangeNotifier {
         .snapshots()
         .map((snapshot) {
       final docs = snapshot.docs;
-      debugPrint('📚 [LEGAL_QUERIES] Found ${docs.length} chat sessions');
+      // debugPrint('📚 [LEGAL_QUERIES] Found ${docs.length} chat sessions');
 
       if (docs.isNotEmpty) {
         for (var doc in docs) {
-          debugPrint('  - Session: ${doc.id}, Title: ${doc.data()['title']}');
+          // debugPrint('  - Session: ${doc.id}, Title: ${doc.data()['title']}');
         }
       }
 

@@ -42,7 +42,7 @@ class ComplaintProvider with ChangeNotifier {
       }).toList();
     } catch (e) {
       _error = e.toString();
-      debugPrint('Error fetching complaints: $e');
+      // debugPrint('Error fetching complaints: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -93,7 +93,7 @@ class ComplaintProvider with ChangeNotifier {
         return true; // Saved
       }
     } catch (e) {
-      debugPrint("Error toggling save: $e");
+      // debugPrint("Error toggling save: $e");
       return false;
     }
   }
@@ -105,9 +105,9 @@ class ComplaintProvider with ChangeNotifier {
     required Map<String, dynamic> chatData,
     String? draftId,
   }) async {
-    debugPrint("📂 [SAVE DRAFT] Starting saveChatAsDraft for User: $userId");
-    debugPrint("📂 [SAVE DRAFT] Title: $title");
-    debugPrint("📂 [SAVE DRAFT] Draft ID: ${draftId ?? 'New Draft'}");
+    // debugPrint("📂 [SAVE DRAFT] Starting saveChatAsDraft for User: $userId");
+    // debugPrint("📂 [SAVE DRAFT] Title: $title");
+    // debugPrint("📂 [SAVE DRAFT] Draft ID: ${draftId ?? 'New Draft'}");
 
     try {
       final String docId =
@@ -127,19 +127,19 @@ class ComplaintProvider with ChangeNotifier {
         'grounds': 'In-progress AI Legal Chat session', // Fallback
       };
 
-      debugPrint("📂 [SAVE DRAFT] Saving to Firestore path: complaints/$docId");
+      // debugPrint("📂 [SAVE DRAFT] Saving to Firestore path: complaints/$docId");
       // Log approx data size
       final dataStr = draftData.toString();
-      debugPrint("📂 [SAVE DRAFT] Approx Data Size: ${dataStr.length} chars");
+      // debugPrint("📂 [SAVE DRAFT] Approx Data Size: ${dataStr.length} chars");
 
       await docRef.set(draftData, SetOptions(merge: true));
-      debugPrint("✅ [SAVE DRAFT] Firestore set() completed successfully");
+      // debugPrint("✅ [SAVE DRAFT] Firestore set() completed successfully");
 
       await fetchComplaints(userId: userId);
-      debugPrint("✅ [SAVE DRAFT] Refresh fetchComplaints completed");
+      // debugPrint("✅ [SAVE DRAFT] Refresh fetchComplaints completed");
       return true;
     } catch (e) {
-      debugPrint("❌ [SAVE DRAFT] ERROR in saveChatAsDraft: $e");
+      // debugPrint("❌ [SAVE DRAFT] ERROR in saveChatAsDraft: $e");
       return false;
     }
   }
@@ -151,7 +151,7 @@ class ComplaintProvider with ChangeNotifier {
       // Use stored user ID to refresh correctly
       await fetchComplaints(userId: _currentUserId);
     } catch (e) {
-      debugPrint("Error deleting complaint: $e");
+      // debugPrint("Error deleting complaint: $e");
       throw e;
     }
   }

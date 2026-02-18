@@ -309,7 +309,7 @@ class _GeoCameraScreenState extends State<GeoCameraScreen> {
       await _cameraController!.setFlashMode(_flashMode);
       setState(() {});
     } catch (e) {
-      print('Error toggling flash: $e');
+      // print('Error toggling flash: $e');
     }
   }
 

@@ -10,7 +10,7 @@ class HelplineScreen extends StatelessWidget {
   Future<void> _makeCall(String number) async {
     final Uri url = Uri(scheme: 'tel', path: number);
     if (!await launchUrl(url)) { 
-     debugPrint("Cannot call $number");
+     // debugPrint("Cannot call $number");
     }
   }
 

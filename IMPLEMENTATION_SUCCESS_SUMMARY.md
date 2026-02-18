@@ -43,7 +43,7 @@ You requested a **rank-based police registration and petition filtering system**
 1. ✅ `RANK_BASED_POLICE_SYSTEM_IMPLEMENTATION.md` - High-level overview
 2. ✅ `IMPLEMENTATION_COMPLETE_GUIDE.md` - Comprehensive technical guide
 3. ✅ `POLICE_OFFICER_QUICK_GUIDE.md` - User-friendly reference for officers
-4. ✅ `frontend/assets/Data/ap_police_hierarchy_complete.json` - Hierarchy data
+4. ✅ `frontend/assets/data/ap_police_hierarchy_complete.json` - Hierarchy data
 5. ✅ `IMPLEMENTATION_SUCCESS_SUMMARY.md` - This file
 
 ### **Files Modified** (3 files)
