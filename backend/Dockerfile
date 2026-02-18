@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender-dev \
     libgomp1 \
     ffmpeg \
+    ffmpeg \
     libgthread-2.0-0 \
     libharfbuzz0b \
     libfribidi0 \
