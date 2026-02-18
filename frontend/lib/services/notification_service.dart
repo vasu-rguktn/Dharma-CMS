@@ -42,13 +42,13 @@ class NotificationService {
   /// Call this after citizen login, NOT for police users
   Future<void> initialize(String userId, {bool isCitizen = true}) async {
     if (_initialized) {
-      debugPrint('[NotificationService] Already initialized');
+      // debugPrint('[NotificationService] Already initialized');
       return;
     }
 
     // IMPORTANT: Only initialize for citizen users
     if (!isCitizen) {
-      debugPrint('[NotificationService] Skipping FCM for police user');
+      // debugPrint('[NotificationService] Skipping FCM for police user');
       return;
     }
 
@@ -58,7 +58,7 @@ class NotificationService {
       // Request permissions
       final permissionGranted = await requestPermissions();
       if (!permissionGranted) {
-        debugPrint('[NotificationService] Permission denied, skipping FCM setup');
+        // debugPrint('[NotificationService] Permission denied, skipping FCM setup');
         return;
       }
 
@@ -73,14 +73,14 @@ class NotificationService {
 
       // Handle token refresh
       _firebaseMessaging.onTokenRefresh.listen((newToken) {
-        debugPrint('[NotificationService] Token refreshed');
+        // debugPrint('[NotificationService] Token refreshed');
         _registerTokenWithBackend(userId, newToken, _getPlatform());
       });
 
       _initialized = true;
-      debugPrint('[NotificationService] ✅ Successfully initialized for citizen user');
+      // debugPrint('[NotificationService] ✅ Successfully initialized for citizen user');
     } catch (e) {
-      debugPrint('[NotificationService] ❌ Initialization failed: $e');
+      // debugPrint('[NotificationService] ❌ Initialization failed: $e');
       // Don't throw - app should work even if FCM fails
     }
   }
@@ -96,10 +96,10 @@ class NotificationService {
       );
 
       final granted = settings.authorizationStatus == AuthorizationStatus.authorized;
-      debugPrint('[NotificationService] Permission status: ${settings.authorizationStatus}');
+      // debugPrint('[NotificationService] Permission status: ${settings.authorizationStatus}');
       return granted;
     } catch (e) {
-      debugPrint('[NotificationService] Permission request failed: $e');
+      // debugPrint('[NotificationService] Permission request failed: $e');
       return false;
     }
   }
@@ -144,20 +144,20 @@ class NotificationService {
     try {
       final token = await _firebaseMessaging.getToken();
       if (token == null) {
-        debugPrint('[NotificationService] Failed to get FCM token');
+        // debugPrint('[NotificationService] Failed to get FCM token');
         return;
       }
 
-      debugPrint('[NotificationService] FCM Token: ${token.substring(0, 20)}...');
+      // debugPrint('[NotificationService] FCM Token: ${token.substring(0, 20)}...');
       
       final success = await _registerTokenWithBackend(userId, token, _getPlatform());
       if (success) {
-        debugPrint('[NotificationService] ✅ Token registered with backend');
+        // debugPrint('[NotificationService] ✅ Token registered with backend');
       } else {
-        debugPrint('[NotificationService] ❌ Failed to register token with backend');
+        // debugPrint('[NotificationService] ❌ Failed to register token with backend');
       }
     } catch (e) {
-      debugPrint('[NotificationService] Token registration failed: $e');
+      // debugPrint('[NotificationService] Token registration failed: $e');
     }
   }
 
@@ -181,7 +181,7 @@ class NotificationService {
 
       return response.statusCode == 200 && response.data['success'] == true;
     } catch (e) {
-      debugPrint('[NotificationService] Backend registration error: $e');
+      // debugPrint('[NotificationService] Backend registration error: $e');
       return false;
     }
   }
@@ -197,7 +197,7 @@ class NotificationService {
     // Check if app was opened from terminated state via notification
     _firebaseMessaging.getInitialMessage().then((message) {
       if (message != null) {
-        debugPrint('[NotificationService] App opened from notification (terminated)');
+        // debugPrint('[NotificationService] App opened from notification (terminated)');
         _handleNotificationClick(message);
       }
     });
@@ -205,7 +205,7 @@ class NotificationService {
 
   /// Handle foreground message - show local notification
   void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('[NotificationService] Foreground message: ${message.notification?.title}');
+    // debugPrint('[NotificationService] Foreground message: ${message.notification?.title}');
 
     final notification = message.notification;
     if (notification == null) return;
@@ -230,7 +230,7 @@ class NotificationService {
 
   /// Handle notification click - navigate to appropriate screen
   void _handleNotificationClick(RemoteMessage message) {
-    debugPrint('[NotificationService] Notification clicked: ${message.data}');
+    // debugPrint('[NotificationService] Notification clicked: ${message.data}');
     _navigateFromPayload(message.data);
   }
 
@@ -250,7 +250,7 @@ class NotificationService {
       if (type == 'petition_update' || type == 'case_update') {
         final petitionId = data['petitionId'];
         if (petitionId != null) {
-          debugPrint('[NotificationService] Navigating to petition details: $petitionId');
+          // debugPrint('[NotificationService] Navigating to petition details: $petitionId');
           
           // Navigate to petitions screen with petitionId query param
           // The petitions screen will auto-open this petition's details
@@ -258,7 +258,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      debugPrint('[NotificationService] Navigation failed: $e');
+      // debugPrint('[NotificationService] Navigation failed: $e');
     }
   }
 
@@ -306,9 +306,9 @@ class NotificationService {
         },
       );
 
-      debugPrint('[NotificationService] Token unregistered');
+      // debugPrint('[NotificationService] Token unregistered');
     } catch (e) {
-      debugPrint('[NotificationService] Unregister failed: $e');
+      // debugPrint('[NotificationService] Unregister failed: $e');
     }
 
     _initialized = false;
@@ -320,6 +320,6 @@ class NotificationService {
 /// Required by Firebase Messaging - must be outside of any class
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('[NotificationService] Background message: ${message.notification?.title}');
+  // debugPrint('[NotificationService] Background message: ${message.notification?.title}');
   // Don't do heavy work here - just log
 }

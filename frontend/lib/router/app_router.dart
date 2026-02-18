@@ -1,8 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
-import 'package:Dharma/models/case_doc.dart';
-import 'package:Dharma/models/petition.dart';
 
 // ───────────────── AUTH SCREENS ─────────────────
 import 'package:Dharma/screens/welcome_screen.dart';
@@ -28,7 +26,8 @@ import 'package:Dharma/screens/profile_screen.dart';
 
 // ───────────────── AI ─────────────────
 import 'package:Dharma/screens/ai_legal_guider_screen.dart';
-import 'package:Dharma/screens/ai_legal_chat_screen.dart';
+
+import 'package:Dharma/screens/ai_legal_chat_test_screen.dart';
 import 'package:Dharma/screens/ai_chatbot_details_screen.dart';
 import 'package:Dharma/screens/cognigible_non_cognigible_separation.dart';
 import 'package:Dharma/screens/contact_officer_screen.dart';
@@ -42,7 +41,6 @@ import 'package:Dharma/widgets/app_scaffold.dart';
 
 // ───────────────── ONBOARDING ─────────────────
 import 'package:Dharma/screens/onboarding/onboarding_screen.dart';
-import 'package:Dharma/services/onboarding_service.dart';
 import 'package:Dharma/screens/consent_pdf_viewer.dart';
 import 'package:Dharma/screens/privacy_policy_screen.dart';
 
@@ -89,6 +87,7 @@ class AppRouter {
         '/ai-chatbot-details',
         '/contact-officer',
         '/cognigible-non-cognigible-separation',
+        '/ai-legal-chat-test',
       ];
 
       // During loading, block access to protected routes
@@ -161,7 +160,7 @@ class AppRouter {
       GoRoute(
         path: '/terms',
         builder: (context, state) => const ConsentPdfViewer(
-          assetPath: 'assets/Data/Dharma_Citizen_Consent.pdf',
+          assetPath: 'assets/data/Dharma_Citizen_Consent.pdf',
           title: 'Terms of Service',
         ),
       ),
@@ -184,7 +183,13 @@ class AppRouter {
 
           GoRoute(
             path: '/ai-legal-chat',
-            builder: (context, state) => AiLegalChatScreen(
+            builder: (context, state) => AiLegalChatTestScreen(
+              initialDraft: state.extra as Map<String, dynamic>?,
+            ),
+          ),
+          GoRoute(
+            path: '/ai-legal-chat-test',
+            builder: (context, state) => AiLegalChatTestScreen(
               initialDraft: state.extra as Map<String, dynamic>?,
             ),
           ),

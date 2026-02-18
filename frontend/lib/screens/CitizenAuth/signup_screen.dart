@@ -144,7 +144,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     if (_incomingAddress != null) 'address': _incomingAddress,
                                   });
                                 } catch (e) {
-                                  debugPrint('Navigation error: $e');
+                                  // debugPrint('Navigation error: $e');
                                 }
                               },
                               child: const Text('Previous'),

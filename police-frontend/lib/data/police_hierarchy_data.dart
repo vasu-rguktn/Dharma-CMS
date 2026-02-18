@@ -1,4 +1,3 @@
-
 // Auto-generated from assets/Data/ap_police_hierarchy_fir.json
 // Used as fallback for Excel: Revised AP Police Organisation 31-01-26.xlsx
 
@@ -12,24 +11,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Chintapalli Circle",
-              "police_stations": [
-                "Annavaram",
-                "Chinthapalli"
-              ]
+              "police_stations": ["Annavaram", "Chinthapalli"]
             },
             {
               "name": "G. K. Veedhi Circle",
-              "police_stations": [
-                "Gudemkothaveedi (G.K.Veedhi)",
-                "Sileru"
-              ]
+              "police_stations": ["Gudemkothaveedi (G.K.Veedhi)", "Sileru"]
             },
             {
               "name": "Koyyuru Circle",
-              "police_stations": [
-                "Koyyuru",
-                "Mampa"
-              ]
+              "police_stations": ["Koyyuru", "Mampa"]
             }
           ]
         },
@@ -38,11 +28,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Chintoor Circle",
-              "police_stations": [
-                "Chintoor",
-                "Donkarai",
-                "Moothugudem"
-              ]
+              "police_stations": ["Chintoor", "Donkarai", "Moothugudem"]
             },
             {
               "name": "Yetapaka Circle",
@@ -59,11 +45,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Araku Circle",
-              "police_stations": [
-                "Anantagiri",
-                "Araku",
-                "Dumbriguda"
-              ]
+              "police_stations": ["Anantagiri", "Araku", "Dumbriguda"]
             },
             {
               "name": "G. Madugula Circle",
@@ -75,10 +57,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Paderu Circle",
-              "police_stations": [
-                "Hukumpeta",
-                "Paderu"
-              ]
+              "police_stations": ["Hukumpeta", "Paderu"]
             }
           ]
         },
@@ -96,24 +75,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Maredumilli Circle",
-              "police_stations": [
-                "Gurthedu",
-                "Maredumilli"
-              ]
+              "police_stations": ["Gurthedu", "Maredumilli"]
             },
             {
               "name": "Rajavommangi Circle",
-              "police_stations": [
-                "Jaddangi",
-                "Rajavommangi"
-              ]
+              "police_stations": ["Jaddangi", "Rajavommangi"]
             },
             {
               "name": "Rampachodavaram Circle",
-              "police_stations": [
-                "Devipatnam",
-                "Rampachodavaram"
-              ]
+              "police_stations": ["Devipatnam", "Rampachodavaram"]
             }
           ]
         }
@@ -137,9 +107,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Anakapalli Rural Circle",
-              "police_stations": [
-                "Anakapalli Rural"
-              ]
+              "police_stations": ["Anakapalli Rural"]
             },
             {
               "name": "K.Kotapadu Circle",
@@ -175,10 +143,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Nakkapalli Circle",
-              "police_stations": [
-                "Kotavurtla",
-                "S.Rayavaram"
-              ]
+              "police_stations": ["Kotavurtla", "S.Rayavaram"]
             },
             {
               "name": "Narsipatnam Rural Circle",
@@ -234,19 +199,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Itukalapalli Circle",
-              "police_stations": [
-                "Atmakur",
-                "Itukalapalli",
-                "Rapthadu"
-              ]
+              "police_stations": ["Atmakur", "Itukalapalli", "Rapthadu"]
             },
             {
               "name": "Singanamala Circle",
-              "police_stations": [
-                "Garladinne",
-                "Narpala",
-                "Singanamala"
-              ]
+              "police_stations": ["Garladinne", "Narpala", "Singanamala"]
             }
           ]
         },
@@ -277,10 +234,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Guntakal Rural  Circle",
-              "police_stations": [
-                "Guntakal Rural",
-                "Kasapuram"
-              ]
+              "police_stations": ["Guntakal Rural", "Kasapuram"]
             },
             {
               "name": "Uravakonda Rural Circle",
@@ -301,10 +255,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Kalyandurg Town",
-                "Rayadurg"
-              ]
+              "police_stations": ["Kalyandurg Town", "Rayadurg"]
             },
             {
               "name": "Kalyandurg Rural Circle",
@@ -332,25 +283,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Tadipathri Rural",
-                "Tadipathri Town"
-              ]
+              "police_stations": ["Tadipathri Rural", "Tadipathri Town"]
             },
             {
               "name": "Tadipatri Rural Circle",
-              "police_stations": [
-                "Putlur",
-                "Yellanur"
-              ]
+              "police_stations": ["Putlur", "Yellanur"]
             },
             {
               "name": "Yadiki Rural Circle",
-              "police_stations": [
-                "Peddapappur",
-                "Peddavadugur",
-                "Yadiki"
-              ]
+              "police_stations": ["Peddapappur", "Peddavadugur", "Yadiki"]
             }
           ]
         }
@@ -395,17 +336,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Rajampet"
-              ]
+              "police_stations": ["Rajampet"]
             },
             {
               "name": "Kodur Circle",
-              "police_stations": [
-                "Chitvel",
-                "Kodur",
-                "Obulavaripalli"
-              ]
+              "police_stations": ["Chitvel", "Kodur", "Obulavaripalli"]
             },
             {
               "name": "Rajampet Rural Circle",
@@ -423,27 +358,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Piler",
-                "Rayachoty",
-                "Traffic"
-              ]
+              "police_stations": ["Piler", "Rayachoty", "Traffic"]
             },
             {
               "name": "Kalakada Circle",
-              "police_stations": [
-                "Gurramkonda",
-                "K.V.Palli",
-                "Kalakada"
-              ]
+              "police_stations": ["Gurramkonda", "K.V.Palli", "Kalakada"]
             },
             {
               "name": "Lakkireddipalli Circle",
-              "police_stations": [
-                "Galiveedu",
-                "Lakkireddipalli",
-                "Ramapuram"
-              ]
+              "police_stations": ["Galiveedu", "Lakkireddipalli", "Ramapuram"]
             },
             {
               "name": "Rayachoty Rural Circle",
@@ -456,10 +379,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Voyalpadu Circle",
-              "police_stations": [
-                "Kalikiri",
-                "Voyalpad"
-              ]
+              "police_stations": ["Kalikiri", "Voyalpad"]
             }
           ]
         }
@@ -473,9 +393,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Bapatla Town"
-              ]
+              "police_stations": ["Bapatla Town"]
             },
             {
               "name": "Bapatla Rural Circle",
@@ -488,18 +406,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Martur Circle",
-              "police_stations": [
-                "Martur",
-                "Parchur",
-                "Yaddanapudi"
-              ]
+              "police_stations": ["Martur", "Parchur", "Yaddanapudi"]
             },
             {
               "name": "Santhamagulur Circle",
-              "police_stations": [
-                "Ballikurava",
-                "Santhamagulur"
-              ]
+              "police_stations": ["Ballikurava", "Santhamagulur"]
             }
           ]
         },
@@ -516,26 +427,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Addanki Rural Circle",
-              "police_stations": [
-                "J.Pangulur",
-                "Korisapadu",
-                "Medarametla"
-              ]
+              "police_stations": ["J.Pangulur", "Korisapadu", "Medarametla"]
             },
             {
               "name": "Chirala Rural Circle",
-              "police_stations": [
-                "Chirala Rural",
-                "Vetapalem"
-              ]
+              "police_stations": ["Chirala Rural", "Vetapalem"]
             },
             {
               "name": "Inkollu Circle",
-              "police_stations": [
-                "Chinaganjam",
-                "Inkollu",
-                "Karamchedu"
-              ]
+              "police_stations": ["Chinaganjam", "Inkollu", "Karamchedu"]
             }
           ]
         },
@@ -544,9 +444,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Repalle"
-              ]
+              "police_stations": ["Repalle"]
             },
             {
               "name": "Repalle Rural Circle",
@@ -560,18 +458,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Tsunduru Circle",
-              "police_stations": [
-                "Amruthalur",
-                "T. Sundur"
-              ]
+              "police_stations": ["Amruthalur", "T. Sundur"]
             },
             {
               "name": "Vemuru Circle",
-              "police_stations": [
-                "Bhattiprole",
-                "Kolluru",
-                "Vemuru"
-              ]
+              "police_stations": ["Bhattiprole", "Kolluru", "Vemuru"]
             }
           ]
         }
@@ -585,17 +476,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Chittoor I Town Urban Circle",
-              "police_stations": [
-                "Chittoor I Town UPS"
-              ]
+              "police_stations": ["Chittoor I Town UPS"]
             },
             {
               "name": "Chittoor II Town Urban Circle",
-              "police_stations": [
-                "Chittoor II Town UPS",
-                "CCS",
-                "Mahila UPS"
-              ]
+              "police_stations": ["Chittoor II Town UPS", "CCS", "Mahila UPS"]
             },
             {
               "name": "Chittoor Rural East Circle",
@@ -616,23 +501,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "G.D.Nellore Urban Circle",
-              "police_stations": [
-                "G.D.Nellore UPS"
-              ]
+              "police_stations": ["G.D.Nellore UPS"]
             },
             {
               "name": "Kallur Circle",
-              "police_stations": [
-                "Irala",
-                "Kallur",
-                "Rompicherla"
-              ]
+              "police_stations": ["Irala", "Kallur", "Rompicherla"]
             },
             {
               "name": "Puthalapattu Urban Circle",
-              "police_stations": [
-                "Puthalapattu UPS"
-              ]
+              "police_stations": ["Puthalapattu UPS"]
             }
           ]
         },
@@ -641,17 +518,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Kuppam Rural Circle",
-              "police_stations": [
-                "Gudipalli",
-                "Rallabudugur",
-                "Ramakuppam"
-              ]
+              "police_stations": ["Gudipalli", "Rallabudugur", "Ramakuppam"]
             },
             {
               "name": "Kuppam Urban Circle",
-              "police_stations": [
-                "Kuppam UPS"
-              ]
+              "police_stations": ["Kuppam UPS"]
             }
           ]
         },
@@ -669,16 +540,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Nagari Rural Circle",
-              "police_stations": [
-                "Nindra",
-                "Vijayapuram"
-              ]
+              "police_stations": ["Nindra", "Vijayapuram"]
             },
             {
               "name": "Nagari Urban Circle",
-              "police_stations": [
-                "Nagari UPS"
-              ]
+              "police_stations": ["Nagari UPS"]
             }
           ]
         },
@@ -687,48 +553,31 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Bangarupalem Urban Circle",
-              "police_stations": [
-                "Bangarupalem UPS"
-              ]
+              "police_stations": ["Bangarupalem UPS"]
             },
             {
               "name": "Gangavaram Urban Circle",
-              "police_stations": [
-                "Gangavaram UPS"
-              ]
+              "police_stations": ["Gangavaram UPS"]
             },
             {
               "name": "Palamaner Rural Cricle",
-              "police_stations": [
-                "Baireddypalle",
-                "Panjani"
-              ]
+              "police_stations": ["Baireddypalle", "Panjani"]
             },
             {
               "name": "Palamaner Urban Circle",
-              "police_stations": [
-                "Palamaner UPS"
-              ]
+              "police_stations": ["Palamaner UPS"]
             },
             {
               "name": "Punganur Rural Circle",
-              "police_stations": [
-                "Chowdepalli",
-                "Sodam",
-                "Somala"
-              ]
+              "police_stations": ["Chowdepalli", "Sodam", "Somala"]
             },
             {
               "name": "Punganur Urban Circle",
-              "police_stations": [
-                "Punganur UPS"
-              ]
+              "police_stations": ["Punganur UPS"]
             },
             {
               "name": "V.Kota Urban Circle",
-              "police_stations": [
-                "V.Kota UPS"
-              ]
+              "police_stations": ["V.Kota UPS"]
             }
           ]
         }
@@ -742,9 +591,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Amalapuram Town"
-              ]
+              "police_stations": ["Amalapuram Town"]
             },
             {
               "name": "Amalapuram Rural Circle",
@@ -756,11 +603,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Mummidivaram Circle",
-              "police_stations": [
-                "I. Polavaram",
-                "Katrenikona",
-                "Mummidivaram"
-              ]
+              "police_stations": ["I. Polavaram", "Katrenikona", "Mummidivaram"]
             }
           ]
         },
@@ -787,11 +630,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Razole Circle",
-              "police_stations": [
-                "Malkipuram",
-                "Razole",
-                "Sakhinetipalli"
-              ]
+              "police_stations": ["Malkipuram", "Razole", "Sakhinetipalli"]
             }
           ]
         },
@@ -800,25 +639,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Mandapeta Town"
-              ]
+              "police_stations": ["Mandapeta Town"]
             },
             {
               "name": "Mandapeta Rural Circle",
-              "police_stations": [
-                "Angara",
-                "Mandapeta Rural",
-                "Rayavaram"
-              ]
+              "police_stations": ["Angara", "Mandapeta Rural", "Rayavaram"]
             },
             {
               "name": "Ramachandrapuram Circle",
-              "police_stations": [
-                "Draksharama",
-                "Pamarru",
-                "Ramachandrapuram"
-              ]
+              "police_stations": ["Draksharama", "Pamarru", "Ramachandrapuram"]
             }
           ]
         }
@@ -845,11 +674,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Traffic",
-                "CCS",
-                "Mahila UPS"
-              ]
+              "police_stations": ["Traffic", "CCS", "Mahila UPS"]
             }
           ]
         },
@@ -858,17 +683,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Bommuru"
-              ]
+              "police_stations": ["Bommuru"]
             },
             {
               "name": "Anaparthi Circle",
-              "police_stations": [
-                "Anaparthi",
-                "Biccavole",
-                "Rangampeta"
-              ]
+              "police_stations": ["Anaparthi", "Biccavole", "Rangampeta"]
             }
           ]
         },
@@ -877,25 +696,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Kovvur Town",
-                "Nallajerla"
-              ]
+              "police_stations": ["Kovvur Town", "Nallajerla"]
             },
             {
               "name": "Devarapalli Circle",
-              "police_stations": [
-                "Devarapalli",
-                "Gopalapuram"
-              ]
+              "police_stations": ["Devarapalli", "Gopalapuram"]
             },
             {
               "name": "Kovvur Rural Circle",
-              "police_stations": [
-                "Chagallu",
-                "Kovvur Rural",
-                "Tallapudi"
-              ]
+              "police_stations": ["Chagallu", "Kovvur Rural", "Tallapudi"]
             },
             {
               "name": "Nidadavole Circle",
@@ -913,9 +722,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Rajanagaram"
-              ]
+              "police_stations": ["Rajanagaram"]
             },
             {
               "name": "Korukonda Circle",
@@ -963,16 +770,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Bhimadole Circle",
-              "police_stations": [
-                "Bhimadole",
-                "Dwaraka Tirumala"
-              ]
+              "police_stations": ["Bhimadole", "Dwaraka Tirumala"]
             },
             {
               "name": "Eluru I Town UPS",
-              "police_stations": [
-                "Eluru Rural"
-              ]
+              "police_stations": ["Eluru Rural"]
             },
             {
               "name": "Kaikaluru Rural Circle",
@@ -985,11 +787,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Nidamarru Circle",
-              "police_stations": [
-                "Chebrole",
-                "Nidamarru",
-                "Ganapavaram"
-              ]
+              "police_stations": ["Chebrole", "Nidamarru", "Ganapavaram"]
             }
           ]
         },
@@ -998,10 +796,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Chintalapudi Circle",
-              "police_stations": [
-                "Chintalapudi",
-                "Dharmajigudem"
-              ]
+              "police_stations": ["Chintalapudi", "Dharmajigudem"]
             },
             {
               "name": "Jangareddygudem Circle",
@@ -1018,9 +813,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Nuzvid Town"
-              ]
+              "police_stations": ["Nuzvid Town"]
             },
             {
               "name": "Nuzvid Rural Circle",
@@ -1033,11 +826,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Pedavegi Circle",
-              "police_stations": [
-                "Denduluru",
-                "Pedapadu",
-                "Pedavegi"
-              ]
+              "police_stations": ["Denduluru", "Pedapadu", "Pedavegi"]
             }
           ]
         },
@@ -1054,17 +843,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Kukunoor Circle",
-              "police_stations": [
-                "Kukunoor",
-                "Velerupadu"
-              ]
+              "police_stations": ["Kukunoor", "Velerupadu"]
             },
             {
               "name": "Polavaram Circle",
-              "police_stations": [
-                "Koyyalagudem",
-                "Polavaram"
-              ]
+              "police_stations": ["Koyyalagudem", "Polavaram"]
             }
           ]
         }
@@ -1078,11 +861,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Kothapet",
-                "Lalapet",
-                "Old guntur"
-              ]
+              "police_stations": ["Kothapet", "Lalapet", "Old guntur"]
             }
           ]
         },
@@ -1091,17 +870,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Mangalagiri Town",
-                "Pedakakani"
-              ]
+              "police_stations": ["Mangalagiri Town", "Pedakakani"]
             },
             {
               "name": "Mangalagiri Rural Circle",
-              "police_stations": [
-                "Duggirala",
-                "Mangalagiri Rural"
-              ]
+              "police_stations": ["Duggirala", "Mangalagiri Rural"]
             }
           ]
         },
@@ -1110,12 +883,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Tadepalli",
-                "Traffic",
-                "CCS",
-                "Mahila UPS"
-              ]
+              "police_stations": ["Tadepalli", "Traffic", "CCS", "Mahila UPS"]
             }
           ]
         },
@@ -1124,9 +892,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Nallapadu"
-              ]
+              "police_stations": ["Nallapadu"]
             },
             {
               "name": "Prathipadu Circle",
@@ -1153,17 +919,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Ponnur Rural Circle",
-              "police_stations": [
-                "Chebrolu",
-                "Ponnur Rural"
-              ]
+              "police_stations": ["Chebrolu", "Ponnur Rural"]
             },
             {
               "name": "Tenali Rural Circle",
-              "police_stations": [
-                "Kollipara",
-                "Tenali Rural"
-              ]
+              "police_stations": ["Kollipara", "Tenali Rural"]
             }
           ]
         },
@@ -1172,17 +932,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Medikonduru",
-                "Tadikonda",
-                "Thulluru"
-              ]
+              "police_stations": ["Medikonduru", "Tadikonda", "Thulluru"]
             },
             {
               "name": "Medikonduru UPS",
-              "police_stations": [
-                "Phirangipuram PS"
-              ]
+              "police_stations": ["Phirangipuram PS"]
             }
           ]
         },
@@ -1191,11 +945,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Arundalpet",
-                "Nagarampalem",
-                "Pattabhipuram"
-              ]
+              "police_stations": ["Arundalpet", "Nagarampalem", "Pattabhipuram"]
             }
           ]
         }
@@ -1246,24 +996,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Samalkot",
-                "Tuni Town"
-              ]
+              "police_stations": ["Samalkot", "Tuni Town"]
             },
             {
               "name": "Jaggampeta Circle",
-              "police_stations": [
-                "Gandepalli",
-                "Jaggampeta",
-                "Kirlampudi"
-              ]
+              "police_stations": ["Gandepalli", "Jaggampeta", "Kirlampudi"]
             },
             {
               "name": "Peddapuram Circle",
-              "police_stations": [
-                "Peddapuram"
-              ]
+              "police_stations": ["Peddapuram"]
             },
             {
               "name": "Prathipadu Circle",
@@ -1276,11 +1017,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Tuni Rural Circle",
-              "police_stations": [
-                "Kotananduru",
-                "Thondangi",
-                "Tuni Rural"
-              ]
+              "police_stations": ["Kotananduru", "Thondangi", "Tuni Rural"]
             }
           ]
         }
@@ -1294,18 +1031,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Avanigadda Circle",
-              "police_stations": [
-                "Avanigadda",
-                "Koduru",
-                "Nagayalanka"
-              ]
+              "police_stations": ["Avanigadda", "Koduru", "Nagayalanka"]
             },
             {
               "name": "Challapalli Circle",
-              "police_stations": [
-                "Challapalli",
-                "Ghantasala"
-              ]
+              "police_stations": ["Challapalli", "Ghantasala"]
             }
           ]
         },
@@ -1335,10 +1065,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Robertsonpet UPS",
-              "police_stations": [
-                "Bandar Taluk PS",
-                "Machilipatnam Town"
-              ]
+              "police_stations": ["Bandar Taluk PS", "Machilipatnam Town"]
             }
           ]
         },
@@ -1355,24 +1082,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Gannavaram UPS",
-              "police_stations": [
-                "Unguturu"
-              ]
+              "police_stations": ["Unguturu"]
             },
             {
               "name": "Hanuman Junction Circle",
-              "police_stations": [
-                "Atkuru",
-                "Hanuman Junction",
-                "Veeravalli"
-              ]
+              "police_stations": ["Atkuru", "Hanuman Junction", "Veeravalli"]
             },
             {
               "name": "Kankipadu Circle",
-              "police_stations": [
-                "Kankipadu",
-                "Vuyyuru Rural"
-              ]
+              "police_stations": ["Kankipadu", "Vuyyuru Rural"]
             }
           ]
         },
@@ -1381,33 +1099,19 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Gudivada I Town UPS",
-                "Gudivada II Town UPS"
-              ]
+              "police_stations": ["Gudivada I Town UPS", "Gudivada II Town UPS"]
             },
             {
               "name": "Gudivada Rural Circle",
-              "police_stations": [
-                "Gudivada Rural",
-                "Gudlavalleru",
-                "Nandivada"
-              ]
+              "police_stations": ["Gudivada Rural", "Gudlavalleru", "Nandivada"]
             },
             {
               "name": "Pamarru Circle",
-              "police_stations": [
-                "Kuchipudi",
-                "Pamarru",
-                "Pedaparupudi"
-              ]
+              "police_stations": ["Kuchipudi", "Pamarru", "Pedaparupudi"]
             },
             {
               "name": "Pamidimukkala Circle",
-              "police_stations": [
-                "Pamidimukkala",
-                "Thotlavalluru"
-              ]
+              "police_stations": ["Pamidimukkala", "Thotlavalluru"]
             }
           ]
         }
@@ -1429,11 +1133,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Adoni Rural Circle",
-              "police_stations": [
-                "Adoni Rural",
-                "Isvi",
-                "Peddathumbalam"
-              ]
+              "police_stations": ["Adoni Rural", "Isvi", "Peddathumbalam"]
             }
           ]
         },
@@ -1455,19 +1155,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Kodumur Circle",
-              "police_stations": [
-                "C.Belgal",
-                "Gudur",
-                "Kodumur"
-              ]
+              "police_stations": ["C.Belgal", "Gudur", "Kodumur"]
             },
             {
               "name": "Kurnool Rural Circle",
-              "police_stations": [
-                "K.Nagalapuram",
-                "Oravakal",
-                "Ulindakonda"
-              ]
+              "police_stations": ["K.Nagalapuram", "Oravakal", "Ulindakonda"]
             }
           ]
         },
@@ -1476,11 +1168,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Aspari",
-                "Devanakonda",
-                "Pathikonda"
-              ]
+              "police_stations": ["Aspari", "Devanakonda", "Pathikonda"]
             },
             {
               "name": "Alur Circle",
@@ -1493,18 +1181,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Pathikonda Rural Circle",
-              "police_stations": [
-                "Jonnagiri",
-                "Maddikera",
-                "Tuggali"
-              ]
+              "police_stations": ["Jonnagiri", "Maddikera", "Tuggali"]
             },
             {
               "name": "Veldurthy Circle",
-              "police_stations": [
-                "Krishnagiri",
-                "Veldurthi"
-              ]
+              "police_stations": ["Krishnagiri", "Veldurthi"]
             }
           ]
         },
@@ -1513,24 +1194,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Yemmiganur Town"
-              ]
+              "police_stations": ["Yemmiganur Town"]
             },
             {
               "name": "Kosigi Circle",
-              "police_stations": [
-                "Kosigi",
-                "Kowthalam",
-                "Peddakadubur"
-              ]
+              "police_stations": ["Kosigi", "Kowthalam", "Peddakadubur"]
             },
             {
               "name": "Mantralayam Circle",
-              "police_stations": [
-                "Madhavaram",
-                "Manthralayam"
-              ]
+              "police_stations": ["Madhavaram", "Manthralayam"]
             },
             {
               "name": "Yemmiganur Rural Circle",
@@ -1552,9 +1224,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Allagadda Town"
-              ]
+              "police_stations": ["Allagadda Town"]
             },
             {
               "name": "Allagadda Rural Circle",
@@ -1576,10 +1246,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Sirivella Circle",
-              "police_stations": [
-                "Rudravaram",
-                "Sirivella"
-              ]
+              "police_stations": ["Rudravaram", "Sirivella"]
             }
           ]
         },
@@ -1588,9 +1255,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Nandikotkur"
-              ]
+              "police_stations": ["Nandikotkur"]
             },
             {
               "name": "Atmakur Circle",
@@ -1612,10 +1277,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Srisailam Circle",
-              "police_stations": [
-                "Srisailam I Town",
-                "Srisailam II Town"
-              ]
+              "police_stations": ["Srisailam I Town", "Srisailam II Town"]
             }
           ]
         },
@@ -1624,27 +1286,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Bethamcherla",
-                "Dhone Rural",
-                "Dhone Town"
-              ]
+              "police_stations": ["Bethamcherla", "Dhone Rural", "Dhone Town"]
             },
             {
               "name": "Banaganapalli Circle",
-              "police_stations": [
-                "Banaganapalli",
-                "Nandivargam",
-                "Owk"
-              ]
+              "police_stations": ["Banaganapalli", "Nandivargam", "Owk"]
             },
             {
               "name": "Peapully Circle",
-              "police_stations": [
-                "Jaladurgam",
-                "N.Racherla",
-                "Peapully"
-              ]
+              "police_stations": ["Jaladurgam", "N.Racherla", "Peapully"]
             }
           ]
         },
@@ -1663,18 +1313,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Nandyal Rural Circle",
-              "police_stations": [
-                "B.Atmakur",
-                "Gospadu",
-                "Mahanandi"
-              ]
+              "police_stations": ["B.Atmakur", "Gospadu", "Mahanandi"]
             },
             {
               "name": "Panyam Circle",
-              "police_stations": [
-                "Gadivemula",
-                "Panyam"
-              ]
+              "police_stations": ["Gadivemula", "Panyam"]
             }
           ]
         }
@@ -1688,17 +1331,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "VIjayawada Central Zone",
-              "police_stations": [
-                "Gunadala",
-                "Machavaram",
-                "Patamata"
-              ]
+              "police_stations": ["Gunadala", "Machavaram", "Patamata"]
             },
             {
               "name": "-",
-              "police_stations": [
-                "Mahila UPS, Vijayawada"
-              ]
+              "police_stations": ["Mahila UPS, Vijayawada"]
             }
           ]
         },
@@ -1715,11 +1352,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "VIjayawada South Zone",
-              "police_stations": [
-                "Governorpet",
-                "Krishnalanka",
-                "Suryaraopet"
-              ]
+              "police_stations": ["Governorpet", "Krishnalanka", "Suryaraopet"]
             },
             {
               "name": "VIjayawada West Zone",
@@ -1737,9 +1370,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Vijaywada CCS Circle",
-              "police_stations": [
-                "Governorpet-CRIME"
-              ]
+              "police_stations": ["Governorpet-CRIME"]
             },
             {
               "name": "nan",
@@ -1760,10 +1391,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "CCS , Vijayawada",
-                "Cyber Crime"
-              ]
+              "police_stations": ["CCS , Vijayawada", "Cyber Crime"]
             }
           ]
         },
@@ -1772,9 +1400,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "VIjayawada Traffic Zone",
-              "police_stations": [
-                "Vijayawada Traffic I (T)"
-              ]
+              "police_stations": ["Vijayawada Traffic I (T)"]
             }
           ]
         },
@@ -1797,11 +1423,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Mylavaram Circle",
-              "police_stations": [
-                "G. Konduru",
-                "Mylavaram",
-                "Reddigudem"
-              ]
+              "police_stations": ["G. Konduru", "Mylavaram", "Reddigudem"]
             },
             {
               "name": "Tiruvuru Circle",
@@ -1819,9 +1441,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Nandigama"
-              ]
+              "police_stations": ["Nandigama"]
             },
             {
               "name": "Jaggaiahpet Circle",
@@ -1863,17 +1483,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Dachepalli UPS",
-              "police_stations": [
-                "Machavaram"
-              ]
+              "police_stations": ["Machavaram"]
             },
             {
               "name": "Karempudi Circle",
-              "police_stations": [
-                "Durgi",
-                "Karempudi",
-                "Rentachinthala"
-              ]
+              "police_stations": ["Durgi", "Karempudi", "Rentachinthala"]
             },
             {
               "name": "Macherla Rural Circle",
@@ -1907,16 +1521,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Narsaraopet I Town UPS",
-              "police_stations": [
-                "Narasaraopet Trafic PS"
-              ]
+              "police_stations": ["Narasaraopet Trafic PS"]
             },
             {
               "name": "Narsaraopet Rural  Circle",
-              "police_stations": [
-                "Narasaraopet Rural",
-                "Rompicherla"
-              ]
+              "police_stations": ["Narasaraopet Rural", "Rompicherla"]
             },
             {
               "name": "Vinukonda Rural Circle",
@@ -1934,10 +1543,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Amaravathi",
-                "Sattenapalli Town"
-              ]
+              "police_stations": ["Amaravathi", "Sattenapalli Town"]
             },
             {
               "name": "Pedakurapadu Circle",
@@ -1977,11 +1583,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Elwinpeta Circle",
-              "police_stations": [
-                "Elwinpeta",
-                "Kurupam",
-                "Neelakantapuram"
-              ]
+              "police_stations": ["Elwinpeta", "Kurupam", "Neelakantapuram"]
             },
             {
               "name": "Palakonda Circle",
@@ -2018,11 +1620,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Salur Rural Circle",
-              "police_stations": [
-                "Makkuva",
-                "Pachipenta",
-                "Salur Rural"
-              ]
+              "police_stations": ["Makkuva", "Pachipenta", "Salur Rural"]
             }
           ]
         }
@@ -2036,27 +1634,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Darsi Circle",
-              "police_stations": [
-                "Darsi",
-                "Mundlamur",
-                "Thallur"
-              ]
+              "police_stations": ["Darsi", "Mundlamur", "Thallur"]
             },
             {
               "name": "Podili Circle",
-              "police_stations": [
-                "Konakanamitla",
-                "Podili",
-                "Tarlupadu"
-              ]
+              "police_stations": ["Konakanamitla", "Podili", "Tarlupadu"]
             },
             {
               "name": "Tripuranthakam Circle",
-              "police_stations": [
-                "Donakonda",
-                "Kurichedu",
-                "Tripuranthakam"
-              ]
+              "police_stations": ["Donakonda", "Kurichedu", "Tripuranthakam"]
             }
           ]
         },
@@ -2073,19 +1659,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Kondepi Circle",
-              "police_stations": [
-                "Kondepi",
-                "Marripudi",
-                "Ponnalur"
-              ]
+              "police_stations": ["Kondepi", "Marripudi", "Ponnalur"]
             },
             {
               "name": "Pamur Circle",
-              "police_stations": [
-                "C.S.Puram",
-                "Pamur",
-                "Veligandla"
-              ]
+              "police_stations": ["C.S.Puram", "Pamur", "Veligandla"]
             }
           ]
         },
@@ -2094,31 +1672,19 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Giddalur"
-              ]
+              "police_stations": ["Giddalur"]
             },
             {
               "name": "Cumbum Circle",
-              "police_stations": [
-                "Ardhaveedu",
-                "Besthavaripeta",
-                "Cumbum"
-              ]
+              "police_stations": ["Ardhaveedu", "Besthavaripeta", "Cumbum"]
             },
             {
               "name": "Giddalur Circle",
-              "police_stations": [
-                "Komarolu",
-                "Racherla"
-              ]
+              "police_stations": ["Komarolu", "Racherla"]
             },
             {
               "name": "Markapur Circle",
-              "police_stations": [
-                "Markapur Rural",
-                "Markapur Town"
-              ]
+              "police_stations": ["Markapur Rural", "Markapur Town"]
             },
             {
               "name": "Yerragondapalem Circle",
@@ -2148,25 +1714,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Ongole II Town UPS",
-              "police_stations": [
-                "Kothapatnam"
-              ]
+              "police_stations": ["Kothapatnam"]
             },
             {
               "name": "Ongole Rural Circle",
-              "police_stations": [
-                "Maddipadu",
-                "N.G. Padu",
-                "Santhanuthalapadu"
-              ]
+              "police_stations": ["Maddipadu", "N.G. Padu", "Santhanuthalapadu"]
             },
             {
               "name": "Singarayakonda Circle",
-              "police_stations": [
-                "Jarugumalli",
-                "Singarayakonda",
-                "Tangutur"
-              ]
+              "police_stations": ["Jarugumalli", "Singarayakonda", "Tangutur"]
             }
           ]
         }
@@ -2189,20 +1745,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Rapur Circle",
-              "police_stations": [
-                "Kaluvoy",
-                "Kandaleru",
-                "Rapur",
-                "Sydapuram"
-              ]
+              "police_stations": ["Kaluvoy", "Kandaleru", "Rapur", "Sydapuram"]
             },
             {
               "name": "Sangam Circle",
-              "police_stations": [
-                "A.S.Pet",
-                "Chejerla",
-                "Sangam"
-              ]
+              "police_stations": ["A.S.Pet", "Chejerla", "Sangam"]
             }
           ]
         },
@@ -2211,11 +1758,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Gudlur Circle",
-              "police_stations": [
-                "Gudlur",
-                "Lingasamudram",
-                "Voletivaripalem"
-              ]
+              "police_stations": ["Gudlur", "Lingasamudram", "Voletivaripalem"]
             },
             {
               "name": "Kandukur Circle",
@@ -2249,11 +1792,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Kavali Rural Circle",
-              "police_stations": [
-                "Allur",
-                "Bitragunta",
-                "Dagadarthi"
-              ]
+              "police_stations": ["Allur", "Bitragunta", "Dagadarthi"]
             },
             {
               "name": "Udayagiri Circle",
@@ -2283,17 +1822,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "B. Palem Circle",
-              "police_stations": [
-                "Kodavalur",
-                "Vidavalur"
-              ]
+              "police_stations": ["Kodavalur", "Vidavalur"]
             },
             {
               "name": "Kovur Circle",
-              "police_stations": [
-                "Indukurpet",
-                "Kovur"
-              ]
+              "police_stations": ["Indukurpet", "Kovur"]
             },
             {
               "name": "Krishnapatnam Port Circle",
@@ -2305,10 +1838,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Podalakur Circle",
-              "police_stations": [
-                "Manubolu",
-                "Podalakur"
-              ]
+              "police_stations": ["Manubolu", "Podalakur"]
             }
           ]
         },
@@ -2338,9 +1868,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Dharmavaram I Town"
-              ]
+              "police_stations": ["Dharmavaram I Town"]
             },
             {
               "name": "Dharmavaram Rural Circle",
@@ -2362,9 +1890,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "nan",
-              "police_stations": [
-                "Dharmavaram II Town"
-              ]
+              "police_stations": ["Dharmavaram II Town"]
             }
           ]
         },
@@ -2384,10 +1910,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Hindupur Rural Circle",
-              "police_stations": [
-                "Chilmathur",
-                "Lepakshi"
-              ]
+              "police_stations": ["Chilmathur", "Lepakshi"]
             }
           ]
         },
@@ -2396,10 +1919,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Kadiri Rural",
-                "Kadiri Town"
-              ]
+              "police_stations": ["Kadiri Rural", "Kadiri Town"]
             },
             {
               "name": "Kadiri Rural Circle",
@@ -2418,9 +1938,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Gorantla"
-              ]
+              "police_stations": ["Gorantla"]
             },
             {
               "name": "Madakasira Circle",
@@ -2457,11 +1975,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Nallamada Circle",
-              "police_stations": [
-                "Amadaguru",
-                "Nallamada",
-                "O.D.Cheruvu"
-              ]
+              "police_stations": ["Amadaguru", "Nallamada", "O.D.Cheruvu"]
             },
             {
               "name": "Puttaparthi Rural Circle",
@@ -2483,9 +1997,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "Itchapuram Circle",
-              "police_stations": [
-                "Itchapuram Rural"
-              ]
+              "police_stations": ["Itchapuram Rural"]
             }
           ]
         },
@@ -2494,31 +2006,19 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Kasibugga"
-              ]
+              "police_stations": ["Kasibugga"]
             },
             {
               "name": "Itchapuram Circle",
-              "police_stations": [
-                "Itchapuram Town",
-                "Kaviti"
-              ]
+              "police_stations": ["Itchapuram Town", "Kaviti"]
             },
             {
               "name": "Kasibugga Rural Circle",
-              "police_stations": [
-                "Mandasa",
-                "Vajrapukothuru"
-              ]
+              "police_stations": ["Mandasa", "Vajrapukothuru"]
             },
             {
               "name": "Sompeta Circle",
-              "police_stations": [
-                "Baruva",
-                "Kanchili",
-                "Sompeta"
-              ]
+              "police_stations": ["Baruva", "Kanchili", "Sompeta"]
             }
           ]
         },
@@ -2527,9 +2027,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Srikakulam II Town"
-              ]
+              "police_stations": ["Srikakulam II Town"]
             },
             {
               "name": "Amadalavalasa Circle",
@@ -2567,16 +2065,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Tekkali PS"
-              ]
+              "police_stations": ["Tekkali PS"]
             },
             {
               "name": "Kothuru Circle",
-              "police_stations": [
-                "Hiramandalam",
-                "Kothuru"
-              ]
+              "police_stations": ["Hiramandalam", "Kothuru"]
             },
             {
               "name": "Narasannapeta Circle",
@@ -2589,10 +2082,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Pathapatnam Circle",
-              "police_stations": [
-                "Meliaputti",
-                "Pathapatnam"
-              ]
+              "police_stations": ["Meliaputti", "Pathapatnam"]
             },
             {
               "name": "Tekkali Circle",
@@ -2615,25 +2105,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Naidupet"
-              ]
+              "police_stations": ["Naidupet"]
             },
             {
               "name": "Naidupet Rural Circle",
-              "police_stations": [
-                "Doravari Satram",
-                "Ozili",
-                "Pellakur"
-              ]
+              "police_stations": ["Doravari Satram", "Ozili", "Pellakur"]
             },
             {
               "name": "Sullurpet Circle",
-              "police_stations": [
-                "Sriharikota",
-                "Sullurpet",
-                "Tada"
-              ]
+              "police_stations": ["Sriharikota", "Sullurpet", "Tada"]
             }
           ]
         },
@@ -2657,25 +2137,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Pakala",
-                "Tirchanur",
-                "Tirupati Rural"
-              ]
+              "police_stations": ["Pakala", "Tirchanur", "Tirupati Rural"]
             },
             {
               "name": "Bhakrapet Circle",
-              "police_stations": [
-                "Bhakarapet",
-                "Yerravaripalem"
-              ]
+              "police_stations": ["Bhakarapet", "Yerravaripalem"]
             },
             {
               "name": "Chandragiri",
-              "police_stations": [
-                "Chandragiri UPS",
-                "RC Puram"
-              ]
+              "police_stations": ["Chandragiri UPS", "RC Puram"]
             }
           ]
         },
@@ -2684,33 +2154,19 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Gudur I Town",
-                "Gudur II Town"
-              ]
+              "police_stations": ["Gudur I Town", "Gudur II Town"]
             },
             {
               "name": "Gudur Rural Circle",
-              "police_stations": [
-                "Chillakur",
-                "Gudur Rural"
-              ]
+              "police_stations": ["Chillakur", "Gudur Rural"]
             },
             {
               "name": "Vakadu Circle",
-              "police_stations": [
-                "Chittamuru",
-                "Kota",
-                "Vakadu"
-              ]
+              "police_stations": ["Chittamuru", "Kota", "Vakadu"]
             },
             {
               "name": "Venkatagiri Circle",
-              "police_stations": [
-                "Balayapalli",
-                "Dakkili",
-                "Venkatagiri"
-              ]
+              "police_stations": ["Balayapalli", "Dakkili", "Venkatagiri"]
             }
           ]
         },
@@ -2719,9 +2175,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Puttur"
-              ]
+              "police_stations": ["Puttur"]
             },
             {
               "name": "Puttur Rural Circle",
@@ -2734,11 +2188,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Satyavedu Circle",
-              "police_stations": [
-                "Nagalapuram",
-                "Satyavedu",
-                "Vardaiahpalem"
-              ]
+              "police_stations": ["Nagalapuram", "Satyavedu", "Vardaiahpalem"]
             }
           ]
         },
@@ -2747,17 +2197,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Renigunta",
-                "Yerpedu"
-              ]
+              "police_stations": ["Renigunta", "Yerpedu"]
             },
             {
               "name": "Renigunta  Rural Circle",
-              "police_stations": [
-                "Airport",
-                "Gajula mandyam"
-              ]
+              "police_stations": ["Airport", "Gajula mandyam"]
             }
           ]
         },
@@ -2766,9 +2210,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Sri City"
-              ]
+              "police_stations": ["Sri City"]
             }
           ]
         },
@@ -2785,10 +2227,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Bn Kandriga Circle",
-              "police_stations": [
-                "B.N.Kandriga",
-                "Thottambedu"
-              ]
+              "police_stations": ["B.N.Kandriga", "Thottambedu"]
             }
           ]
         },
@@ -2797,10 +2236,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Tirumala I Town",
-                "Tirumala II Town"
-              ]
+              "police_stations": ["Tirumala I Town", "Tirumala II Town"]
             }
           ]
         },
@@ -2828,11 +2264,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "ACP Dwaraka Sub-Division",
-              "police_stations": [
-                "Arilova",
-                "Dwaraka",
-                "Muvvalavanipalem"
-              ]
+              "police_stations": ["Arilova", "Dwaraka", "Muvvalavanipalem"]
             },
             {
               "name": "ACP East",
@@ -2859,9 +2291,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Mahila UPS, Visakhapatnam"
-              ]
+              "police_stations": ["Mahila UPS, Visakhapatnam"]
             }
           ]
         },
@@ -2870,9 +2300,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "ACP Traffic",
-              "police_stations": [
-                "Gajuwaka Traffic"
-              ]
+              "police_stations": ["Gajuwaka Traffic"]
             }
           ]
         },
@@ -2897,20 +2325,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "ACP Harbour Sub-Division",
-              "police_stations": [
-                "Harbour",
-                "I Town",
-                "Malkapuram",
-                "New Port"
-              ]
+              "police_stations": ["Harbour", "I Town", "Malkapuram", "New Port"]
             },
             {
               "name": "ACP South",
-              "police_stations": [
-                "Duvvada",
-                "Gajuwaka",
-                "Steelplant"
-              ]
+              "police_stations": ["Duvvada", "Gajuwaka", "Steelplant"]
             },
             {
               "name": "ACP West",
@@ -2942,11 +2361,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Bobbili Rural Circle",
-              "police_stations": [
-                "Badangi",
-                "Ramabhadrapuram",
-                "Therlam"
-              ]
+              "police_stations": ["Badangi", "Ramabhadrapuram", "Therlam"]
             },
             {
               "name": "Gajapathinagaram Circle",
@@ -2965,9 +2380,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Rajam Town"
-              ]
+              "police_stations": ["Rajam Town"]
             },
             {
               "name": "Cheepurupalli Circle",
@@ -3010,19 +2423,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "S.Kota Circle",
-              "police_stations": [
-                "Jami",
-                "L Kota",
-                "S.Kota",
-                "Vallampudi"
-              ]
+              "police_stations": ["Jami", "L Kota", "S.Kota", "Vallampudi"]
             },
             {
               "name": "Vizianagaram Rural  Circle",
-              "police_stations": [
-                "Gantyada",
-                "Vizianagaram Rural"
-              ]
+              "police_stations": ["Gantyada", "Vizianagaram Rural"]
             }
           ]
         }
@@ -3044,11 +2449,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Akivedu Circle",
-              "police_stations": [
-                "Akividu",
-                "Kalla",
-                "Undi"
-              ]
+              "police_stations": ["Akividu", "Kalla", "Undi"]
             },
             {
               "name": "Bhimavaram Rural Circle",
@@ -3065,33 +2466,19 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Narasapuram Town",
-                "Palakollu Town"
-              ]
+              "police_stations": ["Narasapuram Town", "Palakollu Town"]
             },
             {
               "name": "Narasapuram Rural Circle",
-              "police_stations": [
-                "Mogaltur",
-                "Narasapuram Rural"
-              ]
+              "police_stations": ["Mogaltur", "Narasapuram Rural"]
             },
             {
               "name": "Palakollu Rural Circle",
-              "police_stations": [
-                "Palakollu Rural",
-                "Poduru",
-                "Yelamanchili"
-              ]
+              "police_stations": ["Palakollu Rural", "Poduru", "Yelamanchili"]
             },
             {
               "name": "Penugonda Circle",
-              "police_stations": [
-                "Achanta",
-                "Penugonda",
-                "Penumantra"
-              ]
+              "police_stations": ["Achanta", "Penugonda", "Penumantra"]
             }
           ]
         },
@@ -3109,18 +2496,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Tadepalligudem Rural Circle",
-              "police_stations": [
-                "Pentapadu",
-                "Tadepalligudem Rural"
-              ]
+              "police_stations": ["Pentapadu", "Tadepalligudem Rural"]
             },
             {
               "name": "Tanuku Rural Circle",
-              "police_stations": [
-                "Attili",
-                "Iragavaram",
-                "Tanuku Rural"
-              ]
+              "police_stations": ["Attili", "Iragavaram", "Tanuku Rural"]
             }
           ]
         }
@@ -3134,11 +2514,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Jammalamadugu",
-                "Muddanur",
-                "Yerraguntla"
-              ]
+              "police_stations": ["Jammalamadugu", "Muddanur", "Yerraguntla"]
             },
             {
               "name": "Jammalamadugu Rural Circle",
@@ -3150,11 +2526,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Kondapuram Circle",
-              "police_stations": [
-                "Kalamalla",
-                "Kondapuram",
-                "Tallaproddatur"
-              ]
+              "police_stations": ["Kalamalla", "Kondapuram", "Tallaproddatur"]
             }
           ]
         },
@@ -3176,11 +2548,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Kadapa Rural Circle",
-              "police_stations": [
-                "Chennur",
-                "Chintakomma Dinne",
-                "Pendlimarri"
-              ]
+              "police_stations": ["Chennur", "Chintakomma Dinne", "Pendlimarri"]
             },
             {
               "name": "Kamalapuram Circle",
@@ -3192,10 +2560,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Vontimitta Circle",
-              "police_stations": [
-                "Sidhout",
-                "Vontimitta"
-              ]
+              "police_stations": ["Sidhout", "Vontimitta"]
             }
           ]
         },
@@ -3204,10 +2569,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Badvel",
-                "Mydukur"
-              ]
+              "police_stations": ["Badvel", "Mydukur"]
             },
             {
               "name": "Badvel Rural Circle",
@@ -3219,20 +2581,11 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Mydukur Rural Circle",
-              "police_stations": [
-                "B.Matam",
-                "Chapadu",
-                "Duvvur",
-                "Khajipet"
-              ]
+              "police_stations": ["B.Matam", "Chapadu", "Duvvur", "Khajipet"]
             },
             {
               "name": "Porumamilla Circle",
-              "police_stations": [
-                "Kalasapadu",
-                "Porumamilla",
-                "SAKN PS"
-              ]
+              "police_stations": ["Kalasapadu", "Porumamilla", "SAKN PS"]
             }
           ]
         },
@@ -3250,10 +2603,7 @@ const Map<String, dynamic> kPoliceHierarchyData = {
             },
             {
               "name": "Proddatur Rural Circle",
-              "police_stations": [
-                "Proddatur Rural",
-                "Rajupalem"
-              ]
+              "police_stations": ["Proddatur Rural", "Rajupalem"]
             }
           ]
         },
@@ -3262,26 +2612,15 @@ const Map<String, dynamic> kPoliceHierarchyData = {
           "circles": [
             {
               "name": "-",
-              "police_stations": [
-                "Pulivendula",
-                "Vempalli"
-              ]
+              "police_stations": ["Pulivendula", "Vempalli"]
             },
             {
               "name": "Pulivendula Rural Circle",
-              "police_stations": [
-                "Lingala",
-                "Simhadripuram",
-                "Thondur"
-              ]
+              "police_stations": ["Lingala", "Simhadripuram", "Thondur"]
             },
             {
               "name": "RK Valley Circle",
-              "police_stations": [
-                "Chekrayapet",
-                "RK Valley",
-                "Vemula"
-              ]
+              "police_stations": ["Chekrayapet", "RK Valley", "Vemula"]
             }
           ]
         }

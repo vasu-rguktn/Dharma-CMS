@@ -24,16 +24,16 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
   bool _isLoading = false;
 
   Future<void> _submitForm(Map<String, dynamic>? personalData, Map<String, dynamic>? addressData) async {
-    debugPrint('🔥 SUBMIT FORM CALLED');
-    debugPrint('📧 personalData: $personalData');
-    debugPrint('🏠 addressData: $addressData');
+    // debugPrint('🔥 SUBMIT FORM CALLED');
+    // debugPrint('📧 personalData: $personalData');
+    // debugPrint('🏠 addressData: $addressData');
     final localizations = AppLocalizations.of(context);
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
     final userType = args?['userType'] as String? ?? 'citizen';
-    debugPrint('👤 User Type: $userType');
+    // debugPrint('👤 User Type: $userType');
 
     if (personalData == null || addressData == null) {
-      debugPrint('❌ Missing personal or address data');
+      // debugPrint('❌ Missing personal or address data');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations?.dataNotProvided ?? 'Error: Required data not provided'),
@@ -47,18 +47,18 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmController.text;
-    debugPrint('👤 Username: "$username" (length: ${username.length})');
-    debugPrint('🔒 Password: "$password" (length: ${password.length})');
-    debugPrint('✅ Confirm: "$confirm"');
+    // debugPrint('👤 Username: "$username" (length: ${username.length})');
+    // debugPrint('🔒 Password: "$password" (length: ${password.length})');
+    // debugPrint('✅ Confirm: "$confirm"');
 
     if (_formKey.currentState!.validate()) {
-      debugPrint('✅ FORM VALIDATION PASSED');
+      // debugPrint('✅ FORM VALIDATION PASSED');
       setState(() => _isLoading = true);
       try {
         final authProvider = Provider.of<custom_auth.AuthProvider>(context, listen: false);
         final email = personalData['email'] as String?;
         if (email == null || email.isEmpty) {
-          debugPrint('❌ Email is null or empty');
+          // debugPrint('❌ Email is null or empty');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Error: Invalid email provided'),
@@ -68,10 +68,10 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           return;
         }
 
-        debugPrint('📧 Signing up with email: $email');
+        // debugPrint('📧 Signing up with email: $email');
         final userCredential = await authProvider.signUpWithEmail(email, password);
         if (userCredential == null || userCredential.user == null) {
-          debugPrint('❌ UserCredential or user is null');
+          // debugPrint('❌ UserCredential or user is null');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
             content: Text(localizations?.failedToCreateUser ?? 'Error: Failed to create user'),
@@ -81,7 +81,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           return;
         }
 
-        debugPrint('✅ User created: ${userCredential.user!.uid}');
+        // debugPrint('✅ User created: ${userCredential.user!.uid}');
         await authProvider.createUserProfile(
           uid: userCredential.user!.uid,
           email: email,
@@ -99,7 +99,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           role: userType,
         );
 
-        debugPrint('✅ Profile created successfully');
+        // debugPrint('✅ Profile created successfully');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(localizations?.registrationSuccessful ?? 'Registration successful!'),
@@ -107,7 +107,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           ),
         );
 
-        debugPrint('🚀 NAVIGATING TO DASHBOARD');
+        // debugPrint('🚀 NAVIGATING TO DASHBOARD');
         // Go to dashboard first
         context.go('/dashboard');
         
@@ -138,7 +138,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           default:
             errorMessage = e.message ?? 'An error occurred during registration.';
         }
-        debugPrint('🔥 FirebaseAuth error: ${e.code} - $errorMessage');
+        // debugPrint('🔥 FirebaseAuth error: ${e.code} - $errorMessage');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -146,7 +146,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
           ),
         );
       } catch (e, stackTrace) {
-        debugPrint('❌ Unexpected error: $e\nStackTrace: $stackTrace');
+        // debugPrint('❌ Unexpected error: $e\nStackTrace: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(localizations?.unexpectedError ?? 'An unexpected error occurred.'),
@@ -159,7 +159,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
         }
       }
     } else {
-      debugPrint('❌ FORM VALIDATION FAILED');
+      // debugPrint('❌ FORM VALIDATION FAILED');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations?.fixFormErrors ?? 'Please fix the errors in the form'),
@@ -172,13 +172,13 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('📋 LoginDetailsScreen initialized');
+    // debugPrint('📋 LoginDetailsScreen initialized');
   }
 
   @override
   void didUpdateWidget(LoginDetailsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    debugPrint('🔄 LoginDetailsScreen updated, args: ${GoRouterState.of(context).extra}');
+    // debugPrint('🔄 LoginDetailsScreen updated, args: ${GoRouterState.of(context).extra}');
   }
 
   @override
@@ -190,8 +190,8 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
     final addressData = args?['address'] as Map<String, dynamic>?;
     final userType = args?['userType'] as String? ?? 'citizen';
     
-    debugPrint('📋 Received args in LoginDetailsScreen: $args');
-    debugPrint('📋 Received userType: $userType');
+    // debugPrint('📋 Received args in LoginDetailsScreen: $args');
+    // debugPrint('📋 Received userType: $userType');
 
     return Scaffold(
       body: Column(
@@ -304,16 +304,16 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
-                        debugPrint('🔍 Validating username: "$value"');
+                        // debugPrint('🔍 Validating username: "$value"');
                         if (value == null || value.trim().isEmpty) {
-                          debugPrint('❌ Username is empty');
+                          // debugPrint('❌ Username is empty');
                           return localizations?.usernameEmpty ?? 'Enter username';
                         }
                         if (value.trim().length < 4) {
-                          debugPrint('❌ Username too short: ${value.trim().length}');
+                          // debugPrint('❌ Username too short: ${value.trim().length}');
                           return localizations?.usernameMinLength ?? 'Username must be at least 4 characters';
                         }
-                        debugPrint('✅ Username valid');
+                        // debugPrint('✅ Username valid');
                         return null;
                       },
                     ),
@@ -372,16 +372,16 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
-                        debugPrint('🔍 Validating password: "$value"');
+                        // debugPrint('🔍 Validating password: "$value"');
                         if (value == null || value.trim().isEmpty) {
-                          debugPrint('❌ Password is empty');
+                          // debugPrint('❌ Password is empty');
                           return localizations?.passwordEmpty ?? 'Enter password';
                         }
                         if (value.length < 6) {
-                          debugPrint('❌ Password too short: ${value.length}');
+                          // debugPrint('❌ Password too short: ${value.length}');
                           return localizations?.passwordMinLength ?? 'Password must be at least 6 characters';
                         }
-                        debugPrint('✅ Password valid');
+                        // debugPrint('✅ Password valid');
                         return null;
                       },
                     ),
@@ -440,16 +440,16 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                       ),
                       style: const TextStyle(fontSize: 16, color: Colors.black),
                       validator: (value) {
-                        debugPrint('🔍 Validating confirm password: "$value"');
+                        // debugPrint('🔍 Validating confirm password: "$value"');
                         if (value == null || value.trim().isEmpty) {
-                          debugPrint('❌ Confirm password is empty');
+                          // debugPrint('❌ Confirm password is empty');
                           return localizations?.confirmPasswordEmpty ?? 'Confirm your password';
                         }
                         if (value != _passwordController.text) {
-                          debugPrint('❌ Confirm password does not match');
+                          // debugPrint('❌ Confirm password does not match');
                           return localizations?.passwordsDoNotMatch ?? 'Passwords do not match';
                         }
-                        debugPrint('✅ Confirm password valid');
+                        // debugPrint('✅ Confirm password valid');
                         return null;
                       },
                     ),
@@ -466,7 +466,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
                                   'address': addressData
                                 });
                               } catch (e) {
-                                debugPrint('Navigation error: $e');
+                                // debugPrint('Navigation error: $e');
                               }
                             },
                             style: OutlinedButton.styleFrom(
@@ -521,7 +521,7 @@ class _LoginDetailsScreenState extends State<LoginDetailsScreen> {
 
   @override
   void dispose() {
-    debugPrint('🗑️ Disposing LoginDetailsScreen');
+    // debugPrint('🗑️ Disposing LoginDetailsScreen');
     _usernameController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();

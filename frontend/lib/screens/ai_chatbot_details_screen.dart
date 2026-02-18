@@ -79,8 +79,6 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
         // "originalReportId": widget.draftId // Optional
       };
 
-    
-
       // String baseUrl = "http://127.0.0.1:8000"; // Default for local web
       // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       //   // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
@@ -90,7 +88,10 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
 
       // Override if we can find a better source later.
       // But effectively, let's try to use the `dio` from `AuthProvider` if it exposes it? No.
-      String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app"; // Default for local web
+      String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+      //
+      // // Default for local web
+      // String baseUrl = "http://127.0.0.1:8000";
 
       final dio = Dio();
       final response = await dio.post(
@@ -109,7 +110,7 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
         throw Exception("Failed to generate PDF: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error generating QR: $e");
+      // print("Error generating QR: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to generate QR code: $e")),
@@ -137,7 +138,7 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
             "Failed to fetch PDF for printing: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error printing PDF: $e");
+      // print("Error printing PDF: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to print PDF: $e")),
@@ -158,13 +159,13 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
         "classification": widget.classification,
       };
 
+      // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
+      // Since we can't easily detect physical device, defaulting to LAN IP for now
+      // baseUrl = "http://10.0.2.2:8000";
+      // baseUrl = "http://10.5.40.156:8000";
+      // User requested localhost/emulator link
+      // String baseUrl = "http://127.0.0.1:8000";
       String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      //   // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
-      //   // Since we can't easily detect physical device, defaulting to LAN IP for now
-      //   // baseUrl = "http://10.0.2.2:8000";
-      //   baseUrl = "http://10.5.40.156:8000";
-      // }
 
       final dio = Dio();
       final response = await dio.post(
@@ -183,7 +184,7 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
         throw Exception("Failed to generate PDF: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error generating for print: $e");
+      // print("Error generating for print: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to generate PDF for printing: $e")),
@@ -510,8 +511,8 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  print(
-                      '🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
+                  // print(
+                  // '🚀 [DEBUG] Details Screen: Navigating to Separation Screen');
                   context.push('/cognigible-non-cognigible-separation', extra: {
                     'classification': widget.classification,
                     'originalClassification':

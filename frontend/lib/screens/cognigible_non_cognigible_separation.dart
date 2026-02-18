@@ -237,9 +237,10 @@ class _CognigibleNonCognigibleSeparationScreenState
                         icon: LucideIcons.fileText,
                         color: const Color(0xFFFC633C), // App Orange
                         onPressed: () {
-                          print(
-                              '🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
-                          context.go('/petitions/create', extra: petitionData);
+                          // print(
+                              // '🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
+                          context.push('/petitions/create',
+                              extra: petitionData);
                         },
                       )
                     else ...[

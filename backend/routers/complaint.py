@@ -174,6 +174,12 @@ class ComplaintResponse(BaseModel):
     police_station_reason: Optional[str] = None
     station_confidence: Optional[str] = None
 
+    # New fields for PDF Generation (ensure they are passed to frontend)
+    accused_details: Optional[str] = None
+    stolen_property: Optional[str] = None
+    witnesses: Optional[str] = None
+    evidence_status: Optional[str] = None
+
 
 
 # === Helpers ===
@@ -427,8 +433,14 @@ SUMMARY_LABELS = {
 
 
 
+def get_current_time_str():
+    return datetime.now().strftime("%I:%M %p")
 
+def today_date_str_formatted():
+    return datetime.now().strftime("%Y-%m-%d")
 
+def get_current_date_str():
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 
@@ -789,12 +801,21 @@ def extract_amount_in_inr(text: str) -> Optional[int]:
 
 def validate_name(name: str) -> bool:
     name = name.strip()
-    # Allow Telugu characters (\u0C00-\u0C7F), standard ASCII letters, spaces, dots.
-    if not re.fullmatch(r"[A-Za-z\u0C00-\u0C7F\s\.]+", name):
+    # Allow ANY Unicode character that isn't a control char.
+    # The previous regex `[A-Za-z\u0C00-\u0C7F\s\.]+` was too restrictive (English + Telugu only).
+    # We now allow everything except obvious junk/control chars.
+    # Ideally, we should use `\w` with unicode flag, but in Python re, `\w` handles many scripts.
+    # However, to be safe and inclusive of all Indic scripts (Hindi, Tamil, etc.), 
+    # we'll just check for minimum length and forbidden characters like digits/symbols if strictness is needed.
+    # BUT for now, let's just relax it to allow any non-digit/non-symbol or just rely on length.
+    
+    # Simple rigorous check: Must contain at least some letters (English or Unicode)
+    # \p{L} is not directly supported in Python's `re` without `regex` module.
+    # So we'll iterate or use a broader range.
+    
+    if len(name) < 2:
         return False
-    # Relax logic: Sometimes people enter just first name. Minimum length 3 is good.
-    if len(name) < 3:
-        return False
+        
     return True
 
 
@@ -802,14 +823,19 @@ def validate_name(name: str) -> bool:
 def validate_address(address: str) -> bool:
     address = address.strip()
 
-    # Minimum length
-    if len(address) < 5:
+    # Minimum length (Relaxed to 3 to allow "Goa", "Agra", "Ooty")
+    if len(address) < 3:
+        return False
+        
+    # Disallow purely numeric addresses (e.g. "500001")
+    if address.isdigit():
         return False
 
     # Placeholder detection
     if any(p in address.lower() for p in ["unknown", "not provided", "n/a", "later", "don't know", "no address", "none"]):
         return False
-
+        
+    return True
     # Allowed characters: letters (English + Telugu), digits, space, comma, hyphen, slash, dots, parens
     # Remove Strict ASCII check
     # if not re.search(r"[A-Za-z]", address): -> REMOVED (allows pure Telugu)
@@ -1226,17 +1252,44 @@ def recover_identity_from_history(history: list) -> dict:
              user_ans = next_msg.content.strip()
              
              # Name - Check against constants (English & Telugu)
-             if content in [SYS_MSG_NAME_EN, SYS_MSG_NAME_TE] or "full name" in content.lower():
+             name_keywords = ["full name", "your name", "పేరు", "नाम", "who are you"]
+             if content in [SYS_MSG_NAME_EN, SYS_MSG_NAME_TE] or any(k in content.lower() for k in name_keywords):
                  if validate_name(user_ans):
                      found["full_name"] = user_ans
              
              # Address - Check against constants (English & Telugu)
-             elif content in [SYS_MSG_ADDRESS_EN, SYS_MSG_ADDRESS_TE] or "where do you live" in content.lower():
+             addr_keywords = [
+                 "address", "live", "place", "mandal", "district", "residential",
+                 "ఎక్కడ", "చిరునామా", "నివాస", # Telugu
+                 "रहते", "पता", "निवासी", # Hindi
+                 "முகவரி", "எங்கே", "வசிக்கிறீர்கள்", # Tamil
+                 "വിലാസം", "എവിടെ", "താമസിക്കുന്നത്", # Malayalam
+                 "ವಿಳಾಸ", "ಎಲ್ಲಿ", "ವಾಸಿಸುವ", # Kannada
+                 "पत्ता", "कुठे",  # Marathi
+                 "ঠিকানা", "কোথায়", # Bengali
+                 "સરનામું", # Gujarati
+                 "ਪਤਾ", # Punjabi
+                 "ଠିକଣା" # Odia
+             ]
+             if content in [SYS_MSG_ADDRESS_EN, SYS_MSG_ADDRESS_TE] or any(k in content.lower() for k in addr_keywords):
                  if validate_address(user_ans):
                      found["address"] = user_ans
              
              # Phone - Check against constants (English & Telugu)
-             elif content in [SYS_MSG_PHONE_EN, SYS_MSG_PHONE_TE] or "mobile number" in content.lower():
+             phone_keywords = [
+                 "mobile", "phone", "number", "contact", "call", "10 digits",
+                 "ఫోన్", "నెంబర్", "సంప్రదించండి", "మొబైల్", # Telugu
+                 "फ़ोन", "नंबर", "मोबाइल", "संपर्क", "संख्या", # Hindi
+                 "போன்", "எண்", "தொடர்பு", # Tamil
+                 "ഫോൺ", "നമ്പർ", "മൊബൈൽ", # Malayalam
+                 "ಫೋನ್", "ಸಂಖ್ಯೆ", # Kannada
+                 "फोन", "क्रमांक", "मोबाईल", # Marathi/Konkani
+                 "ফোন", "নম্বর", # Bengali
+                 "ફોન", "નંબર", # Gujarati
+                 "ਫੋਨ", "ਨੰਬਰ", # Punjabi
+                 "ଫୋନ୍", "ନମ୍ବର" # Odia
+             ]
+             if content in [SYS_MSG_PHONE_EN, SYS_MSG_PHONE_TE] or any(k in content.lower() for k in phone_keywords):
                  if validate_phone(user_ans):
                      found["phone"] = user_ans
                      
@@ -1426,11 +1479,33 @@ async def chat_step(
                  logger.info(f"Checking Interception. Last Asst: '{last_assistant_msg}'") 
 
                  captured_any = False
+                 # detected = None  # MOVED: We will construct 'detected' dynamically at return time
                  
                  # 1. PHONE CHECK
-                 # 1. PHONE CHECK
-                 # STRICT keywords only. Do NOT use "phone" or "contact" alone.
-                 phone_keywords = ["phone number", "mobile number", "contact number", "your number", "call you", "ఫోన్ నంబర్", "మొబైల్ నంబర్", "contact info", "10-digit"]
+                 phone_keywords = [
+                     # English
+                     "mobile", "phone", "number", "contact", "call", "10 digits",
+                     # Telugu (te)
+                     "ఫోన్", "నెంబర్", "సంప్రదించండి", "మొబైల్",
+                     # Hindi (hi)
+                     "फ़ोन", "नंबर", "मोबाइल", "संपर्क", "संख्या",
+                     # Tamil (ta)
+                     "போன்", "எண்", "தொடர்பு", "தொலைபேசி", "மொபைல்",
+                     # Malayalam (ml)
+                     "ഫോൺ", "നമ്പർ", "മൊബൈൽ", "വിളിക്കുക",
+                     # Kannada (kn)
+                     "ಫೋನ್", "ಸಂಖ್ಯೆ", "ಮೊಬೈಲ್", "ಕರೆ",
+                     # Marathi (mr)
+                     "फोन", "क्रमांक", "मोबाईल", "संपर्क",
+                     # Bengali (bn)
+                     "ফোন", "নম্বর", "মোবাইল", "যোগাযোগ",
+                     # Gujarati (gu)
+                     "ફોન", "નંબર", "મોબાઇલ", "સંપર્ક",
+                     # Punjabi (pa)
+                     "ਫੋਨ", "ਨੰਬਰ", "ਮੋਬਾਈਲ", "ਸੰਪਰਕ",
+                     # Odia (or) & Assamese (as)
+                     "ଫୋନ୍", "ନମ୍ବର", "মোবাইল"
+                 ]
                  matched_phone = any(k in la_lower for k in phone_keywords)
                  phone_error_msg = None
                  
@@ -1443,10 +1518,17 @@ async def chat_step(
                          phone_error_msg = "Invalid number. Please enter a valid 10-digit mobile number (starts with 6-9):"
                          if language == "te":
                              phone_error_msg = "నెంబర్ సరిగ్గా లేదు. దయచేసి సరైన 10 అంకెల మొబైల్ నంబర్‌ను ఇవ్వండి:"
+                         elif language == "hi":
+                             phone_error_msg = "अમાન્ય नंबर। कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें:"
+                             phone_error_msg = "अमान्य नंबर। कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें:"
 
                  # 2. NAME CHECK
-                 # 2. NAME CHECK
-                 name_keywords = ["full name", "your name", "complete name", "పూర్తి పేరు", "మీ పేరు"]
+                 name_keywords = [
+                     "full name", "your name", "complete name", "valid full name", # Error context
+                     "పూర్తి పేరు", "మీ పేరు", "సరైన పూర్తి పేరు", # Telugu Error context
+                     "पूरा नाम", "आपका नाम", "शुभ नाम", "सही पूरा नाम", # Hindi Error context
+                     "முழு பெயர்", "உங்கள் பெயர்"
+                 ]
                  matched_name = any(k in la_lower for k in name_keywords)
                  name_error_msg = None
                  
@@ -1456,12 +1538,27 @@ async def chat_step(
                          payload.full_name = last_user_msg
                          captured_any = True
                      else:
-                         name_error_msg = "Please provide your valid full name (at least 3 letters):"
+                         name_error_msg = "Please provide your valid full name (at least 2 letters):"
                          if language == "te":
                              name_error_msg = "దయచేసి మీ సరైన పూర్తి పేరు చెప్పండి:"
+                         elif language == "hi":
+                             name_error_msg = "कृपया अपना सही पूरा नाम बताएं:"
 
                  # 3. ADDRESS CHECK
-                 address_keywords = ["where do you live", "place / area", "residential address", "ఎక్కడ ఉంటున్నారు", "నివాస స్థలం"]
+                 address_keywords = [
+                     "where do you live", "place / area", "residential address", "your address",
+                     "valid residential address", "place, mandal, district", "mandal", "district",
+                     "ఎక్కడ", "చిరునామా", "నివాస", "ఊరు", "మండలం", "జిల్లా", # Telugu
+                     "कहाँ रहते हैं", "आपका पता", "घर का पता", "निवासी", "वैध आवासीय पता", "स्थान", "मंडल", "जिला", # Hindi
+                     "முகவரி", "எங்கே", "வசிக்கிறீர்கள்", # Tamil
+                     "വിലാസം", "എവിടെ", "താമസിക്കുന്നത്", # Malayalam
+                     "ವಿಳಾಸ", "ಎಲ್ಲಿ", "ವಾಸಿಸುವ", # Kannada
+                     "पत्ता", "कुठे",  # Marathi
+                     "ঠিকানা", "কোথায়", # Bengali
+                     "સરનામું", # Gujarati
+                     "ਪਤਾ", # Punjabi
+                     "ଠିକଣା" # Odia
+                 ]
                  matched_address = any(k in la_lower for k in address_keywords)
                  address_error_msg = None
                  
@@ -1473,17 +1570,36 @@ async def chat_step(
                      else:
                           address_error_msg = "Please provide a valid residential address (Place, Mandal, District):"
                           if language == "te":
-                              address_error_msg = "దయచేసి సరైన నివాస చిరునామా ఇవ్వండి (ఊరు, మండలం, జిల్లా):"
+                               address_error_msg = "దయచేసి సరైన నివాస చిరునామా ఇవ్వండి (ఊరు, మండలం, జిల్లా):"
+                          elif language == "hi":
+                              address_error_msg = "कृपया वैध आवासीय पता प्रदान करें (स्थान, मंडल, जिला):"
                 
                  # DECISION LOGIC
                  if captured_any:
                      skip_llm = True
+                     # 'detected' will be handled globally at return time
+                     
+                     # We still need to generate the NEXT question (via code or LLM, but here we skipped LLM)
+                     # Wait, if we matched, we just updated the state. We need to decide what to ask NEXT.
+                     # The original logic relying on `skip_llm = True` works if the *rest* of the code handles "What next?".
+                     # But `skip_llm` falls through to... where?
+                     # It falls through to line 1797: `if skip_llm or is_done:` -> Final Identity Confirmation logic.
+                     # This logic checks what is missing and asks the next question. Perfect.
+                     
+                     # We just need to ensure `detected_info` is attached to the response found later.
+                     # But wait, the response is created inside the logic blocks below (line 1817+).
+                     # We need to make sure `detected` is accessible there.
+                     pass 
+
                  elif phone_error_msg: # Prioritize Phone error if nothing else captured
-                     return ChatStepResponse(status="question", message=phone_error_msg)
+                     det = {"full_name": payload.full_name, "address": payload.address, "phone": payload.phone}
+                     return ChatStepResponse(status="question", message=phone_error_msg, detected_info=det)
                  elif name_error_msg:
-                     return ChatStepResponse(status="question", message=name_error_msg)
+                     det = {"full_name": payload.full_name, "address": payload.address, "phone": payload.phone}
+                     return ChatStepResponse(status="question", message=name_error_msg, detected_info=det)
                  elif address_error_msg:
-                     return ChatStepResponse(status="question", message=address_error_msg)
+                     det = {"full_name": payload.full_name, "address": payload.address, "phone": payload.phone}
+                     return ChatStepResponse(status="question", message=address_error_msg, detected_info=det)
 
         # --- IDENTITY INTERCEPTION END ---
         
@@ -1630,8 +1746,10 @@ async def chat_step(
                 "CRITICAL RULES:\n"
                 "1. NEVER ask about information that is already KNOWN or MENTIONED in the conversation history.\n"
                 "2. Check the 'INFORMATION ALREADY KNOWN' section below carefully.\n"
-                "3. Ask ONE question at a time. Keep it short and direct.\n"
-                "4. Do NOT ask for Name, Phone, or Address if they are already provided/recovered.\n"
+                "3. KNOWN IDENTITY: Name='{payload.full_name or 'Unknown'}', Address='{payload.address or 'Unknown'}', Phone='{payload.phone or 'Unknown'}'.\n"
+                "   - If these are 'Unknown', you must ask for them, but ONE BY ONE.\n"
+                "   - NEVER ask for Name, Address, and Phone in the same message.\n"
+                "4. Ask ONE question at a time. Keep it short and direct.\n"
                 "5. Only ask mandatory case-related questions (Incident Details, Date, Time, Location).\n"
                 "6. End questions with '?'.\n"
                 "8. Say 'DONE' only when you have the full story + evidence status.\n"
@@ -1641,6 +1759,14 @@ async def chat_step(
                 "- KEEP QUESTIONS SHORT (Max 20 words). Do not lecture.\n"
                 "- Use Who, What, When, Where, How, and Why questions logically.\n"
                 "- Briefly summarize information back to the user for confirmation before moving to the next category.\n\n"
+                
+                "IDENTITY GATHERING (If 'Unknown' above):\n"
+                "- Ask for Name FIRST.\n"
+                "- Wait for answer.\n"
+                "- Then ask for Address.\n"
+                "- Wait for answer.\n"
+                "- Then ask for Phone.\n"
+                "- Do NOT combine these.\n\n"
 
                 "INFORMATION TO GATHER (Systematically):\n"
                 "1. Incident Details: Date, time, location (MUST BE SPECIFIC - if user says 'college', ask 'Which college?'; if 'market', ask 'Which market?'; if 'hostel', ask 'Which hostel?'), and detailed narration.\n"
@@ -1681,16 +1807,6 @@ async def chat_step(
             )
             
             # Convert Pydantic chat history to LLM format
-            messages = [{"role": "system", "content": system_prompt}]
-            # Prepend initial details as context from user
-            messages.append({"role": "user", "content": payload.initial_details})
-            
-            # Limit history to last 12 turns to prevent context overflow (Llama-3-8B has 8k limit)
-            recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
-            
-            for msg in recent_history:
-                messages.append({"role": msg.role, "content": msg.content})
-                
             # 4. Call LLM
             if not GEMINI_API_KEY:
                  return ChatStepResponse(status="done", final_response=None)
@@ -1703,25 +1819,24 @@ async def chat_step(
                     # Construct full History for Gemini
                     model = genai.GenerativeModel(LLM_MODEL)
                     
-                    # Instead of list of dicts, Gemini often prefers a single text block or specific Content object structure.
-                    # For simplicity/robustness in Migration, we can flatten to a script or use the chat session.
-                    
-                    full_prompt = f"{system_prompt}{known_facts}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n"
-                    
+                    # Convert history to text for prompt
+                    history_text = ""
                     # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
                     recent_history = payload.chat_history[-12:] if len(payload.chat_history) > 12 else payload.chat_history
                     
                     for msg in recent_history:
-                        role = "Police" if msg.role == "assistant" else "User" # or "Model" / "User"
-                        full_prompt += f"{role}: {msg.content}\n"
+                        role = "Police" if msg.role == "assistant" else "User"
+                        history_text += f"{role}: {msg.content}\n"
+                    
+                    full_prompt = f"{system_prompt}{known_facts}\n\nINITIAL CONTEXT:\n{payload.initial_details}\n\nCONVERSATION HISTORY:\n{history_text}"
                     
                     logger.info(f"--- LLM Prompt Start ---\n{full_prompt}\n--- LLM Prompt End ---")
 
                     response = model.generate_content(
                         full_prompt,
                         generation_config=genai.types.GenerationConfig(
-                            temperature=0.3,
-                            max_output_tokens=2048,
+                            temperature=0.3, # Low temp for consistency
+                            max_output_tokens=1024,
                         ),
                         safety_settings=[
                             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
@@ -1731,16 +1846,24 @@ async def chat_step(
                         ]
                     )
                     
-                    raw_content = response.text or ""
-                    logger.info(f"--- LLM Raw Response ---\n{raw_content}\n--- End Response ---")
+                    raw_reply = response.text or ""
+                    logger.info(f"--- LLM Raw Response ---\n{raw_reply}\n--- End Response ---")
                     
-                    reply = raw_content.strip()
-                    decision_upper = reply.upper().replace('"', '').replace("'", "")
+                    # PARSE STRUCTURED OUTPUT
+                    reply = raw_reply
+                    if "RESPONSE:" in raw_reply:
+                        # Extract everything after RESPONSE:
+                        parts = raw_reply.split("RESPONSE:", 1)
+                        reply = parts[1].strip()
+                        logger.info("Parsed Structured Output -> Sending only RESPONSE part.")
+                    else:
+                        # Fallback: regex clean-up like before
+                        reply = re.sub(r"^\*?Word count:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = re.sub(r"^Let's check.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = re.sub(r"^Thinking Process:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = re.sub(r"^Internal Log:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
+                        reply = reply.strip()
 
-                    if "DONE" in decision_upper and len(decision_upper) < 10:
-                        is_done = True
-                        reply = "DONE"
-                    
                     # Sanitize and Log
                     reply = safe_utf8(reply)
 
@@ -1811,17 +1934,23 @@ async def chat_step(
                 final_address_confirmed = payload.address and validate_address(payload.address)
                 final_phone_confirmed = payload.phone and validate_phone(payload.phone)
 
+                # --- GLOBAL SYNC: Always send what we know ---
+                detected_final = {}
+                if payload.full_name: detected_final["full_name"] = payload.full_name
+                if payload.address: detected_final["address"] = payload.address
+                if payload.phone: detected_final["phone"] = payload.phone
+                
                 if not final_name_confirmed:
                      msg = SYS_MSG_NAME_TE if language == "te" else SYS_MSG_NAME_EN
-                     return ChatStepResponse(status="question", message=msg)
-
+                     return ChatStepResponse(status="question", message=msg, detected_info=detected_final)
+                
                 if not final_address_confirmed:
                     msg = SYS_MSG_ADDRESS_TE if language == "te" else SYS_MSG_ADDRESS_EN
-                    return ChatStepResponse(status="question", message=msg)
+                    return ChatStepResponse(status="question", message=msg, detected_info=detected_final)
 
                 if not final_phone_confirmed:
                     msg = SYS_MSG_PHONE_TE if language == "te" else SYS_MSG_PHONE_EN
-                    return ChatStepResponse(status="question", message=msg)
+                    return ChatStepResponse(status="question", message=msg, detected_info=detected_final)
             
             # --- MANDATORY SEQUENTIAL QUESTIONS END ---
 
@@ -1906,6 +2035,11 @@ OUTPUT FORMAT (STRICT JSON ONLY):
     "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names.",
     "incident_date": "Extract the incident date in YYYY-MM-DD format if mentioned. Examples: '2026-01-06', '2025-12-25'. If not mentioned, leave empty.",
 
+    "accused_details": "Name and description of accused if known. If unrelated or unknown, say 'Unknown'.",
+    "stolen_property": "Description of stolen items/value if applicable. If not applicable, say 'N/A'.",
+    "witnesses": "Names/Contact of witnesses if any. If none, say 'None'.",
+    "evidence_status": "Brief status of evidence (e.g. 'Photos attached', 'Voice recording available', 'None').",
+
     "selected_police_station": "Name of the Station (e.g., 'Nuzvid Town Police Station')",
     "police_station_reason": "Brief reason (e.g., 'Incident location is within Nuzvid municipal limits.')",
     "station_confidence": "High/Medium/Low"
@@ -1951,6 +2085,12 @@ INFORMATION:
             # Parse JSON
             try:
                 n_data = json.loads(final_json_str)
+                # Handle case where LLM returns a list [ {...} ]
+                if isinstance(n_data, list):
+                    if len(n_data) > 0:
+                        n_data = n_data[0]
+                    else:
+                        n_data = {}
             except:
                 logger.error("Failed to parse summary JSON")
                 n_data = {}
@@ -2067,8 +2207,8 @@ INFORMATION:
             # 2. 'incident_details' -> Where/When incident happened (Short Incident)
             
             localized_fields["details"] = initial_details_summary
-            localized_fields['incident_details'] = narrative
-            localized_fields['incident_address'] = short_incident # Keep consistent
+            localized_fields['incident_details'] = narrative or "Detailed narrative not available."
+            localized_fields['incident_address'] = short_incident or "Location details not available." # Keep consistent
             
             # Add Police Station fields to localized_fields to ensure availability in frontend
             # Ensure they are strings (empty if None) to satisfy Dict[str, str]
@@ -2120,9 +2260,15 @@ INFORMATION:
                 initial_details=safe_utf8(initial_details_summary),
                 
                 # Populating Police Station Selection
-                selected_police_station=safe_utf8(n_data.get("selected_police_station")),
-                police_station_reason=safe_utf8(n_data.get("police_station_reason")),
-                station_confidence=safe_utf8(n_data.get("station_confidence"))
+                selected_police_station=safe_utf8(n_data.get("selected_police_station")) or "Station Unknown",
+                police_station_reason=safe_utf8(n_data.get("police_station_reason")) or "Reason not provided",
+                station_confidence=safe_utf8(n_data.get("station_confidence")) or "Low",
+                date_of_complaint=today_date_str_formatted(),
+                # Mapped Missing Fields
+                accused_details=safe_utf8(n_data.get("accused_details")) or "Unknown",
+                stolen_property=safe_utf8(n_data.get("stolen_property")) or "N/A",
+                witnesses=safe_utf8(n_data.get("witnesses")) or "None",
+                evidence_status=safe_utf8(n_data.get("evidence_status")) or "None mentioned",
             )
             
             # return ChatStepResponse(status="done", final_response=final_response_obj)

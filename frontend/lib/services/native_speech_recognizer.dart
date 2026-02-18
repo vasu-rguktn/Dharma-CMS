@@ -42,7 +42,7 @@ class NativeSpeechRecognizer {
       });
       _isListening = true;
     } catch (e) {
-      print('Error starting native speech recognizer: $e');
+      // print('Error starting native speech recognizer: $e');
       rethrow;
     }
   }
@@ -55,7 +55,7 @@ class NativeSpeechRecognizer {
       await _channel.invokeMethod('stopListening');
       _isListening = false;
     } catch (e) {
-      print('Error stopping native speech recognizer: $e');
+      // print('Error stopping native speech recognizer: $e');
       rethrow;
     }
   }
@@ -103,7 +103,7 @@ class NativeSpeechRecognizer {
         break;
         
       default:
-        print('Unknown method call from native: ${call.method}');
+        // print('Unknown method call from native: ${call.method}');
     }
   }
   

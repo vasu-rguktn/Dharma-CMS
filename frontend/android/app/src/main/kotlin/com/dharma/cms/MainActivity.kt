@@ -1,4 +1,4 @@
-package com.example.dharma
+package com.dharma.cms
 
 import android.content.Context
 import android.media.AudioManager

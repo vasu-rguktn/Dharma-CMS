@@ -269,8 +269,8 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
 
-    print('📱 [LEGAL_SUGGESTION] Screen built');
-    print('📚 [LEGAL_SUGGESTION] Can pop: ${Navigator.of(context).canPop()}');
+    // print('📱 [LEGAL_SUGGESTION] Screen built');
+    // print('📚 [LEGAL_SUGGESTION] Can pop: ${Navigator.of(context).canPop()}');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -287,7 +287,7 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
                     icon: const Icon(Icons.arrow_back),
                     color: orange,
                     onPressed: () {
-                      print('⬅️ [LEGAL_SUGGESTION] Back button pressed');
+                      // print('⬅️ [LEGAL_SUGGESTION] Back button pressed');
                       Navigator.of(context).pop();
                     },
                   ),

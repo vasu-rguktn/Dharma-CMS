@@ -25,7 +25,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint('📋 OtpVerificationScreen initialized');
+    // debugPrint('📋 OtpVerificationScreen initialized');
     _initializeSmsListener();
   }
 
@@ -34,7 +34,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     cancel(); // From CodeAutoFill mixin - stops listening for SMS
     _otpController.dispose();
     SmsAutoFill().unregisterListener();
-    debugPrint('🗑️ Disposing OtpVerificationScreen');
+    // debugPrint('🗑️ Disposing OtpVerificationScreen');
     super.dispose();
   }
 
@@ -43,25 +43,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     try {
       // Get app signature for SMS verification
       _appSignature = await SmsAutoFill().getAppSignature;
-      debugPrint('📱 App Signature (include in OTP SMS): $_appSignature');
+      // debugPrint('📱 App Signature (include in OTP SMS): $_appSignature');
 
       // Request SMS permission
       final status = await Permission.sms.status;
-      debugPrint('📋 Current SMS permission status: $status');
+      // debugPrint('📋 Current SMS permission status: $status');
 
       if (status.isDenied) {
-        debugPrint('⚠️ SMS permission denied, requesting...');
+        // debugPrint('⚠️ SMS permission denied, requesting...');
         final result = await Permission.sms.request();
-        debugPrint('📋 Permission request result: $result');
+        // debugPrint('📋 Permission request result: $result');
 
         if (result.isGranted) {
-          debugPrint('✅ SMS permission granted!');
+          // debugPrint('✅ SMS permission granted!');
           _listenForOtp();
         } else if (result.isPermanentlyDenied) {
-          debugPrint('❌ SMS permission permanently denied');
+          // debugPrint('❌ SMS permission permanently denied');
           _showPermissionDialog();
         } else {
-          debugPrint('❌ SMS permission denied');
+          // debugPrint('❌ SMS permission denied');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('SMS permission is required for auto-fill'),
@@ -70,14 +70,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           );
         }
       } else if (status.isGranted) {
-        debugPrint('✅ SMS permission already granted');
+        // debugPrint('✅ SMS permission already granted');
         _listenForOtp();
       } else if (status.isPermanentlyDenied) {
-        debugPrint('❌ SMS permission permanently denied');
+        // debugPrint('❌ SMS permission permanently denied');
         _showPermissionDialog();
       }
     } catch (e) {
-      debugPrint('❌ Error initializing SMS listener: $e');
+      // debugPrint('❌ Error initializing SMS listener: $e');
       // Still try to listen even if permission check fails
       _listenForOtp();
     }
@@ -113,27 +113,27 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   // Listen for incoming OTP SMS
   void _listenForOtp() async {
     try {
-      debugPrint('👂 Starting to listen for OTP SMS...');
+      // debugPrint('👂 Starting to listen for OTP SMS...');
       await SmsAutoFill().unregisterListener();
       listenForCode(); // From CodeAutoFill mixin
-      debugPrint('✅ CodeAutoFill listener started');
+      // debugPrint('✅ CodeAutoFill listener started');
 
       // Also try the alternative method
       await SmsAutoFill().listenForCode();
-      debugPrint('✅ SmsAutoFill listener started');
+      // debugPrint('✅ SmsAutoFill listener started');
     } catch (e) {
-      debugPrint('❌ Error starting SMS listener: $e');
+      // debugPrint('❌ Error starting SMS listener: $e');
     }
   }
 
   // This method is called when SMS code is detected
   @override
   void codeUpdated() {
-    debugPrint('📩 SMS Code detected: $code');
+    // debugPrint('📩 SMS Code detected: $code');
     if (code != null && code!.isNotEmpty) {
       // Extract only digits from the code
       final digits = code!.replaceAll(RegExp(r'\D'), '');
-      debugPrint('📩 Extracted digits: $digits');
+      // debugPrint('📩 Extracted digits: $digits');
 
       if (digits.length >= 6) {
         final otp = digits.substring(0, 6);
@@ -141,7 +141,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           setState(() {
             _otpController.text = otp;
           });
-          debugPrint('✅ OTP auto-filled: $otp');
+          // debugPrint('✅ OTP auto-filled: $otp');
 
           // Auto-submit the form after a brief delay
           Future.delayed(const Duration(milliseconds: 500), () {
@@ -157,15 +157,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   }
 
   Future<void> _submitForm(Map<String, dynamic>? args) async {
-    debugPrint('🔥 SUBMIT OTP FORM CALLED');
-    debugPrint('📦 Received args: $args');
+    // debugPrint('🔥 SUBMIT OTP FORM CALLED');
+    // debugPrint('📦 Received args: $args');
 
     if (args == null ||
         args['personal'] == null ||
         args['address'] == null ||
         args['username'] == null ||
         args['uid'] == null) {
-      debugPrint('❌ Missing required arguments in OtpVerificationScreen');
+      // debugPrint('❌ Missing required arguments in OtpVerificationScreen');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error: Required data not provided'),
@@ -176,12 +176,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     }
 
     if (_formKey.currentState!.validate()) {
-      debugPrint('✅ OTP FORM VALIDATION PASSED');
+      // debugPrint('✅ OTP FORM VALIDATION PASSED');
       setState(() => _isLoading = true);
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
-          debugPrint('❌ No user signed in');
+          // debugPrint('❌ No user signed in');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('No user is signed in'),
@@ -192,7 +192,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
         }
 
         if (_otpController.text == '123456') {
-          debugPrint('✅ OTP verified successfully, navigating to /dashboard');
+          // debugPrint('✅ OTP verified successfully, navigating to /dashboard');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Registration Completed!'),
@@ -201,7 +201,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           );
           context.go('/dashboard');
         } else {
-          debugPrint('❌ Invalid OTP entered: ${_otpController.text}');
+          // debugPrint('❌ Invalid OTP entered: ${_otpController.text}');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Invalid OTP'),
@@ -210,7 +210,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           );
         }
       } on FirebaseException catch (e) {
-        debugPrint('🔥 Firestore error: ${e.code} - ${e.message}');
+        // debugPrint('🔥 Firestore error: ${e.code} - ${e.message}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Firestore error: ${e.message}'),
@@ -218,7 +218,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
           ),
         );
       } catch (e, stackTrace) {
-        debugPrint('❌ Unexpected error: $e\nStackTrace: $stackTrace');
+        // debugPrint('❌ Unexpected error: $e\nStackTrace: $stackTrace');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('An unexpected error occurred'),
@@ -231,7 +231,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
         }
       }
     } else {
-      debugPrint('❌ OTP VALIDATION FAILED: otp=${_otpController.text}');
+      // debugPrint('❌ OTP VALIDATION FAILED: otp=${_otpController.text}');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a valid 6-digit OTP'),
@@ -245,7 +245,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final args = GoRouterState.of(context).extra as Map<String, dynamic>?;
-    debugPrint('📋 Received args in OtpVerificationScreen: $args');
+    // debugPrint('📋 Received args in OtpVerificationScreen: $args');
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -366,20 +366,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                           ),
                           cursorColor: const Color(0xFF1976D2),
                           onChanged: (value) {
-                            debugPrint('📝 OTP changed: $value');
+                            // debugPrint('📝 OTP changed: $value');
                           },
                           onCompleted: (value) {
-                            debugPrint('✅ OTP completed: $value');
+                            // debugPrint('✅ OTP completed: $value');
                             _submitForm(args);
                           },
                           validator: (value) {
-                            debugPrint('🔍 Validating OTP: "$value"');
+                            // debugPrint('🔍 Validating OTP: "$value"');
                             if (value == null || value.length != 6) {
-                              debugPrint(
-                                  '❌ OTP invalid: length=${value?.length}');
+                              // debugPrint(
+                                  // '❌ OTP invalid: length=${value?.length}');
                               return 'Enter 6-digit OTP';
                             }
-                            debugPrint('✅ OTP valid');
+                            // debugPrint('✅ OTP valid');
                             return null;
                           },
                         ),
@@ -438,7 +438,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                             onPressed: _isLoading
                                 ? null
                                 : () {
-                                    debugPrint('🔄 Resend OTP requested');
+                                    // debugPrint('🔄 Resend OTP requested');
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('OTP Resent!'),

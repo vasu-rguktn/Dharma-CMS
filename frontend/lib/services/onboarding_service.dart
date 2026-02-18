@@ -11,7 +11,7 @@ class OnboardingService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_onboardingKey) ?? false;
     } catch (e) {
-      print('Error checking onboarding status: $e');
+      // print('Error checking onboarding status: $e');
       return false;
     }
   }
@@ -23,7 +23,7 @@ class OnboardingService {
       await prefs.setBool(_onboardingKey, true);
       await prefs.setInt(_onboardingVersionKey, currentVersion);
     } catch (e) {
-      print('Error completing onboarding: $e');
+      // print('Error completing onboarding: $e');
     }
   }
 
@@ -34,7 +34,7 @@ class OnboardingService {
       await prefs.setBool(_onboardingKey, false);
       await prefs.remove(_onboardingVersionKey);
     } catch (e) {
-      print('Error resetting onboarding: $e');
+      // print('Error resetting onboarding: $e');
     }
   }
 
@@ -50,7 +50,7 @@ class OnboardingService {
       // Removed version check to prevent showing again on updates unless forced
       return !completed;
     } catch (e) {
-      print('Error checking onboarding version: $e');
+      // print('Error checking onboarding version: $e');
       return true; // Show onboarding on error to be safe
     }
   }

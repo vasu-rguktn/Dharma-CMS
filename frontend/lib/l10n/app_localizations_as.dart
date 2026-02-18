@@ -9,6 +9,10 @@ class AppLocalizationsAs extends AppLocalizations {
   AppLocalizationsAs([String locale = 'as']) : super(locale);
 
   @override
+  String get filingForSomeoneElse =>
+      'যিহেতু আপুনি এইটো আন কাৰোবাৰ বাবে দাখিল কৰিছে, অনুগ্ৰহ কৰি ঘটনাটো আৰু ভুক্তভোগীৰ সৈতে আপোনাৰ সম্পৰ্ক বৰ্ণনা কৰক।';
+
+  @override
   String get appTitle => 'ধৰ্ম CMS';
 
   String get dharma => 'ধৰ্ম';
@@ -284,7 +288,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String welcomeUser(String name) {
     return 'স্বাগতম, $name!';
-  }
+    }
 
   @override
   String get legalAssistanceHub => 'আপোনাৰ আইনী সাহায্য কেন্দ্ৰ';
@@ -543,7 +547,8 @@ class AppLocalizationsAs extends AppLocalizations {
       'আপুনি কি ধৰণৰ অভিযোগ দাখিল কৰিব বিচাৰে? (চুৰি, হাৰাশাস্তি, নিখোজ ব্যক্তি আদি)';
 
   @override
-  String get detailsQuestion => 'অনুগ্ৰহ কৰি আপোনাৰ অভিযোগটো বিতংকৈ বৰ্ণনা কৰক।';
+  String get detailsQuestion =>
+      'অনুগ্ৰহ কৰি আপোনাৰ অভিযোগটো বিতংকৈ বৰ্ণনা কৰক।';
 
   @override
   String get loading => 'লোড হৈ আছে...';
@@ -736,7 +741,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String failedToGenerateSuggestions(String error) {
     return 'আইনী ধাৰাৰ পৰামৰ্শ প্ৰস্তুত কৰাত বিফল: $error';
-  }
+    }
 
   @override
   String get provideFirDetailsDesc =>
@@ -756,7 +761,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get getLegalSuggestions => 'আইনী পৰামৰ্শ লওক';
 
   @override
-  String get analyzingInformation => 'তথ্য বিশ্লেষণ কৰি পৰামৰ্শ প্ৰস্তুত কৰি থকা হৈছে...';
+  String get analyzingInformation =>
+      'তথ্য বিশ্লেষণ কৰি পৰামৰ্শ প্ৰস্তুত কৰি থকা হৈছে...';
 
   @override
   String get aiLegalSuggestions => 'AI আইনী ধাৰা পৰামৰ্শদাতা';
@@ -791,7 +797,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String failedToGenerateDraft(String error) {
     return 'নথিৰ খচৰা প্ৰস্তুত কৰাত বিফল: $error';
-  }
+    }
 
   @override
   String get documentDraftingDesc =>
@@ -818,7 +824,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get draftDocument => 'নথিৰ খচৰা কৰক';
 
   @override
-  String get draftingWait => 'নথিৰ খচৰা প্ৰস্তুত কৰি থকা হৈছে, অনুগ্ৰহ কৰি অপেক্ষা কৰক...';
+  String get draftingWait =>
+      'নথিৰ খচৰা প্ৰস্তুত কৰি থকা হৈছে, অনুগ্ৰহ কৰি অপেক্ষা কৰক...';
 
   @override
   String get generatedDocumentDraft => 'প্ৰস্তুত কৰা নথিৰ খচৰা';
@@ -843,12 +850,12 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String filesAdded(int count) {
     return '$count টা ফাইল যোগ কৰা হ’ল';
-  }
+    }
 
   @override
   String errorPickingFiles(String error) {
     return 'ফাইল বাছনি কৰাত ত্ৰুটি: $error';
-  }
+    }
 
   @override
   String get pleaseUploadDocument => 'অনুগ্ৰহ কৰি অতিকমেও এখন নথি আপলোড কৰক।';
@@ -859,7 +866,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String failedToGenerateChargeSheet(String error) {
     return 'চাৰ্জশ্বীট প্ৰস্তুত কৰাত বিফল: $error';
-  }
+    }
 
   @override
   String get chargesheetGeneratorDesc =>
@@ -905,12 +912,12 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String fileContentLoaded(String fileName) {
     return '$fileName-ৰ বিষয়বস্তু লোড কৰা হ’ল।';
-  }
+    }
 
   @override
   String errorReadingFile(String error) {
     return 'ফাইল পঢ়াত ত্ৰুটি: $error';
-  }
+    }
 
   @override
   String get pleaseUploadOrPasteChargesheet =>
@@ -923,7 +930,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String failedToVetChargesheet(String error) {
     return 'চাৰ্জশ্বীট পৰীক্ষা কৰাত বিফল: $error';
-  }
+    }
 
   @override
   String get chargesheetVettingAI => 'চাৰ্জশ্বীট পৰীক্ষণ AI';
@@ -939,13 +946,16 @@ class AppLocalizationsAs extends AppLocalizations {
   String get chooseFile => 'ফাইল বাছনি কৰক';
 
   @override
-  String get fileLoadedEditBelow => 'ফাইল লোড হৈছে। আপুনি তলত সম্পাদনাও কৰিব পাৰে।';
+  String get fileLoadedEditBelow =>
+      'ফাইল লোড হৈছে। আপুনি তলত সম্পাদনাও কৰিব পাৰে।';
 
   @override
-  String get orPasteChargesheet => 'অথবা চাৰ্জশ্বীটৰ বিষয়বস্তু ইয়াত পেষ্ট কৰক';
+  String get orPasteChargesheet =>
+      'অথবা চাৰ্জশ্বীটৰ বিষয়বস্তু ইয়াত পেষ্ট কৰক';
 
   @override
-  String get pasteChargesheetHint => 'চাৰ্জশ্বীটৰ সম্পূৰ্ণ বিষয়বস্তু ইয়াত পেষ্ট কৰক...';
+  String get pasteChargesheetHint =>
+      'চাৰ্জশ্বীটৰ সম্পূৰ্ণ বিষয়বস্তু ইয়াত পেষ্ট কৰক...';
 
   @override
   String get vetting => 'পৰীক্ষা কৰি থকা হৈছে...';
@@ -954,13 +964,15 @@ class AppLocalizationsAs extends AppLocalizations {
   String get vetChargeSheet => 'চাৰ্জশ্বীট পৰীক্ষা কৰক';
 
   @override
-  String get vettingChargesheetWait => 'চাৰ্জশ্বীট পৰীক্ষা কৰি থকা হৈছে, অপেক্ষা কৰক...';
+  String get vettingChargesheetWait =>
+      'চাৰ্জশ্বীট পৰীক্ষা কৰি থকা হৈছে, অপেক্ষা কৰক...';
 
   @override
   String get aiVettingSuggestions => 'AI পৰীক্ষণ পৰামৰ্শসমূহ';
 
   @override
-  String get reviewSuggestionsToImprove => 'চাৰ্জশ্বীটখন উন্নত কৰিবলৈ পৰামৰ্শসমূহ পৰ্যালোচনা কৰক।';
+  String get reviewSuggestionsToImprove =>
+      'চাৰ্জশ্বীটখন উন্নত কৰিবলৈ পৰামৰ্শসমূহ পৰ্যালোচনা কৰক।';
 
   @override
   String get noSuggestionsProvided => 'কোনো পৰামৰ্শ দিয়া হোৱা নাই';
@@ -974,12 +986,13 @@ class AppLocalizationsAs extends AppLocalizations {
       'অনুগ্ৰহ কৰি সকলো ফিল্ড পূৰণ কৰক: গোচৰৰ বিৱৰণ, সাক্ষীৰ ভাষ্য আৰু সাক্ষীৰ নাম।';
 
   @override
-  String get witnessPreparationComplete => 'সাক্ষীৰ প্ৰস্তুতি ছেচন সম্পূৰ্ণ হ’ল।';
+  String get witnessPreparationComplete =>
+      'সাক্ষীৰ প্ৰস্তুতি ছেচন সম্পূৰ্ণ হ’ল।';
 
   @override
   String failedToPrepareWitness(String error) {
     return 'সাক্ষীৰ প্ৰস্তুতি ছেচন পৰিচালনা কৰাত বিফল: $error';
-  }
+    }
 
   @override
   String get aiWitnessPreparation => 'AI সাক্ষীৰ প্ৰস্তুতি';
@@ -996,7 +1009,8 @@ class AppLocalizationsAs extends AppLocalizations {
       'গোচৰৰ বিস্তৃত বিৱৰণ দিয়ক: অভিযোগ, প্ৰমাণ, জনা তথ্য আদি।';
 
   @override
-  String get witnessStatementHint => 'মক ট্ৰায়েলৰ বাবে ব্যৱহাৰ কৰিবলগীয়া সাক্ষীৰ ভাষ্য লিখক।';
+  String get witnessStatementHint =>
+      'মক ট্ৰায়েলৰ বাবে ব্যৱহাৰ কৰিবলগীয়া সাক্ষীৰ ভাষ্য লিখক।';
 
   @override
   String get preparing => 'প্ৰস্তুত কৰি থকা হৈছে...';
@@ -1005,7 +1019,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get startMockTrial => 'মক ট্ৰায়েল আৰম্ভ কৰক';
 
   @override
-  String get preparingMockTrialWait => 'মক ট্ৰায়েল ছেচন প্ৰস্তুত কৰি থকা হৈছে...';
+  String get preparingMockTrialWait =>
+      'মক ট্ৰায়েল ছেচন প্ৰস্তুত কৰি থকা হৈছে...';
 
   @override
   String get mockTrialAndFeedback => 'মক ট্ৰায়েল আৰু মতামত';
@@ -1013,7 +1028,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String reviewMockTrialFor(String witnessName) {
     return 'সাক্ষী $witnessName-ৰ বাবে মক ট্ৰায়েলৰ ট্ৰেন্সক্ৰিপ্ট আৰু AI মতামত পৰ্যালোচনা কৰক।';
-  }
+    }
 
   @override
   String get mockTrialTranscript => 'মক ট্ৰায়েল ট্ৰেন্সক্ৰিপ্ট';
@@ -1038,12 +1053,13 @@ class AppLocalizationsAs extends AppLocalizations {
       'এয়া এটা AI অনুকৰণ। প্ৰকৃত ট্ৰায়েলৰ পৰিস্থিতি বেলেগ হ’ব পাৰে।';
 
   @override
-  String get imageSizeLimit => 'অনুগ্ৰহ কৰি ১০ মেগাবাইটতকৈ সৰু ছবি এখন বাছনি কৰক।';
+  String get imageSizeLimit =>
+      'অনুগ্ৰহ কৰি ১০ মেগাবাইটতকৈ সৰু ছবি এখন বাছনি কৰক।';
 
   @override
   String errorPickingImage(String error) {
     return 'ছবি বাছনি কৰাত ত্ৰুটি: $error';
-  }
+    }
 
   @override
   String get selectImageSource => 'ছবিৰ উৎস বাছনি কৰক';
@@ -1055,15 +1071,17 @@ class AppLocalizationsAs extends AppLocalizations {
   String get camera => 'কেমেৰা';
 
   @override
-  String get pleaseSelectImageToAnalyze => 'বিশ্লেষণৰ বাবে অনুগ্ৰহ কৰি এখন ছবি বাছনি কৰক।';
+  String get pleaseSelectImageToAnalyze =>
+      'বিশ্লেষণৰ বাবে অনুগ্ৰহ কৰি এখন ছবি বাছনি কৰক।';
 
   @override
-  String get analysisComplete => 'বিশ্লেষণ সম্পূৰ্ণ হ’ল। তলত AI-ৰ তথ্যসমূহ পৰ্যালোচনা কৰক।';
+  String get analysisComplete =>
+      'বিশ্লেষণ সম্পূৰ্ণ হ’ল। তলত AI-ৰ তথ্যসমূহ পৰ্যালোচনা কৰক।';
 
   @override
   String failedToAnalyzeMedia(String error) {
     return 'মিডিয়া বিশ্লেষণ কৰাত বিফল: $error';
-  }
+    }
 
   @override
   String get aiCrimeSceneInvestigator => 'AI অপৰাধস্থলী তদন্তকাৰী';
@@ -1092,10 +1110,12 @@ class AppLocalizationsAs extends AppLocalizations {
   String get analyzeImage => 'ছবি বিশ্লেষণ কৰক';
 
   @override
-  String get analyzingImageWait => 'AI-য়ে ছবিখন বিশ্লেষণ কৰি আছে, অনুগ্ৰহ কৰি অপেক্ষা কৰক...';
+  String get analyzingImageWait =>
+      'AI-য়ে ছবিখন বিশ্লেষণ কৰি আছে, অনুগ্ৰহ কৰি অপেক্ষা কৰক...';
 
   @override
-  String get analyzingComplexityNote => '(ছবিৰ জটিলতাৰ ওপৰত ভিত্তি কৰি ইয়াৰ বাবে কিছু সময় লাগিব পাৰে)';
+  String get analyzingComplexityNote =>
+      '(ছবিৰ জটিলতাৰ ওপৰত ভিত্তি কৰি ইয়াৰ বাবে কিছু সময় লাগিব পাৰে)';
 
   @override
   String get crimeSceneAnalysisReport => 'অপৰাধস্থলী বিশ্লেষণ ৰিপ’ৰ্ট';
@@ -1123,10 +1143,12 @@ class AppLocalizationsAs extends AppLocalizations {
   String get sceneNarrativeEditable => 'দৃশ্য বৰ্ণনা (সম্পাদনাযোগ্য)';
 
   @override
-  String get sceneNarrativeHint => 'AI দ্বাৰা প্ৰস্তুত কৰা দৃশ্য বৰ্ণনা ইয়াত দেখা যাব। আপুনি ইয়াক সম্পাদনা কৰিব পাৰে।';
+  String get sceneNarrativeHint =>
+      'AI দ্বাৰা প্ৰস্তুত কৰা দৃশ্য বৰ্ণনা ইয়াত দেখা যাব। আপুনি ইয়াক সম্পাদনা কৰিব পাৰে।';
 
   @override
-  String get caseFileSummaryEditable => 'গোচৰৰ ফাইল সাৰাংশ আৰু অনুমানসমূহ (সম্পাদনাযোগ্য)';
+  String get caseFileSummaryEditable =>
+      'গোচৰৰ ফাইল সাৰাংশ আৰু অনুমানসমূহ (সম্পাদনাযোগ্য)';
 
   @override
   String get caseFileSummaryHint =>
@@ -1145,7 +1167,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String errorLoadingJournal(String error) {
     return 'ডায়েৰী লোড কৰাত ত্ৰুটি: $error';
-  }
+    }
 
   @override
   String get addJournalEntry => 'ডায়েৰী এন্ট্ৰি যোগ কৰক';
@@ -1195,16 +1217,18 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String errorAddingEntry(String error) {
     return 'এন্ট্ৰি যোগ কৰাত ত্ৰুটি: $error';
-  }
+    }
 
   @override
-  String get caseJournalDesc => 'তদন্তৰ ডায়েৰী আৰু গোচৰৰ কাৰ্যকলাপৰ লগসমূহ চাওক';
+  String get caseJournalDesc =>
+      'তদন্তৰ ডায়েৰী আৰু গোচৰৰ কাৰ্যকলাপৰ লগসমূহ চাওক';
 
   @override
   String get selectCase => 'গোচৰ বাছনি কৰক';
 
   @override
-  String get noCasesAvailable => 'কোনো গোচৰ উপলব্ধ নাই। অনুগ্ৰহ কৰি আগতে এটা গোচৰ পঞ্জীয়ন কৰক।';
+  String get noCasesAvailable =>
+      'কোনো গোচৰ উপলব্ধ নাই। অনুগ্ৰহ কৰি আগতে এটা গোচৰ পঞ্জীয়ন কৰক।';
 
   @override
   String get chooseCaseToViewJournal => 'ডায়েৰী চাবলৈ এটা গোচৰ বাছনি কৰক';
@@ -1222,7 +1246,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get noJournalEntries => 'এতিয়ালৈকে কোনো ডায়েৰী এন্ট্ৰি নাই';
 
   @override
-  String get noJournalEntriesDesc => 'তদন্ত আগবঢ়াৰ লগে লগে ডায়েৰী এন্ট্ৰিসমূহ ইয়াত দেখা যাব।';
+  String get noJournalEntriesDesc =>
+      'তদন্ত আগবঢ়াৰ লগে লগে ডায়েৰী এন্ট্ৰিসমূহ ইয়াত দেখা যাব।';
 
   @override
   String get ref => 'ৰেফৰেঞ্চ';
@@ -1233,7 +1258,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String errorCreatingCase(String error) {
     return 'গোচৰ তৈয়াৰ কৰাত ত্ৰুটি: $error';
-  }
+    }
 
   @override
   String get caseTitleRequired => 'গোচৰৰ শীৰ্ষক *';
@@ -1296,7 +1321,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get appDescription => 'AI চালিত আইনী সাহায্য মঞ্চ।';
 
   @override
-  String get signOutConfirmation => 'আপুনি নিশ্চিতনে যে ছাইন আউট কৰিব বিচাৰিছে?';
+  String get signOutConfirmation =>
+      'আপুনি নিশ্চিতনে যে ছাইন আউট কৰিব বিচাৰিছে?';
 
   @override
   String get loginWithPhone => 'ফোনৰ জৰিয়তে লগইন কৰক';
@@ -1428,7 +1454,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get petitionOverview => 'আবেদনৰ চমু আভাস';
 
   @override
-  String get recentActivityDescription => 'আপোনাৰ একাউণ্ট সম্পৰ্কীয় শেহতীয়া কাৰ্যকলাপ বা আপডেটসমূহ দেখুৱাইছে';
+  String get recentActivityDescription =>
+      'আপোনাৰ একাউণ্ট সম্পৰ্কীয় শেহতীয়া কাৰ্যকলাপ বা আপডেটসমূহ দেখুৱাইছে';
 
   @override
   String get helpline => 'হেল্পলাইন';
@@ -1488,7 +1515,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get selectPoliceStationText => 'থানা বাছনি কৰক';
 
   @override
-  String get pleaseSelectAllDropdownFields => 'অনুগ্ৰহ কৰি সকলো ড্ৰপডাউন ফিল্ড বাছনি কৰক';
+  String get pleaseSelectAllDropdownFields =>
+      'অনুগ্ৰহ কৰি সকলো ড্ৰপডাউন ফিল্ড বাছনি কৰক';
 
   @override
   String get searchHint => 'সন্ধান কৰক...';
@@ -1496,7 +1524,7 @@ class AppLocalizationsAs extends AppLocalizations {
   @override
   String selectLabel(String label) {
     return '$label বাছনি কৰক';
-  }
+    }
 
   @override
   String get aiInvestigationGuidelines => 'AI তদন্ত নিৰ্দেশনাৱলী';
@@ -1511,7 +1539,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get enterOfficerResponse => 'বিষয়াৰ সঁহাৰি লিখক...';
 
   @override
-  String get errorContactingInvestigationAI => 'তদন্তকাৰী AI-ৰ সৈতে যোগাযোগ কৰাত ত্ৰুটি';
+  String get errorContactingInvestigationAI =>
+      'তদন্তকাৰী AI-ৰ সৈতে যোগাযোগ কৰাত ত্ৰুটি';
 
   @override
   String get districtAndFirDetails => 'জিলা আৰু FIR বিৱৰণ';
@@ -1571,7 +1600,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get listening => 'শুনি আছোঁ...';
 
   @override
-  String get tapToStopRecording => 'ৰেকৰ্ডিং বন্ধ কৰিবলৈ মাইক্ৰ’ফোন আইকনত ট্যাপ কৰক';
+  String get tapToStopRecording =>
+      'ৰেকৰ্ডিং বন্ধ কৰিবলৈ মাইক্ৰ’ফোন আইকনত ট্যাপ কৰক';
 
   @override
   String get imageLab => 'ইমেজ লেব';
@@ -1607,10 +1637,12 @@ class AppLocalizationsAs extends AppLocalizations {
   String get yourAccessLevel => 'আপোনাৰ এক্সেছ লেভেল';
 
   @override
-  String get filterCasesUsingFilters => 'ড্ৰপডাউন ফিল্টাৰ ব্যৱহাৰ কৰি গোচৰসমূহ ফিল্টাৰ কৰক।';
+  String get filterCasesUsingFilters =>
+      'ড্ৰপডাউন ফিল্টাৰ ব্যৱহাৰ কৰি গোচৰসমূহ ফিল্টাৰ কৰক।';
 
   @override
-  String get casesScreenSubtitle => 'আপুনি জড়িত থকা FIR / গোচৰসমূহ পৰিচালনা কৰক আৰু বিৱৰণ চাওক।';
+  String get casesScreenSubtitle =>
+      'আপুনি জড়িত থকা FIR / গোচৰসমূহ পৰিচালনা কৰক আৰু বিৱৰণ চাওক।';
 
   @override
   String get crimeScene => 'অপৰাধস্থলী';
@@ -1757,7 +1789,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get dispatchingOfficerRank => 'প্ৰেৰণকাৰী বিষয়াৰ পদবী';
 
   @override
-  String get firReadAndAdmittedCorrect => 'FIR পঢ়া হ’ল আৰু সঠিক বুলি স্বীকাৰ কৰা হ’ল';
+  String get firReadAndAdmittedCorrect =>
+      'FIR পঢ়া হ’ল আৰু সঠিক বুলি স্বীকাৰ কৰা হ’ল';
 
   @override
   String get copyGivenFreeOfCost => 'নকল বিনামূলীয়াকৈ দিয়া হ’ল';
@@ -1781,7 +1814,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get addScene => 'স্থান যোগ কৰক';
 
   @override
-  String get noCrimeScenesLinked => 'এই গোচৰটোৰ সৈতে এতিয়ালৈকে কোনো অপৰাধস্থলী জড়িত কৰা হোৱা নাই।';
+  String get noCrimeScenesLinked =>
+      'এই গোচৰটোৰ সৈতে এতিয়ালৈকে কোনো অপৰাধস্থলী জড়িত কৰা হোৱা নাই।';
 
   @override
   String get unknownType => 'অজ্ঞাত প্ৰকাৰ';
@@ -1790,7 +1824,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get deleteScene => 'স্থান মচি পেলাওক';
 
   @override
-  String get areSureDeleteScene => 'আপুনি নিশ্চিতনে যে এই স্থানটো মচি পেলাব বিচাৰিছে?';
+  String get areSureDeleteScene =>
+      'আপুনি নিশ্চিতনে যে এই স্থানটো মচি পেলাব বিচাৰিছে?';
 
   @override
   String get place => 'স্থান';
@@ -1832,7 +1867,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get caseJournalIOsDiary => 'গোচৰৰ ডায়েৰী (IO ডায়েৰী)';
 
   @override
-  String get noJournalEntriesYet => 'এই গোচৰটোৰ বাবে এতিয়ালৈকে কোনো ডায়েৰী এন্ট্ৰি নাই।';
+  String get noJournalEntriesYet =>
+      'এই গোচৰটোৰ বাবে এতিয়ালৈকে কোনো ডায়েৰী এন্ট্ৰি নাই।';
 
   @override
   String get crimeSceneCaptures => 'অপৰাধস্থলীৰ ছবি/ভিডিঅ’';
@@ -1850,13 +1886,16 @@ class AppLocalizationsAs extends AppLocalizations {
   String get noEvidenceDocumentsFound => 'কোনো প্ৰমাণৰ নথি পোৱা নগ’ল';
 
   @override
-  String get attachedDocumentsWillAppearHere => 'ডায়েৰী, আবেদন আৰু অপৰাধস্থলীৰ পৰা সংলগ্ন কৰা নথিপত্ৰসমূহ ইয়াত দেখা যাব।';
+  String get attachedDocumentsWillAppearHere =>
+      'ডায়েৰী, আবেদন আৰু অপৰাধস্থলীৰ পৰা সংলগ্ন কৰা নথিপত্ৰসমূহ ইয়াত দেখা যাব।';
 
   @override
-  String get noDocumentsAttachedJournal => 'তদন্ত ডায়েৰীৰ সৈতে এতিয়ালৈকে কোনো নথি সংলগ্ন কৰা হোৱা নাই।';
+  String get noDocumentsAttachedJournal =>
+      'তদন্ত ডায়েৰীৰ সৈতে এতিয়ালৈকে কোনো নথি সংলগ্ন কৰা হোৱা নাই।';
 
   @override
-  String get noPetitionDocumentsLinked => 'এই গোচৰটোৰ সৈতে এতিয়ালৈকে কোনো আবেদনৰ নথি জড়িত কৰা হোৱা নাই।';
+  String get noPetitionDocumentsLinked =>
+      'এই গোচৰটোৰ সৈতে এতিয়ালৈকে কোনো আবেদনৰ নথি জড়িত কৰা হোৱা নাই।';
 
   @override
   String get finalInvestigationReport => 'চূড়ান্ত তদন্ত ৰিপ’ৰ্ট / আদালতৰ নথি';
@@ -1865,19 +1904,24 @@ class AppLocalizationsAs extends AppLocalizations {
   String get generatedOn => 'প্ৰস্তুত কৰা তাৰিখ:';
 
   @override
-  String get noFinalReportAttached => 'এই গোচৰটোৰ সৈতে এতিয়ালৈকে কোনো চূড়ান্ত তদন্ত ৰিপ’ৰ্ট সংলগ্ন কৰা হোৱা নাই।';
+  String get noFinalReportAttached =>
+      'এই গোচৰটোৰ সৈতে এতিয়ালৈকে কোনো চূড়ান্ত তদন্ত ৰিপ’ৰ্ট সংলগ্ন কৰা হোৱা নাই।';
 
   @override
-  String get onceSomeoneGeneratesReport => 'তদন্তকাৰী বিষয়াজনে ডায়েৰী স্ক্ৰীণৰ পৰা AI চালিত ৰিপ’ৰ্ট প্ৰস্তুত কৰাৰ পাছত চূড়ান্ত PDF খন ইয়াত সংলগ্ন হ’ব।';
+  String get onceSomeoneGeneratesReport =>
+      'তদন্তকাৰী বিষয়াজনে ডায়েৰী স্ক্ৰীণৰ পৰা AI চালিত ৰিপ’ৰ্ট প্ৰস্তুত কৰাৰ পাছত চূড়ান্ত PDF খন ইয়াত সংলগ্ন হ’ব।';
 
   @override
-  String get courtReadyReportGenerated => 'আদালতৰ বাবে উপযোগী তদন্ত ৰিপ’ৰ্ট PDF প্ৰস্তুত কৰি এই গোচৰটোৰ সৈতে সংলগ্ন কৰা হৈছে।';
+  String get courtReadyReportGenerated =>
+      'আদালতৰ বাবে উপযোগী তদন্ত ৰিপ’ৰ্ট PDF প্ৰস্তুত কৰি এই গোচৰটোৰ সৈতে সংলগ্ন কৰা হৈছে।';
 
   @override
-  String get downloadViewFinalReportPDF => 'চূড়ান্ত ৰিপ’ৰ্ট PDF ডাউনলোড কৰক / চাওক';
+  String get downloadViewFinalReportPDF =>
+      'চূড়ান্ত ৰিপ’ৰ্ট PDF ডাউনলোড কৰক / চাওক';
 
   @override
-  String get loadingEvidenceFromAllSources => 'সকলো উৎসৰ পৰা প্ৰমাণ লোড কৰি থকা হৈছে...';
+  String get loadingEvidenceFromAllSources =>
+      'সকলো উৎসৰ পৰা প্ৰমাণ লোড কৰি থকা হৈছে...';
 
   @override
   String get addCrimeScene => 'অপৰাধস্থলী যোগ কৰক';
@@ -1904,7 +1948,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get errorSavingCrimeScene => 'ত্ৰুটি:';
 
   @override
-  String get uploadingCapturedEvidence => 'সংগ্ৰহ কৰা প্ৰমাণসমূহ আপলোড কৰি থকা হৈছে...';
+  String get uploadingCapturedEvidence =>
+      'সংগ্ৰহ কৰা প্ৰমাণসমূহ আপলোড কৰি থকা হৈছে...';
 
   @override
   String get failedUploadEvidence => 'প্ৰমাণ আপলোড কৰাত বিফল';
@@ -1946,7 +1991,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get errorUploadingFile => 'ফাইল আপলোড কৰাত ত্ৰুটি:';
 
   @override
-  String get pleaseCapturUploadEvidenceFirst => 'অনুগ্ৰহ কৰি আগতে প্ৰমাণ সংগ্ৰহ কৰক বা আপলোড কৰক';
+  String get pleaseCapturUploadEvidenceFirst =>
+      'অনুগ্ৰহ কৰি আগতে প্ৰমাণ সংগ্ৰহ কৰক বা আপলোড কৰক';
 
   @override
   String get sceneAnalysisComplete => 'দৃশ্য বিশ্লেষণ সম্পূৰ্ণ হ’ল!';
@@ -1973,7 +2019,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get deleteReport => 'ৰিপ’ৰ্ট মচি পেলাওক';
 
   @override
-  String get deleteReportConfirmation => 'আপুনি নিশ্চিতনে যে এই বিশ্লেষণ ৰিপ’ৰ্টটো মচি পেলাব বিচাৰিছে? ইয়াক পুনৰ ঘূৰাই আনিব নোৱাৰি।';
+  String get deleteReportConfirmation =>
+      'আপুনি নিশ্চিতনে যে এই বিশ্লেষণ ৰিপ’ৰ্টটো মচি পেলাব বিচাৰিছে? ইয়াক পুনৰ ঘূৰাই আনিব নোৱাৰি।';
 
   @override
   String get reportDeleted => 'ৰিপ’ৰ্ট মচি পেলোৱা হ’ল';
@@ -2000,7 +2047,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get filedOn => 'দাখিল কৰা তাৰিখ:';
 
   @override
-  String get accessViaFileManager => 'ফাইল মেনেজাৰ → Dharma → Evidence-ৰ জৰিয়তে এক্সেছ কৰক';
+  String get accessViaFileManager =>
+      'ফাইল মেনেজাৰ → Dharma → Evidence-ৰ জৰিয়তে এক্সেছ কৰক';
 
   @override
   String get evidenceDownloaded => 'প্ৰমাণ ডাউনলোড কৰা হ’ল!';
@@ -2021,7 +2069,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get selectPetitionType => 'আবেদনৰ প্ৰকাৰ বাছনি কৰক';
 
   @override
-  String get petitionTypeDescription => 'বেনামী (Anonymous): আপোনাৰ নাম আৰু ঠিকনা ৰেকৰ্ড কৰা নহ’ব (কেৱল ম’বাইল নম্বৰ প্ৰয়োজন)।\nসাধাৰণ (Normal): সকলো বিৱৰণ ৰেকৰ্ড কৰা হ’ব।';
+  String get petitionTypeDescription =>
+      'বেনামী (Anonymous): আপোনাৰ নাম আৰু ঠিকনা ৰেকৰ্ড কৰা নহ’ব (কেৱল ম’বাইল নম্বৰ প্ৰয়োজন)।\nসাধাৰণ (Normal): সকলো বিৱৰণ ৰেকৰ্ড কৰা হ’ব।';
 
   @override
   String get anonymousPetition => 'বেনামী আবেদন';
@@ -2030,7 +2079,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get normalPetition => 'সাধাৰণ আবেদন';
 
   @override
-  String get anonymousPetitionConfirm => 'আপুনি বেনামী আবেদনৰ পদ্ধতি বাছনি কৰিছে। আপোনাৰ নাম আৰু ঠিকনা ৰেকৰ্ড কৰা নহ’ব।';
+  String get anonymousPetitionConfirm =>
+      'আপুনি বেনামী আবেদনৰ পদ্ধতি বাছনি কৰিছে। আপোনাৰ নাম আৰু ঠিকনা ৰেকৰ্ড কৰা নহ’ব।';
 
   @override
   String get profileUpdated => "প্ৰ’ফাইল আপডেট কৰা হ’ল";
@@ -2048,7 +2098,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get aiChatInProgressTitle => 'AI চ্যাট চলি আছে';
 
   @override
-  String get aiChatInProgressMessage => 'আপুনি AI চ্যাটবট ব্যৱহাৰ কৰাটো বন্ধ কৰিব বিচাৰেনে?';
+  String get aiChatInProgressMessage =>
+      'আপুনি AI চ্যাটবট ব্যৱহাৰ কৰাটো বন্ধ কৰিব বিচাৰেনে?';
 
   @override
   String get clearChat => 'চ্যাট চাফা কৰক';
@@ -2063,7 +2114,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get termsAndConditions => 'চৰ্তাবলী আৰু নিয়মাৱলী';
 
   @override
-  String get enterEmailForPasswordReset => 'পাছৱৰ্ড ৰিছেট কৰাৰ লিংক পাবলৈ আপোনাৰ ইমেইল ঠিকনা লিখক।';
+  String get enterEmailForPasswordReset =>
+      'পাছৱৰ্ড ৰিছেট কৰাৰ লিংক পাবলৈ আপোনাৰ ইমেইল ঠিকনা লিখক।';
 
   @override
   String get sendResetLink => 'ৰিছেট লিংক পঠাওক';
@@ -2078,7 +2130,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get isNotRegisteredWithUs => 'আমাৰ ওচৰত পঞ্জীয়নভুক্ত নহয়';
 
   @override
-  String get passwordResetLinkSentTo => 'পাছৱৰ্ড ৰিছেট লিংক পঠোৱা হৈছে ইমেইললৈ: ';
+  String get passwordResetLinkSentTo =>
+      'পাছৱৰ্ড ৰিছেট লিংক পঠোৱা হৈছে ইমেইললৈ: ';
 
   @override
   String get pleaseCheckYourInbox => 'অনুগ্ৰহ কৰি আপোনাৰ ইনবক্স পৰীক্ষা কৰক';
@@ -2087,7 +2140,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get rateOfficerAndFeedback => 'বিষয়াৰ ৰেটিং আৰু মতামত';
 
   @override
-  String get pleaseRateOfficerHandling => "আপোনাৰ গোচৰটো পৰিচালনা কৰা বিষয়াজনৰ কাৰ্যক্ষমতাৰ ৰেটিং দিয়ক।";
+  String get pleaseRateOfficerHandling =>
+      "আপোনাৰ গোচৰটো পৰিচালনা কৰা বিষয়াজনৰ কাৰ্যক্ষমতাৰ ৰেটিং দিয়ক।";
 
   @override
   String get writeYourFeedbackOptional => 'আপোনাৰ মতামত লিখক (ঐচ্ছিক)...';
@@ -2099,7 +2153,8 @@ class AppLocalizationsAs extends AppLocalizations {
   String get feedbackSubmittedSuccessfully => 'মতামত সফলতাৰে জমা দিয়া হৈছে!';
 
   @override
-  String errorSubmittingFeedback(String error) => 'মতামত জমা দিয়াত ত্ৰুটি: $error';
+  String errorSubmittingFeedback(String error) =>
+      'মতামত জমা দিয়াত ত্ৰুটি: $error';
 
   @override
   String get incidentAddress => 'ঘটনা সংঘটিত হোৱা ঠিকনা';
@@ -2114,13 +2169,15 @@ class AppLocalizationsAs extends AppLocalizations {
   String get caseProgressUpdates => 'গোচৰৰ অগ্ৰগতিৰ আপডেটসমূহ';
 
   @override
-  String get trackCaseProgressDescription => 'আপোনাৰ আবেদনৰ অগ্ৰগতি ইয়াত ট্ৰেক কৰক। আৰক্ষীয়ে আপোনাৰ গোচৰটোৰ ওপৰত কৰা কামৰ আপডেটসমূহ ইয়াত যোগ কৰিব।';
+  String get trackCaseProgressDescription =>
+      'আপোনাৰ আবেদনৰ অগ্ৰগতি ইয়াত ট্ৰেক কৰক। আৰক্ষীয়ে আপোনাৰ গোচৰটোৰ ওপৰত কৰা কামৰ আপডেটসমূহ ইয়াত যোগ কৰিব।';
 
   @override
   String get noUpdatesYet => 'এতিয়ালৈকে কোনো আপডেট নাই';
 
   @override
-  String get policeWillAddUpdatesHere => 'আৰক্ষীয়ে আপোনাৰ গোচৰটোৰ আপডেটসমূহ ইয়াত যোগ কৰিব';
+  String get policeWillAddUpdatesHere =>
+      'আৰক্ষীয়ে আপোনাৰ গোচৰটোৰ আপডেটসমূহ ইয়াত যোগ কৰিব';
 
   @override
   String get uploadedDocuments => 'আপলোড কৰা নথিপত্ৰসমূহ';
@@ -2163,4 +2220,7 @@ class AppLocalizationsAs extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'আনৰ বাবে অভিযোগ';
+  
+  @override
+  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
 }

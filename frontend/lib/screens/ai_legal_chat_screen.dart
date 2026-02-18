@@ -36,6 +36,10 @@ class _ChatStateHolder {
   static bool isLoading = false;
   static bool errored = false;
 
+  // New fields for Evidence Check (Soft Block)
+  static bool hasAskedForEvidence = false;
+  static String? pendingBackendQuestion;
+
   static void reset() {
     messages.clear();
     answers.clear();
@@ -45,6 +49,8 @@ class _ChatStateHolder {
     allowInput = false;
     isLoading = false;
     errored = false;
+    hasAskedForEvidence = false;
+    pendingBackendQuestion = null;
   }
 }
 
@@ -503,20 +509,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           final textWasShortened =
               currentText.length < expectedTextTrimmed.length;
 
-          print(
-              'Manual edit detected: "$currentText" (was: "$expectedTextTrimmed", shortened: $textWasShortened)');
+          // print(
+          // 'Manual edit detected: "$currentText" (was: "$expectedTextTrimmed", shortened: $textWasShortened)');
           setState(() {
             // Treat entire text as finalized (user's manual edit)
             _finalizedTranscript = currentText;
             _currentTranscript = '';
             _lastRecognizedText = '';
           });
-          print('ASR state synced with manual edit');
+          // print('ASR state synced with manual edit');
 
           // CRITICAL: If text was shortened (words removed), restart ASR to clear its buffer
           // This prevents ASR from re-adding removed words when user speaks again
           if (textWasShortened && _isRecording) {
-            print('🔄 Text was shortened - restarting ASR to clear buffer...');
+            // print('🔄 Text was shortened - restarting ASR to clear buffer...');
             Future.delayed(const Duration(milliseconds: 300), () {
               if (_isRecording && mounted) {
                 if (_isAndroid) {
@@ -544,7 +550,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _nativeSpeech.onPartialResult = (text) {
       // Ignore if we just sent a message
       if (_ignoreAsrCallbacks) {
-        print('Ignoring ASR callback (just sent message)');
+        // print('Ignoring ASR callback (just sent message)');
         // Ensure controller stays clear
         if (mounted) {
           setState(() {
@@ -583,8 +589,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           _controller.text = displayText.trim();
 
           _isUpdatingFromAsr = false;
-          print(
-              'Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+          // print(
+          // 'Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
         });
       }
     };
@@ -592,7 +598,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     _nativeSpeech.onFinalResult = (text) {
       // Ignore if we just sent a message
       if (_ignoreAsrCallbacks) {
-        print('Ignoring final ASR callback (just sent message)');
+        // print('Ignoring final ASR callback (just sent message)');
         // Ensure controller stays clear
         if (mounted) {
           setState(() {
@@ -613,22 +619,22 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           _controller.text = merged;
 
           _isUpdatingFromAsr = false;
-          print('Native final (merged): "$text" -> "$merged"');
+          // print('Native final (merged): "$text" -> "$merged"');
         });
       }
     };
 
     _nativeSpeech.onError = (error, message) {
-      print('Native ASR error: $error - $message');
+      // print('Native ASR error: $error - $message');
       // Errors are handled by auto-restart in native code
     };
 
     _nativeSpeech.onListeningStarted = () {
-      print('Native ASR started');
+      // print('Native ASR started');
     };
 
     _nativeSpeech.onListeningStopped = () {
-      print('Native ASR stopped');
+      // print('Native ASR stopped');
     };
   }
 
@@ -875,19 +881,19 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   void _setupTTSHandlers() {
     // When TTS starts speaking, pause ASR to prevent feedback
     _flutterTts.setStartHandler(() {
-      print('TTS started - pausing ASR');
+      // print('TTS started - pausing ASR');
       _pauseASRForTTS();
     });
 
     // When TTS finishes, resume ASR automatically
     _flutterTts.setCompletionHandler(() {
-      print('TTS completed - resuming ASR');
+      // print('TTS completed - resuming ASR');
       _resumeASRAfterTTS();
     });
 
     // Handle TTS errors
     _flutterTts.setErrorHandler((msg) {
-      print('TTS error: $msg - resuming ASR');
+      // print('TTS error: $msg - resuming ASR');
       _resumeASRAfterTTS();
     });
   }
@@ -895,7 +901,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   /// Pause ASR when TTS is speaking (prevent feedback loop)
   void _pauseASRForTTS() {
     if (_isRecording && mounted) {
-      print('Pausing ASR for TTS...');
+      // print('Pausing ASR for TTS...');
 
       if (_isAndroid) {
         // Use native recognizer on Android
@@ -921,13 +927,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     ...
     }
     */
-    print('TTS finished - Mic remains OFF (waiting for user input)');
+    // print('TTS finished - Mic remains OFF (waiting for user input)');
   }
 
   /// Centralized function to reset chat state
   void _resetChatState({bool clearMessages = true, bool stopASR = false}) {
-    print(
-        'Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
+    // print(
+    // 'Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
 
     setState(() {
       // Reset ASR state
@@ -1121,8 +1127,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Custom start message for 'Others'
     if (_complaintForWho == 'Other') {
-      startMsg =
-          "Since you are filing this for someone else, please describe the incident and your relationship to the victim.";
+      startMsg = localizations.filingForSomeoneElse;
     }
 
     _addBot(startMsg);
@@ -1201,7 +1206,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Determine base URL robustly
     // Determine base URL robustly
     String baseUrl;
-     if (kIsWeb) {
+    if (kIsWeb) {
       // on web you probably want to call your absolute backend URL
       baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
     } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -1231,7 +1236,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // PROCESS FILES (Optimization: Do not upload bytes, just pass reference)
     String attachmentNote = "";
     if (_attachedFiles.isNotEmpty) {
-      print('📎 Processing ${_attachedFiles.length} files (Reference Only)...');
+      // print('📎 Processing ${_attachedFiles.length} files (Reference Only)...');
       for (final file in _attachedFiles) {
         // Track globally for final handover to Petition Screen
         // Check by name as simplistic dedup
@@ -1286,6 +1291,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
 
     // Add text fields
+    // print(
+    // '🔍 DEBUG: Building Request. Current Answers: ${_ChatStateHolder.answers}');
     formData.fields.add(
         MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
     formData.fields
@@ -1303,9 +1310,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Serialize chat history
     formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
 
-    print('🚀 Sending to backend (FormData):');
-    print('   History items: ${_dynamicHistory.length}');
-    print('   Files attached: ${_attachedFiles.length}');
+    // print('🚀 Sending to backend (FormData):');
+    // print('   History items: ${_dynamicHistory.length}');
+    // print('   Files attached: ${_attachedFiles.length}');
 
     try {
       final resp = await _dio
@@ -1318,13 +1325,38 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               seconds: 90)); // Increased timeout for file uploads coverage
 
       final data = resp.data;
-      print("Backend Response: $data"); // DEBUG LOG
+      // print("Backend Response: $data"); // DEBUG LOG
 
-      // Clear attached files after successful send
       if (_attachedFiles.isNotEmpty) {
         setState(() {
           _attachedFiles.clear();
         });
+      }
+
+      // SYNC BACKEND DETECTED INFO (Fix for Name/Address Loop)
+      if (data['detected_info'] != null) {
+        try {
+          // Explicit safe casting
+          final Map<String, dynamic> detected =
+              Map<String, dynamic>.from(data['detected_info']);
+
+          if (detected.containsKey('full_name') &&
+              detected['full_name'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['full_name'] =
+                detected['full_name'].toString();
+          }
+          if (detected.containsKey('address') &&
+              detected['address'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['address'] =
+                detected['address'].toString();
+          }
+          if (detected.containsKey('phone') &&
+              detected['phone'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['phone'] = detected['phone'].toString();
+          }
+        } catch (e) {
+          // print('Error syncing detected info: $e');
+        }
       }
 
       if (data['status'] == 'question') {
@@ -1333,14 +1365,44 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           question = "Could you please provide more details?";
         }
 
+        // Localize the question if it matches known backend strings
+        question = _localizeBackendMessage(question, localizations);
+
+        // --- INTERCEPTION FOR EVIDENCE (Soft Block) ---
+        // If the question is about Personal Details (Name, Address, Phone)
+        // AND we haven't asked for evidence yet
+        // AND no files are attached...
+        final qLowerForEvidence = question.toLowerCase();
+        final isPersonalDetailQuestion = qLowerForEvidence.contains('name') ||
+            qLowerForEvidence.contains('address') ||
+            qLowerForEvidence.contains('phone') ||
+            qLowerForEvidence.contains('contact'); // Broad check
+
+        if (isPersonalDetailQuestion &&
+            _attachedFiles.isEmpty &&
+            !_ChatStateHolder.hasAskedForEvidence) {
+          // print('🕵️ Evidence Check Interception: Soft Block triggered');
+
+          // 1. Store the original question to ask LATER
+          _ChatStateHolder.pendingBackendQuestion = question;
+
+          // 2. Mark as asked so we don't ask again
+          _ChatStateHolder.hasAskedForEvidence = true;
+
+          // 3. Ask for evidence locally
+          question = localizations.evidenceRequest ??
+              "Do you have any evidence (photos/documents)? Please attach them now or type 'No' to continue.";
+        }
+        // ----------------------------------------------
+
         // INTERCEPTION: If the AI outputs the summary but backend didn't mark as 'done'
         final qLower = question.toLowerCase();
         if (qLower.contains('complaint summary') ||
             qLower.contains('formal petition') ||
             (qLower.contains('incident details') &&
                 qLower.contains('incident location'))) {
-          print(
-              "🕵️ Intercepted Summary in Chat Message - Forcing Completion (Frontend)");
+          // print(
+          // "🕵️ Intercepted Summary in Chat Message - Forcing Completion (Frontend)");
 
           // IMPROVED EXTRACTION: Extract classification from the text
           String classification = "General Complaint";
@@ -1422,7 +1484,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           // Cleanup markdown bolding/stars from the final string
           classification =
               classification.replaceAll('*', '').replaceAll('#', '').trim();
-          print("🕵️ Intercepted Classification: $classification");
+          // print("🕵️ Intercepted Classification: $classification");
 
           final syntheticData = {
             'formal_summary': question,
@@ -1456,11 +1518,11 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       String msg = localizations.somethingWentWrong;
 
       // Enhanced error logging for debugging
-      print('❌ Chat step error: $e');
+      // print('❌ Chat step error: $e');
 
       if (e is DioException) {
-        print('HTTP Status Code: ${e.response?.statusCode}');
-        print('Response Data: ${e.response?.data}');
+        // print('HTTP Status Code: ${e.response?.statusCode}');
+        // print('Response Data: ${e.response?.data}');
 
         if (e.response != null && e.response?.data != null) {
           // try to show server-provided message if present
@@ -1490,7 +1552,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // Set lock to prevent double navigation
     setState(() => _isNavigating = true);
 
-    print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen via Helper...');
+    // print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen via Helper...');
 
     // Pack Chat Data for "Save Draft" on Details Screen
     final chatData = {
@@ -1522,6 +1584,31 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         setState(() => _isNavigating = false);
       }
     }
+  }
+
+  /// Helper to map backend English strings to localized versions
+  String _localizeBackendMessage(
+      String message, AppLocalizations localizations) {
+    final lowerMsg = message.toLowerCase().trim();
+
+    // Flexible matching for common backend questions
+    if (lowerMsg.contains('what is your full name')) {
+      return localizations.fullNameQuestion;
+    }
+    if (lowerMsg.contains('where do you live') ||
+        lowerMsg.contains('address')) {
+      return localizations.addressQuestion;
+    }
+    if (lowerMsg.contains('mobile number') ||
+        lowerMsg.contains('phone number')) {
+      return localizations.phoneQuestion;
+    }
+    if (lowerMsg.contains('what type of complaint')) {
+      return localizations.complaintTypeQuestion;
+    }
+
+    // Return original if no match found
+    return message;
   }
 
   Future<void> _handleFinalResponse(dynamic data) async {
@@ -1556,8 +1643,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             .group(0)!
             .trim()
             .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
-        print(
-            "💡 Found NON-COGNIZABLE in history sweep (fuzzy). Overriding classification.");
+        // print(
+        // "💡 Found NON-COGNIZABLE in history sweep (fuzzy). Overriding classification.");
       }
     } else if (upperHistory.contains("COGNIZABLE") ||
         cRegex.hasMatch(historyText)) {
@@ -1567,8 +1654,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             .group(0)!
             .trim()
             .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
-        print(
-            "💡 Found COGNIZABLE in history sweep (fuzzy). Overriding classification.");
+        // print(
+        // "💡 Found COGNIZABLE in history sweep (fuzzy). Overriding classification.");
       }
     }
 
@@ -1599,6 +1686,43 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     final Map<String, String> localizedAnswers =
         Map<String, String>.from(_ChatStateHolder.answers);
+
+    // Extract new summary fields explicitly
+    if (data is Map) {
+      if (data['accused_details'] != null)
+        localizedAnswers['accused_details'] =
+            data['accused_details'].toString();
+      if (data['stolen_property'] != null)
+        localizedAnswers['stolen_property'] =
+            data['stolen_property'].toString();
+      if (data['witnesses'] != null)
+        localizedAnswers['witnesses'] = data['witnesses'].toString();
+      if (data['evidence_status'] != null)
+        localizedAnswers['evidence_status'] =
+            data['evidence_status'].toString();
+
+      // Also ensure station details are captured if not already
+      if (data['selected_police_station'] != null)
+        localizedAnswers['selected_police_station'] =
+            data['selected_police_station'].toString();
+      if (data['police_station_reason'] != null)
+        localizedAnswers['police_station_reason'] =
+            data['police_station_reason'].toString();
+      if (data['station_confidence'] != null)
+        localizedAnswers['station_confidence'] =
+            data['station_confidence'].toString();
+      if (data['date_of_complaint'] != null)
+        localizedAnswers['date_of_complaint'] =
+            data['date_of_complaint'].toString();
+      // Ensure incident address is captured
+      if (data['incident_address'] != null)
+        localizedAnswers['incident_address'] =
+            data['incident_address'].toString();
+      if (data['incident_details'] != null)
+        localizedAnswers['incident_details'] =
+            data['incident_details'].toString();
+    }
+
     final localizedFields = (data is Map) ? data['localized_fields'] : null;
     if (localizedFields is Map) {
       localizedFields.forEach((key, value) {
@@ -1625,7 +1749,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // STOP ASR when chat completes
     if (_isRecording) {
-      print('Chat completed - stopping ASR');
+      // print('Chat completed - stopping ASR');
       if (_isAndroid) {
         _nativeSpeech.stopListening();
       } else {
@@ -1641,14 +1765,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
     // Stash files directly to Provider
     if (_ChatStateHolder.allAttachedFiles.isNotEmpty) {
-      print(
-          '💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
+      // print(
+      // '💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
       try {
         Provider.of<PetitionProvider>(context, listen: false)
             .setTempEvidence(_ChatStateHolder.allAttachedFiles);
-        print('✅ [DEBUG] Chat Screen: Successfully stashed files in Provider');
+        // print('✅ [DEBUG] Chat Screen: Successfully stashed files in Provider');
       } catch (e) {
-        print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
+        // print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
       }
     }
 
@@ -1698,7 +1822,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     // This prevents concatenation with previous messages/autofill issues
     // Stop Microphone properly if it was recording
     if (_isRecording) {
-      print('Sending message - STOPPING MICROPHONE (Auto-Stop)');
+      // print('Sending message - STOPPING MICROPHONE (Auto-Stop)');
       // Stop recording functionality
       setState(() {
         _isRecording = false;
@@ -1720,7 +1844,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           }
         }
       } catch (e) {
-        print('Error stopping ASR in handleSend: $e');
+        // print('Error stopping ASR in handleSend: $e');
       }
     } else {
       _controller.clear();
@@ -1735,17 +1859,52 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     if (_ChatStateHolder.answers['details'] == null ||
         _ChatStateHolder.answers['details']!.isEmpty) {
       _ChatStateHolder.answers['details'] = finalMessage;
-      print('📝 First message set as initial_details: "$finalMessage"');
+      // print('📝 First message set as initial_details: "$finalMessage"');
     } else {
       _dynamicHistory.add({'role': 'user', 'content': finalMessage});
-      print('📝 Added to history: "$finalMessage"');
-      print('📚 Current history length: ${_dynamicHistory.length}');
+      // print('📝 Added to history: "$finalMessage"');
+      // print('📚 Current history length: ${_dynamicHistory.length}');
     }
 
     _setAllowInput(false);
     setState(() {});
 
     // Explicitly call backend step
+
+    // --- HANDLING EVIDENCE RESPONSE (Soft Block) ---
+    if (_ChatStateHolder.pendingBackendQuestion != null) {
+      // If we have a pending question, it means the LAST question was "Do you have evidence?"
+      // We just added the user's "No" (or whatever text) to the UI history above.
+      // We do NOT want to send this text to the backend as the answer for "Name".
+
+      // print('🕵️ Evidence Check Response Handling');
+
+      // Retrieve the original question (Name/Phone)
+      String nextQuestion = _ChatStateHolder.pendingBackendQuestion!;
+      _ChatStateHolder.pendingBackendQuestion = null; // Clear it
+
+      // Verify if user attached files is already handled by _addUser which adds them to _attachedFiles
+      // If user typed "No" (or anything else), we just proceed to ask the Name.
+      // The text they typed is already in the chat UI history (good context).
+
+      // We simulate a "Backend Response" which is just the original question
+      _addBot(nextQuestion);
+      _speak(nextQuestion);
+
+      // Add to history so LLM knows it asked this
+      _dynamicHistory.add({'role': 'assistant', 'content': nextQuestion});
+
+      setState(() {
+        _setIsLoading(false);
+        _setAllowInput(true);
+      });
+      Timer(
+          const Duration(milliseconds: 600), () => _inputFocus.requestFocus());
+
+      return; // CRITICAL: Stop here, do NOT call _processDynamicStep yet
+    }
+    // -----------------------------------------------
+
     _processDynamicStep();
 
     // NOTE: Continuous listening continues automatically
@@ -1855,13 +2014,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                   final List<XFile> images =
                       await _imagePicker.pickMultiImage();
                   if (images.isNotEmpty && mounted) {
-                    print('📷 Selected ${images.length} images from gallery');
+                    // print('📷 Selected ${images.length} images from gallery');
                     for (var xFile in images) {
                       Uint8List? fileBytes;
                       if (kIsWeb) {
                         fileBytes = await xFile.readAsBytes();
-                        print(
-                            '🌐 Web: Read ${fileBytes.length} bytes for ${xFile.name}');
+                        // print(
+                        // '🌐 Web: Read ${fileBytes.length} bytes for ${xFile.name}');
                       }
 
                       setState(() {
@@ -1983,7 +2142,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
     } catch (e) {
       // Silently fail - sound muting is optional
-      print('Could not mute system sounds: $e');
+      // print('Could not mute system sounds: $e');
     }
   }
 
@@ -1996,7 +2155,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
     } catch (e) {
       // Silently fail - sound unmuting is optional
-      print('Could not unmute system sounds: $e');
+      // print('Could not unmute system sounds: $e');
     }
   }
 
@@ -2004,7 +2163,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   Future<void> _safeRestartListening(String sttLang) async {
     // Prevent multiple simultaneous restart attempts
     if (_isRestarting) {
-      print('Restart already in progress, skipping...');
+      // print('Restart already in progress, skipping...');
       return;
     }
 
@@ -2012,7 +2171,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     final now = DateTime.now();
     if (_lastRestartAttempt != null &&
         now.difference(_lastRestartAttempt!).inMilliseconds < 500) {
-      print('Too soon since last restart attempt, skipping...');
+      // print('Too soon since last restart attempt, skipping...');
       return;
     }
 
@@ -2028,8 +2187,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
       // Always cancel any existing session first to ensure clean state
       // This is critical - even if isListening is false, the session might be in a "done" state
-      print(
-          'Canceling any existing session before restart (isListening: ${_speech.isListening})...');
+      // print(
+      // 'Canceling any existing session before restart (isListening: ${_speech.isListening})...');
       try {
         // Only stop/cancel if actually listening - if already stopped, skip
         if (_speech.isListening) {
@@ -2038,13 +2197,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           // Short delay for clean state - fast restart for continuous listening
           await Future.delayed(const Duration(milliseconds: 150));
         } else {
-          print(
-              'Session already stopped, skipping cancel - restarting directly...');
+          // print(
+          // 'Session already stopped, skipping cancel - restarting directly...');
           // Even if stopped, give a tiny delay for SDK to be ready
           await Future.delayed(const Duration(milliseconds: 100));
         }
       } catch (e) {
-        print('Error canceling session: $e - continuing anyway');
+        // print('Error canceling session: $e - continuing anyway');
         // Continue anyway - might already be stopped
         await Future.delayed(const Duration(milliseconds: 100));
       }
@@ -2056,7 +2215,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         return;
       }
 
-      print('Starting new listening session after restart...');
+      // print('Starting new listening session after restart...');
       await _speech.listen(
         localeId: sttLang,
         listenFor: const Duration(
@@ -2084,8 +2243,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 _currentTranscript = '';
                 _lastRecognizedText = newWords;
                 _controller.text = merged;
-                print(
-                    'STT safe restart final (merged): "$newWords" -> "$merged"');
+                // print(
+                // 'STT safe restart final (merged): "$newWords" -> "$merged"');
               } else {
                 // PARTIAL RESULT: Extract only genuinely new words (not already at end)
                 String partialToShow;
@@ -2111,8 +2270,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                         ? _finalizedTranscript
                         : '$_finalizedTranscript $_currentTranscript');
                 _controller.text = displayText.trim();
-                print(
-                    'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                // print(
+                // 'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
               }
 
               _isUpdatingFromAsr = false;
@@ -2123,7 +2282,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
       _busyRetryCount = 0; // Reset retry count on success
       _isRestarting = false;
-      print('Successfully restarted speech recognition');
+      // print('Successfully restarted speech recognition');
     } catch (e) {
       _isRestarting = false;
       final errorStr = e.toString().toLowerCase();
@@ -2131,7 +2290,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       // Handle BUSY errors specifically
       if (errorStr.contains('busy') || errorStr.contains('already')) {
         _busyRetryCount++;
-        print('BUSY error detected (attempt $_busyRetryCount), will retry...');
+        // print('BUSY error detected (attempt $_busyRetryCount), will retry...');
 
         // Exponential backoff: 1s, 2s, 4s, 8s...
         final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
@@ -2143,12 +2302,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             }
           });
         } else {
-          print('Max BUSY retries reached, giving up');
+          // print('Max BUSY retries reached, giving up');
           _busyRetryCount = 0;
         }
       } else {
         // Other errors - log and reset retry count
-        print('Error restarting speech recognition: $e');
+        // print('Error restarting speech recognition: $e');
         _busyRetryCount = 0;
       }
     }
@@ -2170,7 +2329,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
       // Check if SDK stopped listening
       if (!_speech.isListening && !_isRestarting) {
-        print('Monitor detected SDK stopped - triggering seamless restart...');
+        // print('Monitor detected SDK stopped - triggering seamless restart...');
         _seamlessRestart();
       }
     });
@@ -2180,20 +2339,20 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   /// Called when SDK stops but user hasn't manually stopped recording
   Future<void> _seamlessRestart() async {
     if (!_isRecording || !mounted || _currentSttLang == null) {
-      print('Seamless restart skipped - not recording or no language set');
+      // print('Seamless restart skipped - not recording or no language set');
       return;
     }
 
     // Prevent multiple simultaneous restarts
     if (_isRestarting) {
-      print('Restart already in progress, skipping...');
+      // print('Restart already in progress, skipping...');
       return;
     }
 
     _isRestarting = true;
-    print('=== SEAMLESS RESTART INITIATED ===');
-    print(
-        'Preserving state: finalized="$_finalizedTranscript", current="$_currentTranscript"');
+    // print('=== SEAMLESS RESTART INITIATED ===');
+    // print(
+    // 'Preserving state: finalized="$_finalizedTranscript", current="$_currentTranscript"');
 
     try {
       // Stop any existing session
@@ -2212,7 +2371,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
 
       // Restart listening with same configuration
-      print('Restarting speech recognition...');
+      // print('Restarting speech recognition...');
       await _speech.listen(
         localeId: _currentSttLang!,
         listenFor: const Duration(hours: 1),
@@ -2230,8 +2389,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 return;
               }
 
-              print(
-                  'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
+              // print(
+              // 'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
               _lastSpeechDetected = DateTime.now();
 
               if (result.finalResult) {
@@ -2242,7 +2401,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                 _currentTranscript = '';
                 _lastRecognizedText = newWords;
                 _controller.text = merged;
-                print('STT restart final (merged): "$newWords" -> "$merged"');
+                // print('STT restart final (merged): "$newWords" -> "$merged"');
               } else {
                 // PARTIAL RESULT: Extract only genuinely new words (not already at end)
                 String partialToShow;
@@ -2268,8 +2427,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                         ? _finalizedTranscript
                         : '$_finalizedTranscript $_currentTranscript');
                 _controller.text = displayText.trim();
-                print(
-                    'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                // print(
+                // 'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
               }
 
               _isUpdatingFromAsr = false;
@@ -2283,10 +2442,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
       _busyRetryCount = 0;
       _isRestarting = false;
-      print('=== SEAMLESS RESTART COMPLETE ===');
+      // print('=== SEAMLESS RESTART COMPLETE ===');
     } catch (e) {
       _isRestarting = false;
-      print('Error during seamless restart: $e');
+      // print('Error during seamless restart: $e');
 
       // Retry once after delay
       if (_busyRetryCount < 3 && mounted && _isRecording) {
@@ -2407,7 +2566,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
       if (_isAndroid) {
         // Use Android Native SpeechRecognizer
-        print('Starting Android Native SpeechRecognizer...');
+        // print('Starting Android Native SpeechRecognizer...');
 
         // Mute system sounds to prevent restart sounds
         await _muteSystemSounds();
@@ -2422,9 +2581,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
         try {
           await _nativeSpeech.startListening(language: sttLang);
-          print('Native ASR started successfully');
+          // print('Native ASR started successfully');
         } catch (e) {
-          print('Error starting native ASR: $e');
+          // print('Error starting native ASR: $e');
           await _unmuteSystemSounds(); // Unmute on error
           setState(() {
             _isRecording = false;
@@ -2442,15 +2601,15 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
         bool available = await _speech.initialize(
           onError: (val) {
-            print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
+            // print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
             final errorMsg = val.errorMsg.toLowerCase();
 
             // For continuous listening: Treat all errors as non-fatal
             // Silence and "no match" are normal - just continue listening
             if (errorMsg.contains('no_match') ||
                 errorMsg.contains('no match')) {
-              print(
-                  'No match error detected - treating as silence/pause, continuing to listen...');
+              // print(
+              // 'No match error detected - treating as silence/pause, continuing to listen...');
               // Don't do anything - just let it continue listening
               return;
             }
@@ -2471,8 +2630,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               }
             } else {
               // All other errors (temporary or non-critical) - just restart listening
-              print(
-                  'Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
+              // print(
+              // 'Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
               if (mounted && _isRecording) {
                 Future.delayed(const Duration(milliseconds: 500), () {
                   if (mounted && _isRecording && !_speech.isListening) {
@@ -2521,8 +2680,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       return;
                     }
 
-                    print(
-                        'onResult: newWords="$newWords", isFinal=${result.finalResult}');
+                    // print(
+                    // 'onResult: newWords="$newWords", isFinal=${result.finalResult}');
                     _lastSpeechDetected = DateTime.now();
 
                     if (result.finalResult) {
@@ -2533,8 +2692,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       _currentTranscript = '';
                       _lastRecognizedText = newWords;
                       _controller.text = merged;
-                      print(
-                          'STT final result (merged): "$newWords" -> "$merged"');
+                      // print(
+                      // 'STT final result (merged): "$newWords" -> "$merged"');
                     } else {
                       // PARTIAL RESULT: Extract only genuinely new words (not already at end)
                       String partialToShow;
@@ -2562,8 +2721,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                               ? _finalizedTranscript
                               : '$_finalizedTranscript $_currentTranscript');
                       _controller.text = displayText.trim();
-                      print(
-                          'STT partial result: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                      // print(
+                      // 'STT partial result: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
                     }
 
                     _isUpdatingFromAsr = false;
@@ -2578,14 +2737,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             final errorStr = e.toString().toLowerCase();
             if (errorStr.contains('busy') || errorStr.contains('already')) {
               // Handle BUSY error on initial listen - use safe restart
-              print('BUSY error on initial listen, using safe restart...');
+              // print('BUSY error on initial listen, using safe restart...');
               Future.delayed(const Duration(milliseconds: 500), () {
                 if (mounted && _isRecording) {
                   _safeRestartListening(sttLang);
                 }
               });
             } else {
-              print('Error starting speech recognition: $e');
+              // print('Error starting speech recognition: $e');
               // Unmute on error
               await _unmuteSystemSounds();
             }
@@ -2663,17 +2822,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               final v = bestVoice as Map<dynamic, dynamic>;
               await _flutterTts
                   .setVoice({'name': v['name'], 'locale': v['locale']});
-              print('Using voice: ${v['name']}');
+              // print('Using voice: ${v['name']}');
             }
           }
         } catch (e) {
-          print('Voice selection error: $e');
+          // print('Voice selection error: $e');
         }
       }
 
       await _flutterTts.speak(text);
     } catch (e) {
-      print('TTS Error: $e');
+      // print('TTS Error: $e');
       // Fallback to English if Telugu fails
       if (ttsLang == 'te-IN') {
         try {
@@ -2781,7 +2940,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   }
 
   void _loadDraft(Map<String, dynamic> draft) {
-    print('📂 Loading draft: ${draft['id'] ?? draft['userId']}');
+    // print('📂 Loading draft: ${draft['id'] ?? draft['userId']}');
     final chatData = draft['chatData'] as Map<String, dynamic>?;
     if (chatData == null) return;
 
@@ -2834,7 +2993,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
 
       if (_attachedFiles.isNotEmpty) {
-        print('📥 Loaded ${_attachedFiles.length} attached files from draft');
+        // print('📥 Loaded ${_attachedFiles.length} attached files from draft');
       }
 
       // Restore completion state and classification from chatData if present
@@ -2858,8 +3017,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             },
           );
 
-          print(
-              '🏁 [LoadDraft] Found existing summary via scan. Restoring COMPLETED state.');
+          // print(
+          // '🏁 [LoadDraft] Found existing summary via scan. Restoring COMPLETED state.');
           _isChatCompleted = true;
           _finalSummary = summaryMsg.content;
           _ChatStateHolder.allowInput = false;
@@ -2953,21 +3112,21 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   }
 
   Future<void> _saveDraft() async {
-    print('📝 [DRAFT UI] User clicked Save Draft');
+    // print('📝 [DRAFT UI] User clicked Save Draft');
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final complaintProv =
         Provider.of<ComplaintProvider>(context, listen: false);
 
     if (auth.user == null) {
-      print('📝 [DRAFT UI] User not logged in, aborting');
+      // print('📝 [DRAFT UI] User not logged in, aborting');
       return;
     }
 
     _setIsLoading(true);
-    print('📝 [DRAFT UI] Loading state set to true');
+    // print('📝 [DRAFT UI] Loading state set to true');
 
     try {
-      print('📝 [DRAFT UI] Preparing chatData for serialization...');
+      // print('📝 [DRAFT UI] Preparing chatData for serialization...');
       final chatData = {
         'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
         'answers': _ChatStateHolder.answers,
@@ -2989,9 +3148,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         }).toList(),
       };
 
-      print(
-          '📝 [DRAFT UI] Serialized ${_ChatStateHolder.messages.length} messages');
-      print('📝 [DRAFT UI] Serialized ${_attachedFiles.length} files');
+      // print(
+      // '📝 [DRAFT UI] Serialized ${_ChatStateHolder.messages.length} messages');
+      // print('📝 [DRAFT UI] Serialized ${_attachedFiles.length} files');
 
       // Generate a meaningful title from the user's initial complaint
       String title = "AI Legal Chat Draft";
@@ -3007,16 +3166,16 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           break;
         }
       }
-      print('📝 [DRAFT UI] Generated Title: $title');
+      // print('📝 [DRAFT UI] Generated Title: $title');
 
-      print('📝 [DRAFT UI] Handing over to ComplaintProvider...');
+      // print('📝 [DRAFT UI] Handing over to ComplaintProvider...');
       final success = await complaintProv.saveChatAsDraft(
         userId: auth.user!.uid,
         title: title,
         chatData: chatData,
         draftId: _currentDraftId,
       );
-      print('📝 [DRAFT UI] Provider return status: $success');
+      // print('📝 [DRAFT UI] Provider return status: $success');
 
       final localizations = AppLocalizations.of(context)!;
 
@@ -3031,8 +3190,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         );
       }
     } catch (e, stack) {
-      print('❌ [DRAFT UI] CRASH in _saveDraft: $e');
-      print('❌ [DRAFT UI] Stack Trace: $stack');
+      // print('❌ [DRAFT UI] CRASH in _saveDraft: $e');
+      // print('❌ [DRAFT UI] Stack Trace: $stack');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -3042,7 +3201,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         );
       }
     } finally {
-      print('📝 [DRAFT UI] Finalizing: setting loading false');
+      // print('📝 [DRAFT UI] Finalizing: setting loading false');
       _setIsLoading(false);
     }
   }
@@ -3157,7 +3316,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                                       width: 1,
                                     ),
                                     image: const DecorationImage(
-                                      image: AssetImage('assets/avatar.png'),
+                                      image: AssetImage(
+                                          'assets/police_avatar.png'),
                                       fit: BoxFit.contain,
                                     ),
                                   ),
@@ -3669,10 +3829,10 @@ class _ChatMessage {
   });
 
   static Widget _buildMessageImage(PlatformFile file) {
-    print(
-        '🎨 Rendering message image: ${file.name} (hasBytes: ${file.bytes != null})');
+    // print(
+    // '🎨 Rendering message image: ${file.name} (hasBytes: ${file.bytes != null})');
     if (file.bytes != null && file.bytes!.isNotEmpty) {
-      print('🎨 Image bytes length: ${file.bytes!.length}');
+      // print('🎨 Image bytes length: ${file.bytes!.length}');
       return Image.memory(
         file.bytes!,
         width: 130, // Slightly larger for better visibility
@@ -3680,24 +3840,24 @@ class _ChatMessage {
         fit: BoxFit.cover,
         cacheWidth: 260, // Optimization for web/gallery
         errorBuilder: (context, error, stackTrace) {
-          print('❌ Error rendering Image.memory: $error');
+          // print('❌ Error rendering Image.memory: $error');
           return _buildImagePlaceholder("Corrupt Img");
         },
       );
     } else if (!kIsWeb && file.path != null && file.path!.isNotEmpty) {
-      print('🎨 Image path: ${file.path}');
+      // print('🎨 Image path: ${file.path}');
       return Image.file(
         File(file.path!),
         width: 130,
         height: 130,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('❌ Error rendering Image.file: $error');
+          // print('❌ Error rendering Image.file: $error');
           return _buildImagePlaceholder("File Error");
         },
       );
     } else {
-      print('🎨 No image data available for ${file.name}');
+      // print('🎨 No image data available for ${file.name}');
       return _buildImagePlaceholder("Image Missing");
     }
   }
@@ -3736,10 +3896,10 @@ class _ChatMessage {
           file.path!.isNotEmpty) {
         try {
           sourceBytes = File(file.path!).readAsBytesSync();
-          print(
-              '🎞️ Mobile: Read ${sourceBytes.length} bytes from disk for thumbnail');
+          // print(
+          // '🎞️ Mobile: Read ${sourceBytes.length} bytes from disk for thumbnail');
         } catch (e) {
-          print('Error reading file for thumbnail: $e');
+          // print('Error reading file for thumbnail: $e');
         }
       }
 
@@ -3762,7 +3922,7 @@ class _ChatMessage {
       final jpg = dart_img.encodeJpg(thumbnail, quality: 50);
       return base64Encode(jpg);
     } catch (e) {
-      print('Error generating thumbnail: $e');
+      // print('Error generating thumbnail: $e');
       return null;
     }
   }
@@ -3797,7 +3957,7 @@ class _ChatMessage {
         try {
           decodedBytes = base64Decode(bytesBase64);
         } catch (e) {
-          print('Error decoding base64 thumbnail: $e');
+          // print('Error decoding base64 thumbnail: $e');
         }
       }
 

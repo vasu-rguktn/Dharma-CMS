@@ -602,8 +602,8 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                   ),
                   // DEBUG: Remove this later
                   Builder(builder: (c) {
-                    print(
-                        'DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
+                    // print(
+                        // 'DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
                     return const SizedBox.shrink();
                   }),
                 ],
@@ -689,14 +689,14 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   void _checkAndConsumeEvidence() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      print('🔍 [DEBUG] Petition Screen: Checking for evidence...');
+      // print('🔍 [DEBUG] Petition Screen: Checking for evidence...');
       final petitionProvider =
           Provider.of<PetitionProvider>(context, listen: false);
 
       // 1. Try Provider (Best for Web/Bytes & Mobile Stashing)
       if (petitionProvider.tempEvidence.isNotEmpty) {
-        debugPrint(
-            '📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
+        // debugPrint(
+            // '📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
         setState(() {
           // Avoid adding duplicates if already added
           final existingNames = _proofFiles.map((e) => e.name).toSet();

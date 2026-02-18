@@ -181,10 +181,10 @@ class _AppScaffoldState extends State<AppScaffold> {
             _buildDrawerSection(localizations.aiTools, isDark),
             _buildDrawerItem(context, Icons.chat, localizations.aiChat,
                 '/ai-legal-chat', isDark),
-            _buildDrawerItem(context, Icons.psychology,
-                localizations.legalQueries, '/legal-queries', isDark),
-            _buildDrawerItem(context, Icons.gavel,
-                localizations.legalSuggestion, '/legal-suggestion', isDark),
+            // _buildDrawerItem(context, Icons.psychology,
+            //     localizations.legalQueries, '/legal-queries', isDark),
+            // _buildDrawerItem(context, Icons.gavel,
+            //     localizations.legalSuggestion, '/legal-suggestion', isDark),
 
             _buildDrawerSection(localizations.caseManagement, isDark),
             _buildDrawerItem(context, Icons.archive,
@@ -242,8 +242,8 @@ class _AppScaffoldState extends State<AppScaffold> {
       ),
       selected: isActive,
       onTap: () {
-        print('📂 [SIDEBAR] Navigating to: $route');
-        print('📚 [SIDEBAR] Can pop before navigation: ${Navigator.of(context).canPop()}');
+        // print('📂 [SIDEBAR] Navigating to: $route');
+        // print('📚 [SIDEBAR] Can pop before navigation: ${Navigator.of(context).canPop()}');
         
         // Safely close the drawer if it's open, then navigate.
         if (Navigator.of(context).canPop()) {
@@ -252,7 +252,7 @@ class _AppScaffoldState extends State<AppScaffold> {
         
         // Use push instead of go to preserve navigation stack
         context.push(route).then((_) {
-          print('🔙 [SIDEBAR] Returned from: $route');
+          // print('🔙 [SIDEBAR] Returned from: $route');
         });
       },
     );

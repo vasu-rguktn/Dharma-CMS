@@ -21,7 +21,7 @@ class GeoCameraService {
       final status = await Permission.location.request();
       return status.isGranted;
     } catch (e) {
-      print('Error requesting location permission: $e');
+      // print('Error requesting location permission: $e');
       return false;
     }
   }
@@ -51,7 +51,7 @@ class GeoCameraService {
       // Check if location services are enabled
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('Location services are disabled');
+        // print('Location services are disabled');
         return null;
       }
 
@@ -62,14 +62,14 @@ class GeoCameraService {
           final requested = await Geolocator.requestPermission();
           if (requested == LocationPermission.denied || 
               requested == LocationPermission.deniedForever) {
-            print('Location permission denied on web');
+            // print('Location permission denied on web');
             return null;
           }
         }
       } else {
         final hasPermission = await hasLocationPermission();
         if (!hasPermission) {
-          print('Location permission not granted');
+          // print('Location permission not granted');
           return null;
         }
       }
@@ -86,7 +86,7 @@ class GeoCameraService {
 
       return position;
     } catch (e) {
-      print('Error getting location: $e');
+      // print('Error getting location: $e');
       return null;
     }
   }
@@ -112,7 +112,7 @@ class GeoCameraService {
       }
       return null;
     } catch (e) {
-      print('Error getting address: $e');
+      // print('Error getting address: $e');
       return null;
     }
   }

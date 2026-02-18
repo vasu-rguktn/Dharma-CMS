@@ -101,7 +101,7 @@ class _AssignPetitionDialogState extends State<AssignPetitionDialog> {
         }
       });
     } catch (e) {
-      debugPrint('Error loading hierarchy: $e');
+      // debugPrint('Error loading hierarchy: $e');
       setState(() => _hierarchyLoading = false);
     }
   }

@@ -14,7 +14,9 @@
 -keep public class * extends java.lang.Exception
 -keep class com.google.android.gms.** { *; }
 
-# Google Play Core (Deferred Components)
+# Google Play Core (Deferred Components & Legacy)
 -dontwarn com.google.android.play.core.splitinstall.**
 -dontwarn com.google.android.play.core.tasks.**
+-dontwarn com.google.android.play.core.common.PlayCoreDialogWrapperActivity
+-dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
 -dontwarn io.flutter.embedding.engine.deferredcomponents.PlayStoreDeferredComponentManager

@@ -198,8 +198,8 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                     .limit(1)
                     .get(const GetOptions(source: Source.server));
 
-                debugPrint(
-                    '🔍 Forgot Password Check: Email=$email, Found docs=${userQuery.docs.length}');
+                // debugPrint(
+                    // '🔍 Forgot Password Check: Email=$email, Found docs=${userQuery.docs.length}');
 
                 if (userQuery.docs.isEmpty) {
                   if (mounted) {

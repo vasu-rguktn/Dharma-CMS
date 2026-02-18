@@ -98,8 +98,8 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
     try {
       final provider = context.read<PetitionProvider>();
       
-      debugPrint('📤 [UPDATE] Starting petition update submission');
-      debugPrint('📸 Photos: ${_selectedPhotos.length}, 📄 Documents: ${_selectedDocuments.length}');
+      // debugPrint('📤 [UPDATE] Starting petition update submission');
+      // debugPrint('📸 Photos: ${_selectedPhotos.length}, 📄 Documents: ${_selectedDocuments.length}');
       
       final success = await provider.createPetitionUpdate(
         petitionId: widget.petition.id!,
@@ -112,7 +112,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
 
       if (mounted) {
         if (success) {
-          debugPrint('✅ [UPDATE] Petition update created successfully');
+          // debugPrint('✅ [UPDATE] Petition update created successfully');
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -122,7 +122,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
             ),
           );
         } else {
-          debugPrint('❌ [UPDATE] Failed to create petition update');
+          // debugPrint('❌ [UPDATE] Failed to create petition update');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Failed to add update. Please try again.'),
@@ -133,7 +133,7 @@ class _AddPetitionUpdateDialogState extends State<AddPetitionUpdateDialog> {
         }
       }
     } catch (e) {
-      debugPrint('❌ [UPDATE] Exception during update submission: $e');
+      // debugPrint('❌ [UPDATE] Exception during update submission: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

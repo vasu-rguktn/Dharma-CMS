@@ -58,8 +58,8 @@ class _ConsentPdfViewerState extends State<ConsentPdfViewer> {
       body: SfPdfViewer.asset(
         widget.assetPath,
         onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
-          debugPrint('❌ Syncfusion PDF Error: ${details.error}');
-          debugPrint('❌ Description: ${details.description}');
+          // debugPrint('❌ Syncfusion PDF Error: ${details.error}');
+          // debugPrint('❌ Description: ${details.description}');
           setState(() {
             _errorMessage = 'PDF File Corrupted or Invalid.\n${details.description}';
           });

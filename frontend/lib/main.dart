@@ -26,8 +26,8 @@ import 'package:Dharma/services/notification_service.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint(
-      '[FCM Background] Message received: ${message.notification?.title}');
+  // debugPrint(
+      // '[FCM Background] Message received: ${message.notification?.title}');
 }
 
 void main() async {

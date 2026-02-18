@@ -1,0 +1,4051 @@
+// lib/screens/ai_legal_chat_screen.dart
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/providers/complaint_provider.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image/image.dart'
+    as dart_img; // Renamed to avoid shadowing 'img' variables
+import 'package:Dharma/services/native_speech_recognizer.dart';
+import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/petition_provider.dart';
+
+// Static state holder to preserve chat state across navigation
+class _ChatStateHolder {
+  static final List<_ChatMessage> messages = [];
+  static final Map<String, String> answers = {};
+  static final List<PlatformFile> allAttachedFiles = []; // Cumulative evidence
+  static int currentQ = -2;
+  static bool hasStarted = false;
+  static bool allowInput = false;
+  static bool isLoading = false;
+  static bool errored = false;
+
+  // New fields for Evidence Check (Soft Block)
+  static bool hasAskedForEvidence = false;
+  static String? pendingBackendQuestion;
+
+  static void reset() {
+    messages.clear();
+    answers.clear();
+    allAttachedFiles.clear();
+    currentQ = -2;
+    hasStarted = false;
+    allowInput = false;
+    isLoading = false;
+    errored = false;
+    hasAskedForEvidence = false;
+    pendingBackendQuestion = null;
+  }
+}
+
+class AiLegalChatTestScreen extends StatefulWidget {
+  final Map<String, dynamic>? initialDraft;
+  const AiLegalChatTestScreen({super.key, this.initialDraft});
+
+  @override
+  State<AiLegalChatTestScreen> createState() => _AiLegalChatTestScreenState();
+}
+
+class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _inputFocus = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  final Dio _dio = Dio();
+  final ImagePicker _imagePicker = ImagePicker();
+  List<PlatformFile> _attachedFiles = []; // Store attached files
+
+  List<_ChatQ> _questions = [];
+
+  // Use static holder for state preservation
+  List<_ChatMessage> get _messages => _ChatStateHolder.messages;
+  Map<String, String> get _answers => _ChatStateHolder.answers;
+  int get _currentQ => _ChatStateHolder.currentQ;
+  bool get _allowInput => _ChatStateHolder.allowInput;
+  bool get _isLoading => _ChatStateHolder.isLoading;
+  bool get _errored => _ChatStateHolder.errored;
+
+  // Helper to check if we're running on a real Android device (not web)
+  bool get _isAndroid => !kIsWeb && Platform.isAndroid;
+
+  // Local state
+  bool _inputError = false;
+  bool _isChatCompleted = false; // Track final completion
+  bool _isNavigating = false; // Track if navigation is in progress
+  String? _finalSummary;
+  String? _finalClassification;
+  String? _finalOriginalClassification;
+  bool _isDynamicMode = false;
+  bool _isAnonymous = false; // Track anonymous petition state
+  List<Map<String, String>> _dynamicHistory = [];
+
+  // Complaint Flow State
+  String _complaintForWho = 'Self'; // 'Self' or 'Other'
+
+  static final Map<String, String> _supportedLanguages = {
+    'en': 'English',
+    'te': 'Telugu',
+    'hi': 'Hindi',
+    'ta': 'Tamil',
+    'kn': 'Kannada',
+    'ml': 'Malayalam',
+    'mr': 'Marathi',
+    'gu': 'Gujarati',
+    'bn': 'Bengali',
+    'pa': 'Punjabi',
+    'ur': 'Urdu',
+    'or': 'Odia',
+    'as': 'Assamese',
+  };
+
+  void _showLanguageSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (bottomSheetContext) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Select Chat Language",
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: Consumer<SettingsProvider>(
+                builder: (context, provider, _) {
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _supportedLanguages.length,
+                    itemBuilder: (context, index) {
+                      final code = _supportedLanguages.keys.elementAt(index);
+                      final name = _supportedLanguages.values.elementAt(index);
+
+                      // Check priority: chatLanguageCode -> locale -> 'en'
+                      final currentCode = provider.chatLanguageCode ??
+                          provider.locale?.languageCode ??
+                          'en';
+                      final isSelected = currentCode == code;
+
+                      return InkWell(
+                        onTap: () {
+                          // Update ONLY the chatbot language
+                          provider.setChatLanguage(code);
+                          Navigator.pop(bottomSheetContext);
+                          // Also update STT language if needed
+                          if (_isRecording) {
+                            _toggleRecording(); // Stop current
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.1)
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.grey[300]!,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isSelected
+                                        ? Theme.of(context).primaryColor
+                                        : Colors.grey[800],
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check_circle,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 24),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _showPetitionTypeDialog() async {
+    final localizations = AppLocalizations.of(context)!;
+
+    // Reset state on open
+    _isAnonymous = false;
+    _complaintForWho = 'Self';
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: orange.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.gavel_rounded,
+                          color: orange, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        localizations.selectPetitionType,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                Text(
+                  AppLocalizations.of(context)!.whoIsComplaintFor,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Option 1: Complaint for Self
+                _buildTypeOption(
+                  context,
+                  title: AppLocalizations.of(context)!.complaintForSelf,
+                  icon: Icons.person,
+                  color: Colors.blue.shade700,
+                  onTap: () {
+                    setState(() {
+                      _isAnonymous = false;
+                      _complaintForWho = 'Self';
+                    });
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                // Option 2: Complaint for Others
+                _buildTypeOption(
+                  context,
+                  title: AppLocalizations.of(context)!.complaintForOthers,
+                  icon: Icons.group,
+                  color: Colors.purple.shade700,
+                  onTap: () {
+                    setState(() {
+                      _isAnonymous = false;
+                      _complaintForWho = 'Other';
+                    });
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 12),
+
+                // Option 3: Anonymous (Subtle)
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isAnonymous = true;
+                      _complaintForWho =
+                          'Self'; // Anonymous is implied self regarding knowledge, but identity hidden
+                    });
+                    Navigator.of(context).pop(true);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.visibility_off_outlined,
+                            size: 18, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Text(
+                          localizations.anonymousPetition ?? "File Anonymously",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Cancel
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(localizations.close ?? 'Cancel'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Widget _buildTypeOption(BuildContext context,
+      {required String title,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios,
+                  size: 16, color: Colors.grey.shade400),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // STT (Speech-to-Text) variables
+  late final stt.SpeechToText _speech;
+  late final NativeSpeechRecognizer _nativeSpeech; // Android native ASR
+  late final FlutterTts _flutterTts;
+  bool _isRecording = false;
+  String _currentTranscript =
+      ''; // Live/streaming transcript (temporary, gets replaced)
+  String _finalizedTranscript =
+      ''; // Finalized transcript (locked when user stops/sends)
+  String _lastRecognizedText = ''; // Last text from SDK (for comparison)
+  DateTime? _recordingStartTime;
+  DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
+  bool _isRestarting =
+      false; // Track if restart is in progress to prevent BUSY errors
+  DateTime? _lastSpeechDetected; // Track when speech was last detected
+  DateTime? _lastDoneStatus; // Track when "done" status was last received
+  int _busyRetryCount = 0; // Track BUSY error retries
+  Timer? _listeningMonitorTimer; // Timer to monitor continuous listening
+  String? _currentSttLang; // Store current STT language for restarting
+  bool _ignoreAsrCallbacks = false; // Ignore ASR callbacks after sending
+  bool _isUpdatingFromAsr =
+      false; // Flag to prevent manual edit detection during ASR updates
+  // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
+
+  // Platform channel for muting system sounds during ASR
+  static const MethodChannel _soundChannel =
+      MethodChannel('com.dharma.sound_control');
+
+  // Orange color
+  static const Color orange = Color(0xFFFC633C);
+  static const Color background = Color(0xFFF5F8FE);
+
+  String? _currentDraftId;
+  bool _isSpeaking = false;
+  String _displayedCaptionText = '';
+  Timer? _typewriterTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.initialDraft != null) {
+      _loadDraft(widget.initialDraft!);
+    }
+
+    // SAFETY CHECK: If app was closed while loading, it might be stuck.
+    // Since we can't resume the network request easily, we reset the UI.
+    if (_ChatStateHolder.isLoading) {
+      _ChatStateHolder.isLoading = false;
+      _ChatStateHolder.allowInput = true;
+    }
+
+    _speech = stt.SpeechToText();
+    _nativeSpeech = NativeSpeechRecognizer();
+    _flutterTts = FlutterTts();
+
+    // Configure TTS for better pronunciation
+    _flutterTts.setVolume(1.0);
+    _flutterTts.setSpeechRate(0.25); // Significantly slower for better clarity
+    _flutterTts.setPitch(1.0);
+
+    // Setup TTS-ASR coordination to prevent feedback loop
+    _setupTTSHandlers();
+
+    // Setup native speech recognizer callbacks (Android only)
+    if (_isAndroid) {
+      _setupNativeSpeechCallbacks();
+    }
+
+    // Listen to text controller changes to sync with manual edits
+    _controller.addListener(() {
+      if (_isRecording && !_isUpdatingFromAsr) {
+        final currentText = _controller.text.trim();
+
+        // If user manually edited the text, sync ASR state
+        final expectedText = _finalizedTranscript.isEmpty
+            ? _currentTranscript
+            : '$_finalizedTranscript $_currentTranscript';
+
+        if (currentText != expectedText.trim()) {
+          // User manually edited - update state to match
+          final expectedTextTrimmed = expectedText.trim();
+          final textWasShortened =
+              currentText.length < expectedTextTrimmed.length;
+
+          // print(
+          // 'Manual edit detected: "$currentText" (was: "$expectedTextTrimmed", shortened: $textWasShortened)');
+          setState(() {
+            // Treat entire text as finalized (user's manual edit)
+            _finalizedTranscript = currentText;
+            _currentTranscript = '';
+            _lastRecognizedText = '';
+          });
+          // print('ASR state synced with manual edit');
+
+          // CRITICAL: If text was shortened (words removed), restart ASR to clear its buffer
+          // This prevents ASR from re-adding removed words when user speaks again
+          if (textWasShortened && _isRecording) {
+            // print('🔄 Text was shortened - restarting ASR to clear buffer...');
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (_isRecording && mounted) {
+                if (_isAndroid) {
+                  // Restart native Android ASR
+                  _nativeSpeech.stopListening();
+                  Future.delayed(const Duration(milliseconds: 200), () {
+                    if (_isRecording && _currentSttLang != null && mounted) {
+                      _nativeSpeech.startListening(language: _currentSttLang!);
+                    }
+                  });
+                } else {
+                  // Restart speech_to_text (iOS/Web)
+                  _seamlessRestart();
+                }
+              }
+            });
+          }
+        }
+      }
+    });
+  }
+
+  /// Setup native speech recognizer callbacks (Android only)
+  void _setupNativeSpeechCallbacks() {
+    _nativeSpeech.onPartialResult = (text) {
+      // Ignore if we just sent a message
+      if (_ignoreAsrCallbacks) {
+        // print('Ignoring ASR callback (just sent message)');
+        // Ensure controller stays clear
+        if (mounted) {
+          setState(() {
+            _controller.clear();
+          });
+        }
+        return;
+      }
+
+      if (mounted && _isRecording) {
+        setState(() {
+          _isUpdatingFromAsr = true;
+          // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+          String partialToShow;
+          if (_finalizedTranscript.isEmpty) {
+            // No finalized text yet - use ASR text directly
+            partialToShow = text;
+          } else {
+            // Have finalized text - extract only new words
+            partialToShow = extractNewWordsOnly(_finalizedTranscript, text);
+            // If extraction returns empty but ASR has text, use ASR text
+            if (partialToShow.isEmpty && text.isNotEmpty) {
+              partialToShow = text;
+            }
+          }
+
+          // Update current transcript
+          _currentTranscript = partialToShow;
+          _lastRecognizedText = text;
+          // Display: finalized + current partial
+          final displayText = _finalizedTranscript.isEmpty
+              ? _currentTranscript
+              : (_currentTranscript.isEmpty
+                  ? _finalizedTranscript
+                  : '$_finalizedTranscript $_currentTranscript');
+          _controller.text = displayText.trim();
+
+          _isUpdatingFromAsr = false;
+          // print(
+          // 'Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+        });
+      }
+    };
+
+    _nativeSpeech.onFinalResult = (text) {
+      // Ignore if we just sent a message
+      if (_ignoreAsrCallbacks) {
+        // print('Ignoring final ASR callback (just sent message)');
+        // Ensure controller stays clear
+        if (mounted) {
+          setState(() {
+            _controller.clear();
+          });
+        }
+        return;
+      }
+
+      if (mounted && _isRecording) {
+        setState(() {
+          _isUpdatingFromAsr = true;
+          // FINAL RESULT: Merge with finalized transcript
+          final merged = mergeAsrWithCurrentText(_finalizedTranscript, text);
+          _finalizedTranscript = merged;
+          _currentTranscript = '';
+          _lastRecognizedText = text;
+          _controller.text = merged;
+
+          _isUpdatingFromAsr = false;
+          // print('Native final (merged): "$text" -> "$merged"');
+        });
+      }
+    };
+
+    _nativeSpeech.onError = (error, message) {
+      // print('Native ASR error: $error - $message');
+      // Errors are handled by auto-restart in native code
+    };
+
+    _nativeSpeech.onListeningStarted = () {
+      // print('Native ASR started');
+    };
+
+    _nativeSpeech.onListeningStopped = () {
+      // print('Native ASR stopped');
+    };
+  }
+
+  /// Extract only genuinely new words from ASR text (for partial results)
+  /// Returns only words that aren't already at the end of current text
+  String extractNewWordsOnly(String currentText, String asrText) {
+    currentText = currentText.trim();
+    asrText = asrText.trim();
+
+    if (currentText.isEmpty) return asrText;
+
+    final normalizedCurrent =
+        currentText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final normalizedAsr =
+        asrText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    // If ASR doesn't start with current, return ASR as-is (might be completely new)
+    if (!normalizedAsr.startsWith(normalizedCurrent)) {
+      return asrText;
+    }
+
+    final currentWords = normalizedCurrent.split(' ');
+    final asrWords = normalizedAsr.split(' ');
+
+    if (asrWords.length <= currentWords.length) {
+      return ''; // No new words
+    }
+
+    final suffixWordsNormalized = asrWords.sublist(currentWords.length);
+    final asrWordsOriginal = asrText.split(RegExp(r'\s+'));
+
+    if (asrWordsOriginal.length <= currentWords.length) {
+      return '';
+    }
+
+    final suffixWordsOriginal = asrWordsOriginal.sublist(currentWords.length);
+
+    // CRITICAL: Check if suffix starts with words that don't match current text end
+    // This handles cases where ASR re-adds manually removed words
+    // Example: current="hello", ASR="hello world welcome", suffix="world welcome"
+    // "world" doesn't match end of "hello", so it was likely removed - skip it
+
+    // Strategy: If suffix has multiple words and first word doesn't match last word of current,
+    // skip the first word (it's likely a removed word that ASR is re-adding)
+    int startIndex = 0;
+    if (currentWords.isNotEmpty && suffixWordsNormalized.length > 1) {
+      final lastWordOfCurrent = currentWords.last.toLowerCase();
+      final firstWordOfSuffix = suffixWordsNormalized[0].toLowerCase();
+
+      // If first word of suffix doesn't match last word of current, skip it
+      // This handles: current="hello", suffix="world welcome" → skip "world", add "welcome"
+      if (firstWordOfSuffix != lastWordOfCurrent) {
+        startIndex = 1; // Skip first word, start from second
+      }
+    }
+
+    // Check each word individually - only add words that aren't already at the end
+    final wordsToAdd = <String>[];
+    for (int i = startIndex; i < suffixWordsNormalized.length; i++) {
+      final wordToCheck = suffixWordsNormalized[i];
+
+      // Check if this word is already at the end of current text
+      bool wordAlreadyPresent = false;
+      if (currentWords.isNotEmpty) {
+        // Check if the last word matches
+        if (currentWords.last.toLowerCase() == wordToCheck.toLowerCase()) {
+          wordAlreadyPresent = true;
+        }
+        // Also check if multiple words at the end match
+        if (!wordAlreadyPresent &&
+            currentWords.length >= (i - startIndex + 1)) {
+          final endWords =
+              currentWords.sublist(currentWords.length - (i - startIndex + 1));
+          final suffixSoFar = suffixWordsNormalized.sublist(startIndex, i + 1);
+          if (endWords.join(' ').toLowerCase() ==
+              suffixSoFar.join(' ').toLowerCase()) {
+            wordAlreadyPresent = true;
+          }
+        }
+      }
+
+      if (!wordAlreadyPresent) {
+        wordsToAdd.add(suffixWordsOriginal[i]);
+      } else {
+        // Word already present - stop here (don't add this or following words)
+        break;
+      }
+    }
+
+    return wordsToAdd.join(' ');
+  }
+
+  /// Merge ASR text with current text intelligently to prevent duplication
+  String mergeAsrWithCurrentText(String currentText, String asrText) {
+    currentText = currentText.trim();
+    asrText = asrText.trim();
+
+    if (currentText.isEmpty) return asrText;
+
+    // Normalize both texts for comparison (lowercase, single spaces)
+    final normalizedCurrent =
+        currentText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final normalizedAsr =
+        asrText.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    // If texts are exactly the same, return current (preserve user's capitalization)
+    if (normalizedCurrent == normalizedAsr) {
+      return currentText;
+    }
+
+    // If ASR text is already fully contained in current text, don't append
+    if (normalizedCurrent.contains(normalizedAsr)) {
+      return currentText;
+    }
+
+    // If ASR text starts with current text, extract only the suffix (new words)
+    if (normalizedAsr.startsWith(normalizedCurrent)) {
+      // Split into words for accurate comparison
+      final currentWords = normalizedCurrent.split(' ');
+      final asrWords = normalizedAsr.split(' ');
+
+      // If ASR has same or fewer words, it's already contained
+      if (asrWords.length <= currentWords.length) {
+        return currentText;
+      }
+
+      // Get the suffix words (words after currentText in ASR)
+      final suffixWordsNormalized = asrWords.sublist(currentWords.length);
+      if (suffixWordsNormalized.isEmpty) return currentText;
+
+      // Get suffix from original ASR text (preserve case)
+      final asrWordsOriginal = asrText.split(RegExp(r'\s+'));
+      if (asrWordsOriginal.length <= currentWords.length) {
+        return currentText;
+      }
+
+      final suffixWordsOriginal = asrWordsOriginal.sublist(currentWords.length);
+
+      // CRITICAL: Check each word individually - only add words that aren't already at the end
+      final wordsToAdd = <String>[];
+      for (int i = 0; i < suffixWordsNormalized.length; i++) {
+        final wordToCheck = suffixWordsNormalized[i];
+
+        // Check if this word is already at the end of current text
+        bool wordAlreadyPresent = false;
+        if (currentWords.isNotEmpty) {
+          // Check if the last word(s) match this word
+          // Check single word match
+          if (currentWords.last.toLowerCase() == wordToCheck.toLowerCase()) {
+            wordAlreadyPresent = true;
+          }
+          // Also check if multiple words at the end match (e.g., "purse purse" already there)
+          if (!wordAlreadyPresent && currentWords.length >= i + 1) {
+            final endWords =
+                currentWords.sublist(currentWords.length - (i + 1));
+            final suffixSoFar = suffixWordsNormalized.sublist(0, i + 1);
+            if (endWords.join(' ').toLowerCase() ==
+                suffixSoFar.join(' ').toLowerCase()) {
+              wordAlreadyPresent = true;
+            }
+          }
+        }
+
+        if (!wordAlreadyPresent) {
+          // This word is genuinely new - add it
+          wordsToAdd.add(suffixWordsOriginal[i]);
+        } else {
+          // This word is already at the end - skip it and all following words
+          // (because if "purse" is already there, we don't want to add "purse Pur" or "purse purse")
+          break;
+        }
+      }
+
+      // If no new words to add, return current text as-is
+      if (wordsToAdd.isEmpty) {
+        return currentText;
+      }
+
+      // Append only the genuinely new words
+      final suffix = wordsToAdd.join(' ');
+      final result =
+          (currentText + ' ' + suffix).replaceAll(RegExp(r'\s+'), ' ').trim();
+
+      // Safety check: prevent duplicate patterns
+      final normalizedResult =
+          result.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+      if (normalizedResult
+          .contains(normalizedCurrent + ' ' + normalizedCurrent)) {
+        return currentText; // Duplicate detected
+      }
+
+      return result;
+    }
+
+    // Find common prefix (for cases where texts don't align perfectly)
+    int minLen = math.min(currentText.length, asrText.length);
+    int i = 0;
+    while (i < minLen &&
+        currentText[i].toLowerCase() == asrText[i].toLowerCase()) {
+      i++;
+    }
+
+    // Get the suffix (new words from ASR)
+    final suffix = asrText.substring(i).trimLeft();
+    if (suffix.isEmpty) return currentText;
+
+    // Check if suffix is already at the end of current text (prevent duplicates)
+    final normalizedSuffix = suffix.toLowerCase().trim();
+    final currentWords = normalizedCurrent.split(' ');
+    final suffixWords = normalizedSuffix.split(' ');
+
+    // If the last few words of current text match the suffix words, don't append
+    if (currentWords.length >= suffixWords.length) {
+      final lastWords =
+          currentWords.sublist(currentWords.length - suffixWords.length);
+      if (lastWords.join(' ') == suffixWords.join(' ')) {
+        return currentText; // Suffix already present, don't duplicate
+      }
+    }
+
+    // Append only if there's genuinely new content
+    return (currentText + ' ' + suffix).replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  /// Correct common speech recognition mistakes
+  String _correctCommonMistakes(String text) {
+    // Fix common misrecognitions
+    // "triple it news video" → "IIIT Nuzvid"
+    text = text.replaceAll(
+        RegExp(r'triple\s*it\s*news\s*video', caseSensitive: false),
+        'IIIT Nuzvid');
+    text =
+        text.replaceAll(RegExp(r'triple\s*it', caseSensitive: false), 'IIIT');
+    text = text.replaceAll(
+        RegExp(r'news\s*video', caseSensitive: false), 'Nuzvid');
+
+    // Add more corrections as you discover them
+    // Example: text = text.replaceAll(RegExp(r'wrong\s*word', caseSensitive: false), 'correct word');
+
+    return text;
+  }
+
+  /// Setup TTS handlers to coordinate with ASR (prevent feedback loop)
+  void _setupTTSHandlers() {
+    // When TTS starts speaking, pause ASR to prevent feedback
+    _flutterTts.setStartHandler(() {
+      // print('TTS started - pausing ASR');
+      if (mounted) {
+        setState(() {
+          _isSpeaking = true;
+        });
+      }
+      _pauseASRForTTS();
+    });
+
+    // When TTS finishes, resume ASR automatically
+    _flutterTts.setCompletionHandler(() {
+      // print('TTS completed - resuming ASR');
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
+      _resumeASRAfterTTS();
+    });
+
+    // Handle TTS errors
+    _flutterTts.setErrorHandler((msg) {
+      // print('TTS error: $msg - resuming ASR');
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
+      _resumeASRAfterTTS();
+    });
+  }
+
+  /// Pause ASR when TTS is speaking (prevent feedback loop)
+  void _pauseASRForTTS() {
+    if (_isRecording && mounted) {
+      // print('Pausing ASR for TTS...');
+
+      if (_isAndroid) {
+        // Use native recognizer on Android
+        _nativeSpeech.stopListening();
+      } else {
+        // Use speech_to_text on iOS
+        _speech.stop();
+        _listeningMonitorTimer?.cancel();
+      }
+    }
+  }
+
+  /// Resume ASR after TTS finishes
+  void _resumeASRAfterTTS() {
+    // DISABLED for "Auto-Stop" feature.
+    // The user wants the mic to stop after they speak, not continuous conversation where mic stays open.
+    // We only resume if we were explicitly in a specialized "continuous" mode, which we are removing to fix the overlapping issue.
+
+    // Original Code:
+    /*
+    if (_isRecording && mounted) {
+      print('Resuming ASR after TTS...');
+    ...
+    }
+    */
+    // print('TTS finished - Mic remains OFF (waiting for user input)');
+  }
+
+  /// Centralized function to reset chat state
+  void _resetChatState({bool clearMessages = true, bool stopASR = false}) {
+    // print(
+    // 'Resetting chat state: clearMessages=$clearMessages, stopASR=$stopASR');
+
+    setState(() {
+      // Reset ASR state
+      _finalizedTranscript = '';
+      _currentTranscript = '';
+      _lastRecognizedText = '';
+
+      // Clear input
+      _controller.clear();
+      _inputError = false;
+
+      // Clear chat messages if requested
+      if (clearMessages) {
+        _ChatStateHolder.messages.clear();
+        _ChatStateHolder.answers.clear();
+        _ChatStateHolder.currentQ = 0;
+        _ChatStateHolder.hasStarted = false;
+        _dynamicHistory.clear();
+      }
+
+      // Stop ASR if requested
+      if (stopASR && _isRecording) {
+        _isRecording = false;
+        _recordingStartTime = null;
+        _listeningMonitorTimer?.cancel();
+      }
+    });
+
+    // Stop TTS
+    try {
+      _flutterTts.stop();
+    } catch (_) {}
+
+    // Stop ASR if requested
+    if (stopASR) {
+      try {
+        if (_isAndroid) {
+          _nativeSpeech.stopListening();
+        } else {
+          _speech.stop();
+          _speech.cancel();
+        }
+      } catch (_) {}
+    }
+  }
+
+  /// Handle back button press
+  Future<bool> _onWillPop() async {
+    // If chat is active, show confirmation dialog
+    if (_messages.isNotEmpty || _isRecording) {
+      await _showExitDialog();
+      return false; // Prevent navigation
+    }
+    return true; // Allow navigation
+  }
+
+  /// Show exit confirmation dialog
+  Future<void> _showExitDialog() async {
+    final localizations = AppLocalizations.of(context)!;
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(localizations.aiChatInProgressTitle),
+          content: Text(localizations.aiChatInProgressMessage),
+          actions: [
+            // CLEAR CHAT button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('clear'),
+              child: Text(
+                localizations.clearChat,
+                style:
+                    TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
+            ),
+
+            // CLOSE CHAT button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('close'),
+              child: Text(
+                localizations.closeChat,
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ),
+
+            // NO button
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('no'),
+              child: Text(localizations.no),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Handle user choice
+    if (result == 'clear') {
+      _clearChat();
+    } else if (result == 'close') {
+      _closeChat();
+    }
+    // If 'no', do nothing (dialog closes, chat continues)
+  }
+
+  /// Clear chat but stay on screen
+  void _clearChat() {
+    _resetChatState(clearMessages: true, stopASR: false);
+    // Restart chat flow for fresh conversation
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _startChatFlow();
+      }
+    });
+  }
+
+  /// Close chat and navigate away
+  void _closeChat() {
+    _resetChatState(clearMessages: true, stopASR: true);
+    context.go('/dashboard'); // Navigate to dashboard
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Safety check: If we have no messages, we MUST treat it as a fresh start.
+    // This fixes the bug where navigating away without sending a message (empty state)
+    // would leave hasStarted=true, causing the next open to get stuck (modal wouldn't show).
+    if (_ChatStateHolder.messages.isEmpty) {
+      _ChatStateHolder.hasStarted = false;
+    }
+
+    // Only start chat flow if we haven't started
+    if (!_ChatStateHolder.hasStarted) {
+      _ChatStateHolder.hasStarted = true;
+      _startChatFlow();
+    } else {
+      // Returning to existing chat - preserve state
+      // Ensure input is enabled if we're in the middle of a dynamic turn
+      if (!_isLoading && !_errored) {
+        _setAllowInput(true);
+        setState(() {});
+      }
+    }
+  }
+
+  Future<void> _startChatFlow() async {
+    // Show petition type selection first
+    await Future.delayed(Duration.zero); // Ensure context is ready
+    if (!mounted) return;
+
+    final bool proceed = await _showPetitionTypeDialog();
+
+    if (!proceed) {
+      if (mounted) {
+        _ChatStateHolder.reset();
+        context.go('/dashboard');
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    final localizations = AppLocalizations.of(context)!;
+
+    setState(() {
+      _ChatStateHolder.messages.clear();
+      _ChatStateHolder.messages.clear();
+      _dynamicHistory.clear();
+      _ChatStateHolder.answers.clear();
+      _setCurrentQ(0);
+      _setAllowInput(false);
+      _setErrored(false);
+    });
+
+    // Customize welcome message based on selection
+    if (_isAnonymous) {
+      _addBot(localizations.anonymousPetitionConfirm);
+    } else {
+      _addBot(localizations.welcomeToDharma);
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+    _addBot(localizations.letUsBegin);
+    await Future.delayed(const Duration(seconds: 1)); // Small delay for flow
+
+    // Explicitly ask for description instead of calling backend immediately
+    String startMsg = localizations.detailsQuestion;
+
+    // Custom start message for 'Others'
+    if (_complaintForWho == 'Other') {
+      startMsg = localizations.filingForSomeoneElse;
+    }
+
+    _addBot(startMsg);
+    _speak(startMsg);
+
+    setState(() {
+      _setAllowInput(true); // Wait for user info
+    });
+  }
+
+  // Helper methods to sync local state and Holder
+  void _setAllowInput(bool value) {
+    setState(() {
+      _ChatStateHolder.allowInput = value;
+    });
+  }
+
+  void _setCurrentQ(int value) {
+    setState(() {
+      _ChatStateHolder.currentQ = value;
+    });
+  }
+
+  void _setIsLoading(bool value) {
+    setState(() {
+      _ChatStateHolder.isLoading = value;
+    });
+  }
+
+  void _setErrored(bool value) {
+    setState(() {
+      _ChatStateHolder.errored = value;
+    });
+  }
+
+  void _addBot(String content) {
+    _ChatStateHolder.messages
+        .add(_ChatMessage(user: 'AI', content: content, isUser: false));
+    setState(() {});
+    _scrollToEnd();
+  }
+
+  void _addUser(String content, {List<PlatformFile> files = const []}) {
+    _ChatStateHolder.messages.add(_ChatMessage(
+      user: 'You',
+      content: content,
+      isUser: true,
+      files: List.from(files), // Copy to prevent mutation issues
+    ));
+    setState(() {});
+    _scrollToEnd();
+  }
+
+  void _scrollToEnd() {
+    // small delay to allow list to update
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _processDynamicStep() async {
+    final localizations = AppLocalizations.of(context)!;
+
+    setState(() {
+      _setIsLoading(true);
+      _setAllowInput(false);
+      _setErrored(false);
+    });
+
+    // Determine base URL robustly
+    // Determine base URL robustly
+    String baseUrl;
+    if (kIsWeb) {
+      // on web you probably want to call your absolute backend URL
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    } else {
+      // iOS simulator / other platforms
+      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+    }
+    // if (kIsWeb) {
+    //   baseUrl = "http://127.0.0.1:8000";
+    // } else if (Platform.isAndroid) {
+    //   // Android Emulator uses 10.0.2.2 to access host localhost
+    //   baseUrl = "http://10.0.2.2:8000";
+    // } else {
+    //   // iOS Simulator and others
+    //   baseUrl = "http://127.0.0.1:8000";
+    // }
+    final settings = context.read<SettingsProvider>();
+    final localeCode = settings.chatLanguageCode ??
+        settings.locale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    // Construct Payload using FormData to support Files
+    final formData = FormData();
+
+    // PROCESS FILES (Optimization: Do not upload bytes, just pass reference)
+    String attachmentNote = "";
+    if (_attachedFiles.isNotEmpty) {
+      // print('📎 Processing ${_attachedFiles.length} files (Reference Only)...');
+      for (final file in _attachedFiles) {
+        // Track globally for final handover to Petition Screen
+        // Check by name as simplistic dedup
+        if (!_ChatStateHolder.allAttachedFiles
+            .any((f) => f.name == file.name && f.size == file.size)) {
+          _ChatStateHolder.allAttachedFiles.add(file);
+        }
+
+        final filename = file.name;
+        attachmentNote +=
+            "\n[System: User attached file '$filename' (Reference Only)]";
+      }
+      // NOTE: We do NOT add files to formData.files to avoid network latency.
+      // The backend will see the text note and acknowledge it.
+    }
+
+    // START: Payload Construction with injected attachment note
+    List<Map<String, dynamic>> payloadHistory = [];
+    // Deep copy history to modify it
+    for (var item in _dynamicHistory) {
+      payloadHistory.add(Map<String, dynamic>.from(item));
+    }
+
+    String finalInitialDetails = _ChatStateHolder.answers['details'] ?? '';
+
+    // Inject context for complaint type (Self vs Other)
+    if (_complaintForWho == 'Other') {
+      finalInitialDetails +=
+          " [SYSTEM INSTRUCTION: The user is filing this complaint ON BEHALF OF SOMEONE ELSE. You MUST explicitly ask for and record details for TWO people: 1) The VICTIM (who suffered the incident) and 2) The COMPLAINANT (the user filing this report). Ensure you get names and contact info for BOTH if available and relevant. Treat this exactly like a normal complaint investigation otherwise.And need to investigate about the complaint properly.]";
+    }
+
+    // Inject strong instruction for anonymous petitions
+    if (_isAnonymous) {
+      finalInitialDetails +=
+          " [SYSTEM INSTRUCTION: This is an ANONYMOUS petition. Do NOT ask for the user's name or address. However, you MUST verify the phone number at the end for tracking. INVESTIGATE THE CRIME FULLY (Incident, Date, Location, Evidence) just like a normal petition. Do NOT shorten the investigation.]";
+    }
+
+    if (attachmentNote.isNotEmpty) {
+      if (payloadHistory.isNotEmpty) {
+        // Append to last user message in history
+        var lastMsg = payloadHistory.last;
+        if (lastMsg['role'] == 'user') {
+          lastMsg['content'] = "${lastMsg['content']} $attachmentNote";
+        } else {
+          // Fallback if last msg was AI (rare)
+          finalInitialDetails += " $attachmentNote";
+        }
+      } else {
+        // First turn - append to initial details
+        finalInitialDetails += " $attachmentNote";
+      }
+    }
+
+    // Add text fields
+    // print(
+    // '🔍 DEBUG: Building Request. Current Answers: ${_ChatStateHolder.answers}');
+    formData.fields.add(
+        MapEntry('full_name', _ChatStateHolder.answers['full_name'] ?? ''));
+    formData.fields
+        .add(MapEntry('address', _ChatStateHolder.answers['address'] ?? ''));
+    final phone = _ChatStateHolder.answers['phone'] ??
+        _ChatStateHolder.answers['phone_number'] ??
+        '';
+    formData.fields.add(MapEntry('phone', phone));
+    formData.fields.add(MapEntry(
+        'complaint_type', _ChatStateHolder.answers['complaint_type'] ?? ''));
+    formData.fields.add(MapEntry('initial_details', finalInitialDetails));
+    formData.fields.add(MapEntry('language', localeCode));
+    formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
+
+    // Serialize chat history
+    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
+
+    // print('🚀 Sending to backend (FormData):');
+    // print('   History items: ${_dynamicHistory.length}');
+    // print('   Files attached: ${_attachedFiles.length}');
+
+    try {
+      final resp = await _dio
+          .post(
+            '$baseUrl/complaint/chat-step',
+            data: formData,
+            // Header content-type is auto-set by FormData
+          )
+          .timeout(const Duration(
+              seconds: 90)); // Increased timeout for file uploads coverage
+
+      final data = resp.data;
+      // print("Backend Response: $data"); // DEBUG LOG
+
+      if (_attachedFiles.isNotEmpty) {
+        setState(() {
+          _attachedFiles.clear();
+        });
+      }
+
+      // SYNC BACKEND DETECTED INFO (Fix for Name/Address Loop)
+      if (data['detected_info'] != null) {
+        try {
+          // Explicit safe casting
+          final Map<String, dynamic> detected =
+              Map<String, dynamic>.from(data['detected_info']);
+
+          if (detected.containsKey('full_name') &&
+              detected['full_name'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['full_name'] =
+                detected['full_name'].toString();
+          }
+          if (detected.containsKey('address') &&
+              detected['address'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['address'] =
+                detected['address'].toString();
+          }
+          if (detected.containsKey('phone') &&
+              detected['phone'].toString().isNotEmpty) {
+            _ChatStateHolder.answers['phone'] = detected['phone'].toString();
+          }
+        } catch (e) {
+          // print('Error syncing detected info: $e');
+        }
+      }
+
+      if (data['status'] == 'question') {
+        String question = data['message'] ?? '';
+        if (question.trim().isEmpty) {
+          question = "Could you please provide more details?";
+        }
+
+        // Localize the question if it matches known backend strings
+        question = _localizeBackendMessage(question, localizations);
+
+        // --- INTERCEPTION FOR EVIDENCE (Soft Block) ---
+        // If the question is about Personal Details (Name, Address, Phone)
+        // AND we haven't asked for evidence yet
+        // AND no files are attached...
+        final qLowerForEvidence = question.toLowerCase();
+        final isPersonalDetailQuestion = qLowerForEvidence.contains('name') ||
+            qLowerForEvidence.contains('address') ||
+            qLowerForEvidence.contains('phone') ||
+            qLowerForEvidence.contains('contact'); // Broad check
+
+        if (isPersonalDetailQuestion &&
+            _attachedFiles.isEmpty &&
+            !_ChatStateHolder.hasAskedForEvidence) {
+          // print('🕵️ Evidence Check Interception: Soft Block triggered');
+
+          // 1. Store the original question to ask LATER
+          _ChatStateHolder.pendingBackendQuestion = question;
+
+          // 2. Mark as asked so we don't ask again
+          _ChatStateHolder.hasAskedForEvidence = true;
+
+          // 3. Ask for evidence locally
+          question = localizations.evidenceRequest ??
+              "Do you have any evidence (photos/documents)? Please attach them now or type 'No' to continue.";
+        }
+        // ----------------------------------------------
+
+        // INTERCEPTION: If the AI outputs the summary but backend didn't mark as 'done'
+        final qLower = question.toLowerCase();
+        if (qLower.contains('complaint summary') ||
+            qLower.contains('formal petition') ||
+            (qLower.contains('incident details') &&
+                qLower.contains('incident location'))) {
+          // print(
+          // "🕵️ Intercepted Summary in Chat Message - Forcing Completion (Frontend)");
+
+          // IMPROVED EXTRACTION: Extract classification from the text
+          String classification = "General Complaint";
+
+          // STEP 1: Scan current message + history for "Cognizable" or "Non-Cognizable"
+          String allTextToScan = question;
+          for (var m in _ChatStateHolder.messages) {
+            allTextToScan += "\n${m.content}";
+          }
+          final allUpper = allTextToScan.toUpperCase();
+
+          // Fuzzy Regex for common misspellings: COGNIZABLE, COGNIGIBLE, COGNINGIBLE
+          final ncRegex =
+              RegExp(r'.*NON-?COGNIZ?G?N?IBLE.*', caseSensitive: false);
+          final cRegex = RegExp(r'(?<!NON-)COGNIZ?G?N?IBLE.*',
+              caseSensitive: false); // Negative lookbehind for NON-
+
+          if (allUpper.contains("NON-COGNIZABLE") ||
+              allUpper.contains("NON COGNIZABLE") ||
+              ncRegex.hasMatch(allTextToScan)) {
+            final matches = ncRegex.allMatches(allTextToScan);
+            if (matches.isNotEmpty) {
+              classification = matches.last
+                  .group(0)!
+                  .trim()
+                  .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+            } else {
+              classification =
+                  "NON-COGNIZABLE - Offence permits magistrate order.";
+            }
+          } else if (allUpper.contains("COGNIZABLE") ||
+              cRegex.hasMatch(allTextToScan)) {
+            final matches = cRegex.allMatches(allTextToScan);
+            if (matches.isNotEmpty) {
+              classification = matches.last
+                  .group(0)!
+                  .trim()
+                  .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+            } else {
+              classification = "COGNIZABLE - Offence permits police action.";
+            }
+          } else {
+            // STEP 2: Fallback to labeled fields in current message
+            final classificationRegex = RegExp(
+                r'(?:Classification|Offence Classification|Legal Status)\s*[:*-]+\s*(.*)',
+                caseSensitive: false);
+            final cMatch = classificationRegex.firstMatch(question);
+
+            if (cMatch != null && cMatch.group(1) != null) {
+              classification = cMatch.group(1)!.trim();
+            } else {
+              // SECONDARY: Try to find the "Complaint Type" label
+              final typeRegex = RegExp(
+                  r'(?:Complaint Type|Category)\s*[:*-]+\s*(.*)',
+                  caseSensitive: false);
+              final tMatch = typeRegex.firstMatch(question);
+              if (tMatch != null && tMatch.group(1) != null) {
+                classification = tMatch.group(1)!.trim();
+              } else {
+                // Fallback: Look for BNS or specialized keywords
+                if (question.contains('BNS')) {
+                  final bnsRegex = RegExp(r'\(.*BNS.*\)', caseSensitive: false);
+                  final bMatch = bnsRegex.firstMatch(question);
+                  if (bMatch != null) {
+                    classification =
+                        bMatch.group(0)!.replaceAll(RegExp(r'[()]'), '');
+                  }
+                } else if (qLower.contains("theft")) {
+                  classification = "Theft";
+                } else if (qLower.contains("assault")) {
+                  classification = "Assault";
+                } else if (qLower.contains("cyber")) {
+                  classification = "Cyber Crime";
+                }
+              }
+            }
+          }
+
+          // Cleanup markdown bolding/stars from the final string
+          classification =
+              classification.replaceAll('*', '').replaceAll('#', '').trim();
+          // print("🕵️ Intercepted Classification: $classification");
+
+          final syntheticData = {
+            'formal_summary': question,
+            'classification': classification,
+            'original_classification': classification,
+            'localized_fields': {}
+          };
+
+          _handleFinalResponse(syntheticData);
+          return;
+        }
+        _addBot(question);
+        _speak(question);
+
+        // Add AI's question to history so LLM knows what it asked
+        _dynamicHistory.add({'role': 'assistant', 'content': question});
+
+        setState(() {
+          _setIsLoading(false);
+          _setAllowInput(true);
+          _inputError = false;
+        });
+      } else if (data['status'] == 'done') {
+        // FINISHED
+        final finalResp = data['final_response'];
+        _handleFinalResponse(finalResp);
+      }
+    } catch (e) {
+      String msg = localizations.somethingWentWrong;
+
+      // Enhanced error logging for debugging
+      // print('❌ Chat step error: $e');
+
+      if (e is DioException) {
+        // print('HTTP Status Code: ${e.response?.statusCode}');
+        // print('Response Data: ${e.response?.data}');
+
+        if (e.response != null && e.response?.data != null) {
+          // try to show server-provided message if present
+          try {
+            final d = e.response!.data;
+            if (d is Map && d['detail'] != null)
+              msg = d['detail'].toString();
+            else if (d is Map && d['message'] != null)
+              msg = d['message'].toString();
+            else if (d is String) msg = d;
+          } catch (_) {}
+        }
+      }
+
+      _addBot(msg);
+      setState(() {
+        _setIsLoading(false);
+        _setAllowInput(true); // Allow retry?
+        _setErrored(true);
+      });
+    }
+  }
+
+  Future<void> _navigateToDetails() async {
+    if (!mounted || _isNavigating) return;
+
+    // Set lock to prevent double navigation
+    setState(() => _isNavigating = true);
+
+    // print('🚀 [DEBUG] Chat Screen: Navigating to Details Screen via Helper...');
+
+    // Pack Chat Data for "Save Draft" on Details Screen
+    final chatData = {
+      'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
+      'answers': _ChatStateHolder.answers,
+      'currentQ': _ChatStateHolder.currentQ,
+      'isAnonymous': _isAnonymous,
+      'dynamicHistory': _dynamicHistory,
+      // Attached files are cleared after processing, so this will be empty list usually
+      'attachedFiles': [],
+    };
+
+    try {
+      await context.push(
+        '/ai-chatbot-details',
+        extra: {
+          'answers': Map<String, String>.from(_ChatStateHolder.answers),
+          'summary': _finalSummary ?? '',
+          'classification': _finalClassification ?? '',
+          'originalClassification': _finalOriginalClassification ?? '',
+          'evidencePaths': [], // We use Provider for file transfer now
+          'chatData': chatData,
+          'draftId': _currentDraftId,
+        },
+      );
+    } finally {
+      // Reset lock when user comes back OR if navigation fails
+      if (mounted) {
+        setState(() => _isNavigating = false);
+      }
+    }
+  }
+
+  /// Helper to map backend English strings to localized versions
+  String _localizeBackendMessage(
+      String message, AppLocalizations localizations) {
+    final lowerMsg = message.toLowerCase().trim();
+
+    // Flexible matching for common backend questions
+    if (lowerMsg.contains('what is your full name')) {
+      return localizations.fullNameQuestion;
+    }
+    if (lowerMsg.contains('where do you live') ||
+        lowerMsg.contains('address')) {
+      return localizations.addressQuestion;
+    }
+    if (lowerMsg.contains('mobile number') ||
+        lowerMsg.contains('phone number')) {
+      return localizations.phoneQuestion;
+    }
+    if (lowerMsg.contains('what type of complaint')) {
+      return localizations.complaintTypeQuestion;
+    }
+
+    // Return original if no match found
+    return message;
+  }
+
+  Future<void> _handleFinalResponse(dynamic data) async {
+    final localizations = AppLocalizations.of(context)!;
+
+    _addBot(localizations.complaintSummary);
+    final formalSummary = (data is Map && data['formal_summary'] != null)
+        ? data['formal_summary'].toString()
+        : '(no summary)';
+    String classification = (data is Map && data['classification'] != null)
+        ? data['classification'].toString()
+        : '(none)';
+
+    // ROBUSTNESS: Scan chat history to override classification if LLM mentioned it in a bubble
+    // This catches cases where the AI split the classification into a separate bubble.
+    final historyText =
+        _ChatStateHolder.messages.map((m) => m.content).join("\n") +
+            "\n" +
+            formalSummary;
+    final upperHistory = historyText.toUpperCase();
+
+    // Fuzzy Regex for common misspellings: COGNIZABLE, COGNIGIBLE, COGNINGIBLE
+    final ncRegex = RegExp(r'.*NON-?COGNIZ?G?N?IBLE.*', caseSensitive: false);
+    final cRegex = RegExp(r'(?<!NON-)COGNIZ?G?N?IBLE.*', caseSensitive: false);
+
+    if (upperHistory.contains("NON-COGNIZABLE") ||
+        upperHistory.contains("NON COGNIZABLE") ||
+        ncRegex.hasMatch(historyText)) {
+      final matches = ncRegex.allMatches(historyText);
+      if (matches.isNotEmpty) {
+        classification = matches.last
+            .group(0)!
+            .trim()
+            .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+        // print(
+        // "💡 Found NON-COGNIZABLE in history sweep (fuzzy). Overriding classification.");
+      }
+    } else if (upperHistory.contains("COGNIZABLE") ||
+        cRegex.hasMatch(historyText)) {
+      final matches = cRegex.allMatches(historyText);
+      if (matches.isNotEmpty) {
+        classification = matches.last
+            .group(0)!
+            .trim()
+            .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '');
+        // print(
+        // "💡 Found COGNIZABLE in history sweep (fuzzy). Overriding classification.");
+      }
+    }
+
+    String finalOriginal = "NON-COGNIZABLE";
+    if (classification.toUpperCase().contains("NON-COGNIZABLE") ||
+        classification.toUpperCase().contains("NON COGNIZABLE") ||
+        ncRegex.hasMatch(classification)) {
+      finalOriginal = "NON-COGNIZABLE";
+    } else if (classification.toUpperCase().contains("COGNIZABLE") ||
+        cRegex.hasMatch(classification)) {
+      finalOriginal = "COGNIZABLE";
+    }
+
+    final originalClassification =
+        (data is Map && data['original_classification'] != null)
+            ? data['original_classification'].toString()
+            : finalOriginal;
+
+    // Store in State for UI button
+    if (mounted) {
+      setState(() {
+        _finalSummary = formalSummary;
+        _finalClassification = classification;
+        _finalOriginalClassification = originalClassification;
+        _isChatCompleted = true; // Mark as done
+      });
+    }
+
+    final Map<String, String> localizedAnswers =
+        Map<String, String>.from(_ChatStateHolder.answers);
+
+    // Extract new summary fields explicitly
+    if (data is Map) {
+      if (data['accused_details'] != null)
+        localizedAnswers['accused_details'] =
+            data['accused_details'].toString();
+      if (data['stolen_property'] != null)
+        localizedAnswers['stolen_property'] =
+            data['stolen_property'].toString();
+      if (data['witnesses'] != null)
+        localizedAnswers['witnesses'] = data['witnesses'].toString();
+      if (data['evidence_status'] != null)
+        localizedAnswers['evidence_status'] =
+            data['evidence_status'].toString();
+
+      // Also ensure station details are captured if not already
+      if (data['selected_police_station'] != null)
+        localizedAnswers['selected_police_station'] =
+            data['selected_police_station'].toString();
+      if (data['police_station_reason'] != null)
+        localizedAnswers['police_station_reason'] =
+            data['police_station_reason'].toString();
+      if (data['station_confidence'] != null)
+        localizedAnswers['station_confidence'] =
+            data['station_confidence'].toString();
+      if (data['date_of_complaint'] != null)
+        localizedAnswers['date_of_complaint'] =
+            data['date_of_complaint'].toString();
+      // Ensure incident address is captured
+      if (data['incident_address'] != null)
+        localizedAnswers['incident_address'] =
+            data['incident_address'].toString();
+      if (data['incident_details'] != null)
+        localizedAnswers['incident_details'] =
+            data['incident_details'].toString();
+    }
+
+    final localizedFields = (data is Map) ? data['localized_fields'] : null;
+    if (localizedFields is Map) {
+      localizedFields.forEach((key, value) {
+        if (key is String && value != null) {
+          localizedAnswers[key] = value.toString();
+        }
+      });
+    }
+
+    // update stored answers
+    _ChatStateHolder.answers
+      ..clear()
+      ..addAll(localizedAnswers);
+
+    _addBot(formalSummary);
+    _addBot(localizations.classification(classification));
+
+    if (mounted) {
+      setState(() {
+        _setIsLoading(false);
+        _setAllowInput(false);
+      });
+    }
+
+    // STOP ASR when chat completes
+    if (_isRecording) {
+      // print('Chat completed - stopping ASR');
+      if (_isAndroid) {
+        _nativeSpeech.stopListening();
+      } else {
+        _speech.stop();
+        _speech.cancel();
+        _listeningMonitorTimer?.cancel();
+      }
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+      });
+    }
+
+    // Stash files directly to Provider
+    if (_ChatStateHolder.allAttachedFiles.isNotEmpty) {
+      // print(
+      // '💾 [DEBUG] Chat Screen: Attempting to stash ${_ChatStateHolder.allAttachedFiles.length} files');
+      try {
+        Provider.of<PetitionProvider>(context, listen: false)
+            .setTempEvidence(_ChatStateHolder.allAttachedFiles);
+        // print('✅ [DEBUG] Chat Screen: Successfully stashed files in Provider');
+      } catch (e) {
+        // print('❌ [DEBUG] Chat Screen: Error stashing files: $e');
+      }
+    }
+
+    // Auto-navigate after delay
+    Future.delayed(const Duration(seconds: 1), _navigateToDetails);
+  }
+
+  void _handleSend() async {
+    if (mounted) {
+      setState(() {
+        _displayedCaptionText = '';
+        _typewriterTimer?.cancel();
+        _isSpeaking = false;
+      });
+    }
+    try {
+      await _flutterTts.stop();
+    } catch (_) {}
+
+    // Capture the final message to send BEFORE resetting state
+    String finalMessage = '';
+
+    // If recording is active, finalize the current transcript
+    if (_isRecording) {
+      // Finalize all accumulated text for this message
+      if (_currentTranscript.isNotEmpty) {
+        if (_finalizedTranscript.isNotEmpty) {
+          finalMessage = '$_finalizedTranscript $_currentTranscript'.trim();
+        } else {
+          finalMessage = _currentTranscript.trim();
+        }
+      } else {
+        finalMessage = _finalizedTranscript.trim();
+      }
+
+      // Update controller with finalized message
+      _controller.text = finalMessage;
+    } else {
+      // Not recording - use whatever is in the text field
+      finalMessage = _controller.text.trim();
+    }
+
+    // Validate message
+    if (!_allowInput || _isLoading) return;
+
+    // Validate message - Allow empty text IF there are attachments
+    if (finalMessage.isEmpty && _attachedFiles.isEmpty) {
+      setState(() => _inputError = false);
+      return;
+    }
+
+    // CRITICAL: Reset ALL ASR state for fresh start on next message
+    // This prevents concatenation with previous messages/autofill issues
+    // Stop Microphone properly if it was recording
+    if (_isRecording) {
+      // print('Sending message - STOPPING MICROPHONE (Auto-Stop)');
+      // Stop recording functionality
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+        _currentTranscript = '';
+        _finalizedTranscript = '';
+        _ignoreAsrCallbacks = false;
+        _listeningMonitorTimer?.cancel();
+      });
+      _controller.clear();
+
+      try {
+        if (_isAndroid) {
+          await _nativeSpeech.stopListening();
+        } else {
+          if (_speech.isListening) {
+            await _speech.stop();
+            await _speech.cancel();
+          }
+        }
+      } catch (e) {
+        // print('Error stopping ASR in handleSend: $e');
+      }
+    } else {
+      _controller.clear();
+    }
+
+    // Add message to chat
+    _addUser(finalMessage, files: _attachedFiles);
+
+    // Logic: If this is the VERY FIRST user message, it becomes 'initial_details'
+    // AND we do NOT add it to history (because backend uses initial_details as context).
+    // Subsequent messages are added to history.
+    if (_ChatStateHolder.answers['details'] == null ||
+        _ChatStateHolder.answers['details']!.isEmpty) {
+      _ChatStateHolder.answers['details'] = finalMessage;
+      // print('📝 First message set as initial_details: "$finalMessage"');
+    } else {
+      _dynamicHistory.add({'role': 'user', 'content': finalMessage});
+      // print('📝 Added to history: "$finalMessage"');
+      // print('📚 Current history length: ${_dynamicHistory.length}');
+    }
+
+    _setAllowInput(false);
+    setState(() {});
+
+    // Explicitly call backend step
+
+    // --- HANDLING EVIDENCE RESPONSE (Soft Block) ---
+    if (_ChatStateHolder.pendingBackendQuestion != null) {
+      // If we have a pending question, it means the LAST question was "Do you have evidence?"
+      // We just added the user's "No" (or whatever text) to the UI history above.
+      // We do NOT want to send this text to the backend as the answer for "Name".
+
+      // print('🕵️ Evidence Check Response Handling');
+
+      // Retrieve the original question (Name/Phone)
+      String nextQuestion = _ChatStateHolder.pendingBackendQuestion!;
+      _ChatStateHolder.pendingBackendQuestion = null; // Clear it
+
+      // Verify if user attached files is already handled by _addUser which adds them to _attachedFiles
+      // If user typed "No" (or anything else), we just proceed to ask the Name.
+      // The text they typed is already in the chat UI history (good context).
+
+      // We simulate a "Backend Response" which is just the original question
+      _addBot(nextQuestion);
+      _speak(nextQuestion);
+
+      // Add to history so LLM knows it asked this
+      _dynamicHistory.add({'role': 'assistant', 'content': nextQuestion});
+
+      setState(() {
+        _setIsLoading(false);
+        _setAllowInput(true);
+      });
+
+      return; // CRITICAL: Stop here, do NOT call _processDynamicStep yet
+    }
+    // -----------------------------------------------
+
+    _processDynamicStep();
+
+    // NOTE: Continuous listening continues automatically
+    // The monitoring timer will restart if SDK stopped
+  }
+
+  /// Show attachment options (photos, videos, PDFs, audio)
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Attach File',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              // Photo options (GeoCamera)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.camera_alt, color: orange, size: 24),
+                ),
+                title: const Text('Take Photo (GeoCam)'),
+                subtitle: Text('Capture photo with location tag',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  // Use Geo-Camera for evidence capture
+                  final XFile? geoTaggedImage = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeoCameraScreen(
+                        captureMode: CaptureMode.image,
+                      ),
+                    ),
+                  );
+
+                  if (geoTaggedImage != null && mounted) {
+                    Uint8List? bytes;
+                    if (kIsWeb) bytes = await geoTaggedImage.readAsBytes();
+
+                    setState(() {
+                      _attachedFiles.add(PlatformFile(
+                        name: geoTaggedImage.name,
+                        size: 0, // Not critical
+                        bytes: bytes,
+                        path: geoTaggedImage.path,
+                      ));
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text('Photo attached: ${geoTaggedImage.name}')),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child:
+                      const Icon(Icons.photo_library, color: orange, size: 24),
+                ),
+                title: const Text('Choose from Gallery'),
+                subtitle: Text('Select photo or video',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  // Use pickImage for simplicity if pickMultiImage logic is complex with types
+                  // But LegalQueries uses pickMultiImage, lets try that
+                  // Note: pickMultiImage returns List<XFile>, we need paths
+                  final List<XFile> images =
+                      await _imagePicker.pickMultiImage();
+                  if (images.isNotEmpty && mounted) {
+                    // print('📷 Selected ${images.length} images from gallery');
+                    for (var xFile in images) {
+                      Uint8List? fileBytes;
+                      if (kIsWeb) {
+                        fileBytes = await xFile.readAsBytes();
+                        // print(
+                        // '🌐 Web: Read ${fileBytes.length} bytes for ${xFile.name}');
+                      }
+
+                      setState(() {
+                        _attachedFiles.add(PlatformFile(
+                          name: xFile.name,
+                          size:
+                              xFile.path.length, // Placeholder size if not web
+                          bytes: fileBytes,
+                          path: kIsWeb ? null : xFile.path,
+                        ));
+                      });
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('${images.length} photos selected')),
+                    );
+                  }
+                },
+              ),
+              // Video option (GeoCamera)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.videocam, color: orange, size: 24),
+                ),
+                title: const Text('Record Video (GeoCam)'),
+                subtitle: Text('Capture video with location tag',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? geoTaggedVideo = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeoCameraScreen(
+                        captureMode: CaptureMode.video,
+                      ),
+                    ),
+                  );
+                  if (geoTaggedVideo != null && mounted) {
+                    Uint8List? bytes;
+                    if (kIsWeb) bytes = await geoTaggedVideo.readAsBytes();
+
+                    setState(() {
+                      _attachedFiles.add(PlatformFile(
+                        name: geoTaggedVideo.name,
+                        size: 0,
+                        bytes: bytes,
+                        path: geoTaggedVideo.path,
+                      ));
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text('Video attached: ${geoTaggedVideo.name}')),
+                    );
+                  }
+                },
+              ),
+              // File picker (PDFs, audio, etc.)
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.attach_file, color: orange, size: 24),
+                ),
+                title: const Text('Upload File'),
+                subtitle: Text('PDF, Audio, or other files',
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: [
+                      'pdf',
+                      'doc',
+                      'docx',
+                      'txt',
+                      'mp3',
+                      'wav'
+                    ],
+                    allowMultiple: true,
+                    withData: true,
+                  );
+                  if (result != null && mounted) {
+                    setState(() {
+                      _attachedFiles.addAll(result.files);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text('${result.files.length} file(s) attached')),
+                    );
+                  }
+                },
+              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Mute system sounds to prevent ASR start/stop/restart sounds
+  Future<void> _muteSystemSounds() async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS) {
+        await _soundChannel.invokeMethod('muteSystemSounds');
+      }
+    } catch (e) {
+      // Silently fail - sound muting is optional
+      // print('Could not mute system sounds: $e');
+    }
+  }
+
+  /// Unmute system sounds
+  Future<void> _unmuteSystemSounds() async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS) {
+        await _soundChannel.invokeMethod('unmuteSystemSounds');
+      }
+    } catch (e) {
+      // Silently fail - sound unmuting is optional
+      // print('Could not unmute system sounds: $e');
+    }
+  }
+
+  /// Safely restart speech recognition with BUSY error handling
+  Future<void> _safeRestartListening(String sttLang) async {
+    // Prevent multiple simultaneous restart attempts
+    if (_isRestarting) {
+      // print('Restart already in progress, skipping...');
+      return;
+    }
+
+    // Check throttle - reduced from 2000ms to 500ms for faster response
+    final now = DateTime.now();
+    if (_lastRestartAttempt != null &&
+        now.difference(_lastRestartAttempt!).inMilliseconds < 500) {
+      // print('Too soon since last restart attempt, skipping...');
+      return;
+    }
+
+    _isRestarting = true;
+    _lastRestartAttempt = now;
+
+    try {
+      // Double-check we're still recording
+      if (!mounted || !_isRecording) {
+        _isRestarting = false;
+        return;
+      }
+
+      // Always cancel any existing session first to ensure clean state
+      // This is critical - even if isListening is false, the session might be in a "done" state
+      // print(
+      // 'Canceling any existing session before restart (isListening: ${_speech.isListening})...');
+      try {
+        // Only stop/cancel if actually listening - if already stopped, skip
+        if (_speech.isListening) {
+          await _speech.stop();
+          await _speech.cancel();
+          // Short delay for clean state - fast restart for continuous listening
+          await Future.delayed(const Duration(milliseconds: 150));
+        } else {
+          // print(
+          // 'Session already stopped, skipping cancel - restarting directly...');
+          // Even if stopped, give a tiny delay for SDK to be ready
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      } catch (e) {
+        // print('Error canceling session: $e - continuing anyway');
+        // Continue anyway - might already be stopped
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
+      // Final check before starting
+      if (!mounted || !_isRecording) {
+        _isRestarting = false;
+        await _unmuteSystemSounds(); // Unmute if we're not restarting
+        return;
+      }
+
+      // print('Starting new listening session after restart...');
+      await _speech.listen(
+        localeId: sttLang,
+        listenFor: const Duration(
+            hours: 1), // Listen for up to 1 hour - continuous listening
+        pauseFor: const Duration(
+            hours:
+                1), // Allow very long pauses - treat silence as thinking time
+        partialResults: true,
+        cancelOnError: false,
+        onResult: (result) {
+          if (mounted) {
+            setState(() {
+              _isUpdatingFromAsr = true;
+              final newWords = result.recognizedWords.trim();
+              if (newWords.isEmpty) {
+                _isUpdatingFromAsr = false;
+                return;
+              }
+
+              if (result.finalResult) {
+                // FINAL RESULT: Merge with finalized transcript
+                final merged =
+                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                _finalizedTranscript = merged;
+                _currentTranscript = '';
+                _lastRecognizedText = newWords;
+                _controller.text = merged;
+                // print(
+                // 'STT safe restart final (merged): "$newWords" -> "$merged"');
+              } else {
+                // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                String partialToShow;
+                if (_finalizedTranscript.isEmpty) {
+                  // No finalized text yet - use ASR text directly
+                  partialToShow = newWords;
+                } else {
+                  // Have finalized text - extract only new words
+                  partialToShow =
+                      extractNewWordsOnly(_finalizedTranscript, newWords);
+                  // If extraction returns empty but ASR has text, use ASR text
+                  if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                    partialToShow = newWords;
+                  }
+                }
+
+                // Update current transcript
+                _currentTranscript = partialToShow;
+                _lastRecognizedText = newWords;
+                final displayText = _finalizedTranscript.isEmpty
+                    ? _currentTranscript
+                    : (_currentTranscript.isEmpty
+                        ? _finalizedTranscript
+                        : '$_finalizedTranscript $_currentTranscript');
+                _controller.text = displayText.trim();
+                // print(
+                // 'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+              }
+
+              _isUpdatingFromAsr = false;
+            });
+          }
+        },
+      );
+
+      _busyRetryCount = 0; // Reset retry count on success
+      _isRestarting = false;
+      // print('Successfully restarted speech recognition');
+    } catch (e) {
+      _isRestarting = false;
+      final errorStr = e.toString().toLowerCase();
+
+      // Handle BUSY errors specifically
+      if (errorStr.contains('busy') || errorStr.contains('already')) {
+        _busyRetryCount++;
+        // print('BUSY error detected (attempt $_busyRetryCount), will retry...');
+
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
+
+        if (_busyRetryCount <= 5 && mounted && _isRecording) {
+          Future.delayed(Duration(milliseconds: delayMs), () {
+            if (mounted && _isRecording && !_speech.isListening) {
+              _safeRestartListening(sttLang);
+            }
+          });
+        } else {
+          // print('Max BUSY retries reached, giving up');
+          _busyRetryCount = 0;
+        }
+      } else {
+        // Other errors - log and reset retry count
+        // print('Error restarting speech recognition: $e');
+        _busyRetryCount = 0;
+      }
+    }
+  }
+
+  /// Start monitoring timer to detect when SDK stops and trigger restart
+  void _startListeningMonitor() {
+    // Cancel any existing timer
+    _listeningMonitorTimer?.cancel();
+
+    // Start periodic timer to check if SDK is still listening
+    // Increased interval to 5 seconds to reduce restart frequency and sounds
+    _listeningMonitorTimer =
+        Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || !_isRecording) {
+        timer.cancel();
+        return;
+      }
+
+      // Check if SDK stopped listening
+      if (!_speech.isListening && !_isRestarting) {
+        // print('Monitor detected SDK stopped - triggering seamless restart...');
+        _seamlessRestart();
+      }
+    });
+  }
+
+  /// Seamlessly restart speech recognition without losing accumulated text
+  /// Called when SDK stops but user hasn't manually stopped recording
+  Future<void> _seamlessRestart() async {
+    if (!_isRecording || !mounted || _currentSttLang == null) {
+      // print('Seamless restart skipped - not recording or no language set');
+      return;
+    }
+
+    // Prevent multiple simultaneous restarts
+    if (_isRestarting) {
+      // print('Restart already in progress, skipping...');
+      return;
+    }
+
+    _isRestarting = true;
+    // print('=== SEAMLESS RESTART INITIATED ===');
+    // print(
+    // 'Preserving state: finalized="$_finalizedTranscript", current="$_currentTranscript"');
+
+    try {
+      // Stop any existing session
+      if (_speech.isListening) {
+        await _speech.stop();
+        await _speech.cancel();
+      }
+
+      // Small delay for clean state
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Double-check we're still recording
+      if (!_isRecording || !mounted) {
+        _isRestarting = false;
+        return;
+      }
+
+      // Restart listening with same configuration
+      // print('Restarting speech recognition...');
+      await _speech.listen(
+        localeId: _currentSttLang!,
+        listenFor: const Duration(hours: 1),
+        pauseFor: const Duration(hours: 1),
+        partialResults: true,
+        cancelOnError: false,
+        onResult: (result) {
+          if (mounted && _isRecording) {
+            setState(() {
+              _isUpdatingFromAsr = true;
+              final newWords = result.recognizedWords.trim();
+
+              if (newWords.isEmpty) {
+                _isUpdatingFromAsr = false;
+                return;
+              }
+
+              // print(
+              // 'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
+              _lastSpeechDetected = DateTime.now();
+
+              if (result.finalResult) {
+                // FINAL RESULT: Merge with finalized transcript
+                final merged =
+                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                _finalizedTranscript = merged;
+                _currentTranscript = '';
+                _lastRecognizedText = newWords;
+                _controller.text = merged;
+                // print('STT restart final (merged): "$newWords" -> "$merged"');
+              } else {
+                // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                String partialToShow;
+                if (_finalizedTranscript.isEmpty) {
+                  // No finalized text yet - use ASR text directly
+                  partialToShow = newWords;
+                } else {
+                  // Have finalized text - extract only new words
+                  partialToShow =
+                      extractNewWordsOnly(_finalizedTranscript, newWords);
+                  // If extraction returns empty but ASR has text, use ASR text
+                  if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                    partialToShow = newWords;
+                  }
+                }
+
+                // Update current transcript
+                _currentTranscript = partialToShow;
+                _lastRecognizedText = newWords;
+                final displayText = _finalizedTranscript.isEmpty
+                    ? _currentTranscript
+                    : (_currentTranscript.isEmpty
+                        ? _finalizedTranscript
+                        : '$_finalizedTranscript $_currentTranscript');
+                _controller.text = displayText.trim();
+                // print(
+                // 'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+              }
+
+              _isUpdatingFromAsr = false;
+            });
+          }
+        },
+      );
+
+      // Start monitoring timer to detect when SDK stops
+      _startListeningMonitor();
+
+      _busyRetryCount = 0;
+      _isRestarting = false;
+      // print('=== SEAMLESS RESTART COMPLETE ===');
+    } catch (e) {
+      _isRestarting = false;
+      // print('Error during seamless restart: $e');
+
+      // Retry once after delay
+      if (_busyRetryCount < 3 && mounted && _isRecording) {
+        _busyRetryCount++;
+        Future.delayed(Duration(milliseconds: 1000 * _busyRetryCount), () {
+          if (mounted && _isRecording && !_speech.isListening) {
+            _seamlessRestart();
+          }
+        });
+      }
+    }
+  }
+
+  String _getSttLocaleId(String code) {
+    switch (code) {
+      case 'en':
+        return 'en-US';
+      case 'te':
+        return 'te-IN';
+      case 'hi':
+        return 'hi-IN';
+      case 'ta':
+        return 'ta-IN';
+      case 'kn':
+        return 'kn-IN';
+      case 'ml':
+        return 'ml-IN';
+      case 'mr':
+        return 'mr-IN';
+      case 'gu':
+        return 'gu-IN';
+      case 'bn':
+        return 'bn-IN';
+      case 'pa':
+        return 'pa-IN';
+      case 'ur':
+        return 'ur-IN';
+      case 'or':
+        return 'or-IN';
+      case 'as':
+        return 'as-IN';
+      default:
+        return 'en-US';
+    }
+  }
+
+  /// Toggle recording on/off for speech-to-text
+  Future<void> _toggleRecording() async {
+    if (!_allowInput) return;
+
+    // Request microphone permission
+    var status = await Permission.microphone.status;
+    if (!status.isGranted) {
+      status = await Permission.microphone.request();
+      if (!status.isGranted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission is required')),
+          );
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    // Use Chat Language if set, otherwise fallback to Locale/English
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final langCode = settings.chatLanguageCode ??
+        settings.locale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    String sttLang = _getSttLocaleId(langCode);
+
+    if (_isRecording) {
+      // Stop recording manually
+      if (_isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.stopListening();
+      } else {
+        // Use speech_to_text on iOS
+        _listeningMonitorTimer?.cancel();
+        _listeningMonitorTimer = null;
+        await _speech.stop();
+        await _speech.cancel();
+      }
+
+      // Unmute system sounds after stopping
+      await _unmuteSystemSounds();
+
+      // USER EXPLICITLY STOPPED MICROPHONE - Finalize all accumulated text
+      final wasManuallyCleared = _controller.text.isEmpty;
+
+      setState(() {
+        if (!wasManuallyCleared) {
+          // Finalize transcript if not manually cleared
+          if (_currentTranscript.isNotEmpty) {
+            if (_finalizedTranscript.isNotEmpty) {
+              _finalizedTranscript =
+                  '$_finalizedTranscript $_currentTranscript'.trim();
+            } else {
+              _finalizedTranscript = _currentTranscript;
+            }
+          }
+          _controller.text = _finalizedTranscript;
+        } else {
+          _finalizedTranscript = '';
+          _controller.text = '';
+        }
+        _currentTranscript = '';
+        _isRecording = false;
+        _recordingStartTime = null;
+        _currentSttLang = null;
+      });
+    } else {
+      // Start recording - ensure clean state
+      await _flutterTts.stop();
+
+      if (_isAndroid) {
+        // Use Android Native SpeechRecognizer
+        // print('Starting Android Native SpeechRecognizer...');
+
+        // Mute system sounds to prevent restart sounds
+        await _muteSystemSounds();
+
+        setState(() {
+          _isRecording = true;
+          _currentSttLang = sttLang;
+          _currentTranscript = '';
+          _lastRecognizedText = '';
+          _recordingStartTime = DateTime.now();
+        });
+
+        try {
+          await _nativeSpeech.startListening(language: sttLang);
+          // print('Native ASR started successfully');
+        } catch (e) {
+          // print('Error starting native ASR: $e');
+          await _unmuteSystemSounds(); // Unmute on error
+          setState(() {
+            _isRecording = false;
+            _recordingStartTime = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error starting speech recognition: $e')),
+          );
+        }
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.stop();
+        await _speech.cancel();
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        bool available = await _speech.initialize(
+          onError: (val) {
+            // print('STT Error: ${val.errorMsg}, permanent: ${val.permanent}');
+            final errorMsg = val.errorMsg.toLowerCase();
+
+            // For continuous listening: Treat all errors as non-fatal
+            // Silence and "no match" are normal - just continue listening
+            if (errorMsg.contains('no_match') ||
+                errorMsg.contains('no match')) {
+              // print(
+              // 'No match error detected - treating as silence/pause, continuing to listen...');
+              // Don't do anything - just let it continue listening
+              return;
+            }
+
+            // For other errors, only stop on truly critical errors
+            if (val.permanent &&
+                (errorMsg.contains('permission') ||
+                    errorMsg.contains('denied'))) {
+              // Only stop on permission errors - these are truly critical
+              if (mounted) {
+                setState(() {
+                  _isRecording = false;
+                  _recordingStartTime = null;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: ${val.errorMsg}')),
+                );
+              }
+            } else {
+              // All other errors (temporary or non-critical) - just restart listening
+              // print(
+              // 'Non-critical error detected, will restart listening if needed: ${val.errorMsg}');
+              if (mounted && _isRecording) {
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted && _isRecording && !_speech.isListening) {
+                    _seamlessRestart();
+                  }
+                });
+              }
+            }
+          },
+        );
+
+        if (available) {
+          setState(() {
+            _isRecording = true;
+            _currentSttLang =
+                sttLang; // Store language for potential restart on clear
+            // Start fresh - TRUE continuous mode
+            _currentTranscript = ''; // Start fresh for streaming
+            _lastRecognizedText = ''; // Reset for text comparison
+            _recordingStartTime = DateTime.now();
+            _lastRestartAttempt = null; // Reset restart tracker for new session
+            _isRestarting = false; // Reset restart flag
+            _busyRetryCount = 0; // Reset BUSY retry count
+            _lastSpeechDetected = null; // Reset last speech timestamp
+          });
+
+          // Use try-catch for initial listen to handle BUSY errors
+          try {
+            await _speech.listen(
+              localeId: sttLang,
+              listenFor: const Duration(
+                  hours: 1), // Listen for up to 1 hour - continuous listening
+              pauseFor: const Duration(
+                  hours:
+                      1), // Allow very long pauses - treat silence as thinking time
+              partialResults: true, // Get partial results as user speaks
+              cancelOnError: false, // Don't cancel on errors, keep listening
+              onResult: (result) {
+                if (mounted && _isRecording) {
+                  setState(() {
+                    _isUpdatingFromAsr = true;
+                    final newWords = result.recognizedWords.trim();
+
+                    if (newWords.isEmpty) {
+                      _isUpdatingFromAsr = false;
+                      return;
+                    }
+
+                    // print(
+                    // 'onResult: newWords="$newWords", isFinal=${result.finalResult}');
+                    _lastSpeechDetected = DateTime.now();
+
+                    if (result.finalResult) {
+                      // FINAL RESULT: Merge with finalized transcript
+                      final merged = mergeAsrWithCurrentText(
+                          _finalizedTranscript, newWords);
+                      _finalizedTranscript = merged;
+                      _currentTranscript = '';
+                      _lastRecognizedText = newWords;
+                      _controller.text = merged;
+                      // print(
+                      // 'STT final result (merged): "$newWords" -> "$merged"');
+                    } else {
+                      // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                      String partialToShow;
+                      if (_finalizedTranscript.isEmpty) {
+                        // No finalized text yet - use ASR text directly
+                        partialToShow = newWords;
+                      } else {
+                        // Have finalized text - extract only new words
+                        partialToShow =
+                            extractNewWordsOnly(_finalizedTranscript, newWords);
+                        // If extraction returns empty but ASR has text, use ASR text
+                        // (this handles cases where ASR doesn't start with finalized)
+                        if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                          partialToShow = newWords;
+                        }
+                      }
+
+                      // Update current transcript
+                      _currentTranscript = partialToShow;
+                      _lastRecognizedText = newWords;
+                      // Display: finalized + current partial
+                      final displayText = _finalizedTranscript.isEmpty
+                          ? _currentTranscript
+                          : (_currentTranscript.isEmpty
+                              ? _finalizedTranscript
+                              : '$_finalizedTranscript $_currentTranscript');
+                      _controller.text = displayText.trim();
+                      // print(
+                      // 'STT partial result: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                    }
+
+                    _isUpdatingFromAsr = false;
+                  });
+                }
+              },
+            );
+
+            // Start monitoring timer to detect when SDK stops
+            _startListeningMonitor();
+          } catch (e) {
+            final errorStr = e.toString().toLowerCase();
+            if (errorStr.contains('busy') || errorStr.contains('already')) {
+              // Handle BUSY error on initial listen - use safe restart
+              // print('BUSY error on initial listen, using safe restart...');
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted && _isRecording) {
+                  _safeRestartListening(sttLang);
+                }
+              });
+            } else {
+              // print('Error starting speech recognition: $e');
+              // Unmute on error
+              await _unmuteSystemSounds();
+            }
+          }
+        } else {
+          await _unmuteSystemSounds();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Speech recognition not available. Please check if your device supports it.'),
+            ),
+          );
+        }
+      } // Close iOS else branch
+    }
+  }
+
+  bool _textContainsTelugu(String s) {
+    for (final r in s.runes) {
+      if (r >= 0x0C00 && r <= 0x0C7F) return true;
+    }
+    return false;
+  }
+
+  void _startTypewriter(String text) {
+    _typewriterTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _displayedCaptionText = '';
+      });
+    }
+
+    int index = 0;
+    _typewriterTimer =
+        Timer.periodic(const Duration(milliseconds: 60), (timer) {
+      if (index < text.length) {
+        if (mounted) {
+          setState(() {
+            _displayedCaptionText += text[index];
+          });
+        }
+        index++;
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.trim().isEmpty) return;
+
+    if (mounted) {
+      _startTypewriter(text);
+    }
+
+    // Prioritize Chat Language for TTS
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final langCode = settings.chatLanguageCode ??
+        settings.locale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    String ttsLang = _getSttLocaleId(langCode);
+
+    // Fallback: If text explicitly contains Telugu chars, force Telugu
+    if (_textContainsTelugu(text)) ttsLang = 'te-IN';
+
+    try {
+      // Configure speech parameters based on language
+      if (ttsLang != 'en-US') {
+        // Slower speech for Indian languages (better pronunciation)
+        await _flutterTts.setSpeechRate(0.5);
+        await _flutterTts.setPitch(1.1);
+      } else {
+        await _flutterTts.setSpeechRate(0.5);
+        await _flutterTts.setPitch(1.0);
+      }
+
+      await _flutterTts.setLanguage(ttsLang);
+
+      // Try to select best available voice for the language
+      if (!kIsWeb && Platform.isAndroid) {
+        try {
+          final voices = await _flutterTts.getVoices;
+          if (voices != null && voices is List && voices.isNotEmpty) {
+            // Find voices for this language
+            final langVoices = voices.where((voice) {
+              final v = voice as Map<dynamic, dynamic>;
+              final locale = v['locale']?.toString().toLowerCase() ?? '';
+              return locale.contains(ttsLang.toLowerCase().split('-')[0]);
+            }).toList();
+
+            if (langVoices.isNotEmpty) {
+              // Prefer female or high-quality voices
+              var bestVoice = langVoices.firstWhere(
+                (voice) {
+                  final v = voice as Map<dynamic, dynamic>;
+                  final name = v['name']?.toString().toLowerCase() ?? '';
+                  return name.contains('female') || name.contains('quality');
+                },
+                orElse: () => langVoices.first,
+              );
+
+              final v = bestVoice as Map<dynamic, dynamic>;
+              await _flutterTts
+                  .setVoice({'name': v['name'], 'locale': v['locale']});
+              // print('Using voice: ${v['name']}');
+            }
+          }
+        } catch (e) {
+          // print('Voice selection error: $e');
+        }
+      }
+
+      await _flutterTts.speak(text);
+    } catch (e) {
+      // print('TTS Error: $e');
+      // Fallback to English if Telugu fails
+      if (ttsLang == 'te-IN') {
+        try {
+          await _flutterTts.setSpeechRate(0.5);
+          await _flutterTts.setPitch(1.0);
+          await _flutterTts.setLanguage('en-US');
+          await _flutterTts.speak(text);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /* ---------------- FILES PREVIEW ---------------- */
+  Widget _buildFilePreview() {
+    if (_attachedFiles.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 70,
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _attachedFiles.length,
+        itemBuilder: (context, index) {
+          final file = _attachedFiles[index];
+          final name = file.name;
+          final isImage = name.toLowerCase().endsWith('.jpg') ||
+              name.toLowerCase().endsWith('.jpeg') ||
+              name.toLowerCase().endsWith('.png') ||
+              name.toLowerCase().endsWith('.webp');
+          final isVideo = name.toLowerCase().endsWith('.mp4') ||
+              name.toLowerCase().endsWith('.mov');
+
+          return Container(
+            width: 70,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: orange.withOpacity(0.3)),
+              image: (isImage &&
+                      (file.bytes != null || (!kIsWeb && file.path != null)))
+                  ? DecorationImage(
+                      image: (file.bytes != null)
+                          ? MemoryImage(file.bytes!)
+                          : FileImage(File(file.path!)) as ImageProvider,
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: Stack(
+              children: [
+                if (!isImage ||
+                    (isImage &&
+                        file.bytes == null &&
+                        (kIsWeb || file.path == null)))
+                  Center(
+                    child: Icon(
+                      isImage
+                          ? Icons.image
+                          : (isVideo
+                              ? Icons.videocam
+                              : Icons.insert_drive_file),
+                      color: orange,
+                      size: 24,
+                    ),
+                  ),
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: InkWell(
+                    onTap: () => setState(() {
+                      _attachedFiles.removeAt(index);
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child:
+                          const Icon(Icons.close, size: 14, color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _listeningMonitorTimer?.cancel(); // Cancel monitoring timer
+    _listeningMonitorTimer = null;
+    _controller.dispose();
+    _inputFocus.dispose();
+    _scrollController.dispose();
+    _speech.stop();
+    _flutterTts.stop();
+    // Ensure system sounds are unmuted when disposing
+    _unmuteSystemSounds();
+    _typewriterTimer?.cancel();
+    super.dispose();
+  }
+
+  void _loadDraft(Map<String, dynamic> draft) {
+    // print('📂 Loading draft: ${draft['id'] ?? draft['userId']}');
+    final chatData = draft['chatData'] as Map<String, dynamic>?;
+    if (chatData == null) return;
+
+    _currentDraftId = draft['id'];
+
+    setState(() {
+      _ChatStateHolder.reset();
+
+      final msgs = chatData['messages'] as List<dynamic>? ?? [];
+      _ChatStateHolder.messages.addAll(
+        msgs
+            .map((m) => _ChatMessage.fromMap(m as Map<String, dynamic>))
+            .toList(),
+      );
+
+      final answers = chatData['answers'] as Map<String, dynamic>? ?? {};
+      _ChatStateHolder.answers.addAll(
+        answers.map((k, v) => MapEntry(k, v.toString())),
+      );
+
+      final history = chatData['dynamicHistory'] as List<dynamic>? ?? [];
+      _dynamicHistory =
+          history.map((h) => Map<String, String>.from(h as Map)).toList();
+
+      _ChatStateHolder.currentQ = chatData['currentQ'] as int? ?? 0;
+      _ChatStateHolder.hasStarted = true;
+      _ChatStateHolder.allowInput = true;
+      _isAnonymous = chatData['isAnonymous'] as bool? ?? false;
+
+      // Load attached files from draft
+      final filesData = chatData['attachedFiles'] as List<dynamic>? ?? [];
+      _attachedFiles.clear();
+      for (final fileData in filesData) {
+        final name = fileData['name'] as String;
+        final bytesBase64 = fileData['bytes'] as String?;
+        final path = fileData['path'] as String?;
+        final size = fileData['size'] as int? ?? 0;
+
+        Uint8List? bytes;
+        if (bytesBase64 != null) {
+          bytes = base64Decode(bytesBase64);
+        }
+
+        _attachedFiles.add(PlatformFile(
+          name: name,
+          path: path,
+          bytes: bytes,
+          size: size,
+        ));
+      }
+
+      if (_attachedFiles.isNotEmpty) {
+        // print('📥 Loaded ${_attachedFiles.length} attached files from draft');
+      }
+
+      // Restore completion state and classification from chatData if present
+      _isChatCompleted = chatData['isChatCompleted'] as bool? ?? false;
+      _finalSummary = chatData['finalSummary'] as String?;
+      _finalClassification = chatData['finalClassification'] as String?;
+      _finalOriginalClassification =
+          chatData['finalOriginalClassification'] as String?;
+      _isNavigating = false; // Reset navigation lock on load
+
+      // Fallback: Robust Scan for older drafts without explicit completion flags
+      if (!_isChatCompleted && _ChatStateHolder.messages.isNotEmpty) {
+        try {
+          final summaryMsg = _ChatStateHolder.messages.reversed.firstWhere(
+            (msg) {
+              final c = msg.content.toLowerCase();
+              return c.contains('complaint summary') ||
+                  c.contains('formal petition') ||
+                  (c.contains('incident details') &&
+                      c.contains('incident location'));
+            },
+          );
+
+          // print(
+          // '🏁 [LoadDraft] Found existing summary via scan. Restoring COMPLETED state.');
+          _isChatCompleted = true;
+          _finalSummary = summaryMsg.content;
+          _ChatStateHolder.allowInput = false;
+          _ChatStateHolder.isLoading = false;
+
+          // Attempt to extract a simple classification from the summary text
+          if (_finalClassification == null || _finalClassification!.isEmpty) {
+            String classification = "General Complaint";
+
+            // STEP 1: Aggressive Search for Legal Status
+            String allText = _finalSummary!;
+            for (var m in _ChatStateHolder.messages) {
+              allText += "\n${m.content}";
+            }
+            final allUpper = allText.toUpperCase();
+            final ncRegex =
+                RegExp(r'.*NON-?COGNIZ?G?N?IBLE.*', caseSensitive: false);
+            final cRegex =
+                RegExp(r'(?<!NON-)COGNIZ?G?N?IBLE.*', caseSensitive: false);
+
+            if (allUpper.contains("NON-COGNIZABLE") ||
+                allUpper.contains("NON COGNIZABLE") ||
+                ncRegex.hasMatch(allText)) {
+              final matches = ncRegex.allMatches(allText);
+              classification = matches.isNotEmpty
+                  ? matches.last
+                      .group(0)!
+                      .trim()
+                      .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '')
+                  : "NON-COGNIZABLE - Offence permits magistrate order.";
+            } else if (allUpper.contains("COGNIZABLE") ||
+                cRegex.hasMatch(allText)) {
+              final matches = cRegex.allMatches(allText);
+              classification = matches.isNotEmpty
+                  ? matches.last
+                      .group(0)!
+                      .trim()
+                      .replaceAll(RegExp(r'^[*#\s=]+|[*#\s=]+$'), '')
+                  : "COGNIZABLE - Offence permits police action.";
+            } else {
+              // STEP 2: Labeled fields
+              final classificationRegex = RegExp(
+                  r'(?:Classification|Offence Classification|Legal Status)\s*[:*-]+\s*(.*)',
+                  caseSensitive: false);
+              final cMatch = classificationRegex.firstMatch(_finalSummary!);
+
+              if (cMatch != null && cMatch.group(1) != null) {
+                classification = cMatch.group(1)!.trim();
+              } else {
+                // PRIORITY 2: Complaint Type
+                final typeRegex = RegExp(
+                    r'(?:Complaint Type|Category)\s*[:*-]+\s*(.*)',
+                    caseSensitive: false);
+                final tMatch = typeRegex.firstMatch(_finalSummary!);
+                if (tMatch != null && tMatch.group(1) != null) {
+                  classification = tMatch.group(1)!.trim();
+                } else {
+                  String cText = _finalSummary!.toLowerCase();
+                  if (cText.contains("theft")) {
+                    classification = "Theft";
+                  } else if (cText.contains("assault")) {
+                    classification = "Assault";
+                  } else if (cText.contains("cyber")) {
+                    classification = "Cyber Crime";
+                  }
+                }
+              }
+            }
+            _finalClassification = classification
+                .replaceAll('*', '')
+                .replaceAll('#', '')
+                .replaceAll('=', '')
+                .trim();
+            _finalOriginalClassification =
+                _finalClassification!.toUpperCase().contains("NON-COGNIZABLE")
+                    ? "NON-COGNIZABLE"
+                    : "COGNIZABLE";
+          }
+        } catch (_) {
+          // No summary found in scan
+        }
+      }
+
+      if (_isChatCompleted) {
+        _ChatStateHolder.allowInput = false;
+        _ChatStateHolder.isLoading = false;
+      }
+
+      // --- CAPTION RESTORATION FOR DRAFTS ---
+      // If the chat is not completed, we should show the last bot instruction
+      // so the user knows what to enter.
+      if (!_isChatCompleted && _ChatStateHolder.messages.isNotEmpty) {
+        try {
+          // Find the most recent bot message
+          final lastBot = _ChatStateHolder.messages.reversed
+              .firstWhere((m) => !m.isUser && m.content.trim().isNotEmpty);
+          _displayedCaptionText = lastBot.content;
+        } catch (_) {
+          // Fallback if no bot message found
+          _displayedCaptionText = "";
+        }
+      }
+    });
+    _scrollToEnd();
+  }
+
+  Future<void> _saveDraft() async {
+    // print('📝 [DRAFT UI] User clicked Save Draft');
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final complaintProv =
+        Provider.of<ComplaintProvider>(context, listen: false);
+
+    if (auth.user == null) {
+      // print('📝 [DRAFT UI] User not logged in, aborting');
+      return;
+    }
+
+    _setIsLoading(true);
+    // print('📝 [DRAFT UI] Loading state set to true');
+
+    try {
+      // print('📝 [DRAFT UI] Preparing chatData for serialization...');
+      final chatData = {
+        'messages': _ChatStateHolder.messages.map((m) => m.toMap()).toList(),
+        'answers': _ChatStateHolder.answers,
+        'currentQ': _ChatStateHolder.currentQ,
+        'isAnonymous': _isAnonymous,
+        'dynamicHistory': _dynamicHistory,
+        'isChatCompleted': _isChatCompleted,
+        'finalSummary': _finalSummary,
+        'finalClassification': _finalClassification,
+        'finalOriginalClassification': _finalOriginalClassification,
+        'attachedFiles': _attachedFiles.map((file) {
+          final thumbnail = _ChatMessage._getSmallThumbnail(file);
+          return {
+            'name': file.name,
+            'bytes': thumbnail, // Store small thumbnail
+            'path': kIsWeb ? null : file.path,
+            'size': file.size,
+          };
+        }).toList(),
+      };
+
+      // print(
+      // '📝 [DRAFT UI] Serialized ${_ChatStateHolder.messages.length} messages');
+      // print('📝 [DRAFT UI] Serialized ${_attachedFiles.length} files');
+
+      // Generate a meaningful title from the user's initial complaint
+      String title = "AI Legal Chat Draft";
+
+      // Try to find the user's first message (their initial complaint description)
+      for (var msg in _ChatStateHolder.messages) {
+        if (msg.isUser && msg.content.trim().isNotEmpty) {
+          // Use the first user message as the title
+          final content = msg.content.trim();
+          // Take first 40 characters for a more descriptive title
+          title =
+              content.length > 40 ? content.substring(0, 40) + "..." : content;
+          break;
+        }
+      }
+      // print('📝 [DRAFT UI] Generated Title: $title');
+
+      // print('📝 [DRAFT UI] Handing over to ComplaintProvider...');
+      final success = await complaintProv.saveChatAsDraft(
+        userId: auth.user!.uid,
+        title: title,
+        chatData: chatData,
+        draftId: _currentDraftId,
+      );
+      // print('📝 [DRAFT UI] Provider return status: $success');
+
+      final localizations = AppLocalizations.of(context)!;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? localizations.draftSaved
+                : localizations.failedToSaveDraft),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e, stack) {
+      // print('❌ [DRAFT UI] CRASH in _saveDraft: $e');
+      // print('❌ [DRAFT UI] Stack Trace: $stack');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to save draft. Please try again."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      // print('📝 [DRAFT UI] Finalizing: setting loading false');
+      _setIsLoading(false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    final localizations = AppLocalizations.of(context)!;
+
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              // Use same logic as back button
+              final canPop = await _onWillPop();
+              if (canPop) {
+                context.go('/dashboard');
+              }
+            },
+          ),
+          actions: [
+            // Chat Language Selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Consumer<SettingsProvider>(
+                builder: (context, provider, _) {
+                  final currentCode = provider.chatLanguageCode ??
+                      provider.locale?.languageCode ??
+                      'en';
+                  final langName =
+                      _supportedLanguages[currentCode] ?? 'English';
+
+                  return TextButton.icon(
+                    onPressed: _showLanguageSheet,
+                    icon: const Icon(Icons.translate,
+                        color: Colors.white, size: 20),
+                    label: Text(
+                      langName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Save Draft Button
+            IconButton(
+              icon: const Icon(Icons.save, color: Colors.white),
+              tooltip: 'Save Draft',
+              onPressed: _saveDraft,
+            ),
+          ],
+          title: Text(
+            localizations.aiLegalAssistant,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: const Color(0xFFFC633C),
+          foregroundColor: Colors.white,
+        ),
+        body: Stack(
+          children: [
+            // --- FULL SCREEN BACKGROUND AVATAR ---
+            Positioned.fill(
+              child: Image.asset(
+                _isSpeaking ? 'assets/avatar.gif' : 'assets/police_avatar.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey[300],
+                  child:
+                      const Icon(Icons.person, size: 100, color: Colors.grey),
+                ),
+              ),
+            ),
+
+            // --- SEMI-TRANSPARENT DIM LAYER ---
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.05),
+                      Colors.black.withOpacity(0.5),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // --- MAIN CONTENT UI AREA ---
+            Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // --- LIVE CAPTIONS ---
+                        if (_displayedCaptionText.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(20),
+                              border:
+                                  Border.all(color: orange.withOpacity(0.3)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              _displayedCaptionText,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+
+                        // Show "Thinking..." indicator if loading but not speaking yet
+                        if (_isLoading && !_isSpeaking)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    "Thinking...",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
+                if (_isRecording)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: background,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey[300]!, width: 1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Recording indicator dot
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Timer
+                        if (_recordingStartTime != null)
+                          StreamBuilder<DateTime>(
+                            stream: Stream.periodic(const Duration(seconds: 1),
+                                (_) => DateTime.now()),
+                            builder: (context, snapshot) {
+                              final duration = DateTime.now()
+                                  .difference(_recordingStartTime!);
+                              final minutes = duration.inMinutes;
+                              final seconds = duration.inSeconds % 60;
+                              return Text(
+                                '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            },
+                          ),
+                        const SizedBox(width: 12),
+                        // Waveform visualization
+                        Expanded(
+                          child: _WaveformVisualization(
+                            isActive: _currentTranscript.isNotEmpty,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Pause/Stop button
+                        GestureDetector(
+                          onTap: _toggleRecording,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: orange,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.pause,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ── FILE PREVIEW ──
+                if (_attachedFiles.isNotEmpty) _buildFilePreview(),
+
+                // ── COMPLETED STATE & INPUT FIELD ──
+                if (_isChatCompleted)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    color: const Color(0xFFF5F8FE), // background color match
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFC633C),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      onPressed: _navigateToDetails,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.assignment_turned_in,
+                              color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(
+                            localizations.complaintSummary ??
+                                "View Complaint Summary",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (!_isLoading && !_errored && _allowInput)
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    child: Material(
+                      elevation: 2,
+                      shadowColor: Colors.black.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Attachment button
+                            GestureDetector(
+                              onTap: _showAttachmentOptions,
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.attach_file,
+                                  color: Colors.grey.shade700,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            // Text input field with rounded corners
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: TextField(
+                                  controller: _controller,
+                                  focusNode: _inputFocus,
+                                  maxLines: 2,
+                                  minLines: 1,
+                                  textInputAction: TextInputAction.send,
+                                  decoration: InputDecoration(
+                                    hintText: _currentQ >= 0 &&
+                                            _currentQ < _questions.length
+                                        ? _questions[_currentQ].question
+                                        : localizations.typeMessage ??
+                                            'Type your message...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 13,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    errorText: _inputError
+                                        ? localizations.pleaseEnterYourAnswer ??
+                                            "Please enter your answer"
+                                        : null,
+                                    errorStyle: const TextStyle(fontSize: 10),
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black87,
+                                  ),
+                                  onSubmitted: (_) => _handleSend(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            // WhatsApp-style mic button with animated waves
+                            SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                alignment: Alignment.center,
+                                children: [
+                                  // Animated waves (only when recording) - positioned absolutely
+                                  if (_isRecording) ...[
+                                    Positioned.fill(
+                                      child: _AnimatedWave(
+                                        delay: 0,
+                                        color: Colors.red.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    Positioned.fill(
+                                      child: _AnimatedWave(
+                                        delay: 200,
+                                        color: Colors.red.withOpacity(0.2),
+                                      ),
+                                    ),
+                                    Positioned.fill(
+                                      child: _AnimatedWave(
+                                        delay: 400,
+                                        color: Colors.red.withOpacity(0.1),
+                                      ),
+                                    ),
+                                  ],
+                                  // Microphone button
+                                  GestureDetector(
+                                    onTap: _toggleRecording,
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            _isRecording ? Colors.red : orange,
+                                        shape: BoxShape.circle,
+                                        boxShadow: _isRecording
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.red
+                                                      .withOpacity(0.4),
+                                                  blurRadius: 5,
+                                                  spreadRadius: 1,
+                                                ),
+                                              ]
+                                            : [
+                                                BoxShadow(
+                                                  color:
+                                                      orange.withOpacity(0.3),
+                                                  blurRadius: 2,
+                                                  spreadRadius: 0.5,
+                                                ),
+                                              ],
+                                      ),
+                                      child: Icon(
+                                        _isRecording ? Icons.stop : Icons.mic,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            // Send button
+                            GestureDetector(
+                              onTap: _handleSend,
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: orange,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: orange.withOpacity(0.3),
+                                      blurRadius: 2,
+                                      spreadRadius: 0.5,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.send,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ], // closes Column children
+            ), // closes Column
+          ], // closes Stack children
+        ), // closes Stack
+      ), // closes Scaffold
+    ); // closes WillPopScope
+  }
+}
+
+// ── Helper Classes ──
+class _ChatQ {
+  final String key;
+  final String question;
+  const _ChatQ({required this.key, required this.question});
+}
+
+class _ChatMessage {
+  final String user;
+  final String content;
+  final bool isUser;
+  final List<PlatformFile> files;
+
+  _ChatMessage({
+    required this.user,
+    required this.content,
+    required this.isUser,
+    this.files = const [],
+  });
+
+  static String? _getSmallThumbnail(PlatformFile file) {
+    try {
+      Uint8List? sourceBytes = file.bytes;
+
+      // On Mobile, if bytes are null but path is present, read them
+      if (sourceBytes == null &&
+          !kIsWeb &&
+          file.path != null &&
+          file.path!.isNotEmpty) {
+        try {
+          sourceBytes = File(file.path!).readAsBytesSync();
+          // print(
+          // '🎞️ Mobile: Read ${sourceBytes.length} bytes from disk for thumbnail');
+        } catch (e) {
+          // print('Error reading file for thumbnail: $e');
+        }
+      }
+
+      if (sourceBytes == null || sourceBytes.isEmpty) return null;
+
+      final name = file.name.toLowerCase();
+      if (!(name.endsWith('.jpg') ||
+          name.endsWith('.jpeg') ||
+          name.endsWith('.png') ||
+          name.endsWith('.webp'))) return null;
+
+      // Decode the image
+      final image = dart_img.decodeImage(sourceBytes);
+      if (image == null) return null;
+
+      // Resize the image to be very small for Firestore (max 150px)
+      final thumbnail = dart_img.copyResize(image, width: 150);
+
+      // Encode as JPG with low quality to save space
+      final jpg = dart_img.encodeJpg(thumbnail, quality: 50);
+      return base64Encode(jpg);
+    } catch (e) {
+      // print('Error generating thumbnail: $e');
+      return null;
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'user': user,
+      'content': content,
+      'isUser': isUser,
+      'files': files.map((file) {
+        final thumbnail = _getSmallThumbnail(file);
+        return {
+          'name': file.name,
+          'bytes': thumbnail, // Store small thumbnail
+          'path': kIsWeb ? null : file.path,
+          'size': file.size,
+        };
+      }).toList(),
+    };
+  }
+
+  factory _ChatMessage.fromMap(Map<String, dynamic> map) {
+    final filesData = map['files'] as List<dynamic>? ?? [];
+    final files = filesData.map((fileData) {
+      final name = fileData['name'] as String;
+      final bytesBase64 = fileData['bytes'] as String?;
+      final path = fileData['path'] as String?;
+      final size = fileData['size'] as int? ?? 0;
+
+      Uint8List? decodedBytes;
+      if (bytesBase64 != null && bytesBase64.isNotEmpty) {
+        try {
+          decodedBytes = base64Decode(bytesBase64);
+        } catch (e) {
+          // print('Error decoding base64 thumbnail: $e');
+        }
+      }
+
+      return PlatformFile(
+        name: name,
+        path: path,
+        bytes: decodedBytes,
+        size: size,
+      );
+    }).toList();
+
+    return _ChatMessage(
+      user: map['user'] ?? '',
+      content: map['content'] ?? '',
+      isUser: map['isUser'] ?? false,
+      files: files,
+    );
+  }
+}
+
+// Animated wave widget for microphone button
+class _AnimatedWave extends StatefulWidget {
+  final int delay;
+  final Color color;
+
+  const _AnimatedWave({
+    required this.delay,
+    required this.color,
+  });
+
+  @override
+  State<_AnimatedWave> createState() => _AnimatedWaveState();
+}
+
+class _AnimatedWaveState extends State<_AnimatedWave>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    // Start animation after delay
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) {
+        _controller.repeat();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        // Calculate size based on animation - expand outward from center
+        final baseSize = 40.0;
+        final maxExpansion = 35.0;
+        final currentSize = baseSize + (_animation.value * maxExpansion);
+        final opacity = 1.0 - _animation.value;
+
+        return Center(
+          child: Container(
+            width: currentSize,
+            height: currentSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: widget.color.withOpacity(opacity),
+                width: 2,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Waveform visualization widget
+class _WaveformVisualization extends StatefulWidget {
+  final bool isActive;
+
+  const _WaveformVisualization({
+    required this.isActive,
+  });
+
+  @override
+  State<_WaveformVisualization> createState() => _WaveformVisualizationState();
+}
+
+class _WaveformVisualizationState extends State<_WaveformVisualization>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<double> _barHeights = [
+    0.3,
+    0.6,
+    0.4,
+    0.8,
+    0.5,
+    0.7,
+    0.4,
+    0.6,
+    0.5,
+    0.7,
+    0.4,
+    0.8,
+    0.5,
+    0.6,
+    0.4,
+    0.7
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        const orange = Color(0xFFFC633C);
+
+        if (!widget.isActive) {
+          // Show minimal static bars when not actively speaking
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(16, (index) {
+              return Container(
+                width: 2.5,
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                decoration: BoxDecoration(
+                  color: orange.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              );
+            }),
+          );
+        }
+
+        // Animated bars when actively speaking
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(16, (index) {
+            // Vary the height based on animation and index for wave effect
+            final baseHeight = _barHeights[index];
+            final phase = (index % 4) * 0.5;
+            final animatedHeight = baseHeight +
+                (0.2 *
+                    (0.5 +
+                        0.5 *
+                            math.sin(_controller.value * 2 * math.pi + phase)));
+            final height = (animatedHeight * 20).clamp(4.0, 20.0);
+
+            return Container(
+              width: 2.5,
+              height: height,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: orange,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
