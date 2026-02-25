@@ -9,11 +9,13 @@ import 'package:Dharma/services/local_storage_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
-
 import 'dart:convert';
-
 import 'package:flutter/services.dart';
-
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
 import 'ocr_service.dart';
 
 class CreatePetitionForm extends StatefulWidget {
@@ -41,6 +43,17 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   final _prayerReliefController = TextEditingController();
   final _districtController = TextEditingController();
   final _stationController = TextEditingController();
+
+  // ADDITIONAL DETAILS
+  final _accusedDetailsController = TextEditingController();
+  final _stolenPropertyController = TextEditingController();
+  final _witnessesController = TextEditingController();
+  final _evidenceStatusController = TextEditingController();
+
+  // STASHED AI RECOMMENDATIONS
+  String? _stationReason;
+  String? _stationConfidence;
+  String? _aiSummary;
 
   // INCIDENT DETAILS
   final _incidentAddressController = TextEditingController();
@@ -71,7 +84,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         Provider.of<PetitionProvider>(context, listen: false);
     if (petitionProvider.tempEvidence.isNotEmpty) {
       // debugPrint(
-          // '📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
+      // '📥 [CreatePetitionForm] Found ${petitionProvider.tempEvidence.length} stashed files');
       setState(() {
         // Avoid duplicates in case of re-entry
         final existingNames = _proofFiles.map((e) => e.name).toSet();
@@ -154,7 +167,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
       _titleController.text = clean.isNotEmpty ? type : type;
       _petitionerNameController.text = data['fullName']?.toString() ?? '';
-      _phoneNumberController.text = data['phone']?.toString() ?? '';
+      _phoneNumberController.text =
+          (data['phone']?.toString() ?? '').replaceAll(RegExp(r'\s+'), '');
       _addressController.text = data['address']?.toString() ?? '';
       // Map Narrative to Grounds
       _groundsController.text = data['incident_details']?.toString() ??
@@ -163,6 +177,24 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       // Map Incident Address
       _incidentAddressController.text =
           data['incident_address']?.toString() ?? '';
+
+      // Map Additional Details
+      _accusedDetailsController.text = data['accused_details']?.toString() ??
+          data['accusedDetails']?.toString() ??
+          '';
+      _stolenPropertyController.text = data['stolen_property']?.toString() ??
+          data['stolenProperty']?.toString() ??
+          '';
+      _witnessesController.text = data['witnesses']?.toString() ?? '';
+      _evidenceStatusController.text = data['evidence_status']?.toString() ??
+          data['evidenceStatus']?.toString() ??
+          '';
+
+      // Map AI Recommendations
+      _stationReason = data['police_station_reason']?.toString();
+      _stationConfidence = data['station_confidence']?.toString();
+      _aiSummary =
+          data['ai_summary']?.toString() ?? data['summary']?.toString();
 
       // Map Incident Date - handle both string and Timestamp formats
       if (data['incident_date'] != null) {
@@ -175,7 +207,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
             String dateStr = incidentDateData.trim();
             parsedDate = DateTime.tryParse(dateStr);
             // debugPrint(
-                // '✅ Parsed incident date from string: $parsedDate (raw: "$dateStr")');
+            // '✅ Parsed incident date from string: $parsedDate (raw: "$dateStr")');
           }
           // Handle Timestamp object format
           else if (incidentDateData is Timestamp) {
@@ -435,6 +467,18 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       prayerRelief: _prayerReliefController.text.isEmpty
           ? null
           : _prayerReliefController.text,
+      accusedDetails: _accusedDetailsController.text.trim().isEmpty
+          ? null
+          : _accusedDetailsController.text.trim(),
+      stolenProperty: _stolenPropertyController.text.trim().isEmpty
+          ? null
+          : _stolenPropertyController.text.trim(),
+      witnesses: _witnessesController.text.trim().isEmpty
+          ? null
+          : _witnessesController.text.trim(),
+      evidenceStatus: _evidenceStatusController.text.trim().isEmpty
+          ? null
+          : _evidenceStatusController.text.trim(),
       extractedText: extractedText,
       userId: authProvider.user!.uid,
       createdAt: Timestamp.now(),
@@ -453,7 +497,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     }
 
     // Use the updated createPetition method with named arguments
-    final success = await petitionProvider.createPetition(
+    final result = await petitionProvider.createPetition(
       petition: petition,
       handwrittenFile: _pickedFiles.isNotEmpty ? _pickedFiles.first : null,
       proofFiles: _proofFiles,
@@ -463,25 +507,56 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     if (!mounted) return;
 
-    if (success) {
+    if (result != null) {
+      // Capture values before reset so QR dialog can use them
+      final capturedAnswers = {
+        'full_name': _petitionerNameController.text,
+        'address': _addressController.text,
+        'complaint_type': _titleController.text,
+        'selected_police_station': _stationController.text,
+        'phone': _phoneNumberController.text,
+        'incident_details': _groundsController.text,
+        'incident_summary': _aiSummary != null && _aiSummary!.isNotEmpty
+            ? _aiSummary!
+            : (_groundsController.text.length > 150
+                ? '${_groundsController.text.substring(0, 150)}...'
+                : _groundsController.text),
+        'incident_address': _incidentAddressController.text,
+        'incident_date': _incidentDate?.toIso8601String() ?? '',
+        'accused_details': _accusedDetailsController.text,
+        'stolen_property': _stolenPropertyController.text,
+        'witnesses': _witnessesController.text,
+        'evidence_status': _evidenceStatusController.text,
+        'police_station_reason': _stationReason ?? '',
+        'station_confidence': _stationConfidence ?? '',
+        'date_of_complaint': DateTime.now().toString().split('.').first,
+        'petition_number': result['petitionNumber']!,
+        'case_id': result['caseId']!,
+      };
+      final capturedSummary = _groundsController.text;
+      final capturedType = _titleController.text;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(localizations.petitionCreatedSuccessfully),
+            content: Text(
+                '${localizations.petitionCreatedSuccessfully} (${result['petitionNumber']})'),
             backgroundColor: Colors.green),
       );
 
-      // call optional callback (keeps existing behavior for callers)
       widget.onCreatedSuccess?.call();
-
-      // reset local form state
       _resetForm();
-
-      // refresh list and then navigate back to petitions list
       await petitionProvider.fetchPetitions(authProvider.user!.uid);
-
       if (!mounted) return;
 
-      GoRouter.of(context).go('/petitions'); // navigate back to petitions list
+      // Show QR dialog (same as ai_chatbot_details_screen)
+      await _generatePetitionQr(
+        answers: capturedAnswers,
+        summary: capturedSummary,
+        classification: capturedType,
+      );
+
+      if (!mounted) return;
+      GoRouter.of(context).go('/petitions');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -489,6 +564,154 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
             backgroundColor: Colors.red),
       );
     }
+  }
+
+  bool _isGeneratingQr = false;
+
+  /// Same pattern as ai_chatbot_details_screen: call backend, get PDF URL, show QR dialog.
+  Future<void> _generatePetitionQr({
+    required Map<String, String> answers,
+    required String summary,
+    required String classification,
+  }) async {
+    setState(() => _isGeneratingQr = true);
+    try {
+      final payload = {
+        "answers": answers,
+        "summary": summary,
+        "classification": classification,
+      };
+      const baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
+      // const baseUrl = 'http://localhost:8000';
+      final dio = Dio();
+      final response = await dio.post(
+        '$baseUrl/api/generate-chatbot-summary-pdf',
+        data: payload,
+      );
+      if (response.statusCode == 200) {
+        final pdfRelativeUrl = response.data['pdf_url'];
+        final fullPdfUrl = '$baseUrl$pdfRelativeUrl';
+        if (mounted) {
+          await _showQrDialog(fullPdfUrl, answers);
+        }
+      } else {
+        throw Exception('Failed to generate PDF: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate QR: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGeneratingQr = false);
+    }
+  }
+
+  Future<void> _showQrDialog(String pdfUrl, Map<String, String> answers) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Complaint Submitted! ✅'),
+        content: SizedBox(
+          width: 280,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: QrImageView(
+                      data: pdfUrl,
+                      version: QrVersions.auto,
+                      size: 200.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text('Scan QR to access your complaint summary PDF',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
+                if ((answers['petition_number'] ?? '').isNotEmpty) ...[
+                  _infoRow('Petition Number', answers['petition_number']!),
+                ],
+                if ((answers['case_id'] ?? '').isNotEmpty) ...[
+                  _infoRow('Case ID', answers['case_id']!),
+                ],
+                if ((answers['full_name'] ?? '').isNotEmpty) ...[
+                  _infoRow('Petitioner', answers['full_name']!),
+                ],
+                if ((answers['address'] ?? '').isNotEmpty) ...[
+                  _infoRow('Address', answers['address']!),
+                ],
+                if ((answers['complaint_type'] ?? '').isNotEmpty) ...[
+                  _infoRow('Type', answers['complaint_type']!),
+                ],
+                if ((answers['selected_police_station'] ?? '').isNotEmpty) ...[
+                  _infoRow(
+                      'Police Station', answers['selected_police_station']!),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _printPdf(pdfUrl),
+            icon: const Icon(Icons.print, size: 16),
+            label: const Text('Print'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _printPdf(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => response.bodyBytes,
+          name: 'Petition_Summary.pdf',
+        );
+      } else {
+        throw Exception('Failed to fetch PDF: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to print: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
   }
 
   void _resetForm() {
@@ -503,6 +726,10 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
 
     // ✅ NEW FIELDS RESET
     _incidentAddressController.clear();
+    _accusedDetailsController.clear();
+    _stolenPropertyController.clear();
+    _witnessesController.clear();
+    _evidenceStatusController.clear();
     _districtController.clear();
     _stationController.clear();
     _incidentDate = null;
@@ -732,17 +959,19 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                         // Incident Address
                         TextFormField(
                           controller: _incidentAddressController,
-                          maxLines: 3,
+                          maxLines: 2,
                           decoration: InputDecoration(
                             labelText: _getLocalizedLabel(
-                                'Incident Address', 'సంఘటన చిరునామా'),
+                                'Incident Location', 'సంఘటన జరిగిన ప్రదేశం'),
                             border: const OutlineInputBorder(),
+                            hintText: 'Where did the incident occur?',
                           ),
                           validator: (v) => v == null || v.isEmpty
-                              ? _getLocalizedLabel('Enter incident address',
-                                  'సంఘటన చిరునామా నమోదు చేయండి')
+                              ? _getLocalizedLabel('Enter incident location',
+                                  'సంఘటన జరిగిన ప్రదేశాన్ని నమోదు చేయండి')
                               : null,
                         ),
+                        const SizedBox(height: 16),
 
                         const SizedBox(height: 16),
 
@@ -764,6 +993,69 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
                                       .toString()
                                       .split(' ')[0],
                             ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Accused Details
+                        TextFormField(
+                          controller: _accusedDetailsController,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            labelText: _getLocalizedLabel(
+                                'Accused Details', 'నిందితుల వివరాలు'),
+                            border: const OutlineInputBorder(),
+                            hintText: _getLocalizedLabel(
+                                'Name, age, description of accused',
+                                'నిందితుల పేరు, వయస్సు, వివరణ'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Witnesses
+                        TextFormField(
+                          controller: _witnessesController,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            labelText:
+                                _getLocalizedLabel('Witnesses', 'సాక్షులు'),
+                            border: const OutlineInputBorder(),
+                            hintText: _getLocalizedLabel(
+                                'Name and contact of witnesses',
+                                'సాక్షుల పేరు మరియు సంప్రదింపు వివరాలు'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Stolen Property
+                        TextFormField(
+                          controller: _stolenPropertyController,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            labelText: _getLocalizedLabel(
+                                'Stolen Property', 'దొంగిలించబడిన ఆస్తి'),
+                            border: const OutlineInputBorder(),
+                            hintText: _getLocalizedLabel(
+                                'List items and estimated value',
+                                'వస్తువులు మరియు అంచనా విలువ'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Evidence Status
+                        TextFormField(
+                          controller: _evidenceStatusController,
+                          decoration: InputDecoration(
+                            labelText: _getLocalizedLabel(
+                                'Evidence Status', 'సాక్ష్యాల స్థితి'),
+                            border: const OutlineInputBorder(),
+                            hintText: _getLocalizedLabel(
+                                'CCTV, documents, etc. available?',
+                                'CCTV, పత్రాలు మొదలైనవి అందుబాటులో ఉన్నాయా?'),
                           ),
                         ),
 

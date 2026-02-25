@@ -126,6 +126,8 @@ app.include_router(ai_translation_router)
 
 @app.get("/")
 def root():
+    import logging
+    logging.getLogger("uvicorn").info("--- 🏘️ Root Endpoint Accessed (Connection Test) ---")
     return {"message": "Police Chatbot API running"}
 
 

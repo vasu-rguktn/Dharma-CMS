@@ -49,6 +49,54 @@ class AppLocalizationsTe extends AppLocalizations {
   String get email => 'ఇమెయిల్';
 
   @override
+  String get statusDraft => 'ముసాయిదా';
+
+  @override
+  String get statusFiled => 'దాఖలు చేయబడింది';
+
+  @override
+  String get statusUnderReview => 'సమీక్షలో ఉంది';
+
+  @override
+  String get statusHearingScheduled => 'విచారణ షెడ్యూల్ చేయబడింది';
+
+  @override
+  String get statusGranted => 'మంజూరు చేయబడింది';
+
+  @override
+  String get statusRejected => 'తిరస్కరించబడింది';
+
+  @override
+  String get statusWithdrawn => 'ఉపసంహరించబడింది';
+
+  @override
+  String get statusPending => 'పెండింగ్‌లో ఉంది';
+
+  @override
+  String get statusReceived => 'అందుకుంది';
+
+  @override
+  String get statusInProgress => 'ప్రక్రియలో ఉంది';
+
+  @override
+  String get statusClosed => 'మూసివేయబడింది';
+
+  @override
+  String get statusSubmitted => 'సమర్పించబడింది';
+
+  @override
+  String get statusAcknowledged => 'అంగీకరించబడింది';
+
+  @override
+  String get statusInvestigation => 'విచారణ';
+
+  @override
+  String get petitionNumber => 'పిటిషన్ సంఖ్య';
+
+  @override
+  String get caseId => 'కేసు ఐడి';
+
+  @override
   String get phone => 'ఫోన్';
 
   @override
@@ -254,6 +302,16 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get aiChatbotDetails => 'AI చాట్‌బాట్ వివరాలు';
+  @override
+  String get scanToDownloadSummary =>
+      'సారాంశాన్ని డౌన్‌లోడ్ చేయడానికి స్కాన్ చేయండి';
+
+  @override
+  String get scanQrInstruction =>
+      'PDF సారాంశాన్ని వీక్షించడానికి మరియు డౌన్‌లోడ్ చేయడానికి మరొక పరికరంతో ఈ QR కోడ్‌ను స్కాన్ చేయండి.';
+
+  @override
+  String get residentAddress => 'నివాస చిరునామా';
 
   @override
   String get citizenDetails => 'పౌరుల వివరాలు';
@@ -294,7 +352,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String welcomeUser(String name) {
     return '$name కు స్వాగతం!';
-    }
+  }
 
   @override
   String get legalAssistanceHub => 'మీ చట్టపరమైన సహాయ కేంద్రం';
@@ -749,7 +807,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String failedToGenerateSuggestions(String error) {
     return 'చట్టపరమైన సూచనలను రూపొందించడంలో విఫలమైంది: $error';
-    }
+  }
 
   @override
   String get provideFirDetailsDesc =>
@@ -806,7 +864,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String failedToGenerateDraft(String error) {
     return 'పత్రం చిత్తుప్రతిని రూపొందించడంలో విఫలమైంది: $error';
-    }
+  }
 
   @override
   String get documentDraftingDesc =>
@@ -863,12 +921,12 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String filesAdded(int count) {
     return '$count ఫైల్(లు) జోడించబడ్డాయి';
-    }
+  }
 
   @override
   String errorPickingFiles(String error) {
     return 'ఫైల్‌లను ఎంచుకోవడంలో లోపం: $error';
-    }
+  }
 
   @override
   String get pleaseUploadDocument =>
@@ -881,7 +939,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String failedToGenerateChargeSheet(String error) {
     return 'ఛార్జ్ షీట్‌ను రూపొందించడంలో విఫలమైంది: $error';
-    }
+  }
 
   @override
   String get chargesheetGeneratorDesc =>
@@ -928,12 +986,12 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String fileContentLoaded(String fileName) {
     return '$fileName కంటెంట్ లోడ్ చేయబడింది.';
-    }
+  }
 
   @override
   String errorReadingFile(String error) {
     return 'ఫైల్ చదవడంలో లోపం: $error';
-    }
+  }
 
   @override
   String get pleaseUploadOrPasteChargesheet =>
@@ -946,7 +1004,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String failedToVetChargesheet(String error) {
     return 'ఛార్జ్ షీట్‌ను పరిశీలించడంలో విఫలమైంది: $error';
-    }
+  }
 
   @override
   String get chargesheetVettingAI => 'ఛార్జ్ షీట్ పరిశీలన AI';
@@ -1006,7 +1064,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String failedToPrepareWitness(String error) {
     return 'సాక్షి తయారీ సెషన్ నిర్వహించడంలో విఫలమైంది: $error';
-    }
+  }
 
   @override
   String get aiWitnessPreparation => 'AI సాక్షి తయారీ';
@@ -1042,7 +1100,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String reviewMockTrialFor(String witnessName) {
     return 'సాక్షి $witnessName కోసం మాక్ ట్రయల్ ట్రాన్స్‌క్రిప్ట్ మరియు AI ఫీడ్‌బ్యాక్‌ను సమీక్షించండి.';
-    }
+  }
 
   @override
   String get mockTrialTranscript => 'మాక్ ట్రయల్ ట్రాన్స్‌క్రిప్ట్';
@@ -1072,7 +1130,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String errorPickingImage(String error) {
     return 'చిత్రాన్ని ఎంచుకోవడంలో లోపం: $error';
-    }
+  }
 
   @override
   String get selectImageSource => 'చిత్ర మూలాన్ని ఎంచుకోండి';
@@ -1094,7 +1152,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String failedToAnalyzeMedia(String error) {
     return 'మీడియాను విశ్లేషించడంలో విఫలమైంది: $error';
-    }
+  }
 
   @override
   String get aiCrimeSceneInvestigator => 'AI క్రైమ్ సీన్ పరిశోధకుడు';
@@ -1180,7 +1238,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String errorLoadingJournal(String error) {
     return 'జర్నల్ లోడ్ చేయడంలో లోపం: $error';
-    }
+  }
 
   @override
   String get addJournalEntry => 'జర్నల్ ఎంట్రీని జోడించండి';
@@ -1231,7 +1289,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String errorAddingEntry(String error) {
     return 'ఎంట్రీని జోడించడంలో లోపం: $error';
-    }
+  }
 
   @override
   String get caseJournalDesc =>
@@ -1273,7 +1331,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String errorCreatingCase(String error) {
     return 'కేసును సృష్టించడంలో లోపం: $error';
-    }
+  }
 
   @override
   String get caseTitleRequired => 'కేసు శీర్షిక *';
@@ -1537,7 +1595,7 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String selectLabel(String label) {
     return '$label ఎంచుకోండి';
-    }
+  }
 
   @override
   String get enterFirNumber => 'FIR నంబర్ నమోదు చేయండి (కేసు ID)';
@@ -2216,7 +2274,20 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get complaintForOthers => 'ఇతరుల కోసం ఫిర్యాదు';
-  
+
   @override
-  String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
+  String get evidenceRequest =>
+      "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
+
+ @override
+  String get chatbotLanguage => 'చాట్‌బాట్ భాష';
+
+  @override
+  String get viewProfile => 'ప్రొఫైల్ చూడండి';
+
+  @override
+  String get resetOnboarding => 'ఆన్‌బోర్డింగ్‌ను రీసెట్ చేయండి';
+
+  @override
+  String get showTutorialAgain => 'ట్యుటోరియల్‌ని మళ్ళీ చూపించు';
 }

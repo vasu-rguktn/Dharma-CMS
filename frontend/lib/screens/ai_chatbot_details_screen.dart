@@ -72,11 +72,23 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
     try {
       // 1. Prepare data payload
       // We need to match ChatbotSummaryRequest in backend
+      final updatedAnswers = Map<String, String>.from(widget.answers);
+
+      // incident_summary should be the full AI summary
+      updatedAnswers['incident_summary'] = widget.summary;
+
+      // incident_address (Incident Location) should stay as is if it exists
+      // If it doesn't exist, we can fallback to summary or leave it empty
+
+      if (!updatedAnswers.containsKey('date_of_complaint')) {
+        updatedAnswers['date_of_complaint'] =
+            DateTime.now().toString().split('.').first;
+      }
+
       final payload = {
-        "answers": widget.answers,
+        "answers": updatedAnswers,
         "summary": widget.summary,
         "classification": widget.classification,
-        // "originalReportId": widget.draftId // Optional
       };
 
       // String baseUrl = "http://127.0.0.1:8000"; // Default for local web
@@ -89,9 +101,13 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
       // Override if we can find a better source later.
       // But effectively, let's try to use the `dio` from `AuthProvider` if it exposes it? No.
       String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      //   baseUrl = "http://10.0.2.2:8000";
+      // }
       //
       // // Default for local web
       // String baseUrl = "http://127.0.0.1:8000";
+      // String baseUrl = "http://10.5.40.157:8000";
 
       final dio = Dio();
       final response = await dio.post(
@@ -153,18 +169,25 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
     });
 
     try {
+      final updatedAnswers = Map<String, String>.from(widget.answers);
+      updatedAnswers['incident_summary'] = widget.summary;
+
+      if (!updatedAnswers.containsKey('date_of_complaint')) {
+        updatedAnswers['date_of_complaint'] =
+            DateTime.now().toString().split('.').first;
+      }
+
       final payload = {
-        "answers": widget.answers,
+        "answers": updatedAnswers,
         "summary": widget.summary,
         "classification": widget.classification,
       };
 
-      // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
-      // Since we can't easily detect physical device, defaulting to LAN IP for now
-      // baseUrl = "http://10.0.2.2:8000";
-      // baseUrl = "http://10.5.40.156:8000";
-      // User requested localhost/emulator link
-      // String baseUrl = "http://127.0.0.1:8000";
+      // String baseUrl = "http://localhost:8000";
+      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      //   baseUrl = "http://10.0.2.2:8000";
+      // }
+
       String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
 
       final dio = Dio();
@@ -200,39 +223,61 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
   }
 
   void _showQrDialog(String data) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Scan to Download Summary"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 200,
-              height: 200,
-              child: QrImageView(
-                data: data,
-                version: QrVersions.auto,
-                size: 200.0,
+        title: Text(l10n.scanToDownloadSummary),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: QrImageView(
+                    data: data,
+                    version: QrVersions.auto,
+                    size: 200.0,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Scan this QR code with another device to view and download the PDF summary.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            SelectableText(
-              data,
-              style: const TextStyle(fontSize: 10, color: Colors.blue),
-            )
-          ],
+              const SizedBox(height: 16),
+              Text(
+                l10n.scanQrInstruction,
+                textAlign: TextAlign.left,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              if ((widget.answers['petition_number'] ?? '').isNotEmpty) ...[
+                _infoRow('Petition Number', widget.answers['petition_number']!),
+              ],
+              if ((widget.answers['case_id'] ?? '').isNotEmpty) ...[
+                _infoRow('Case ID', widget.answers['case_id']!),
+              ],
+              _infoRow(
+                  l10n.petitioner, widget.answers['full_name'] ?? "Anonymous"),
+              _infoRow(
+                  l10n.residentAddress, widget.answers['address'] ?? "N/A"),
+              _infoRow(l10n.complaintType,
+                  widget.answers['complaint_type'] ?? widget.classification),
+              if (widget.answers['selected_police_station'] != null &&
+                  widget.answers['selected_police_station']!.isNotEmpty)
+                _infoRow(l10n.policeStation,
+                    widget.answers['selected_police_station']!),
+            ],
+          ),
         ),
         actions: [
+          TextButton.icon(
+            onPressed: () => _printPdf(data),
+            icon: const Icon(Icons.print),
+            label: const Text('Print'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: const Text("Done"),
           ),
         ],
       ),
@@ -537,6 +582,23 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontSize: 11)),
+        ],
       ),
     );
   }

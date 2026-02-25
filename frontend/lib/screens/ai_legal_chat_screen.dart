@@ -441,6 +441,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
   bool _isRestarting =
       false; // Track if restart is in progress to prevent BUSY errors
+  bool _isSystemWarmingUp = false; // UI flag for "System warming up..." message
   DateTime? _lastSpeechDetected; // Track when speech was last detected
   DateTime? _lastDoneStatus; // Track when "done" status was last received
   int _busyRetryCount = 0; // Track BUSY error retries
@@ -522,17 +523,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           // CRITICAL: If text was shortened (words removed), restart ASR to clear its buffer
           // This prevents ASR from re-adding removed words when user speaks again
           if (textWasShortened && _isRecording) {
-            // print('🔄 Text was shortened - restarting ASR to clear buffer...');
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (_isRecording && mounted) {
+            Future.delayed(const Duration(milliseconds: 400), () {
+              if (_isRecording && mounted && _currentSttLang != null) {
                 if (_isAndroid) {
-                  // Restart native Android ASR
-                  _nativeSpeech.stopListening();
-                  Future.delayed(const Duration(milliseconds: 200), () {
-                    if (_isRecording && _currentSttLang != null && mounted) {
-                      _nativeSpeech.startListening(language: _currentSttLang!);
-                    }
-                  });
+                  // Call startListening which internally handles stop + cancel + delayed restart
+                  // This avoids the Busy error from stop → immediate startListening race
+                  _nativeSpeech.startListening(language: _currentSttLang!);
                 } else {
                   // Restart speech_to_text (iOS/Web)
                   _seamlessRestart();
@@ -563,23 +559,26 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       if (mounted && _isRecording) {
         setState(() {
           _isUpdatingFromAsr = true;
+          // Apply post-processing corrections for local terms
+          final correctedText = _applyAsrCorrections(text);
           // PARTIAL RESULT: Extract only genuinely new words (not already at end)
           String partialToShow;
           if (_finalizedTranscript.isEmpty) {
             // No finalized text yet - use ASR text directly
-            partialToShow = text;
+            partialToShow = correctedText;
           } else {
             // Have finalized text - extract only new words
-            partialToShow = extractNewWordsOnly(_finalizedTranscript, text);
+            partialToShow =
+                extractNewWordsOnly(_finalizedTranscript, correctedText);
             // If extraction returns empty but ASR has text, use ASR text
-            if (partialToShow.isEmpty && text.isNotEmpty) {
-              partialToShow = text;
+            if (partialToShow.isEmpty && correctedText.isNotEmpty) {
+              partialToShow = correctedText;
             }
           }
 
           // Update current transcript
           _currentTranscript = partialToShow;
-          _lastRecognizedText = text;
+          _lastRecognizedText = correctedText;
           // Display: finalized + current partial
           final displayText = _finalizedTranscript.isEmpty
               ? _currentTranscript
@@ -589,8 +588,6 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
           _controller.text = displayText.trim();
 
           _isUpdatingFromAsr = false;
-          // print(
-          // 'Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
         });
       }
     };
@@ -611,15 +608,17 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       if (mounted && _isRecording) {
         setState(() {
           _isUpdatingFromAsr = true;
+          // Apply post-processing corrections for local terms
+          final correctedText = _applyAsrCorrections(text);
           // FINAL RESULT: Merge with finalized transcript
-          final merged = mergeAsrWithCurrentText(_finalizedTranscript, text);
+          final merged =
+              mergeAsrWithCurrentText(_finalizedTranscript, correctedText);
           _finalizedTranscript = merged;
           _currentTranscript = '';
-          _lastRecognizedText = text;
+          _lastRecognizedText = correctedText;
           _controller.text = merged;
 
           _isUpdatingFromAsr = false;
-          // print('Native final (merged): "$text" -> "$merged"');
         });
       }
     };
@@ -1220,7 +1219,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     //   baseUrl = "http://127.0.0.1:8000";
     // } else if (Platform.isAndroid) {
     //   // Android Emulator uses 10.0.2.2 to access host localhost
-    //   baseUrl = "http://10.0.2.2:8000";
+    //   // PHYSICAL DEVICE : Use your local IP address 10.5.40.157
+    //   baseUrl = "http://10.5.40.157:8000";
     // } else {
     //   // iOS Simulator and others
     //   baseUrl = "http://127.0.0.1:8000";
@@ -1518,11 +1518,14 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       String msg = localizations.somethingWentWrong;
 
       // Enhanced error logging for debugging
-      // print('❌ Chat step error: $e');
+      print('❌ Chat step error: $e');
 
       if (e is DioException) {
-        // print('HTTP Status Code: ${e.response?.statusCode}');
-        // print('Response Data: ${e.response?.data}');
+        print('HTTP Status Code: ${e.response?.statusCode}');
+        print('Response Data: ${e.response?.data}');
+        print('Error Message: ${e.message}');
+        print(
+            'BaseURL used: ${e.requestOptions.baseUrl}${e.requestOptions.path}');
 
         if (e.response != null && e.response?.data != null) {
           // try to show server-provided message if present
@@ -2215,73 +2218,83 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         return;
       }
 
-      // print('Starting new listening session after restart...');
-      await _speech.listen(
-        localeId: sttLang,
-        listenFor: const Duration(
-            hours: 1), // Listen for up to 1 hour - continuous listening
-        pauseFor: const Duration(
-            hours:
-                1), // Allow very long pauses - treat silence as thinking time
-        partialResults: true,
-        cancelOnError: false,
-        onResult: (result) {
-          if (mounted) {
-            setState(() {
-              _isUpdatingFromAsr = true;
-              final newWords = result.recognizedWords.trim();
-              if (newWords.isEmpty) {
-                _isUpdatingFromAsr = false;
-                return;
-              }
-
-              if (result.finalResult) {
-                // FINAL RESULT: Merge with finalized transcript
-                final merged =
-                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
-                _finalizedTranscript = merged;
-                _currentTranscript = '';
-                _lastRecognizedText = newWords;
-                _controller.text = merged;
-                // print(
-                // 'STT safe restart final (merged): "$newWords" -> "$merged"');
-              } else {
-                // PARTIAL RESULT: Extract only genuinely new words (not already at end)
-                String partialToShow;
-                if (_finalizedTranscript.isEmpty) {
-                  // No finalized text yet - use ASR text directly
-                  partialToShow = newWords;
-                } else {
-                  // Have finalized text - extract only new words
-                  partialToShow =
-                      extractNewWordsOnly(_finalizedTranscript, newWords);
-                  // If extraction returns empty but ASR has text, use ASR text
-                  if (partialToShow.isEmpty && newWords.isNotEmpty) {
-                    partialToShow = newWords;
-                  }
+      if (_isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.startListening(language: sttLang);
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.listen(
+          localeId: sttLang,
+          listenFor: const Duration(
+              hours: 1), // Listen for up to 1 hour - continuous listening
+          pauseFor: const Duration(
+              hours:
+                  1), // Allow very long pauses - treat silence as thinking time
+          partialResults: true,
+          cancelOnError: false,
+          onResult: (result) {
+            if (mounted) {
+              setState(() {
+                _isUpdatingFromAsr = true;
+                final newWords = result.recognizedWords.trim();
+                if (newWords.isEmpty) {
+                  _isUpdatingFromAsr = false;
+                  return;
                 }
 
-                // Update current transcript
-                _currentTranscript = partialToShow;
-                _lastRecognizedText = newWords;
-                final displayText = _finalizedTranscript.isEmpty
-                    ? _currentTranscript
-                    : (_currentTranscript.isEmpty
-                        ? _finalizedTranscript
-                        : '$_finalizedTranscript $_currentTranscript');
-                _controller.text = displayText.trim();
-                // print(
-                // 'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
-              }
+                if (result.finalResult) {
+                  // FINAL RESULT: Merge with finalized transcript
+                  final merged =
+                      mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                  _finalizedTranscript = merged;
+                  _currentTranscript = '';
+                  _lastRecognizedText = newWords;
+                  _controller.text = merged;
+                  // print(
+                  // 'STT safe restart final (merged): "$newWords" -> "$merged"');
+                } else {
+                  // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                  String partialToShow;
+                  if (_finalizedTranscript.isEmpty) {
+                    // No finalized text yet - use ASR text directly
+                    partialToShow = newWords;
+                  } else {
+                    // Have finalized text - extract only new words
+                    partialToShow =
+                        extractNewWordsOnly(_finalizedTranscript, newWords);
+                    // If extraction returns empty but ASR has text, use ASR text
+                    if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                      partialToShow = newWords;
+                    }
+                  }
 
-              _isUpdatingFromAsr = false;
-            });
-          }
-        },
-      );
+                  // Update current transcript
+                  _currentTranscript = partialToShow;
+                  _lastRecognizedText = newWords;
+                  final displayText = _finalizedTranscript.isEmpty
+                      ? _currentTranscript
+                      : (_currentTranscript.isEmpty
+                          ? _finalizedTranscript
+                          : '$_finalizedTranscript $_currentTranscript');
+                  _controller.text = displayText.trim();
+                  // print(
+                  // 'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                }
+
+                _isUpdatingFromAsr = false;
+              });
+            }
+          },
+        );
+      }
 
       _busyRetryCount = 0; // Reset retry count on success
       _isRestarting = false;
+      if (mounted) {
+        setState(() {
+          _isSystemWarmingUp = false;
+        });
+      }
       // print('Successfully restarted speech recognition');
     } catch (e) {
       _isRestarting = false;
@@ -2292,22 +2305,42 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
         _busyRetryCount++;
         // print('BUSY error detected (attempt $_busyRetryCount), will retry...');
 
+        if (mounted && _busyRetryCount == 1) {
+          setState(() {
+            _isSystemWarmingUp = true;
+          });
+        }
+
         // Exponential backoff: 1s, 2s, 4s, 8s...
         final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
 
         if (_busyRetryCount <= 5 && mounted && _isRecording) {
           Future.delayed(Duration(milliseconds: delayMs), () {
-            if (mounted && _isRecording && !_speech.isListening) {
+            if (mounted &&
+                _isRecording &&
+                !(_isAndroid
+                    ? _nativeSpeech.isListening
+                    : _speech.isListening)) {
               _safeRestartListening(sttLang);
             }
           });
         } else {
           // print('Max BUSY retries reached, giving up');
+          if (mounted) {
+            setState(() {
+              _isSystemWarmingUp = false;
+            });
+          }
           _busyRetryCount = 0;
         }
       } else {
         // Other errors - log and reset retry count
         // print('Error restarting speech recognition: $e');
+        if (mounted) {
+          setState(() {
+            _isSystemWarmingUp = false;
+          });
+        }
         _busyRetryCount = 0;
       }
     }
@@ -2328,7 +2361,10 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
 
       // Check if SDK stopped listening
-      if (!_speech.isListening && !_isRestarting) {
+      final isStillListening =
+          _isAndroid ? _nativeSpeech.isListening : _speech.isListening;
+
+      if (!isStillListening && !_isRestarting) {
         // print('Monitor detected SDK stopped - triggering seamless restart...');
         _seamlessRestart();
       }
@@ -2371,71 +2407,76 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       }
 
       // Restart listening with same configuration
-      // print('Restarting speech recognition...');
-      await _speech.listen(
-        localeId: _currentSttLang!,
-        listenFor: const Duration(hours: 1),
-        pauseFor: const Duration(hours: 1),
-        partialResults: true,
-        cancelOnError: false,
-        onResult: (result) {
-          if (mounted && _isRecording) {
-            setState(() {
-              _isUpdatingFromAsr = true;
-              final newWords = result.recognizedWords.trim();
+      if (_isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.startListening(language: _currentSttLang!);
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.listen(
+          localeId: _currentSttLang!,
+          listenFor: const Duration(hours: 1),
+          pauseFor: const Duration(hours: 1),
+          partialResults: true,
+          cancelOnError: false,
+          onResult: (result) {
+            if (mounted && _isRecording) {
+              setState(() {
+                _isUpdatingFromAsr = true;
+                final newWords = result.recognizedWords.trim();
 
-              if (newWords.isEmpty) {
-                _isUpdatingFromAsr = false;
-                return;
-              }
-
-              // print(
-              // 'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
-              _lastSpeechDetected = DateTime.now();
-
-              if (result.finalResult) {
-                // FINAL RESULT: Merge with finalized transcript
-                final merged =
-                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
-                _finalizedTranscript = merged;
-                _currentTranscript = '';
-                _lastRecognizedText = newWords;
-                _controller.text = merged;
-                // print('STT restart final (merged): "$newWords" -> "$merged"');
-              } else {
-                // PARTIAL RESULT: Extract only genuinely new words (not already at end)
-                String partialToShow;
-                if (_finalizedTranscript.isEmpty) {
-                  // No finalized text yet - use ASR text directly
-                  partialToShow = newWords;
-                } else {
-                  // Have finalized text - extract only new words
-                  partialToShow =
-                      extractNewWordsOnly(_finalizedTranscript, newWords);
-                  // If extraction returns empty but ASR has text, use ASR text
-                  if (partialToShow.isEmpty && newWords.isNotEmpty) {
-                    partialToShow = newWords;
-                  }
+                if (newWords.isEmpty) {
+                  _isUpdatingFromAsr = false;
+                  return;
                 }
 
-                // Update current transcript
-                _currentTranscript = partialToShow;
-                _lastRecognizedText = newWords;
-                final displayText = _finalizedTranscript.isEmpty
-                    ? _currentTranscript
-                    : (_currentTranscript.isEmpty
-                        ? _finalizedTranscript
-                        : '$_finalizedTranscript $_currentTranscript');
-                _controller.text = displayText.trim();
                 // print(
-                // 'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
-              }
+                // 'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
+                _lastSpeechDetected = DateTime.now();
 
-              _isUpdatingFromAsr = false;
-            });
-          }
-        },
-      );
+                if (result.finalResult) {
+                  // FINAL RESULT: Merge with finalized transcript
+                  final merged =
+                      mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                  _finalizedTranscript = merged;
+                  _currentTranscript = '';
+                  _lastRecognizedText = newWords;
+                  _controller.text = merged;
+                  // print('STT restart final (merged): "$newWords" -> "$merged"');
+                } else {
+                  // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                  String partialToShow;
+                  if (_finalizedTranscript.isEmpty) {
+                    // No finalized text yet - use ASR text directly
+                    partialToShow = newWords;
+                  } else {
+                    // Have finalized text - extract only new words
+                    partialToShow =
+                        extractNewWordsOnly(_finalizedTranscript, newWords);
+                    // If extraction returns empty but ASR has text, use ASR text
+                    if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                      partialToShow = newWords;
+                    }
+                  }
+
+                  // Update current transcript
+                  _currentTranscript = partialToShow;
+                  _lastRecognizedText = newWords;
+                  final displayText = _finalizedTranscript.isEmpty
+                      ? _currentTranscript
+                      : (_currentTranscript.isEmpty
+                          ? _finalizedTranscript
+                          : '$_finalizedTranscript $_currentTranscript');
+                  _controller.text = displayText.trim();
+                  // print(
+                  // 'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                }
+
+                _isUpdatingFromAsr = false;
+              });
+            }
+          },
+        );
+      }
 
       // Start monitoring timer to detect when SDK stops
       _startListeningMonitor();
@@ -2451,7 +2492,9 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
       if (_busyRetryCount < 3 && mounted && _isRecording) {
         _busyRetryCount++;
         Future.delayed(Duration(milliseconds: 1000 * _busyRetryCount), () {
-          if (mounted && _isRecording && !_speech.isListening) {
+          if (mounted &&
+              _isRecording &&
+              !(_isAndroid ? _nativeSpeech.isListening : _speech.isListening)) {
             _seamlessRestart();
           }
         });
@@ -2492,7 +2535,46 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     }
   }
 
-  /// Toggle recording on/off for speech-to-text
+  /// Post-processing: Correct known phonetic mis-recognitions for local names
+  String _applyAsrCorrections(String text) {
+    if (text.isEmpty) return text;
+    // Map of {wrong phonetic form → correct form} (case-insensitive matching)
+    final corrections = {
+      'new video': 'Nuzvid',
+      'new vid': 'Nuzvid',
+      'news vid': 'Nuzvid',
+      'news video': 'Nuzvid',
+      'at news video': 'at Nuzvid',
+      'at nuzvid': 'at Nuzvid',
+      'nuzveed': 'Nuzvid',
+      'nazvid': 'Nuzvid',
+      'naz vid': 'Nuzvid',
+      'nose weed': 'Nuzvid',
+      'nose wid': 'Nuzvid',
+      'noz weed': 'Nuzvid',
+      'nuz weed': 'Nuzvid',
+      'nuzwid': 'Nuzvid',
+      'bustand': 'bus stand',
+      'busthand': 'bus stand',
+      'bus station': 'bus stand',
+      'rgkt': 'RGUKT',
+      'rkgt': 'RGUKT',
+      'rgukt nuzvid': 'RGUKT Nuzvid',
+      'iiit nuzvid': 'IIIT Nuzvid',
+      'aap': '', // Hindi leak
+      'roj': '', // Hindi leak
+    };
+    String result = text;
+    corrections.forEach((wrong, right) {
+      result = result.replaceAll(
+        RegExp(RegExp.escape(wrong), caseSensitive: false),
+        right,
+      );
+    });
+    // Clean up extra spaces
+    return result.trim().replaceAll(RegExp(r'  +'), ' ');
+  }
+
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
 
@@ -2581,6 +2663,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
 
         try {
           await _nativeSpeech.startListening(language: sttLang);
+          // Start monitor for Android too
+          _startListeningMonitor();
           // print('Native ASR started successfully');
         } catch (e) {
           // print('Error starting native ASR: $e');
@@ -2655,6 +2739,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
             _lastRestartAttempt = null; // Reset restart tracker for new session
             _isRestarting = false; // Reset restart flag
             _busyRetryCount = 0; // Reset BUSY retry count
+            _isSystemWarmingUp = false; // Reset warming up flag
             _lastSpeechDetected = null; // Reset last speech timestamp
           });
 
@@ -3283,7 +3368,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
               child: _messages.isEmpty
                   ? Center(
                       child: Text(
-                        localizations.loading ?? 'Loading...',
+                        localizations.loading,
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                     )
@@ -3291,8 +3376,75 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                       controller: _scrollController,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
-                      itemCount: _messages.length,
+                      itemCount: _messages.length + (_isLoading ? 1 : 0),
                       itemBuilder: (context, index) {
+                        if (index == _messages.length) {
+                          // Show thinking indicator at the end of the list
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                      width: 1,
+                                    ),
+                                    image: const DecorationImage(
+                                      image: AssetImage(
+                                          'assets/police_avatar.png'),
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(18),
+                                      topRight: Radius.circular(18),
+                                      bottomLeft: Radius.circular(4),
+                                      bottomRight: Radius.circular(18),
+                                    ),
+                                    border: Border.all(
+                                        color: Colors.grey.shade300, width: 1),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.grey.shade400),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        localizations.loading,
+                                        style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 14,
+                                            fontStyle: FontStyle.italic),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
                         final msg = _messages[index];
                         // Different layout based on sender
                         return Padding(
@@ -3573,8 +3725,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                           color: Colors.white),
                       const SizedBox(width: 8),
                       Text(
-                        localizations.complaintSummary ??
-                            "View Complaint Summary",
+                        localizations.complaintSummary,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -3638,11 +3789,12 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                               minLines: 1,
                               textInputAction: TextInputAction.send,
                               decoration: InputDecoration(
-                                hintText: _currentQ >= 0 &&
-                                        _currentQ < _questions.length
-                                    ? _questions[_currentQ].question
-                                    : localizations.typeMessage ??
-                                        'Type your message...',
+                                hintText: _isSystemWarmingUp
+                                    ? "System warming up..."
+                                    : (_currentQ >= 0 &&
+                                            _currentQ < _questions.length
+                                        ? _questions[_currentQ].question
+                                        : localizations.typeMessage),
                                 hintStyle: TextStyle(
                                   color: Colors.grey.shade500,
                                   fontSize: 13,
@@ -3653,8 +3805,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
                                   vertical: 8,
                                 ),
                                 errorText: _inputError
-                                    ? localizations.pleaseEnterYourAnswer ??
-                                        "Please enter your answer"
+                                    ? localizations.pleaseEnterYourAnswer
                                     : null,
                                 errorStyle: const TextStyle(fontSize: 10),
                               ),

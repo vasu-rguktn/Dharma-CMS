@@ -63,9 +63,7 @@ class PetitionCard extends StatelessWidget {
 
     // Determine what text to show: policeStatus takes precedence
     final String displayStatus =
-        (petition.policeStatus != null && petition.policeStatus!.isNotEmpty)
-            ? petition.policeStatus!
-            : petition.status.displayName;
+        petition.getLocalizedDisplayStatus(localizations);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -188,7 +186,9 @@ class PetitionCard extends StatelessWidget {
                     Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
-                      petition.isAnonymous ? maskPhoneNumber(petition.phoneNumber) : petition.phoneNumber!,
+                      petition.isAnonymous
+                          ? maskPhoneNumber(petition.phoneNumber)
+                          : petition.phoneNumber!,
                       style: theme.textTheme.bodySmall
                           ?.copyWith(color: Colors.grey[600]),
                     ),

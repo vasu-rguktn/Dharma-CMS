@@ -47,6 +47,53 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get email => 'ईमेल';
+  @override
+  String get statusDraft => 'मसौदा';
+
+  @override
+  String get statusFiled => 'दायर किया गया';
+
+  @override
+  String get statusUnderReview => 'समीक्षाधीन';
+
+  @override
+  String get statusHearingScheduled => 'सुनवाई निर्धारित';
+
+  @override
+  String get statusGranted => 'स्वीकृत';
+
+  @override
+  String get statusRejected => 'अस्वीकृत';
+
+  @override
+  String get statusWithdrawn => 'वापस ले लिया गया';
+  @override
+  String get statusPending => 'लंबित';
+
+  @override
+  String get statusReceived => 'प्राप्त';
+
+  @override
+  String get statusInProgress => 'प्रगति पर है';
+
+  @override
+  String get statusClosed => 'बंद';
+
+  @override
+  String get statusSubmitted => 'जमा किया गया';
+
+  @override
+  String get statusAcknowledged => 'स्वीकार किया गया';
+
+  @override
+  String get statusInvestigation => 'जांच';
+
+  @override
+  String get petitionNumber => 'याचिका संख्या';
+
+  @override
+  String get caseId => 'मामला आईडी';
+
 
   @override
   String get phone => 'फ़ोन';
@@ -250,6 +297,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get aiChatbotDetails => 'एआई चैटबॉट विवरण';
+  @override
+  String get scanToDownloadSummary => 'सारांश डाउनलोड करने के लिए स्कैन करें';
+
+  @override
+  String get scanQrInstruction => 'पीडीएफ सारांश देखने और डाउनलोड करने के लिए इस क्यूआर कोड को दूसरे डिवाइस से स्कैन करें।';
+
+  @override
+  String get residentAddress => 'निवासी पता';
+
 
   @override
   String get citizenDetails => 'नागरिक विवरण';
@@ -2224,4 +2280,16 @@ class AppLocalizationsHi extends AppLocalizations {
   
   @override
   String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
+
+  @override
+  String get chatbotLanguage => 'चैटबॉट की भाषा';
+
+  @override
+  String get viewProfile => 'प्रोफ़ाइल देखें';
+
+  @override
+  String get resetOnboarding => 'ऑनबोर्डिंग रीसेट करें';
+
+  @override
+  String get showTutorialAgain => 'ट्यूटोरियल फिर से दिखाएं';
 }

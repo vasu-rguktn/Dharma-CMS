@@ -189,11 +189,15 @@ def _render_summary_pdf(payload: ChatbotSummaryRequest) -> str:
     story.append(Paragraph("Citizen Details", heading_style))
 
     details_map = [
+        ("Petition Number", "petition_number"),
+        ("Case ID", "case_id"),
+        ("Date of Complaint", "date_of_complaint"),
         ("Full Name", "full_name"),
         ("Address", "address"),
         ("Phone Number", "phone"),
         ("Complaint Type", "complaint_type"),
-        ("Incident Summary", "incident_address"),
+        ("Incident Date", "incident_date"),
+        ("Incident Location", "incident_address"),
         ("Accused Details", "accused_details"),
         ("Stolen Property", "stolen_property"),
         ("Witnesses", "witnesses"),
@@ -201,7 +205,6 @@ def _render_summary_pdf(payload: ChatbotSummaryRequest) -> str:
         ("Selected Police Station", "selected_police_station"),
         ("Reason for Station", "police_station_reason"),
         ("Confidence Level", "station_confidence"),
-        ("Date of Complaint", "date_of_complaint"),
     ]
 
     table_data = []

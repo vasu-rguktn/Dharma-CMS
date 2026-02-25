@@ -8,6 +8,7 @@ import 'package:Dharma/models/petition_update.dart';
 import 'package:Dharma/utils/petition_filter.dart';
 import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -204,7 +205,10 @@ class _PetitionListModalState extends State<PetitionListModal> {
                 const SizedBox(height: 16),
                 _buildInfoRow('Petitioner', petition.petitionerName),
                 _buildInfoRow('Type', petition.type.displayName),
-                _buildInfoRow('Status', petition.policeStatus ?? 'Pending'),
+                _buildInfoRow(
+                    'Status',
+                    petition.getLocalizedDisplayStatus(
+                        AppLocalizations.of(context))),
                 if (petition.stationName != null)
                   _buildInfoRow('Station', petition.stationName!),
 
@@ -382,7 +386,8 @@ class _PetitionListModalState extends State<PetitionListModal> {
                       ),
                     ),
                     child: Text(
-                      petition.policeStatus ?? 'Pending',
+                      petition.getLocalizedDisplayStatus(
+                          AppLocalizations.of(context)),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: _getStatusColor(widget.filter),
                         fontWeight: FontWeight.bold,

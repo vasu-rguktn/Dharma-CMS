@@ -351,7 +351,7 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
                             size: 18, color: Colors.grey.shade600),
                         const SizedBox(width: 8),
                         Text(
-                          localizations.anonymousPetition ?? "File Anonymously",
+                          localizations.anonymousPetition,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -441,6 +441,7 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
   DateTime? _lastRestartAttempt; // Track last restart to prevent rapid cycling
   bool _isRestarting =
       false; // Track if restart is in progress to prevent BUSY errors
+  bool _isSystemWarmingUp = false; // UI flag for "System warming up..." message
   DateTime? _lastSpeechDetected; // Track when speech was last detected
   DateTime? _lastDoneStatus; // Track when "done" status was last received
   int _busyRetryCount = 0; // Track BUSY error retries
@@ -449,6 +450,7 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
   bool _ignoreAsrCallbacks = false; // Ignore ASR callbacks after sending
   bool _isUpdatingFromAsr =
       false; // Flag to prevent manual edit detection during ASR updates
+  bool _isAwaitingRestart = false;
   // StreamSubscription<stt.SpeechRecognitionResult>? _sttSubscription;
 
   // Platform channel for muting system sounds during ASR
@@ -463,6 +465,7 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
   bool _isSpeaking = false;
   String _displayedCaptionText = '';
   Timer? _typewriterTimer;
+  bool _isAvatarMode = true; // Added state for mode toggle
 
   @override
   void initState() {
@@ -524,22 +527,21 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
 
           // CRITICAL: If text was shortened (words removed), restart ASR to clear its buffer
           // This prevents ASR from re-adding removed words when user speaks again
-          if (textWasShortened && _isRecording) {
-            // print('🔄 Text was shortened - restarting ASR to clear buffer...');
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (_isRecording && mounted) {
+          if (textWasShortened && _isRecording && !_isAwaitingRestart) {
+            _isAwaitingRestart = true;
+            Future.delayed(const Duration(milliseconds: 400), () {
+              if (_isRecording && mounted && _currentSttLang != null) {
                 if (_isAndroid) {
-                  // Restart native Android ASR
-                  _nativeSpeech.stopListening();
-                  Future.delayed(const Duration(milliseconds: 200), () {
-                    if (_isRecording && _currentSttLang != null && mounted) {
-                      _nativeSpeech.startListening(language: _currentSttLang!);
-                    }
-                  });
+                  // Call startListening which internally handles stop+cancel+restart
+                  // This avoids Busy from stop → immediate startListening race
+                  _nativeSpeech.startListening(language: _currentSttLang!);
+                  _isAwaitingRestart = false;
                 } else {
                   // Restart speech_to_text (iOS/Web)
-                  _seamlessRestart();
+                  _seamlessRestart().then((_) => _isAwaitingRestart = false);
                 }
+              } else {
+                _isAwaitingRestart = false;
               }
             });
           }
@@ -566,70 +568,77 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
       if (mounted && _isRecording) {
         setState(() {
           _isUpdatingFromAsr = true;
-          // PARTIAL RESULT: Extract only genuinely new words (not already at end)
-          String partialToShow;
-          if (_finalizedTranscript.isEmpty) {
-            // No finalized text yet - use ASR text directly
-            partialToShow = text;
-          } else {
-            // Have finalized text - extract only new words
-            partialToShow = extractNewWordsOnly(_finalizedTranscript, text);
-            // If extraction returns empty but ASR has text, use ASR text
-            if (partialToShow.isEmpty && text.isNotEmpty) {
-              partialToShow = text;
-            }
-          }
 
-          // Update current transcript
-          _currentTranscript = partialToShow;
-          _lastRecognizedText = text;
-          // Display: finalized + current partial
+          // Apply post-processing corrections for local terms
+          final correctedText = _applyAsrCorrections(text);
+
+          // PARTIAL RESULT HANDLING:
+          // We trust the asrText as the current "interim" window.
+          // We ONLY merge it with _finalizedTranscript.
+          _lastRecognizedText = correctedText;
+          _currentTranscript = correctedText;
+
+          // Display: finalized (committed) + current partial (interim)
           final displayText = _finalizedTranscript.isEmpty
               ? _currentTranscript
-              : (_currentTranscript.isEmpty
-                  ? _finalizedTranscript
-                  : '$_finalizedTranscript $_currentTranscript');
-          _controller.text = displayText.trim();
+              : '$_finalizedTranscript $_currentTranscript';
 
+          _controller.text = displayText.trim();
           _isUpdatingFromAsr = false;
-          // print(
-          // 'Native partial: "$text" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
         });
       }
     };
 
     _nativeSpeech.onFinalResult = (text) {
-      // Ignore if we just sent a message
-      if (_ignoreAsrCallbacks) {
-        // print('Ignoring final ASR callback (just sent message)');
-        // Ensure controller stays clear
-        if (mounted) {
-          setState(() {
-            _controller.clear();
+      if (_ignoreAsrCallbacks) return;
+
+      if (mounted && _isRecording) {
+        setState(() {
+          _isUpdatingFromAsr = true;
+
+          // Apply post-processing corrections for local terms
+          final correctedText = _applyAsrCorrections(text);
+
+          // COMMITTING FINAL RESULT:
+          final merged =
+              mergeAsrWithCurrentText(_finalizedTranscript, correctedText);
+          _finalizedTranscript = merged;
+          _currentTranscript = '';
+          _lastRecognizedText = correctedText;
+
+          _controller.text = _finalizedTranscript.trim();
+          _isUpdatingFromAsr = false;
+        });
+      }
+    };
+
+    _nativeSpeech.onError = (error, message) {
+      // print('Native ASR Error: $error - $message');
+
+      // SILENT RECOVERY FOR STATUS 8 (Busy)
+      if (error == "8" || error.contains("BUSY")) {
+        // print('Server Busy (Status 8) detected. Implementing safe retry...');
+        if (_isRecording && mounted && !_isAwaitingRestart) {
+          _isAwaitingRestart = true;
+          // Longer wait (2s) to ensure OS settles
+          Future.delayed(const Duration(milliseconds: 2000), () {
+            if (_isRecording && mounted && _currentSttLang != null) {
+              _nativeSpeech.startListening(language: _currentSttLang!);
+            }
+            _isAwaitingRestart = false;
           });
         }
         return;
       }
 
       if (mounted && _isRecording) {
-        setState(() {
-          _isUpdatingFromAsr = true;
-          // FINAL RESULT: Merge with finalized transcript
-          final merged = mergeAsrWithCurrentText(_finalizedTranscript, text);
-          _finalizedTranscript = merged;
-          _currentTranscript = '';
-          _lastRecognizedText = text;
-          _controller.text = merged;
-
-          _isUpdatingFromAsr = false;
-          // print('Native final (merged): "$text" -> "$merged"');
+        // For other non-terminal errors, just restart
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (_isRecording && mounted && _currentSttLang != null) {
+            _nativeSpeech.startListening(language: _currentSttLang!);
+          }
         });
       }
-    };
-
-    _nativeSpeech.onError = (error, message) {
-      // print('Native ASR error: $error - $message');
-      // Errors are handled by auto-restart in native code
     };
 
     _nativeSpeech.onListeningStarted = () {
@@ -874,8 +883,12 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
     text = text.replaceAll(
         RegExp(r'news\s*video', caseSensitive: false), 'Nuzvid');
 
-    // Add more corrections as you discover them
-    // Example: text = text.replaceAll(RegExp(r'wrong\s*word', caseSensitive: false), 'correct word');
+    // Normalize phone numbers: collapse spaces between digit groups
+    // e.g. "8790 756 930" -> "8790756930"
+    text = text.replaceAllMapped(
+      RegExp(r'\b(\d[\d\s]{8,14}\d)\b'),
+      (m) => m.group(0)!.replaceAll(RegExp(r'\s+'), ''),
+    );
 
     return text;
   }
@@ -902,6 +915,15 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
         });
       }
       _resumeASRAfterTTS();
+    });
+
+    // Handle TTS cancel (Android fires this when TTS is interrupted, NOT onComplete)
+    _flutterTts.setCancelHandler(() {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
     });
 
     // Handle TTS errors
@@ -962,6 +984,9 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
       // Clear input
       _controller.clear();
       _inputError = false;
+
+      // Always stop the GIF when resetting
+      _isSpeaking = false;
 
       // Clear chat messages if requested
       if (clearMessages) {
@@ -1238,7 +1263,8 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
     //   baseUrl = "http://127.0.0.1:8000";
     // } else if (Platform.isAndroid) {
     //   // Android Emulator uses 10.0.2.2 to access host localhost
-    //   baseUrl = "http://10.0.2.2:8000";
+    //   // PHYSICAL DEVICE: Use your local IP address (now 10.5.40.157)
+    //   baseUrl = "http://10.5.40.157:8000";
     // } else {
     //   // iOS Simulator and others
     //   baseUrl = "http://127.0.0.1:8000";
@@ -1370,7 +1396,9 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
           }
           if (detected.containsKey('phone') &&
               detected['phone'].toString().isNotEmpty) {
-            _ChatStateHolder.answers['phone'] = detected['phone'].toString();
+            // Strip whitespace: ASR may produce "8790 756 930" instead of "8790756930"
+            _ChatStateHolder.answers['phone'] =
+                detected['phone'].toString().replaceAll(RegExp(r'\s+'), '');
           }
         } catch (e) {
           // print('Error syncing detected info: $e');
@@ -1534,11 +1562,14 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
       String msg = localizations.somethingWentWrong;
 
       // Enhanced error logging for debugging
-      // print('❌ Chat step error: $e');
+      print('❌ Chat step error: $e');
 
       if (e is DioException) {
-        // print('HTTP Status Code: ${e.response?.statusCode}');
-        // print('Response Data: ${e.response?.data}');
+        print('HTTP Status Code: ${e.response?.statusCode}');
+        print('Response Data: ${e.response?.data}');
+        print('Error Message: ${e.message}');
+        print(
+            'BaseURL used: ${e.requestOptions.baseUrl}${e.requestOptions.path}');
 
         if (e.response != null && e.response?.data != null) {
           // try to show server-provided message if present
@@ -2235,73 +2266,83 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
         return;
       }
 
-      // print('Starting new listening session after restart...');
-      await _speech.listen(
-        localeId: sttLang,
-        listenFor: const Duration(
-            hours: 1), // Listen for up to 1 hour - continuous listening
-        pauseFor: const Duration(
-            hours:
-                1), // Allow very long pauses - treat silence as thinking time
-        partialResults: true,
-        cancelOnError: false,
-        onResult: (result) {
-          if (mounted) {
-            setState(() {
-              _isUpdatingFromAsr = true;
-              final newWords = result.recognizedWords.trim();
-              if (newWords.isEmpty) {
-                _isUpdatingFromAsr = false;
-                return;
-              }
-
-              if (result.finalResult) {
-                // FINAL RESULT: Merge with finalized transcript
-                final merged =
-                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
-                _finalizedTranscript = merged;
-                _currentTranscript = '';
-                _lastRecognizedText = newWords;
-                _controller.text = merged;
-                // print(
-                // 'STT safe restart final (merged): "$newWords" -> "$merged"');
-              } else {
-                // PARTIAL RESULT: Extract only genuinely new words (not already at end)
-                String partialToShow;
-                if (_finalizedTranscript.isEmpty) {
-                  // No finalized text yet - use ASR text directly
-                  partialToShow = newWords;
-                } else {
-                  // Have finalized text - extract only new words
-                  partialToShow =
-                      extractNewWordsOnly(_finalizedTranscript, newWords);
-                  // If extraction returns empty but ASR has text, use ASR text
-                  if (partialToShow.isEmpty && newWords.isNotEmpty) {
-                    partialToShow = newWords;
-                  }
+      if (_isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.startListening(language: sttLang);
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.listen(
+          localeId: sttLang,
+          listenFor: const Duration(
+              hours: 1), // Listen for up to 1 hour - continuous listening
+          pauseFor: const Duration(
+              hours:
+                  1), // Allow very long pauses - treat silence as thinking time
+          partialResults: true,
+          cancelOnError: false,
+          onResult: (result) {
+            if (mounted) {
+              setState(() {
+                _isUpdatingFromAsr = true;
+                final newWords = result.recognizedWords.trim();
+                if (newWords.isEmpty) {
+                  _isUpdatingFromAsr = false;
+                  return;
                 }
 
-                // Update current transcript
-                _currentTranscript = partialToShow;
-                _lastRecognizedText = newWords;
-                final displayText = _finalizedTranscript.isEmpty
-                    ? _currentTranscript
-                    : (_currentTranscript.isEmpty
-                        ? _finalizedTranscript
-                        : '$_finalizedTranscript $_currentTranscript');
-                _controller.text = displayText.trim();
-                // print(
-                // 'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
-              }
+                if (result.finalResult) {
+                  // FINAL RESULT: Merge with finalized transcript
+                  final merged =
+                      mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                  _finalizedTranscript = merged;
+                  _currentTranscript = '';
+                  _lastRecognizedText = newWords;
+                  _controller.text = merged;
+                  // print(
+                  // 'STT safe restart final (merged): "$newWords" -> "$merged"');
+                } else {
+                  // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                  String partialToShow;
+                  if (_finalizedTranscript.isEmpty) {
+                    // No finalized text yet - use ASR text directly
+                    partialToShow = newWords;
+                  } else {
+                    // Have finalized text - extract only new words
+                    partialToShow =
+                        extractNewWordsOnly(_finalizedTranscript, newWords);
+                    // If extraction returns empty but ASR has text, use ASR text
+                    if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                      partialToShow = newWords;
+                    }
+                  }
 
-              _isUpdatingFromAsr = false;
-            });
-          }
-        },
-      );
+                  // Update current transcript
+                  _currentTranscript = partialToShow;
+                  _lastRecognizedText = newWords;
+                  final displayText = _finalizedTranscript.isEmpty
+                      ? _currentTranscript
+                      : (_currentTranscript.isEmpty
+                          ? _finalizedTranscript
+                          : '$_finalizedTranscript $_currentTranscript');
+                  _controller.text = displayText.trim();
+                  // print(
+                  // 'STT safe restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                }
+
+                _isUpdatingFromAsr = false;
+              });
+            }
+          },
+        );
+      }
 
       _busyRetryCount = 0; // Reset retry count on success
       _isRestarting = false;
+      if (mounted) {
+        setState(() {
+          _isSystemWarmingUp = false;
+        });
+      }
       // print('Successfully restarted speech recognition');
     } catch (e) {
       _isRestarting = false;
@@ -2312,22 +2353,42 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
         _busyRetryCount++;
         // print('BUSY error detected (attempt $_busyRetryCount), will retry...');
 
+        if (mounted && _busyRetryCount == 1) {
+          setState(() {
+            _isSystemWarmingUp = true;
+          });
+        }
+
         // Exponential backoff: 1s, 2s, 4s, 8s...
         final delayMs = 1000 * (1 << (_busyRetryCount - 1).clamp(0, 4));
 
         if (_busyRetryCount <= 5 && mounted && _isRecording) {
           Future.delayed(Duration(milliseconds: delayMs), () {
-            if (mounted && _isRecording && !_speech.isListening) {
+            if (mounted &&
+                _isRecording &&
+                !(_isAndroid
+                    ? _nativeSpeech.isListening
+                    : _speech.isListening)) {
               _safeRestartListening(sttLang);
             }
           });
         } else {
           // print('Max BUSY retries reached, giving up');
+          if (mounted) {
+            setState(() {
+              _isSystemWarmingUp = false;
+            });
+          }
           _busyRetryCount = 0;
         }
       } else {
         // Other errors - log and reset retry count
         // print('Error restarting speech recognition: $e');
+        if (mounted) {
+          setState(() {
+            _isSystemWarmingUp = false;
+          });
+        }
         _busyRetryCount = 0;
       }
     }
@@ -2348,7 +2409,10 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
       }
 
       // Check if SDK stopped listening
-      if (!_speech.isListening && !_isRestarting) {
+      final isStillListening =
+          _isAndroid ? _nativeSpeech.isListening : _speech.isListening;
+
+      if (!isStillListening && !_isRestarting) {
         // print('Monitor detected SDK stopped - triggering seamless restart...');
         _seamlessRestart();
       }
@@ -2391,71 +2455,76 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
       }
 
       // Restart listening with same configuration
-      // print('Restarting speech recognition...');
-      await _speech.listen(
-        localeId: _currentSttLang!,
-        listenFor: const Duration(hours: 1),
-        pauseFor: const Duration(hours: 1),
-        partialResults: true,
-        cancelOnError: false,
-        onResult: (result) {
-          if (mounted && _isRecording) {
-            setState(() {
-              _isUpdatingFromAsr = true;
-              final newWords = result.recognizedWords.trim();
+      if (_isAndroid) {
+        // Use native recognizer on Android
+        await _nativeSpeech.startListening(language: _currentSttLang!);
+      } else {
+        // Use speech_to_text on iOS
+        await _speech.listen(
+          localeId: _currentSttLang!,
+          listenFor: const Duration(hours: 1),
+          pauseFor: const Duration(hours: 1),
+          partialResults: true,
+          cancelOnError: false,
+          onResult: (result) {
+            if (mounted && _isRecording) {
+              setState(() {
+                _isUpdatingFromAsr = true;
+                final newWords = result.recognizedWords.trim();
 
-              if (newWords.isEmpty) {
-                _isUpdatingFromAsr = false;
-                return;
-              }
-
-              // print(
-              // 'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
-              _lastSpeechDetected = DateTime.now();
-
-              if (result.finalResult) {
-                // FINAL RESULT: Merge with finalized transcript
-                final merged =
-                    mergeAsrWithCurrentText(_finalizedTranscript, newWords);
-                _finalizedTranscript = merged;
-                _currentTranscript = '';
-                _lastRecognizedText = newWords;
-                _controller.text = merged;
-                // print('STT restart final (merged): "$newWords" -> "$merged"');
-              } else {
-                // PARTIAL RESULT: Extract only genuinely new words (not already at end)
-                String partialToShow;
-                if (_finalizedTranscript.isEmpty) {
-                  // No finalized text yet - use ASR text directly
-                  partialToShow = newWords;
-                } else {
-                  // Have finalized text - extract only new words
-                  partialToShow =
-                      extractNewWordsOnly(_finalizedTranscript, newWords);
-                  // If extraction returns empty but ASR has text, use ASR text
-                  if (partialToShow.isEmpty && newWords.isNotEmpty) {
-                    partialToShow = newWords;
-                  }
+                if (newWords.isEmpty) {
+                  _isUpdatingFromAsr = false;
+                  return;
                 }
 
-                // Update current transcript
-                _currentTranscript = partialToShow;
-                _lastRecognizedText = newWords;
-                final displayText = _finalizedTranscript.isEmpty
-                    ? _currentTranscript
-                    : (_currentTranscript.isEmpty
-                        ? _finalizedTranscript
-                        : '$_finalizedTranscript $_currentTranscript');
-                _controller.text = displayText.trim();
                 // print(
-                // 'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
-              }
+                // 'onResult (restart): newWords="$newWords", isFinal=${result.finalResult}');
+                _lastSpeechDetected = DateTime.now();
 
-              _isUpdatingFromAsr = false;
-            });
-          }
-        },
-      );
+                if (result.finalResult) {
+                  // FINAL RESULT: Merge with finalized transcript
+                  final merged =
+                      mergeAsrWithCurrentText(_finalizedTranscript, newWords);
+                  _finalizedTranscript = merged;
+                  _currentTranscript = '';
+                  _lastRecognizedText = newWords;
+                  _controller.text = merged;
+                  // print('STT restart final (merged): "$newWords" -> "$merged"');
+                } else {
+                  // PARTIAL RESULT: Extract only genuinely new words (not already at end)
+                  String partialToShow;
+                  if (_finalizedTranscript.isEmpty) {
+                    // No finalized text yet - use ASR text directly
+                    partialToShow = newWords;
+                  } else {
+                    // Have finalized text - extract only new words
+                    partialToShow =
+                        extractNewWordsOnly(_finalizedTranscript, newWords);
+                    // If extraction returns empty but ASR has text, use ASR text
+                    if (partialToShow.isEmpty && newWords.isNotEmpty) {
+                      partialToShow = newWords;
+                    }
+                  }
+
+                  // Update current transcript
+                  _currentTranscript = partialToShow;
+                  _lastRecognizedText = newWords;
+                  final displayText = _finalizedTranscript.isEmpty
+                      ? _currentTranscript
+                      : (_currentTranscript.isEmpty
+                          ? _finalizedTranscript
+                          : '$_finalizedTranscript $_currentTranscript');
+                  _controller.text = displayText.trim();
+                  // print(
+                  // 'STT restart partial: "$newWords" -> showing "$partialToShow" (finalized: "$_finalizedTranscript", current: "$_currentTranscript")');
+                }
+
+                _isUpdatingFromAsr = false;
+              });
+            }
+          },
+        );
+      }
 
       // Start monitoring timer to detect when SDK stops
       _startListeningMonitor();
@@ -2471,7 +2540,9 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
       if (_busyRetryCount < 3 && mounted && _isRecording) {
         _busyRetryCount++;
         Future.delayed(Duration(milliseconds: 1000 * _busyRetryCount), () {
-          if (mounted && _isRecording && !_speech.isListening) {
+          if (mounted &&
+              _isRecording &&
+              !(_isAndroid ? _nativeSpeech.isListening : _speech.isListening)) {
             _seamlessRestart();
           }
         });
@@ -2512,9 +2583,58 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
     }
   }
 
+  /// Post-processing: Correct known phonetic mis-recognitions for local names
+  String _applyAsrCorrections(String text) {
+    if (text.isEmpty) return text;
+    final corrections = {
+      'new video': 'Nuzvid',
+      'new vid': 'Nuzvid',
+      'news vid': 'Nuzvid',
+      'news video': 'Nuzvid',
+      'at news video': 'at Nuzvid',
+      'at nuzvid': 'at Nuzvid',
+      'nuzveed': 'Nuzvid',
+      'nazvid': 'Nuzvid',
+      'naz vid': 'Nuzvid',
+      'nose weed': 'Nuzvid',
+      'nose wid': 'Nuzvid',
+      'noz weed': 'Nuzvid',
+      'nuz weed': 'Nuzvid',
+      'nuzwid': 'Nuzvid',
+      'bustand': 'bus stand',
+      'busthand': 'bus stand',
+      'bus station': 'bus stand',
+      'rgkt': 'RGUKT',
+      'rkgt': 'RGUKT',
+      'rgukt nuzvid': 'RGUKT Nuzvid',
+      'iiit nuzvid': 'IIIT Nuzvid',
+      'aap': '', // Hindi leak
+      'roj': '', // Hindi leak
+    };
+    String result = text;
+    corrections.forEach((wrong, right) {
+      result = result.replaceAll(
+        RegExp(RegExp.escape(wrong), caseSensitive: false),
+        right,
+      );
+    });
+    return result.trim().replaceAll(RegExp(r'  +'), ' ');
+  }
+
+  DateTime? _lastToggleTimestamp;
+
   /// Toggle recording on/off for speech-to-text
   Future<void> _toggleRecording() async {
     if (!_allowInput) return;
+
+    // Debounce rapid toggling to prevent "Server Busy" errors
+    final now = DateTime.now();
+    if (_lastToggleTimestamp != null &&
+        now.difference(_lastToggleTimestamp!).inMilliseconds < 800) {
+      // print('Toggle debounced - too rapid');
+      return;
+    }
+    _lastToggleTimestamp = now;
 
     // Request microphone permission
     var status = await Permission.microphone.status;
@@ -2601,6 +2721,8 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
 
         try {
           await _nativeSpeech.startListening(language: sttLang);
+          // Start monitor for Android too
+          _startListeningMonitor();
           // print('Native ASR started successfully');
         } catch (e) {
           // print('Error starting native ASR: $e');
@@ -2675,6 +2797,7 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
             _lastRestartAttempt = null; // Reset restart tracker for new session
             _isRestarting = false; // Reset restart flag
             _busyRetryCount = 0; // Reset BUSY retry count
+            _isSystemWarmingUp = false; // Reset warming up flag
             _lastSpeechDetected = null; // Reset last speech timestamp
           });
 
@@ -3330,6 +3453,22 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
               tooltip: 'Save Draft',
               onPressed: _saveDraft,
             ),
+
+            // Mode Toggle Button
+            IconButton(
+              icon: Icon(_isAvatarMode ? Icons.chat_bubble : Icons.face,
+                  color: Colors.white),
+              tooltip: _isAvatarMode ? 'Switch to Chat' : 'Switch to Avatar',
+              onPressed: () {
+                setState(() {
+                  _isAvatarMode = !_isAvatarMode;
+                });
+                // Ensure scroll to end if switching to chat
+                if (!_isAvatarMode) {
+                  _scrollToEnd();
+                }
+              },
+            ),
           ],
           title: Text(
             localizations.aiLegalAssistant,
@@ -3339,415 +3478,660 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
           backgroundColor: const Color(0xFFFC633C),
           foregroundColor: Colors.white,
         ),
-        body: Stack(
+        body: Column(
           children: [
-            // --- FULL SCREEN BACKGROUND AVATAR ---
-            Positioned.fill(
-              child: Image.asset(
-                _isSpeaking ? 'assets/avatar.gif' : 'assets/police_avatar.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  child:
-                      const Icon(Icons.person, size: 100, color: Colors.grey),
-                ),
+            Expanded(
+              child: _isAvatarMode ? _buildAvatarView() : _buildChatView(),
+            ),
+            // Recording indicator and input field common to both views
+            _buildLowerInputArea(),
+          ],
+        ),
+      ), // Close Scaffold
+    ); // Close WillPopScope
+  }
+
+  Widget _buildAvatarView() {
+    return Stack(
+      children: [
+        // --- FULL SCREEN BACKGROUND AVATAR ---
+        Positioned.fill(
+          child: Image.asset(
+            // Show GIF only while TTS is actively speaking AND user is NOT recording
+            _isSpeaking && !_isRecording
+                ? 'assets/avatar.gif'
+                : 'assets/police_avatar.png',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey[300],
+              child: const Icon(Icons.person, size: 100, color: Colors.grey),
+            ),
+          ),
+        ),
+
+        // --- SEMI-TRANSPARENT DIM LAYER ---
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.05),
+                  Colors.black.withOpacity(0.5),
+                ],
               ),
             ),
+          ),
+        ),
 
-            // --- SEMI-TRANSPARENT DIM LAYER ---
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.05),
-                      Colors.black.withOpacity(0.5),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // --- MAIN CONTENT UI AREA ---
-            Column(
+        // --- CAPTIONS AREA ---
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        // --- LIVE CAPTIONS ---
-                        if (_displayedCaptionText.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.85),
-                              borderRadius: BorderRadius.circular(20),
-                              border:
-                                  Border.all(color: orange.withOpacity(0.3)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              _displayedCaptionText,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-
-                        // Show "Thinking..." indicator if loading but not speaking yet
-                        if (_isLoading && !_isSpeaking)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    "Thinking...",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
-                if (_isRecording)
+                // --- LIVE CAPTIONS ---
+                if (_displayedCaptionText.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: background,
-                      border: Border(
-                        top: BorderSide(color: Colors.grey[300]!, width: 1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Recording indicator dot
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Timer
-                        if (_recordingStartTime != null)
-                          StreamBuilder<DateTime>(
-                            stream: Stream.periodic(const Duration(seconds: 1),
-                                (_) => DateTime.now()),
-                            builder: (context, snapshot) {
-                              final duration = DateTime.now()
-                                  .difference(_recordingStartTime!);
-                              final minutes = duration.inMinutes;
-                              final seconds = duration.inSeconds % 60;
-                              return Text(
-                                '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              );
-                            },
-                          ),
-                        const SizedBox(width: 12),
-                        // Waveform visualization
-                        Expanded(
-                          child: _WaveformVisualization(
-                            isActive: _currentTranscript.isNotEmpty,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Pause/Stop button
-                        GestureDetector(
-                          onTap: _toggleRecording,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: orange,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.pause,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
+                      color: Colors.white.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: orange.withOpacity(0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
+                    child: Text(
+                      _displayedCaptionText,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
 
-                // ── FILE PREVIEW ──
-                if (_attachedFiles.isNotEmpty) _buildFilePreview(),
-
-                // ── COMPLETED STATE & INPUT FIELD ──
-                if (_isChatCompleted)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    color: const Color(0xFFF5F8FE), // background color match
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFC633C),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
+                // Show "Thinking..." indicator if loading but not speaking yet
+                if (_isLoading && !_isSpeaking)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      onPressed: _navigateToDetails,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.assignment_turned_in,
-                              color: Colors.white),
-                          const SizedBox(width: 8),
-                          Text(
-                            localizations.complaintSummary ??
-                                "View Complaint Summary",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            "Thinking...",
+                            style: TextStyle(
                               color: Colors.white,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  )
-                else if (!_isLoading && !_errored && _allowInput)
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                    child: Material(
-                      elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChatView() {
+    final localizations = AppLocalizations.of(context)!;
+    return _messages.isEmpty
+        ? Center(
+            child: Text(
+              localizations.loading,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          )
+        : ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: _messages.length + (_isLoading ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _messages.length) {
+                // Show thinking indicator at the end of the list
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          shape: BoxShape.circle,
                           border: Border.all(
                             color: Colors.grey.shade200,
                             width: 1,
                           ),
+                          image: const DecorationImage(
+                            image: AssetImage('assets/police_avatar.png'),
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(4),
+                            bottomRight: Radius.circular(18),
+                          ),
+                          border:
+                              Border.all(color: Colors.grey.shade300, width: 1),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Attachment button
-                            GestureDetector(
-                              onTap: _showAttachmentOptions,
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.attach_file,
-                                  color: Colors.grey.shade700,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            // Text input field with rounded corners
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: TextField(
-                                  controller: _controller,
-                                  focusNode: _inputFocus,
-                                  maxLines: 2,
-                                  minLines: 1,
-                                  textInputAction: TextInputAction.send,
-                                  decoration: InputDecoration(
-                                    hintText: _currentQ >= 0 &&
-                                            _currentQ < _questions.length
-                                        ? _questions[_currentQ].question
-                                        : localizations.typeMessage ??
-                                            'Type your message...',
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 13,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
-                                    ),
-                                    errorText: _inputError
-                                        ? localizations.pleaseEnterYourAnswer ??
-                                            "Please enter your answer"
-                                        : null,
-                                    errorStyle: const TextStyle(fontSize: 10),
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black87,
-                                  ),
-                                  onSubmitted: (_) => _handleSend(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            // WhatsApp-style mic button with animated waves
                             SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                alignment: Alignment.center,
-                                children: [
-                                  // Animated waves (only when recording) - positioned absolutely
-                                  if (_isRecording) ...[
-                                    Positioned.fill(
-                                      child: _AnimatedWave(
-                                        delay: 0,
-                                        color: Colors.red.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    Positioned.fill(
-                                      child: _AnimatedWave(
-                                        delay: 200,
-                                        color: Colors.red.withOpacity(0.2),
-                                      ),
-                                    ),
-                                    Positioned.fill(
-                                      child: _AnimatedWave(
-                                        delay: 400,
-                                        color: Colors.red.withOpacity(0.1),
-                                      ),
-                                    ),
-                                  ],
-                                  // Microphone button
-                                  GestureDetector(
-                                    onTap: _toggleRecording,
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color:
-                                            _isRecording ? Colors.red : orange,
-                                        shape: BoxShape.circle,
-                                        boxShadow: _isRecording
-                                            ? [
-                                                BoxShadow(
-                                                  color: Colors.red
-                                                      .withOpacity(0.4),
-                                                  blurRadius: 5,
-                                                  spreadRadius: 1,
-                                                ),
-                                              ]
-                                            : [
-                                                BoxShadow(
-                                                  color:
-                                                      orange.withOpacity(0.3),
-                                                  blurRadius: 2,
-                                                  spreadRadius: 0.5,
-                                                ),
-                                              ],
-                                      ),
-                                      child: Icon(
-                                        _isRecording ? Icons.stop : Icons.mic,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.grey.shade400),
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            // Send button
-                            GestureDetector(
-                              onTap: _handleSend,
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: orange,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: orange.withOpacity(0.3),
-                                      blurRadius: 2,
-                                      spreadRadius: 0.5,
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.send,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                              ),
+                            const SizedBox(width: 8),
+                            Text(
+                              localizations.loading,
+                              style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic),
                             ),
                           ],
                         ),
                       ),
+                    ],
+                  ),
+                );
+              }
+              final msg = _messages[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: msg.isUser
+                      ? MainAxisAlignment.end
+                      : MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // AI Avatar (Left)
+                    if (!msg.isUser) ...[
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                          image: const DecorationImage(
+                            image: AssetImage('assets/police_avatar.png'),
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+
+                    // Message Bubble
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.70,
+                        ),
+                        decoration: BoxDecoration(
+                          color: msg.isUser ? orange : Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(18),
+                            topRight: const Radius.circular(18),
+                            bottomLeft: Radius.circular(msg.isUser ? 18 : 4),
+                            bottomRight: Radius.circular(msg.isUser ? 4 : 18),
+                          ),
+                          border: msg.isUser
+                              ? null
+                              : Border.all(
+                                  color: Colors.grey.shade300, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg.content,
+                              style: TextStyle(
+                                color:
+                                    msg.isUser ? Colors.white : Colors.black87,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (msg.files.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: msg.files.map((file) {
+                                  final filename = file.name;
+                                  final isImage = ['jpg', 'png', 'jpeg', 'webp']
+                                      .any((ext) =>
+                                          filename.toLowerCase().endsWith(ext));
+
+                                  if (isImage) {
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child:
+                                          _ChatMessage._buildMessageImage(file),
+                                    );
+                                  }
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(
+                                        right: 4, bottom: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: msg.isUser
+                                          ? Colors.white.withOpacity(0.9)
+                                          : Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.black12,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.description,
+                                            size: 16, color: Colors.black87),
+                                        const SizedBox(width: 6),
+                                        ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                                maxWidth: 160),
+                                            child: Text(filename,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.black87,
+                                                    fontWeight:
+                                                        FontWeight.w500))),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ]
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // User Avatar (Right)
+                    if (msg.isUser) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.grey.shade600,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          );
+  }
+
+  Widget _buildLowerInputArea() {
+    final localizations = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── RECORDING INDICATOR (WhatsApp style with waveform) ──
+        if (_isRecording)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: background,
+              border: Border(
+                top: BorderSide(color: Colors.grey[300]!, width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Recording indicator dot
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Timer
+                if (_recordingStartTime != null)
+                  StreamBuilder<DateTime>(
+                    stream: Stream.periodic(
+                        const Duration(seconds: 1), (_) => DateTime.now()),
+                    builder: (context, snapshot) {
+                      final duration =
+                          DateTime.now().difference(_recordingStartTime!);
+                      final minutes = duration.inMinutes;
+                      final seconds = duration.inSeconds % 60;
+                      return Text(
+                        '${minutes.toString().padLeft(1, '0')}:${seconds.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
+                  ),
+                const SizedBox(width: 12),
+                // Waveform visualization
+                Expanded(
+                  child: _WaveformVisualization(
+                    isActive: _currentTranscript.isNotEmpty,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Pause/Stop button
+                GestureDetector(
+                  onTap: _toggleRecording,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: orange,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.pause,
+                      color: Colors.white,
+                      size: 18,
                     ),
                   ),
-              ], // closes Column children
-            ), // closes Column
-          ], // closes Stack children
-        ), // closes Stack
-      ), // closes Scaffold
-    ); // closes WillPopScope
+                ),
+              ],
+            ),
+          ),
+
+        // ── FILE PREVIEW ──
+        if (_attachedFiles.isNotEmpty) _buildFilePreview(),
+
+        // ── COMPLETED STATE & INPUT FIELD ──
+        if (_isChatCompleted)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: const Color(0xFFF5F8FE), // background color match
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFC633C),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              onPressed: _navigateToDetails,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.assignment_turned_in, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    localizations.complaintSummary,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (!_isLoading && !_errored && _allowInput)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              color: background,
+            ),
+            child: Material(
+              elevation: 2,
+              shadowColor: Colors.black.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Attachment button
+                    GestureDetector(
+                      onTap: _showAttachmentOptions,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.attach_file,
+                          color: Colors.grey.shade700,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Text input field with rounded corners
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          focusNode: _inputFocus,
+                          maxLines: 2,
+                          minLines: 1,
+                          textInputAction: TextInputAction.send,
+                          decoration: InputDecoration(
+                            hintText: _isSystemWarmingUp
+                                ? "System warming up..."
+                                : (_currentQ >= 0 &&
+                                        _currentQ < _questions.length
+                                    ? _questions[_currentQ].question
+                                    : localizations.typeMessage),
+                            hintStyle: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 13,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            errorText: _inputError
+                                ? localizations.pleaseEnterYourAnswer
+                                : null,
+                            errorStyle: const TextStyle(fontSize: 10),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
+                          onSubmitted: (_) => _handleSend(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // WhatsApp-style mic button with animated waves
+                    SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          // Animated waves (only when recording) - positioned absolutely
+                          if (_isRecording) ...[
+                            Positioned.fill(
+                              child: _AnimatedWave(
+                                delay: 0,
+                                color: Colors.red.withOpacity(0.3),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: _AnimatedWave(
+                                delay: 200,
+                                color: Colors.red.withOpacity(0.2),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: _AnimatedWave(
+                                delay: 400,
+                                color: Colors.red.withOpacity(0.1),
+                              ),
+                            ),
+                          ],
+                          // Microphone button
+                          GestureDetector(
+                            onTap: _toggleRecording,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: _isRecording ? Colors.red : orange,
+                                shape: BoxShape.circle,
+                                boxShadow: _isRecording
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.red.withOpacity(0.4),
+                                          blurRadius: 5,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : [
+                                        BoxShadow(
+                                          color: orange.withOpacity(0.3),
+                                          blurRadius: 2,
+                                          spreadRadius: 0.5,
+                                        ),
+                                      ],
+                              ),
+                              child: Icon(
+                                _isRecording ? Icons.stop : Icons.mic,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Send button
+                    GestureDetector(
+                      onTap: _handleSend,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: orange,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: orange.withOpacity(0.3),
+                              blurRadius: 2,
+                              spreadRadius: 0.5,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -3770,6 +4154,56 @@ class _ChatMessage {
     required this.isUser,
     this.files = const [],
   });
+
+  static Widget _buildMessageImage(PlatformFile file) {
+    if (file.bytes != null && file.bytes!.isNotEmpty) {
+      return Image.memory(
+        file.bytes!,
+        width: 130,
+        height: 130,
+        fit: BoxFit.cover,
+        cacheWidth: 260,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildImagePlaceholder("Corrupt Img");
+        },
+      );
+    } else if (!kIsWeb && file.path != null && file.path!.isNotEmpty) {
+      return Image.file(
+        File(file.path!),
+        width: 130,
+        height: 130,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildImagePlaceholder("File Error");
+        },
+      );
+    } else {
+      return _buildImagePlaceholder("Image Missing");
+    }
+  }
+
+  static Widget _buildImagePlaceholder(String label) {
+    return Container(
+      width: 100,
+      height: 100,
+      color: Colors.grey.shade200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image, color: Colors.grey.shade400, size: 32),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 
   static String? _getSmallThumbnail(PlatformFile file) {
     try {
