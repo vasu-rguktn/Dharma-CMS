@@ -6,6 +6,7 @@ from loguru import logger
 from utils.person_utils import compute_image_hash
 import uuid
 import shutil
+from functools import lru_cache
 
 
 
@@ -15,23 +16,27 @@ TEMP_VIDEO_DIR = BASE_DIR / "temp_videos"
 
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_VIDEO_DIR.mkdir(parents=True, exist_ok=True)
-try:
-    # Use custom face detector model
-    MODEL_PATH = BASE_DIR / "models" / "face_detector.pt"
-    if MODEL_PATH.exists():
-        model = YOLO(str(MODEL_PATH))
-        logger.success(f"Loaded custom model: {MODEL_PATH}")
-    else:
-        logger.warning(f"Custom model not found at {MODEL_PATH}, falling back to yolov8n.pt")
-        model = YOLO("yolov8n.pt")
-        
-except Exception:
-    logger.error("Failed to load YOLOv8 model", exc_info=True)
-    model = None
+@lru_cache(maxsize=1)
+def get_model():
+    """Lazy load YOLO model to save memory on startup"""
+    try:
+        # Use custom face detector model
+        MODEL_PATH = BASE_DIR / "models" / "face_detector.pt"
+        if MODEL_PATH.exists():
+            model = YOLO(str(MODEL_PATH))
+            logger.success(f"Loaded custom model: {MODEL_PATH}")
+        else:
+            logger.warning(f"Custom model not found at {MODEL_PATH}, falling back to yolov8n.pt")
+            model = YOLO("yolov8n.pt")
+        return model
+    except Exception:
+        logger.error("Failed to load YOLOv8 model", exc_info=True)
+        return None
 
 
 
 def detect_persons_image(image: np.ndarray):
+    model = get_model()
     if model is None:
         raise ValueError("YOLOv8 model not loaded")
 
@@ -133,6 +138,7 @@ def detect_persons_image(image: np.ndarray):
 # 🎥 VIDEO PERSON DETECTION (FRAME SKIP ENABLED)
 # ============================================================
 def detect_persons_video(video_path: str, frame_skip: int = 10):
+    model = get_model()
     if model is None:
         logger.error("YOLOv8 model is not loaded")
         raise ValueError("YOLOv8 model not loaded")

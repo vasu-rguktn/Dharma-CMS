@@ -47,6 +47,53 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get email => 'மின்னஞ்சல்';
+  @override
+  String get statusDraft => 'Draft';
+
+  @override
+  String get statusFiled => 'Filed';
+
+  @override
+  String get statusUnderReview => 'Under Review';
+
+  @override
+  String get statusHearingScheduled => 'Hearing Scheduled';
+
+  @override
+  String get statusGranted => 'Granted';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusWithdrawn => 'Withdrawn';
+  @override
+  String get statusPending => 'நிலுவையில் உள்ளது';
+
+  @override
+  String get statusReceived => 'பெறப்பட்டது';
+
+  @override
+  String get statusInProgress => 'செயலில் உள்ளது';
+
+  @override
+  String get statusClosed => 'முடிந்துவிட்டது';
+
+  @override
+  String get statusSubmitted => 'சமர்ப்பிக்கப்பட்டது';
+
+  @override
+  String get statusAcknowledged => 'ஏற்கப்பட்டது';
+
+  @override
+  String get statusInvestigation => 'விசாரணை';
+
+  @override
+  String get petitionNumber => 'Petition Number';
+
+  @override
+  String get caseId => 'Case ID';
+
 
   @override
   String get phone => 'தொலைபேசி';
@@ -254,6 +301,15 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get aiChatbotDetails => 'AI சாட்பாட் விவரங்கள்';
+  @override
+  String get scanToDownloadSummary => 'Scan to Download Summary';
+
+  @override
+  String get scanQrInstruction => 'Scan this QR code with another device to view and download the PDF summary.';
+
+  @override
+  String get residentAddress => 'Resident Address';
+
 
   @override
   String get citizenDetails => 'குடிமகன் விவரங்கள்';
@@ -2258,4 +2314,17 @@ class AppLocalizationsTa extends AppLocalizations {
   
   @override
   String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
+
+
+  @override
+  String get chatbotLanguage => 'சாட்பாட் மொழி';
+
+  @override
+  String get viewProfile => 'சுயவிவரத்தைப் பார்க்க';
+
+  @override
+  String get resetOnboarding => 'ஆன்போர்டிங்கை மீட்டமைக்கவும்';
+
+  @override
+  String get showTutorialAgain => 'টিউটোরியலை மீண்டும் காண்பி';
 }

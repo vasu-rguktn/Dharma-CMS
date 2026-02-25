@@ -192,6 +192,102 @@ abstract class AppLocalizations {
   /// **'Email'**
   String get email;
 
+  /// Status: Draft
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get statusDraft;
+
+  /// Status: Filed
+  ///
+  /// In en, this message translates to:
+  /// **'Filed'**
+  String get statusFiled;
+
+  /// Status: Under Review
+  ///
+  /// In en, this message translates to:
+  /// **'Under Review'**
+  String get statusUnderReview;
+
+  /// Status: Hearing Scheduled
+  ///
+  /// In en, this message translates to:
+  /// **'Hearing Scheduled'**
+  String get statusHearingScheduled;
+
+  /// Status: Granted
+  ///
+  /// In en, this message translates to:
+  /// **'Granted'**
+  String get statusGranted;
+
+  /// Status: Rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// Status: Withdrawn
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawn'**
+  String get statusWithdrawn;
+
+  /// Police Status: Pending
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// Police Status: Received
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get statusReceived;
+
+  /// Police Status: In Progress
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get statusInProgress;
+
+  /// Police Status: Closed
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get statusClosed;
+
+  /// Status: Submitted
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get statusSubmitted;
+
+  /// Status: Acknowledged
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledged'**
+  String get statusAcknowledged;
+
+  /// Status: Investigation
+  ///
+  /// In en, this message translates to:
+  /// **'Investigation'**
+  String get statusInvestigation;
+
+  /// Petition Number label
+  ///
+  /// In en, this message translates to:
+  /// **'Petition Number'**
+  String get petitionNumber;
+
+  /// Case ID label
+  ///
+  /// In en, this message translates to:
+  /// **'Case ID'**
+  String get caseId;
+
   /// Phone field label
   ///
   /// In en, this message translates to:
@@ -576,6 +672,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// Chatbot language selection option
+  ///
+  /// In en, this message translates to:
+  /// **'Chatbot Language'**
+  String get chatbotLanguage;
+
   /// Language selection option
   ///
   /// In en, this message translates to:
@@ -594,6 +696,18 @@ abstract class AppLocalizations {
   /// **'AI Chatbot Details'**
   String get aiChatbotDetails;
 
+  /// Scan to Download Summary
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to Download Summary'**
+  String get scanToDownloadSummary;
+
+  /// Scan QR Instruction
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code with another device to view and download the PDF summary.'**
+  String get scanQrInstruction;
+
   /// Citizen Details section title
   ///
   /// In en, this message translates to:
@@ -605,6 +719,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Address'**
   String get address;
+
+  /// Resident Address label
+  ///
+  /// In en, this message translates to:
+  /// **'Resident Address'**
+  String get residentAddress;
 
   /// Complaint Type label
   ///
@@ -1133,6 +1253,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile Information'**
   String get profileInformation;
+
+  /// View profile button text
+  ///
+  /// In en, this message translates to:
+  /// **'View Profile'**
+  String get viewProfile;
 
   /// Sign out confirmation
   ///
@@ -1828,6 +1954,18 @@ abstract class AppLocalizations {
 
   /// Profile updated success message
   String get profileUpdated;
+
+  /// Reset onboarding setting title
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Onboarding'**
+  String get resetOnboarding;
+
+  /// Reset onboarding subtitle / description
+  ///
+  /// In en, this message translates to:
+  /// **'Show tutorial again'**
+  String get showTutorialAgain;
 
   /// Message when no charge sheet is generated
   ///

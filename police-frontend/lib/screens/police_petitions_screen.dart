@@ -651,10 +651,12 @@ class _PolicePetitionsScreenState extends State<PolicePetitionsScreen> {
                   final token = await auth.user?.getIdToken();
 
                   // Construct backend URL (Handle Android Emulator)
-                  String baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
+                  String baseUrl =
+                      'https://fastapi-app-335340524683.asia-south1.run.app';
                   try {
                     if (!kIsWeb && Platform.isAndroid) {
-                      baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
+                      baseUrl =
+                          'https://fastapi-app-335340524683.asia-south1.run.app';
                     }
                   } catch (e) {
                     // Ignore platform check errors (e.g. on web if not handled by kIsWeb guard properly)

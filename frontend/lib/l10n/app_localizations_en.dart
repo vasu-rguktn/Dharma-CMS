@@ -49,6 +49,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get email => 'Email';
 
   @override
+  String get statusDraft => 'Draft';
+
+  @override
+  String get statusFiled => 'Filed';
+
+  @override
+  String get statusUnderReview => 'Under Review';
+
+  @override
+  String get statusHearingScheduled => 'Hearing Scheduled';
+
+  @override
+  String get statusGranted => 'Granted';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusWithdrawn => 'Withdrawn';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusReceived => 'Received';
+
+  @override
+  String get statusInProgress => 'In Progress';
+
+  @override
+  String get statusClosed => 'Closed';
+
+  @override
+  String get statusSubmitted => 'Submitted';
+
+  @override
+  String get statusAcknowledged => 'Acknowledged';
+
+  @override
+  String get statusInvestigation => 'Investigation';
+
+  @override
+  String get petitionNumber => 'Petition Number';
+
+  @override
+  String get caseId => 'Case ID';
+
+  @override
   String get phone => 'Phone';
 
   @override
@@ -241,6 +289,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
+  String get chatbotLanguage => 'Chatbot Language';
+
+  @override
   String get language => 'Language';
 
   @override
@@ -250,10 +301,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiChatbotDetails => 'AI Chatbot Details';
 
   @override
+  String get scanToDownloadSummary => 'Scan to Download Summary';
+
+  @override
+  String get scanQrInstruction =>
+      'Scan this QR code with another device to view and download the PDF summary.';
+
+  @override
   String get citizenDetails => 'Citizen Details';
 
   @override
   String get address => 'Address';
+
+  @override
+  String get residentAddress => 'Resident Address';
 
   @override
   String get complaintType => 'Complaint Type';
@@ -521,6 +582,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileInformation => 'Profile Information';
+
+  @override
+  String get viewProfile => 'View Profile';
 
   @override
   String get areYouSureSignOut => 'Are you sure you want to sign out?';
@@ -2069,8 +2133,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'You have selected Anonymous Petition Mode. Your name and address will not be recorded.';
 
   @override
-  // TODO: implement profileUpdated
   String get profileUpdated => "Profile Updated";
+
+  @override
+  String get resetOnboarding => 'Reset Onboarding';
+
+  @override
+  String get showTutorialAgain => 'Show tutorial again';
 
   @override
   // TODO: implement ok

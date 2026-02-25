@@ -77,7 +77,6 @@ class PetitionProvider with ChangeNotifier {
     notifyListeners();
   }
 
-
   /// 🚓 Fetch petitions for POLICE by station name ✅
   Future<void> fetchPetitionsByStation(String stationName) async {
     _isLoading = true;
@@ -131,23 +130,23 @@ class PetitionProvider with ChangeNotifier {
   }
 
   String generateCaseId({
-  required String district,
-  required String stationName,
-}) {
-  final date = DateTime.now();
-  final formattedDate =
-      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+    required String district,
+    required String stationName,
+  }) {
+    final date = DateTime.now();
+    final formattedDate =
+        '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
-  final random = DateTime.now().millisecondsSinceEpoch
-      .toString()
-      .substring(7); // pseudo-random
+    final random = DateTime.now()
+        .millisecondsSinceEpoch
+        .toString()
+        .substring(7); // pseudo-random
 
-  final safeDistrict = district.replaceAll(' ', '');
-  final safeStation = stationName.replaceAll(' ', '');
+    final safeDistrict = district.replaceAll(' ', '');
+    final safeStation = stationName.replaceAll(' ', '');
 
-  return 'case-$safeDistrict-$safeStation-$formattedDate-$random';
-}
-
+    return 'case-$safeDistrict-$safeStation-$formattedDate-$random';
+  }
 
   /// Fetch petition stats (Total, Closed, Received, In Progress)
   /// If [userId] is provided, fetches stats for that specific user (Citizen)
@@ -161,7 +160,7 @@ class PetitionProvider with ChangeNotifier {
   }) async {
     try {
       // debugPrint(
-          // '🔍 fetchPetitionStats called | userId=$userId | officerId=$officerId | station=$stationName | district=$district | range=$range');
+      // '🔍 fetchPetitionStats called | userId=$userId | officerId=$officerId | station=$stationName | district=$district | range=$range');
 
       // 1️⃣ Query Online Petitions
       Query onlineQuery = _firestore.collection('petitions');
@@ -185,7 +184,7 @@ class PetitionProvider with ChangeNotifier {
 
       if (userId == null) {
         Map<String, QueryDocumentSnapshot> offlineDocsMap = {};
-        
+
         // 1. Direct Assignments (Always check if officerId is provided)
         if (officerId != null && officerId.isNotEmpty) {
           final snap = await _firestore
@@ -250,8 +249,8 @@ class PetitionProvider with ChangeNotifier {
           }
 
           // Escalation check
-          final isInProgress = status.contains('progress') ||
-              status.contains('investigation');
+          final isInProgress =
+              status.contains('progress') || status.contains('investigation');
           if (!isClosed && !isInProgress && createdAt != null) {
             final days = DateTime.now().difference(createdAt.toDate()).inDays;
             if (days >= 15) offlineEscalated++;
@@ -288,8 +287,8 @@ class PetitionProvider with ChangeNotifier {
           }
 
           // Escalation check
-          final isInProgress = status.contains('progress') ||
-              status.contains('investigation');
+          final isInProgress =
+              status.contains('progress') || status.contains('investigation');
           if (!isClosed && !isInProgress && createdAt != null) {
             final days = DateTime.now().difference(createdAt.toDate()).inDays;
             if (days >= 15) escalated++;
@@ -327,127 +326,150 @@ class PetitionProvider with ChangeNotifier {
     }
   }
 
-
   /// Legacy method kept but redirected
   Future<void> fetchPetitionCount() async {
     await fetchPetitionStats();
   }
 
   /// Create a new petition with document uploads
-  
 
-     Future<bool> createPetition({
-  required Petition petition,
-  PlatformFile? handwrittenFile,
-  List<PlatformFile>? proofFiles,
-}) async {
-  try {
-    String? handwrittenUrl;
-    List<String>? proofUrls;
+  Future<Map<String, String>?> createPetition({
+    required Petition petition,
+    PlatformFile? handwrittenFile,
+    List<PlatformFile>? proofFiles,
+  }) async {
+    try {
+      String? handwrittenUrl;
+      List<String>? proofUrls;
 
-    // ✅ GENERATE CUSTOM ID FIRST (Needed for Storage Path)
-    final safeName =
-        petition.petitionerName.replaceAll(' ', '_');
-    final safeDate = DateTime.now()
-        .toString()
-        .replaceAll(' ', '_')
-        .replaceAll(':', '-')
-        .split('.')
-        .first;
-
-    final petitionCustomId = "Petition_${safeName}_$safeDate";
-
-    // ✅ GENERATE CASE ID
-    final caseId = generateCaseId(
-      district: petition.district ?? 'UnknownDistrict',
-      stationName: petition.stationName ?? 'UnknownStation',
-    );
-
-    // Upload Handwritten Document
-    if (handwrittenFile != null) {
-      final timestamp = DateTime.now()
+      // ✅ GENERATE CUSTOM ID FIRST (Needed for Storage Path)
+      final safeName = petition.petitionerName.replaceAll(' ', '_');
+      final safeDate = DateTime.now()
           .toString()
-          .split('.')
-          .first
+          .replaceAll(' ', '_')
           .replaceAll(':', '-')
-          .replaceAll(' ', '_');
+          .split('.')
+          .first;
 
-      final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
-      // Fix: Use 'petition-documents' bucket which is allowed in storage.rules
-      final path = 'petition-documents/$petitionCustomId/$fileName';
+      final petitionCustomId = "Petition_${safeName}_$safeDate";
 
-      handwrittenUrl =
-          await StorageService.uploadFile(file: handwrittenFile, path: path);
-    }
-
-    // Upload Proof Documents
-    if (proofFiles != null && proofFiles.isNotEmpty) {
-      // Fix: Use 'petition-documents' bucket
-      // Note: storage.rules 'match /{filename}' implies single level, no sub-folders allowed deep inside
-      final folderPath = 'petition-documents/$petitionCustomId';
-
-      proofUrls = await StorageService.uploadMultipleFiles(
-        files: proofFiles,
-        folderPath: folderPath,
+      // ✅ GENERATE CASE ID
+      final caseId = generateCaseId(
+        district: petition.district ?? 'UnknownDistrict',
+        stationName: petition.stationName ?? 'UnknownStation',
       );
-      
-      if (proofUrls.isEmpty) {
-        throw Exception('Failed to upload proof documents. Please check your connection and try again.');
+
+      // ✅ GENERATE SEQUENTIAL PETITION NUMBER (Atomically)
+      final counterRef =
+          _firestore.collection('petition_counters').doc('global');
+      final petitionNumber =
+          await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(counterRef);
+        int newCount;
+        if (snapshot.exists) {
+          newCount = (snapshot.data()?['count'] ?? 0) + 1;
+          transaction.update(counterRef, {'count': newCount});
+        } else {
+          newCount = 1;
+          transaction.set(counterRef, {'count': 1});
+        }
+
+        final year = DateTime.now().year.toString();
+        final paddedNumber = newCount.toString().padLeft(6, '0');
+        return "DHR-$year-$paddedNumber";
+      });
+
+      // Upload Handwritten Document
+      if (handwrittenFile != null) {
+        final timestamp = DateTime.now()
+            .toString()
+            .split('.')
+            .first
+            .replaceAll(':', '-')
+            .replaceAll(' ', '_');
+
+        final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
+        // Fix: Use 'petition-documents' bucket which is allowed in storage.rules
+        final path = 'petition-documents/$petitionCustomId/$fileName';
+
+        handwrittenUrl =
+            await StorageService.uploadFile(file: handwrittenFile, path: path);
       }
+
+      // Upload Proof Documents
+      if (proofFiles != null && proofFiles.isNotEmpty) {
+        // Fix: Use 'petition-documents' bucket
+        // Note: storage.rules 'match /{filename}' implies single level, no sub-folders allowed deep inside
+        final folderPath = 'petition-documents/$petitionCustomId';
+
+        proofUrls = await StorageService.uploadMultipleFiles(
+          files: proofFiles,
+          folderPath: folderPath,
+        );
+
+        if (proofUrls.isEmpty) {
+          throw Exception(
+              'Failed to upload proof documents. Please check your connection and try again.');
+        }
+      }
+
+      // ✅ FINAL PETITION OBJECT
+      final newPetition = Petition(
+        id: petitionCustomId,
+        caseId: caseId,
+        petitionNumber: petitionNumber,
+        title: petition.title,
+        type: petition.type,
+        status: petition.status,
+        petitionerName: petition.petitionerName,
+        phoneNumber: petition.phoneNumber,
+        address: petition.address,
+        grounds: petition.grounds,
+        incidentAddress: petition.incidentAddress,
+        incidentDate: petition.incidentDate,
+        district: petition.district,
+        stationName: petition.stationName,
+        prayerRelief: petition.prayerRelief,
+        accusedDetails: petition.accusedDetails,
+        stolenProperty: petition.stolenProperty,
+        witnesses: petition.witnesses,
+        evidenceStatus: petition.evidenceStatus,
+        firNumber: petition.firNumber,
+        nextHearingDate: petition.nextHearingDate,
+        filingDate: petition.filingDate,
+        orderDate: petition.orderDate,
+        orderDetails: petition.orderDetails,
+        policeStatus: 'Pending',
+        policeSubStatus: petition.policeSubStatus,
+        extractedText: petition.extractedText,
+        handwrittenDocumentUrl: handwrittenUrl,
+        proofDocumentUrls: proofUrls,
+        userId: petition.userId,
+        createdAt: petition.createdAt,
+        updatedAt: petition.updatedAt,
+        isAnonymous: petition.isAnonymous,
+      );
+
+      await _firestore
+          .collection('petitions')
+          .doc(petitionCustomId)
+          .set(newPetition.toMap());
+
+      await fetchPetitions(petition.userId);
+      await fetchPetitionStats(userId: petition.userId);
+      await fetchPetitionStats();
+
+      notifyListeners();
+      return {
+        'petitionId': petitionCustomId,
+        'caseId': caseId,
+        'petitionNumber': petitionNumber,
+      };
+    } catch (e) {
+      // debugPrint("Error creating petition: $e");
+      return null;
     }
-
-    // ✅ FINAL PETITION OBJECT
-    final newPetition = Petition(
-      id: petitionCustomId,
-      caseId: caseId, 
-      title: petition.title,
-      type: petition.type,
-      status: petition.status,
-      petitionerName: petition.petitionerName,
-      phoneNumber: petition.phoneNumber,
-      address: petition.address,
-      grounds: petition.grounds,
-
-      incidentAddress: petition.incidentAddress,
-      incidentDate: petition.incidentDate,
-      district: petition.district,
-      stationName: petition.stationName,
-
-      prayerRelief: petition.prayerRelief,
-      firNumber: petition.firNumber,
-      nextHearingDate: petition.nextHearingDate,
-      filingDate: petition.filingDate,
-      orderDate: petition.orderDate,
-      orderDetails: petition.orderDetails,
-
-      policeStatus: 'Pending',
-      policeSubStatus: petition.policeSubStatus,
-      extractedText: petition.extractedText,
-      handwrittenDocumentUrl: handwrittenUrl,
-      proofDocumentUrls: proofUrls,
-
-      userId: petition.userId,
-      createdAt: petition.createdAt,
-      updatedAt: petition.updatedAt,
-      isAnonymous: petition.isAnonymous,
-    );
-
-    await _firestore
-        .collection('petitions')
-        .doc(petitionCustomId)
-        .set(newPetition.toMap());
-
-    await fetchPetitions(petition.userId);
-    await fetchPetitionStats(userId: petition.userId);
-    await fetchPetitionStats();
-
-    notifyListeners();
-    return true;
-  } catch (e) {
-    // debugPrint("Error creating petition: $e");
-    return false;
   }
-}
 
   /// Update any petition field (including police status fields)
   Future<bool> updatePetition(
@@ -476,7 +498,8 @@ class PetitionProvider with ChangeNotifier {
   }
 
   /// Submit feedback for a petition (Rating & Comment)
-  Future<bool> submitFeedback(String petitionId, double rating, String comment) async {
+  Future<bool> submitFeedback(
+      String petitionId, double rating, String comment) async {
     try {
       final feedback = {
         'rating': rating,
@@ -487,10 +510,10 @@ class PetitionProvider with ChangeNotifier {
       await _firestore.collection('petitions').doc(petitionId).update({
         'feedbacks': FieldValue.arrayUnion([feedback])
       });
-      
+
       // Update local state if needed (optional since we usually fetch again)
-      // await fetchPetitions(userId); 
-      
+      // await fetchPetitions(userId);
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -535,7 +558,8 @@ class PetitionProvider with ChangeNotifier {
       Query onlineQuery = _firestore.collection('petitions');
       if (isPolice) {
         if (stationName != null && stationName.isNotEmpty) {
-          onlineQuery = onlineQuery.where('stationName', isEqualTo: stationName);
+          onlineQuery =
+              onlineQuery.where('stationName', isEqualTo: stationName);
         } else if (district != null && district.isNotEmpty) {
           onlineQuery = onlineQuery.where('district', isEqualTo: district);
         }
@@ -543,7 +567,8 @@ class PetitionProvider with ChangeNotifier {
         onlineQuery = onlineQuery.where('userId', isEqualTo: userId);
       }
       final onlineSnapshot = await onlineQuery.get();
-      allPetitions.addAll(onlineSnapshot.docs.map((d) => Petition.fromFirestore(d)));
+      allPetitions
+          .addAll(onlineSnapshot.docs.map((d) => Petition.fromFirestore(d)));
 
       // 2️⃣ Fetch Offline Petitions (Direct + Organisational)
       if (isPolice) {
@@ -586,8 +611,9 @@ class PetitionProvider with ChangeNotifier {
             offlineDocsMap[doc.id] = doc;
           }
         }
-        
-        allPetitions.addAll(offlineDocsMap.values.map((d) => Petition.fromFirestore(d)));
+
+        allPetitions.addAll(
+            offlineDocsMap.values.map((d) => Petition.fromFirestore(d)));
       }
 
       // 🕒 Sort in memory (newest first)
@@ -620,7 +646,7 @@ class PetitionProvider with ChangeNotifier {
             return true;
         }
       }).toList();
-      
+
       // debugPrint('✅ fetchFilteredPetitions found: ${_petitions.length} petitions');
     } catch (e) {
       // debugPrint('❌ Error fetchFilteredPetitions: $e');
@@ -658,7 +684,8 @@ class PetitionProvider with ChangeNotifier {
               .replaceAll(':', '-')
               .replaceAll(' ', '_');
 
-          final photoFolderPath = 'petition_updates/$petitionId/photos/Photos_$timestamp';
+          final photoFolderPath =
+              'petition_updates/$petitionId/photos/Photos_$timestamp';
 
           photoUrls = await StorageService.uploadMultipleFiles(
             files: photoFiles,
@@ -682,15 +709,17 @@ class PetitionProvider with ChangeNotifier {
               .replaceAll(':', '-')
               .replaceAll(' ', '_');
 
-          final docFolderPath = 'petition_updates/$petitionId/documents/Docs_$timestamp';
+          final docFolderPath =
+              'petition_updates/$petitionId/documents/Docs_$timestamp';
 
           // Upload individually to maintain mapping between file name and URL
           for (var docFile in documentFiles) {
             final fileName = 'Doc_${timestamp}_${docFile.name}';
             final path = '$docFolderPath/$fileName';
 
-            final url = await StorageService.uploadFile(file: docFile, path: path);
-            
+            final url =
+                await StorageService.uploadFile(file: docFile, path: path);
+
             if (url != null) {
               documents.add({
                 'name': docFile.name, // Display name
@@ -717,9 +746,7 @@ class PetitionProvider with ChangeNotifier {
       );
 
       // Save to Firestore
-      await _firestore
-          .collection('petition_updates')
-          .add(update.toMap());
+      await _firestore.collection('petition_updates').add(update.toMap());
 
       // debugPrint('✅ [PETITION_UPDATE] Petition update created successfully');
       return true;
@@ -760,14 +787,17 @@ class PetitionProvider with ChangeNotifier {
   }
 
   /// Merges real updates with system-generated escalation updates
-  List<PetitionUpdate> getUpdatesWithEscalations(Petition petition, List<PetitionUpdate> realUpdates) {
+  List<PetitionUpdate> getUpdatesWithEscalations(
+      Petition petition, List<PetitionUpdate> realUpdates) {
     List<PetitionUpdate> allUpdates = List.from(realUpdates);
     final createdDate = petition.createdAt.toDate();
-    
+
     // Status check: only escalate if not closed/rejected/resolved
     final status = (petition.policeStatus ?? '').toLowerCase();
-    final isResolved = status.contains('close') || status.contains('resolve') || status.contains('reject');
-    
+    final isResolved = status.contains('close') ||
+        status.contains('resolve') ||
+        status.contains('reject');
+
     if (isResolved) return realUpdates;
 
     // 15 days for SP
@@ -775,7 +805,8 @@ class PetitionProvider with ChangeNotifier {
     if (DateTime.now().isAfter(spEscalationDate)) {
       allUpdates.add(PetitionUpdate(
         petitionId: petition.id ?? '',
-        updateText: "⚠️ ESCALATION: Petition has been pending for over 15 days at the Police Station level. It has now been automatically escalated to the District Superintendent of Police (SP) for review.",
+        updateText:
+            "⚠️ ESCALATION: Petition has been pending for over 15 days at the Police Station level. It has now been automatically escalated to the District Superintendent of Police (SP) for review.",
         addedBy: "System Auto-Escalation",
         addedByUserId: "system",
         createdAt: Timestamp.fromDate(spEscalationDate),
@@ -787,7 +818,8 @@ class PetitionProvider with ChangeNotifier {
     if (DateTime.now().isAfter(igEscalationDate)) {
       allUpdates.add(PetitionUpdate(
         petitionId: petition.id ?? '',
-        updateText: "⚠️ ESCALATION: Petition remains pending after 30 days. It has been further escalated to the Range Inspector General (IG) for urgent attention.",
+        updateText:
+            "⚠️ ESCALATION: Petition remains pending after 30 days. It has been further escalated to the Range Inspector General (IG) for urgent attention.",
         addedBy: "System Auto-Escalation",
         addedByUserId: "system",
         createdAt: Timestamp.fromDate(igEscalationDate),
@@ -796,7 +828,7 @@ class PetitionProvider with ChangeNotifier {
 
     // Sort all updates by createdAt
     allUpdates.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    
+
     return allUpdates;
   }
 
@@ -888,7 +920,8 @@ class PetitionProvider with ChangeNotifier {
         // debugPrint('📍 Filtering by range: $rangeName');
       }
 
-      final snapshot = await query.orderBy('assignedAt', descending: true).get();
+      final snapshot =
+          await query.orderBy('assignedAt', descending: true).get();
 
       _petitions =
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
@@ -936,5 +969,4 @@ class PetitionProvider with ChangeNotifier {
       return 0;
     }
   }
-
 }

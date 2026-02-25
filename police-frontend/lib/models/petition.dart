@@ -5,12 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Example: 9876543210 -> 987xxxxxxx
 String maskPhoneNumber(String? phoneNumber) {
   if (phoneNumber == null || phoneNumber.isEmpty) return 'N/A';
-  
+
   // Remove any non-digit characters
   final digitsOnly = phoneNumber.replaceAll(RegExp(r'\D'), '');
-  
+
   if (digitsOnly.length < 3) return digitsOnly;
-  
+
   // Get first 3 digits and replace the rest with 'x'
   final firstThree = digitsOnly.substring(0, 3);
   final remaining = 'x' * (digitsOnly.length - 3);
@@ -161,7 +161,8 @@ class Petition {
   final String? submittedByRank; // Officer rank
 
   /// 👮 Assignment fields
-  final String? assignmentType; // 'range', 'district', 'station', 'sdpo', 'circle'
+  final String?
+      assignmentType; // 'range', 'district', 'station', 'sdpo', 'circle'
   final String? assignedTo; // Officer UID assigned to
   final String? assignedToName; // Officer name
   final String? assignedToRank; // Officer rank
@@ -187,7 +188,7 @@ class Petition {
 
   /// Returns true if the petition has been pending for more than 15 days
   bool get isEscalated {
-    if (policeStatus?.toLowerCase() == 'closed' || 
+    if (policeStatus?.toLowerCase() == 'closed' ||
         policeStatus?.toLowerCase() == 'rejected' ||
         policeStatus?.toLowerCase() == 'resolved' ||
         policeStatus?.toLowerCase() == 'in progress') {
@@ -200,7 +201,7 @@ class Petition {
 
   /// Returns 0 for no escalation, 1 for SP (15 days), 2 for IG (30 days), 3 for DGP (45 days)
   int get escalationLevel {
-    if (policeStatus?.toLowerCase() == 'closed' || 
+    if (policeStatus?.toLowerCase() == 'closed' ||
         policeStatus?.toLowerCase() == 'rejected' ||
         policeStatus?.toLowerCase() == 'resolved' ||
         policeStatus?.toLowerCase() == 'in progress') {
@@ -208,7 +209,7 @@ class Petition {
     }
     final now = DateTime.now();
     final difference = now.difference(createdAt.toDate()).inDays;
-    
+
     if (difference >= 45) return 3; // DGP level
     if (difference >= 30) return 2; // IG level
     if (difference >= 15) return 1; // SP level
@@ -318,7 +319,8 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls'])
+              as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       feedbacks: ((data['feedbacks'] ?? data['feedback']) as List<dynamic>?)
@@ -385,7 +387,8 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls'])
+              as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       feedbacks: ((data['feedbacks'] ?? data['feedback']) as List<dynamic>?)
@@ -438,7 +441,8 @@ class Petition {
       if (assignedToRange != null) 'assignedToRange': assignedToRange,
       if (assignedToDistrict != null) 'assignedToDistrict': assignedToDistrict,
       if (assignedToSDPO != null) 'assignedToSDPO': assignedToSDPO, // ✅ NEW
-      if (assignedToCircle != null) 'assignedToCircle': assignedToCircle, // ✅ NEW
+      if (assignedToCircle != null)
+        'assignedToCircle': assignedToCircle, // ✅ NEW
       if (assignedToStation != null) 'assignedToStation': assignedToStation,
       if (assignedBy != null) 'assignedBy': assignedBy,
       if (assignedByName != null) 'assignedByName': assignedByName,

@@ -103,6 +103,11 @@ service cloud.firestore {
       // Allow delete only if user is the owner
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+
+    // PETITION COUNTERS COLLECTION
+    match /petition_counters/{counterId} {
+      allow read, create, update: if request.auth != null;
+    }
     
     // OFFLINE PETITIONS COLLECTION (NO UNDERSCORE - matches code)
     // Collection: offlinepetitions

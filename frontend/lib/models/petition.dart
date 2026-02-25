@@ -5,12 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Example: 9876543210 -> 987xxxxxxx
 String maskPhoneNumber(String? phoneNumber) {
   if (phoneNumber == null || phoneNumber.isEmpty) return 'N/A';
-  
+
   // Remove any non-digit characters
   final digitsOnly = phoneNumber.replaceAll(RegExp(r'\D'), '');
-  
+
   if (digitsOnly.length < 3) return digitsOnly;
-  
+
   // Get first 3 digits and replace the rest with 'x'
   final firstThree = digitsOnly.substring(0, 3);
   final remaining = 'x' * (digitsOnly.length - 3);
@@ -82,6 +82,26 @@ enum PetitionStatus {
 }
 
 extension PetitionStatusExtension on PetitionStatus {
+  String getLocalizedName(dynamic l10n) {
+    if (l10n == null) return displayName;
+    switch (this) {
+      case PetitionStatus.draft:
+        return l10n.statusDraft;
+      case PetitionStatus.filed:
+        return l10n.statusFiled;
+      case PetitionStatus.underReview:
+        return l10n.statusUnderReview;
+      case PetitionStatus.hearingScheduled:
+        return l10n.statusHearingScheduled;
+      case PetitionStatus.granted:
+        return l10n.statusGranted;
+      case PetitionStatus.rejected:
+        return l10n.statusRejected;
+      case PetitionStatus.withdrawn:
+        return l10n.statusWithdrawn;
+    }
+  }
+
   String get displayName {
     switch (this) {
       case PetitionStatus.draft:
@@ -127,6 +147,8 @@ class Petition {
   final String? id;
   final String title;
   final String? caseId;
+  final String?
+      petitionNumber; // Human-readable sequential number e.g. DHR-2026-000042
 
   final PetitionType type;
   final PetitionStatus status;
@@ -175,6 +197,11 @@ class Petition {
   final String? assignmentStatus; // 'pending', 'accepted', 'rejected'
   final String? assignmentNotes; // Optional notes during assignment
 
+  final String? accusedDetails;
+  final String? stolenProperty;
+  final String? witnesses;
+  final String? evidenceStatus;
+
   final String? extractedText;
   final String? handwrittenDocumentUrl;
   final List<String>? proofDocumentUrls;
@@ -185,7 +212,7 @@ class Petition {
 
   /// Returns true if the petition has been pending for more than 15 days
   bool get isEscalated {
-    if (policeStatus?.toLowerCase() == 'closed' || 
+    if (policeStatus?.toLowerCase() == 'closed' ||
         policeStatus?.toLowerCase() == 'rejected' ||
         policeStatus?.toLowerCase() == 'resolved' ||
         policeStatus?.toLowerCase() == 'in progress') {
@@ -198,7 +225,7 @@ class Petition {
 
   /// Returns 0 for no escalation, 1 for SP (15 days), 2 for IG (30 days), 3 for DGP (45 days)
   int get escalationLevel {
-    if (policeStatus?.toLowerCase() == 'closed' || 
+    if (policeStatus?.toLowerCase() == 'closed' ||
         policeStatus?.toLowerCase() == 'rejected' ||
         policeStatus?.toLowerCase() == 'resolved' ||
         policeStatus?.toLowerCase() == 'in progress') {
@@ -206,7 +233,7 @@ class Petition {
     }
     final now = DateTime.now();
     final difference = now.difference(createdAt.toDate()).inDays;
-    
+
     if (difference >= 45) return 3; // DGP level
     if (difference >= 30) return 2; // IG level
     if (difference >= 15) return 1; // SP level
@@ -222,6 +249,7 @@ class Petition {
     this.status = PetitionStatus.draft,
     required this.petitionerName,
     this.caseId,
+    this.petitionNumber,
     this.phoneNumber,
     this.address,
     required this.grounds,
@@ -257,6 +285,10 @@ class Petition {
     this.assignedAt,
     this.assignmentStatus,
     this.assignmentNotes,
+    this.accusedDetails,
+    this.stolenProperty,
+    this.witnesses,
+    this.evidenceStatus,
     this.extractedText,
     this.handwrittenDocumentUrl,
     this.proofDocumentUrls,
@@ -272,6 +304,7 @@ class Petition {
     return Petition(
       id: doc.id,
       caseId: data['case_id'],
+      petitionNumber: data['petition_number'],
       title: data['title'] ?? '',
       type: PetitionTypeExtension.fromString(data['type'] ?? 'other'),
       status: PetitionStatusExtension.fromString(data['status'] ?? 'draft'),
@@ -312,12 +345,17 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls'])
+              as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       feedbacks: (data['feedbacks'] as List<dynamic>?)
           ?.map((e) => e as Map<String, dynamic>)
           .toList(),
+      accusedDetails: data['accused_details'] ?? data['accusedDetails'],
+      stolenProperty: data['stolen_property'] ?? data['stolenProperty'],
+      witnesses: data['witnesses'],
+      evidenceStatus: data['evidence_status'] ?? data['evidenceStatus'],
       userId: data['userId'] ?? '',
       createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
       updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
@@ -330,6 +368,7 @@ class Petition {
     return Petition(
       id: id,
       caseId: data['case_id'],
+      petitionNumber: data['petition_number'],
       title: data['title'] ?? '',
       type: PetitionTypeExtension.fromString(data['type'] ?? 'other'),
       status: PetitionStatusExtension.fromString(data['status'] ?? 'draft'),
@@ -376,12 +415,17 @@ class Petition {
       assignmentNotes: data['assignmentNotes'],
       extractedText: data['extractedText'],
       handwrittenDocumentUrl: data['handwrittenDocumentUrl'],
-      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls']) as List<dynamic>?)
+      proofDocumentUrls: ((data['proofDocumentUrls'] ?? data['documentUrls'])
+              as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
       feedbacks: (data['feedbacks'] as List<dynamic>?)
           ?.map((e) => e as Map<String, dynamic>)
           .toList(),
+      accusedDetails: data['accused_details'] ?? data['accusedDetails'],
+      stolenProperty: data['stolen_property'] ?? data['stolenProperty'],
+      witnesses: data['witnesses'],
+      evidenceStatus: data['evidence_status'] ?? data['evidenceStatus'],
       userId: data['userId'] ?? '',
       createdAt:
           data['createdAt'] is Timestamp ? data['createdAt'] : Timestamp.now(),
@@ -392,12 +436,42 @@ class Petition {
     );
   }
 
+  String getLocalizedDisplayStatus(dynamic l10n) {
+    if (l10n == null) {
+      return (policeStatus != null && policeStatus!.isNotEmpty)
+          ? policeStatus!
+          : status.displayName;
+    }
+
+    if (policeStatus != null && policeStatus!.isNotEmpty) {
+      switch (policeStatus!.toLowerCase()) {
+        case 'pending':
+        case 'submitted':
+          return l10n.statusPending ?? l10n.statusSubmitted;
+        case 'received':
+        case 'acknowledged':
+          return l10n.statusReceived ?? l10n.statusAcknowledged;
+        case 'in progress':
+        case 'investigation':
+          return l10n.statusInProgress ?? l10n.statusInvestigation;
+        case 'closed':
+          return l10n.statusClosed;
+        case 'rejected':
+          return l10n.statusRejected;
+        default:
+          return policeStatus!;
+      }
+    }
+    return status.getLocalizedName(l10n);
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'type': type.displayName,
       'case_id': caseId,
+      if (petitionNumber != null) 'petition_number': petitionNumber,
       'status': status.displayName,
       'petitionerName': petitionerName,
       if (phoneNumber != null) 'phoneNumber': phoneNumber,
@@ -439,6 +513,10 @@ class Petition {
         'handwrittenDocumentUrl': handwrittenDocumentUrl,
       if (proofDocumentUrls != null) 'proofDocumentUrls': proofDocumentUrls,
       if (feedbacks != null) 'feedbacks': feedbacks,
+      if (accusedDetails != null) 'accusedDetails': accusedDetails,
+      if (stolenProperty != null) 'stolenProperty': stolenProperty,
+      if (witnesses != null) 'witnesses': witnesses,
+      if (evidenceStatus != null) 'evidenceStatus': evidenceStatus,
       'userId': userId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,

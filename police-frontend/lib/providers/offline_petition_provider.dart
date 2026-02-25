@@ -32,7 +32,8 @@ class OfflinePetitionProvider with ChangeNotifier {
     final formattedDate =
         '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
-    final random = DateTime.now().millisecondsSinceEpoch
+    final random = DateTime.now()
+        .millisecondsSinceEpoch
         .toString()
         .substring(7); // pseudo-random
 
@@ -72,7 +73,8 @@ class OfflinePetitionProvider with ChangeNotifier {
             .replaceAll(' ', '_');
 
         final fileName = 'Handwritten_${timestamp}_${handwrittenFile.name}';
-        final path = 'offline_petitions/${petition.submittedBy}/handwritten/$fileName';
+        final path =
+            'offline_petitions/${petition.submittedBy}/handwritten/$fileName';
 
         handwrittenUrl =
             await StorageService.uploadFile(file: handwrittenFile, path: path);
@@ -168,7 +170,8 @@ class OfflinePetitionProvider with ChangeNotifier {
       debugPrint('📊 Collection: offlinepetitions');
       debugPrint('📊 Case ID: $caseId');
       debugPrint('👤 Submitted by: ${petition.submittedByName}');
-      debugPrint('🎯 Assignment status: ${petition.assignmentStatus ?? "Not assigned"}');
+      debugPrint(
+          '🎯 Assignment status: ${petition.assignmentStatus ?? "Not assigned"}');
 
       _isLoading = false;
       notifyListeners();
@@ -205,7 +208,7 @@ class OfflinePetitionProvider with ChangeNotifier {
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
 
       debugPrint('✅ Fetched ${_sentPetitions.length} sent petitions');
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -227,14 +230,16 @@ class OfflinePetitionProvider with ChangeNotifier {
       debugPrint('🔍 Fetching petitions assigned to officer: $officerId');
 
       // Get officer's profile to find their station, district, and range
-      final officerDoc = await _firestore.collection('police').doc(officerId).get();
+      final officerDoc =
+          await _firestore.collection('police').doc(officerId).get();
       final officerData = officerDoc.data();
-      
+
       final officerStation = officerData?['stationName'] as String?;
       final officerDistrict = officerData?['district'] as String?;
       final officerRange = officerData?['range'] as String?;
 
-      debugPrint('👮 Officer Info: Station: $officerStation, District: $officerDistrict, Range: $officerRange, Rank: ${officerData?['rank']}');
+      debugPrint(
+          '👮 Officer Info: Station: $officerStation, District: $officerDistrict, Range: $officerRange, Rank: ${officerData?['rank']}');
 
       final officerRank = officerData?['rank'] as String?;
       final isRangeOfficer = RankUtils.isRangeLevelOfficer(officerRank);
@@ -250,28 +255,35 @@ class OfflinePetitionProvider with ChangeNotifier {
           .orderBy('assignedAt', descending: true)
           .get();
       allDocs.addAll(directAssignments.docs);
-      debugPrint('✅ Found ${directAssignments.docs.length} directly assigned petitions');
+      debugPrint(
+          '✅ Found ${directAssignments.docs.length} directly assigned petitions');
 
       // Query 2: Petitions assigned to officer's station - ONLY FOR STATION OFFICERS
-      if (isStationOfficer && officerStation != null && officerStation.isNotEmpty) {
+      if (isStationOfficer &&
+          officerStation != null &&
+          officerStation.isNotEmpty) {
         final stationAssignments = await _firestore
             .collection('offlinepetitions')
             .where('assignedToStation', isEqualTo: officerStation)
             .orderBy('assignedAt', descending: true)
             .get();
         allDocs.addAll(stationAssignments.docs);
-        debugPrint('✅ Found ${stationAssignments.docs.length} station-assigned petitions');
+        debugPrint(
+            '✅ Found ${stationAssignments.docs.length} station-assigned petitions');
       }
 
       // Query 3: Petitions assigned to officer's district - ONLY FOR DISTRICT OFFICERS (e.g., SP)
-      if (isDistrictOfficer && officerDistrict != null && officerDistrict.isNotEmpty) {
+      if (isDistrictOfficer &&
+          officerDistrict != null &&
+          officerDistrict.isNotEmpty) {
         final districtAssignments = await _firestore
             .collection('offlinepetitions')
             .where('assignedToDistrict', isEqualTo: officerDistrict)
             .orderBy('assignedAt', descending: true)
             .get();
         allDocs.addAll(districtAssignments.docs);
-        debugPrint('✅ Found ${districtAssignments.docs.length} district-assigned petitions');
+        debugPrint(
+            '✅ Found ${districtAssignments.docs.length} district-assigned petitions');
       }
 
       // Query 4: Petitions assigned to officer's range - ONLY FOR RANGE OFFICERS (e.g., IG/DIG)
@@ -282,7 +294,8 @@ class OfflinePetitionProvider with ChangeNotifier {
             .orderBy('assignedAt', descending: true)
             .get();
         allDocs.addAll(rangeAssignments.docs);
-        debugPrint('✅ Found ${rangeAssignments.docs.length} range-assigned petitions');
+        debugPrint(
+            '✅ Found ${rangeAssignments.docs.length} range-assigned petitions');
       }
 
       // Combine all results and remove duplicates using Map by Document ID
@@ -293,7 +306,9 @@ class OfflinePetitionProvider with ChangeNotifier {
 
       List<Petition> petitionsList = uniqueDocs.values
           .map((doc) => Petition.fromFirestore(doc))
-          .where((p) => p.assignedBy != officerId) // Filter out petitions sent by this officer
+          .where((p) =>
+              p.assignedBy !=
+              officerId) // Filter out petitions sent by this officer
           .toList();
 
       // Sort combined list by assignedAt (newest first)
@@ -304,8 +319,9 @@ class OfflinePetitionProvider with ChangeNotifier {
       });
 
       _assignedPetitions = petitionsList;
-      debugPrint('✅ Total unique assigned petitions: ${_assignedPetitions.length}');
-      
+      debugPrint(
+          '✅ Total unique assigned petitions: ${_assignedPetitions.length}');
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -335,7 +351,7 @@ class OfflinePetitionProvider with ChangeNotifier {
           snapshot.docs.map((doc) => Petition.fromFirestore(doc)).toList();
 
       debugPrint('✅ Fetched ${_offlinePetitions.length} offline petitions');
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {

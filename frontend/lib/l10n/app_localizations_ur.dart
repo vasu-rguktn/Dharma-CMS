@@ -47,6 +47,53 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get email => 'ای میل';
+  @override
+  String get statusDraft => 'Draft';
+
+  @override
+  String get statusFiled => 'Filed';
+
+  @override
+  String get statusUnderReview => 'Under Review';
+
+  @override
+  String get statusHearingScheduled => 'Hearing Scheduled';
+
+  @override
+  String get statusGranted => 'Granted';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusWithdrawn => 'Withdrawn';
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusReceived => 'Received';
+
+  @override
+  String get statusInProgress => 'In Progress';
+
+  @override
+  String get statusClosed => 'Closed';
+
+  @override
+  String get statusSubmitted => 'Submitted';
+
+  @override
+  String get statusAcknowledged => 'Acknowledged';
+
+  @override
+  String get statusInvestigation => 'Investigation';
+
+  @override
+  String get petitionNumber => 'Petition Number';
+
+  @override
+  String get caseId => 'Case ID';
+
 
   @override
   String get phone => 'فون';
@@ -249,6 +296,15 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get aiChatbotDetails => 'AI چیٹ بوٹ کی تفصیلات';
+  @override
+  String get scanToDownloadSummary => 'Scan to Download Summary';
+
+  @override
+  String get scanQrInstruction => 'Scan this QR code with another device to view and download the PDF summary.';
+
+  @override
+  String get residentAddress => 'Resident Address';
+
 
   @override
   String get citizenDetails => 'شہری کی تفصیلات';
@@ -2217,4 +2273,16 @@ class AppLocalizationsUr extends AppLocalizations {
   
   @override
   String get evidenceRequest => "Do you have any evidence (photos/documents)? Please attach them now or type No to continue.";
+  
+  @override
+  String get chatbotLanguage => 'چیٹ بوٹ کی زبان';
+
+  @override
+  String get viewProfile => 'پروفائل دیکھیں';
+
+  @override
+  String get resetOnboarding => 'آن بورڈنگ کو دوبارہ ترتیب دیں';
+
+  @override
+  String get showTutorialAgain => 'ٹیوٹوریل دوبارہ دکھائیں';
 }

@@ -18,6 +18,8 @@ class NativeSpeechRecognizer(
     private var shouldContinueListening = false
     private var currentLanguage = "te-IN"
     private var lastRecognizedText = ""
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var restartRunnable: Runnable? = null
     
     companion object {
         private const val TAG = "NativeSpeechRecognizer"
@@ -29,12 +31,22 @@ class NativeSpeechRecognizer(
         shouldContinueListening = true
         lastRecognizedText = ""
         
-        if (isListening) {
-            Log.d(TAG, "Already listening, restarting...")
-            stopListeningInternal()
-        }
+        // Cancel any pending auto-restart/start
+        restartRunnable?.let { mainHandler.removeCallbacks(it) }
+        restartRunnable = null
         
-        initializeAndStart()
+        if (isListening) {
+            Log.d(TAG, "Already listening, stopping and waiting for cool-down...")
+            stopListeningInternal()
+            
+            val startTask = Runnable {
+                initializeAndStart()
+            }
+            restartRunnable = startTask
+            mainHandler.postDelayed(startTask, 500)
+        } else {
+            initializeAndStart()
+        }
     }
     
     fun stopListening() {
@@ -46,6 +58,8 @@ class NativeSpeechRecognizer(
     fun destroy() {
         Log.d(TAG, "destroy called")
         shouldContinueListening = false
+        restartRunnable?.let { mainHandler.removeCallbacks(it) }
+        restartRunnable = null
         stopListeningInternal()
         speechRecognizer?.destroy()
         speechRecognizer = null
@@ -84,6 +98,22 @@ class NativeSpeechRecognizer(
                 hints.add("Nuzvid")
                 hints.add("IIIT Nuzvid")
                 hints.add("RGUKT")
+                hints.add("RGUKT Nuzvid")
+                hints.add("Andhra Pradesh")
+                hints.add("Vijayawada")
+                hints.add("Guntur")
+                hints.add("Krishna district")
+                hints.add("Nuzvid bus stand")
+                hints.add("Nuzvid town")
+                hints.add("Nuzvid mandal")
+                // Location/address terms
+                hints.add("bus stand")
+                hints.add("bus stop")
+                hints.add("railway station")
+                hints.add("main road")
+                hints.add("near")
+                hints.add("opposite")
+                hints.add("behind")
                 // Legal/Police terms
                 hints.add("harassment")
                 hints.add("complaint")
@@ -124,23 +154,34 @@ class NativeSpeechRecognizer(
     }
     
     private fun stopListeningInternal() {
+        // Log attempt to stop
+        Log.d(TAG, "stopListeningInternal: isListening=$isListening")
+        
+        // Always try to cancel to clear system state, even if we think we aren't listening
+        speechRecognizer?.cancel() 
+        speechRecognizer?.stopListening()
+        
         if (isListening) {
-            speechRecognizer?.stopListening()
             isListening = false
             methodChannel.invokeMethod("onListeningStopped", null)
-            Log.d(TAG, "Speech recognition stopped")
+            Log.d(TAG, "Speech recognition state reset and notified")
         }
     }
     
     private fun restartListening() {
         if (shouldContinueListening) {
             Log.d(TAG, "Auto-restarting speech recognition...")
-            // Longer delay to ensure system releases resources
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            
+            // Cancel any existing pending restart
+            restartRunnable?.let { mainHandler.removeCallbacks(it) }
+            
+            val runnable = Runnable {
                 if (shouldContinueListening) {
                     initializeAndStart()
                 }
-            }, 1000) // Increased from 300ms to 1000ms
+            }
+            restartRunnable = runnable
+            mainHandler.postDelayed(runnable, 1200) // Increased to 1.2s
         }
     }
     
@@ -194,7 +235,8 @@ class NativeSpeechRecognizer(
                 }
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
                     // BUSY error - DON'T restart immediately, let it settle
-                    Log.w(TAG, "Recognizer busy - stopping auto-restart to prevent loop")
+                    Log.w(TAG, "Recognizer busy - applying emergency cancel")
+                    speechRecognizer?.cancel() // Try to force release
                     isListening = false
                     methodChannel.invokeMethod("onError", mapOf(
                         "error" to "RECOGNITION_ERROR",
@@ -202,6 +244,43 @@ class NativeSpeechRecognizer(
                         "code" to error
                     ))
                     // Don't call restartListening() - prevents infinite loop
+                }
+                SpeechRecognizer.ERROR_CLIENT -> {
+                    // Client-side error - usually the recognizer connection was dropped
+                    // Destroy and recreate to get a fresh connection
+                    Log.w(TAG, "Client error - destroying and recreating recognizer")
+                    isListening = false
+                    speechRecognizer?.destroy()
+                    speechRecognizer = null
+                    restartListening()
+                }
+                6 -> { // ERROR_LANGUAGE_NOT_SUPPORTED
+                    // Fallback to en-US if requested language is not supported
+                    Log.w(TAG, "Language not supported: $currentLanguage, falling back to en-US")
+                    isListening = false
+                    if (currentLanguage != "en-US") {
+                        currentLanguage = "en-US"
+                    }
+                    restartListening()
+                }
+                12 -> { // ERROR_LANGUAGE_NOT_SUPPORTED (alternate code)
+                    Log.w(TAG, "Language unavailable (12): $currentLanguage, falling back to en-US")
+                    isListening = false
+                    if (currentLanguage != "en-US") {
+                        currentLanguage = "en-US"
+                    }
+                    restartListening()
+                }
+                13 -> { // ERROR_LANGUAGE_UNAVAILABLE on Android 13+
+                    Log.w(TAG, "Language unavailable (13): $currentLanguage, falling back to en-US")
+                    isListening = false
+                    // Destroy and recreate with fallback language
+                    speechRecognizer?.destroy()
+                    speechRecognizer = null
+                    if (currentLanguage != "en-US") {
+                        currentLanguage = "en-US"
+                    }
+                    restartListening()
                 }
                 else -> {
                     // Other errors - notify and try restart

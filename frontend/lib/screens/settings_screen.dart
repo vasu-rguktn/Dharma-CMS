@@ -126,17 +126,23 @@ class SettingsScreen extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
                         onPressed: () => context.push('/profile'),
-                        icon: const Icon(Icons.person,
-                            size: 18, color: Colors.orange),
-                        label: const Text(
-                          'View Profile',
-                          style: TextStyle(
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold),
+                        icon: const Icon(
+                          Icons.person,
+                          size: 18,
+                          color: Colors.orange,
+                        ),
+                        label: Text(
+                          localizations.viewProfile,
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                       ),
                     ),
@@ -187,7 +193,7 @@ class SettingsScreen extends StatelessWidget {
                           'en';
                       return ListTile(
                         leading: const Icon(Icons.chat_bubble_outline),
-                        title: const Text("Chatbot Language"),
+                        title: Text(localizations.chatbotLanguage),
                         subtitle: Text(_getLanguageName(currentCode)),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => _showChatLanguageSheet(context, provider),
@@ -242,11 +248,11 @@ class SettingsScreen extends StatelessWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.replay, color: Colors.orange),
-                    title: const Text(
-                      'Reset Onboarding',
-                      style: TextStyle(color: Colors.orange),
+                    title: Text(
+                      localizations.resetOnboarding,
+                      style: const TextStyle(color: Colors.orange),
                     ),
-                    subtitle: const Text('Show tutorial again'),
+                    subtitle: Text(localizations.showTutorialAgain),
                     trailing:
                         const Icon(Icons.chevron_right, color: Colors.orange),
                     onTap: () async {
@@ -254,10 +260,8 @@ class SettingsScreen extends StatelessWidget {
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Reset Onboarding?'),
-                          content: const Text(
-                            'This will show the tutorial screens again on next app start. Continue?',
-                          ),
+                          title: Text(localizations.resetOnboarding),
+                          content: Text(localizations.showTutorialAgain),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
@@ -265,9 +269,10 @@ class SettingsScreen extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                'Reset',
-                                style: TextStyle(color: Colors.orange),
+                              child: Text(
+                                localizations.resetOnboarding,
+                                style:
+                                    const TextStyle(color: Colors.orange),
                               ),
                             ),
                           ],
@@ -280,11 +285,12 @@ class SettingsScreen extends StatelessWidget {
 
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                  'Onboarding reset! Restart the app to see tutorial.'),
+                                localizations.showTutorialAgain,
+                              ),
                               backgroundColor: Colors.green,
-                              duration: Duration(seconds: 3),
+                              duration: const Duration(seconds: 3),
                             ),
                           );
                         }
@@ -452,7 +458,7 @@ class SettingsScreen extends StatelessWidget {
   static void _showChatLanguageSheet(
       BuildContext context, SettingsProvider provider) {
     // Reuse _validLanguages
-
+   final localizations = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -479,7 +485,7 @@ class SettingsScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                "Select Chatbot Language",
+                localizations.chatbotLanguage,
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge

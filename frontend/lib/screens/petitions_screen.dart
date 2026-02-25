@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/services/local_storage_service.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
@@ -243,7 +244,8 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      petition.status.displayName,
+                      petition.getLocalizedDisplayStatus(
+                          AppLocalizations.of(context)),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -362,12 +364,19 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    petition.status.displayName,
+                    petition.getLocalizedDisplayStatus(
+                        AppLocalizations.of(context)),
                     style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const Divider(height: 32),
+                if (petition.petitionNumber != null)
+                  _buildDetailRow(AppLocalizations.of(context)!.petitionNumber,
+                      petition.petitionNumber!),
+                if (petition.caseId != null)
+                  _buildDetailRow(
+                      AppLocalizations.of(context)!.caseId, petition.caseId!),
                 _buildDetailRow('Petitioner', petition.petitionerName),
                 if (petition.phoneNumber != null)
                   _buildDetailRow(
@@ -603,7 +612,7 @@ class _PetitionsScreenState extends State<PetitionsScreen>
                   // DEBUG: Remove this later
                   Builder(builder: (c) {
                     // print(
-                        // 'DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
+                    // 'DEBUG: proofDocumentUrls is ${petition.proofDocumentUrls}');
                     return const SizedBox.shrink();
                   }),
                 ],
@@ -696,7 +705,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
       // 1. Try Provider (Best for Web/Bytes & Mobile Stashing)
       if (petitionProvider.tempEvidence.isNotEmpty) {
         // debugPrint(
-            // '📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
+        // '📥 Found ${petitionProvider.tempEvidence.length} stashed files in Provider');
         setState(() {
           // Avoid adding duplicates if already added
           final existingNames = _proofFiles.map((e) => e.name).toSet();
@@ -940,7 +949,7 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     }
 
     // Pass files to provider for upload
-    final success = await petitionProvider.createPetition(
+    final result = await petitionProvider.createPetition(
       petition: petition,
       handwrittenFile: _pickedFiles.isNotEmpty ? _pickedFiles.first : null,
       proofFiles: _proofFiles,
@@ -949,10 +958,11 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     setState(() => _isSubmitting = false);
 
     if (mounted) {
-      if (success) {
+      if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Petition created successfully!'),
+          SnackBar(
+              content: Text(
+                  'Petition ${result['petitionNumber']} created successfully!'),
               backgroundColor: Colors.green),
         );
         _formKey.currentState!.reset();

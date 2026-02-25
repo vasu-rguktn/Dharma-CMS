@@ -112,10 +112,12 @@ class _CognigibleNonCognigibleSeparationScreenState
           widget.complaintData?['full_name'] ??
           widget.complaintData?['name'] ??
           '',
-      'phone': widget.complaintData?['phone'] ??
-          widget.complaintData?['phoneNumber'] ??
-          widget.complaintData?['phone_number'] ??
-          '',
+      'phone': (widget.complaintData?['phone'] ??
+              widget.complaintData?['phoneNumber'] ??
+              widget.complaintData?['phone_number'] ??
+              '')
+          .toString()
+          .replaceAll(RegExp(r'\s+'), ''),
       'address': widget.complaintData?['address'] ??
           widget.complaintData?['addr'] ??
           widget.complaintData?['location'] ??
@@ -132,6 +134,22 @@ class _CognigibleNonCognigibleSeparationScreenState
           '',
       'selected_police_station':
           widget.complaintData?['selected_police_station'] ?? '',
+      'police_station_reason':
+          widget.complaintData?['police_station_reason'] ?? '',
+      'station_confidence': widget.complaintData?['station_confidence'] ?? '',
+      'accused_details': widget.complaintData?['accused_details'] ??
+          widget.complaintData?['accusedDetails'] ??
+          '',
+      'stolen_property': widget.complaintData?['stolen_property'] ??
+          widget.complaintData?['stolenProperty'] ??
+          '',
+      'witnesses': widget.complaintData?['witnesses'] ?? '',
+      'evidence_status': widget.complaintData?['evidence_status'] ??
+          widget.complaintData?['evidenceStatus'] ??
+          '',
+      'ai_summary': widget.complaintData?['ai_summary'] ??
+          widget.complaintData?['summary'] ??
+          '',
       'evidencePaths': widget.evidencePaths,
       'classification': widget.classification, // Pass BNS Section info
     };
@@ -238,7 +256,7 @@ class _CognigibleNonCognigibleSeparationScreenState
                         color: const Color(0xFFFC633C), // App Orange
                         onPressed: () {
                           // print(
-                              // '🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
+                          // '🚀 [DEBUG] Separation Screen: Navigating to Petition Create');
                           context.push('/petitions/create',
                               extra: petitionData);
                         },

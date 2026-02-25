@@ -287,10 +287,7 @@ class _DetailContent extends StatelessWidget {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
 
-    final displayStatus =
-        (petition.policeStatus != null && petition.policeStatus!.isNotEmpty)
-            ? petition.policeStatus!
-            : petition.status.displayName;
+    final displayStatus = petition.getLocalizedDisplayStatus(localizations);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,7 +346,11 @@ class _DetailContent extends StatelessWidget {
         // Tracking Timeline
         _buildTrackingTimeline(context, petition.status, petition.policeStatus),
         const Divider(height: 32),
-
+        if (petition.petitionNumber != null)
+          _buildDetailRow(
+              localizations.petitionNumber, petition.petitionNumber!),
+        if (petition.caseId != null)
+          _buildDetailRow(localizations.caseId, petition.caseId!),
         _buildDetailRow(localizations.petitioner, petition.petitionerName),
         if (petition.phoneNumber != null)
           _buildDetailRow(

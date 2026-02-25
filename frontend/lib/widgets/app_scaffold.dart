@@ -125,13 +125,24 @@ class _AppScaffoldState extends State<AppScaffold> {
                   ),
                 ),
                 onSelected: (value) {
-                  if (value == 'signout') {
-                    // CITIZEN-ONLY APP: Always redirect to phone login
+                  if (value == 'profile') {
+                    context.push('/settings');
+                  } else if (value == 'signout') {
                     authProvider.signOut();
                     context.go('/phone-login');
                   }
                 },
                 itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'profile',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person),
+                        const SizedBox(width: 8),
+                        const Text('Profile'),
+                      ],
+                    ),
+                  ),
                   PopupMenuItem(
                     value: 'signout',
                     child: Row(
