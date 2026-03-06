@@ -35,7 +35,7 @@ const apiKey = 'AIzaSyCOXByDRXteWArP_lnoV8FajWbvXXawZ4Q';
 
 **Available Models**:
 - ✅ `gemini-2.0-flash-exp` (latest experimental)
-- ✅ `gemini-1.5-flash` (stable)
+- ✅ `gemini-2.0-flash` (stable)
 - ✅ `gemini-1.5-pro` (advanced)
 - ❌ `gemini-2.5-flash` (doesn't exist)
 
@@ -171,7 +171,7 @@ final model = GenerativeModel(
 | Model | Status | Use Case |
 |-------|--------|----------|
 | `gemini-2.0-flash-exp` | ✅ Latest | **Using this** |
-| `gemini-1.5-flash` | ✅ Stable | Alternative |
+| `gemini-2.0-flash` | ✅ Stable | Alternative |
 | `gemini-1.5-pro` | ✅ Advanced | More powerful |
 | `gemini-2.5-flash` | ❌ Invalid | Doesn't exist |
 
@@ -268,7 +268,7 @@ try {
 
 **Current**: Using `gemini-2.0-flash-exp`
 **Note**: "exp" means experimental, may change
-**Alternative**: Use `gemini-1.5-flash` for stability
+**Alternative**: Use `gemini-2.0-flash` for stability
 
 ### Rate Limits
 

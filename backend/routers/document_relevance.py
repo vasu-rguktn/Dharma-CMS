@@ -21,9 +21,9 @@ router = APIRouter(
 )
 
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+from utils.gemini_client import gemini_rotator
+
+_model_ready = gemini_rotator.key_count() > 0
 
 
 class DocumentRelevanceResponse(BaseModel):
@@ -50,7 +50,7 @@ async def _extract_text_gemini_generic(
     Use Gemini to extract readable text from arbitrary files (PDF, DOCX, etc.).
     Returns plain text or empty string on failure.
     """
-    if not GEMINI_API_KEY or not file_bytes:
+    if not _model_ready or not file_bytes:
         return ""
 
     prompt = (
@@ -60,15 +60,18 @@ async def _extract_text_gemini_generic(
     )
 
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model_name = "gemini-1.5-flash"
         b64 = base64.b64encode(file_bytes).decode("utf-8")
-        response = await asyncio.to_thread(
-            model.generate_content,
+        response = await gemini_rotator.generate_content_async(
+            model_name,
             [
                 {"inline_data": {"mime_type": mime_type, "data": b64}},
                 prompt,
             ],
+            endpoint=f"/api/relevance/extract/{filename}",
+            session_id=f"doc-rel-{filename}"
         )
+        
         text = (getattr(response, "text", None) or "").strip()
         return text
     except Exception:
@@ -203,7 +206,7 @@ async def check_document_relevance(
     (photos/documents + text) appears related to the current petition.
     """
 
-    if not GEMINI_API_KEY:
+    if not _model_ready:
         # Graceful degradation when LLM is not configured.
         return _fallback_response(
             "AI key not configured; please verify evidence manually."
@@ -258,9 +261,12 @@ Respond with STRICT JSON ONLY in this exact shape:
 """
 
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(
+        model_name = "gemini-1.5-flash"
+        response = await gemini_rotator.generate_content_async(
+            model_name,
             prompt,
+            endpoint="/api/relevance/score",
+            session_id="relevance-score",
             generation_config=genai_types.GenerationConfig(
                 temperature=0.2,
                 max_output_tokens=512,

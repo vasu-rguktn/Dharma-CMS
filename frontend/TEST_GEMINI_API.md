@@ -50,7 +50,7 @@ dart run test_gemini_api.dart
 📋 Test 2: Available Models
    Your API key can access:
    - gemini-2.0-flash-exp (latest)
-   - gemini-1.5-flash
+   - gemini-2.0-flash
    - gemini-1.5-pro
    ✅ Models accessible!
 

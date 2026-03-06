@@ -48,7 +48,7 @@ except Exception as e:
 # 3. Test Model Creation
 print("3. Testing Model Creation...")
 try:
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
+    model = genai.GenerativeModel("models/gemini-2.0-flash")
     print("   ✅ Model created successfully")
 except Exception as e:
     print(f"   ❌ Model creation failed: {e}")
