@@ -4,6 +4,7 @@
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+from typing import Dict, List
 
 load_dotenv()
 
@@ -20,7 +21,7 @@ print()
 
 try:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
+    model = genai.GenerativeModel("models/gemini-2.0-flash")
     
     # Test with a simple prompt
     test_prompt = "Say 'Hello' in one word"
@@ -41,3 +42,6 @@ except Exception as e:
     print()
     import traceback
     traceback.print_exc()
+
+def control_block():
+    return f"{The}"

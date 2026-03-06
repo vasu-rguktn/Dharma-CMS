@@ -9,13 +9,9 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 import google.generativeai as genai
+from utils.gemini_client import gemini_rotator
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-if not GEMINI_API_KEY:
-    logger.warning("GEMINI_API_KEY not set. Investigation report generation will fail at runtime.")
-else:
-    genai.configure(api_key=GEMINI_API_KEY)
+_model_ready = gemini_rotator.key_count() > 0
 
 router = APIRouter(prefix="/api", tags=["investigation-report"])
 
@@ -148,15 +144,19 @@ Now draft the full Investigation Report as per the mandatory sections above.
     return prompt
 
 
-def _generate_report_text_with_gemini(payload: GenerateInvestigationReportRequest) -> str:
-    if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured. Investigation report generation disabled.")
-    
+async def _generate_report_text_with_gemini(payload: GenerateInvestigationReportRequest) -> str:
+    if not _model_ready:
+        raise HTTPException(status_code=500, detail="No Gemini API keys configured. Investigation report generation disabled.")
+
     prompt = _build_investigation_prompt(payload)
-    logger.info("Calling Gemini API for investigation report generation")
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(prompt)
+        session_id = f"report-{int(time.time())}"
+        response = await gemini_rotator.generate_content_async(
+            "gemini-1.5-flash", 
+            prompt,
+            endpoint="/api/investigation-report/generate",
+            session_id=session_id
+        )
         text = (response.text or "").strip()
     except Exception as exc:  # pragma: no cover - defensive
         logger.exception("Gemini generation failed")
@@ -311,7 +311,7 @@ async def generate_investigation_report(payload: GenerateInvestigationReportRequ
         report_text = payload.override_report_text.strip()
         used_ai = False
     else:
-        report_text = _generate_report_text_with_gemini(payload)
+        report_text = await _generate_report_text_with_gemini(payload)
         used_ai = True
 
     # Ensure the mandatory visible label is present exactly once near the top.

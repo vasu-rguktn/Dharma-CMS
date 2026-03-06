@@ -106,7 +106,6 @@ app.include_router(person_router)
 app.include_router(chargesheet_vetting_router)
 from routers.cases import router as cases_router
 app.include_router(cases_router)
-app.include_router(cases_router)
 app.include_router(document_relevance_router)
 app.include_router(chatbot_summary_pdf_router)
 app.include_router(media_analysis_router)
@@ -139,6 +138,18 @@ def root_alias():
 @app.get("/api/health")
 def api_health():
     return {"status": "ok"}
+
+@app.get("/api/gemini-usage")
+def gemini_usage():
+    """Returns current Gemini API key rotator statistics (calls, rotations, errors)."""
+    from utils.gemini_client import gemini_rotator
+    stats = gemini_rotator.get_stats()
+    return {
+        "status": "ok",
+        "key_count": gemini_rotator.key_count(),
+        "current_key_index": gemini_rotator.current_key_index(),
+        "stats": stats,
+    }
 
 @app.get("/ocr/health")
 def ocr_health_alias():

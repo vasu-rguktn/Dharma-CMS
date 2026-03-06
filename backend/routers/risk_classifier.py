@@ -2,13 +2,7 @@
 import os
 import json
 import google.generativeai as genai
-
-# Configure Gemini API
-API_KEY = os.getenv("GEMINI_API_KEY")
-if not API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY not found in environment variables")
-
-genai.configure(api_key=API_KEY)
+from utils.gemini_client import gemini_rotator
 
 def load_prompt_template():
     """
@@ -43,8 +37,12 @@ Return valid JSON in this format only:
 """
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(full_prompt)
+        response = gemini_rotator.generate_content(
+            "gemini-2.0-flash", 
+            full_prompt,
+            endpoint="/api/risk-classifier",
+            session_id="risk-classification"
+        )
         raw_output = (response.text or "").strip()
 
         # Extract JSON safely

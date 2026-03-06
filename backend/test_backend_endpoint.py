@@ -116,6 +116,8 @@ try:
     except json.JSONDecodeError:
         print("⚠️  Response is not JSON:")
         print(response.text[:500])
+
+    
         
 except requests.exceptions.Timeout:
     print("❌ ERROR: Request timed out (30 seconds)")
