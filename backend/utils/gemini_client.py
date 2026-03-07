@@ -24,6 +24,9 @@ from utils.gemini_tracker import gemini_tracker
 from google.generativeai.types import content_types
 from dotenv import load_dotenv
 import google.generativeai as genai
+from gemini_key_manager import gemini_key_manager
+
+# Note: Firestore keys are managed via gemini_key_manager
 
 # Load .env so keys are available regardless of import order
 load_dotenv(override=True)
@@ -58,42 +61,15 @@ class GeminiKeyRotator:
     # ------------------------------------------------------------------
     def _init(self):
         self._lock = threading.Lock()
-        self.keys: list[str] = []
-        self.key_tiers: list[str] = []
-
-        # Load numbered keys (up to 20)
-        for i in range(1, 21):
-            k = os.getenv(f"GEMINI_API_KEY_{i}", "").strip()
-            if k:
-                self.keys.append(k)
-                # Check for tier override, else default to "Free"
-                tier = os.getenv(f"GEMINI_TIER_{i}", "Free").strip()
-                self.key_tiers.append(tier)
-
-        # Fallback / legacy keys (deduplicated)
-        for env_var in ("GEMINI_API_KEY", "GEMINI_API_KEY_INVESTIGATION"):
-            k = os.getenv(env_var, "").strip()
-            if k and k not in self.keys:
-                self.keys.append(k)
-                self.key_tiers.append("Free")
-
-        if not self.keys:
-            logger.warning("[GeminiKeyRotator] No Gemini API keys found in environment.")
-
-        self._index = 0
+        # Proxy stats to preserve compatibility for existing monitoring endpoints
         self._stats = {
             "total_calls": 0,
             "total_rotations": 0,
             "total_errors": 0,
-            "errors_per_key": {i: 0 for i in range(len(self.keys))},
-            "rotations_per_key": {i: 0 for i in range(len(self.keys))},
+            "errors_per_key": {},
+            "rotations_per_key": {},
         }
-
-        logger.info(
-            f"[GeminiKeyRotator] Initialized with {len(self.keys)} API key(s). Tiers: {self.key_tiers}"
-        )
-        if self.keys:
-            self._configure(self._index)
+        logger.info("[GeminiKeyRotator] Initialized with Firestore backing.")
 
     # ------------------------------------------------------------------
     def _configure(self, index: int):
@@ -141,51 +117,32 @@ class GeminiKeyRotator:
         **kwargs,
     ):
         """
-        Blocking generate_content with automatic key rotation on 429.
-        Retries once with the next key before re-raising.
+        Blocking generate_content with automatic key rotation using GeminiKeyManager.
         """
-        with self._lock:
-            self._stats["total_calls"] += 1
-            current_tier = self.key_tiers[self._index] if self._index < len(self.key_tiers) else "Free"
-            
-        prompt_str = str(prompt)
-        call_info = gemini_tracker.log_call(
-            model_name, 
-            endpoint, 
-            len(prompt_str), 
-            session_id,
-            tier=current_tier
-        )
-
-        max_retries = len(self.keys)
+        self._stats["total_calls"] += 1
+        max_retries = gemini_key_manager.get_key_count() or 1
+        
         for attempt in range(max_retries):
+            key_info = gemini_key_manager.get_next_key()
+            if not key_info:
+                raise Exception("All Gemini keys are rate-limited or unavailable.")
+            
+            key_id = key_info["id"]
+            api_key = key_info["key"]
+            
             try:
-                with self._lock:
-                    current_idx = self._index
-                    current_key_name = f"Key #{current_idx + 1}"
-                
-                logger.info(f"[GeminiKeyRotator] Attempt {attempt+1}/{max_retries} using {current_key_name}")
-                self._configure(current_idx)
+                genai.configure(api_key=api_key)
                 model = genai.GenerativeModel(model_name)
-                # Note: model.generate_content is blocking.
-                # If calling from async, use generate_content_async.
                 response = model.generate_content(prompt, **kwargs)
-                gemini_tracker.log_response(call_info, response, session_id)
+                gemini_key_manager.track_usage(key_id)
                 return response
             except Exception as exc:
-                # If rate limit and we have more keys to try
-                if self._is_rate_limit(exc) and attempt < max_retries - 1 and len(self.keys) > 1:
-                    logger.warning(f"[GeminiKeyRotator] Rate limit on {current_key_name}. Trying next key...")
-                    with self._lock:
-                        self._stats["total_errors"] += 1
-                        self._stats["errors_per_key"][self._index] = (
-                            self._stats["errors_per_key"].get(self._index, 0) + 1
-                        )
-                    self._rotate()
-                    continue  # retry with new key
-                with self._lock:
-                    self._stats["total_errors"] += 1
-                logger.error(f"[GeminiKeyRotator] CRITICAL: Failed after {max_retries} attempts. All keys might be exhausted.")
+                if self._is_rate_limit(exc) and attempt < max_retries - 1:
+                    logger.warning(f"[GeminiKeyRotator] Rate limit on {key_id}. Rotating...")
+                    gemini_key_manager.mark_key_failure(key_id)
+                    self._stats["total_rotations"] += 1
+                    continue
+                self._stats["total_errors"] += 1
                 raise
 
     # ------------------------------------------------------------------
@@ -198,54 +155,33 @@ class GeminiKeyRotator:
         **kwargs,
     ):
         """
-        Async generate_content_async with automatic key rotation on 429.
-        Retries once with the next key before re-raising.
+        Async generate_content_async with automatic key rotation via GeminiKeyManager.
         """
-        with self._lock:
-            self._stats["total_calls"] += 1
-            current_tier = self.key_tiers[self._index] if self._index < len(self.key_tiers) else "Free"
-
-        prompt_str = str(prompt)
-        call_info = gemini_tracker.log_call(
-            model_name, 
-            endpoint, 
-            len(prompt_str), 
-            session_id,
-            tier=current_tier
-        )
-
-        max_retries = len(self.keys)
+        self._stats["total_calls"] += 1
+        max_retries = gemini_key_manager.get_key_count() or 1
+        
         for attempt in range(max_retries):
+            key_info = gemini_key_manager.get_next_key()
+            if not key_info:
+                raise Exception("All Gemini keys are rate-limited or unavailable.")
+            
+            key_id = key_info["id"]
+            api_key = key_info["key"]
+            
             try:
-                with self._lock:
-                    current_idx = self._index
-                    current_key_name = f"Key #{current_idx + 1}"
-                
-                logger.info(f"[GeminiKeyRotator] Attempt {attempt+1}/{max_retries} using {current_key_name}")
-                self._configure(current_idx)
+                genai.configure(api_key=api_key)
                 model = genai.GenerativeModel(model_name)
                 response = await model.generate_content_async(prompt, **kwargs)
-                gemini_tracker.log_response(call_info, response, session_id)
+                gemini_key_manager.track_usage(key_id)
                 return response
             except Exception as exc:
-                is_rate = self._is_rate_limit(exc)
-                if is_rate and attempt < max_retries - 1:
-                    logger.warning(f"[GeminiKeyRotator] Rate limit on {current_key_name}. Trying next key...")
-                    with self._lock:
-                        self._stats["total_errors"] += 1
-                        self._stats["errors_per_key"][self._index] = (
-                            self._stats["errors_per_key"].get(self._index, 0) + 1
-                        )
-                    self._rotate()
-                    # Small sleep to avoid instant-fail on all keys if it's broad
+                if self._is_rate_limit(exc) and attempt < max_retries - 1:
+                    logger.warning(f"[GeminiKeyRotator] Rate limit on {key_id}. Rotating...")
+                    gemini_key_manager.mark_key_failure(key_id)
+                    self._stats["total_rotations"] += 1
                     await asyncio.sleep(0.5)
                     continue
-                
-                with self._lock:
-                    self._stats["total_errors"] += 1
-                
-                if is_rate:
-                    logger.error(f"[GeminiKeyRotator] ALL {max_retries} KEYS EXHAUSTED for {model_name}.")
+                self._stats["total_errors"] += 1
                 raise
 
     # ------------------------------------------------------------------
@@ -257,7 +193,7 @@ class GeminiKeyRotator:
         return self._index + 1  # 1-based for human display
 
     def key_count(self) -> int:
-        return len(self.keys)
+        return gemini_key_manager.get_key_count()
 
 
 # Module-level singleton – import and use directly

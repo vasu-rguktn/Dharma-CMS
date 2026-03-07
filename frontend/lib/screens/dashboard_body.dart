@@ -10,7 +10,7 @@ import 'package:Dharma/screens/petition/petition_list_screen.dart';
 import 'package:Dharma/models/petition.dart';
 import 'package:Dharma/providers/activity_provider.dart';
 
-class DashboardBody extends StatelessWidget {
+class DashboardBody extends StatefulWidget {
   final AuthProvider auth;
   final ThemeData theme;
   const DashboardBody({
@@ -19,13 +19,18 @@ class DashboardBody extends StatelessWidget {
     super.key,
   });
 
+  @override
+  State<DashboardBody> createState() => _DashboardBodyState();
+}
+
+class _DashboardBodyState extends State<DashboardBody> {
+  int _currentPage = 0;
   // Orange only for text & highlights
   static const Color orange = Color(0xFFFC633C);
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    // ✅ Access providers
     final petitionProvider = Provider.of<PetitionProvider>(context);
     final activityProvider = Provider.of<ActivityProvider>(context);
 
@@ -35,8 +40,8 @@ class DashboardBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${localizations.welcome}, ${auth.userProfile?.displayName ?? "User"}!',
-            style: theme.textTheme.headlineMedium?.copyWith(
+            '${localizations.welcome}, ${widget.auth.userProfile?.displayName ?? "User"}!',
+            style: widget.theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: orange,
             ),
@@ -44,7 +49,8 @@ class DashboardBody extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             localizations.yourLegalAssistanceHub,
-            style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            style: widget.theme.textTheme.bodyLarge
+                ?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
 
@@ -54,7 +60,8 @@ class DashboardBody extends StatelessWidget {
           const SizedBox(height: 32),
 
           Text(localizations.quickActions,
-              style: theme.textTheme.titleLarge?.copyWith(color: orange)),
+              style:
+                  widget.theme.textTheme.titleLarge?.copyWith(color: orange)),
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
@@ -71,8 +78,17 @@ class DashboardBody extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          Text(localizations.recentActivity,
-              style: theme.textTheme.titleLarge?.copyWith(color: orange)),
+          // Header with navigation arrows
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(localizations.recentActivity,
+                  style: widget.theme.textTheme.titleLarge
+                      ?.copyWith(color: orange)),
+              if (activityProvider.activities.isNotEmpty)
+                _buildPaginationControls(activityProvider.activities.length),
+            ],
+          ),
           const SizedBox(height: 16),
           _buildRecentActivitySection(context, activityProvider),
         ],
@@ -80,18 +96,64 @@ class DashboardBody extends StatelessWidget {
     );
   }
 
+  Widget _buildPaginationControls(int totalItems) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final itemsPerPage = _getItemsPerPage(MediaQuery.of(context).size.width);
+      final totalPages = (totalItems / itemsPerPage).ceil();
+
+      if (totalPages <= 1) return const SizedBox.shrink();
+
+      return Row(
+        children: [
+          _paginationButton(
+            icon: Icons.chevron_left,
+            enabled: _currentPage > 0,
+            onPressed: () => setState(() => _currentPage--),
+          ),
+          Text(
+            '${_currentPage + 1} / $totalPages',
+            style: widget.theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          _paginationButton(
+            icon: Icons.chevron_right,
+            enabled: _currentPage < totalPages - 1,
+            onPressed: () => setState(() => _currentPage++),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _paginationButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      color: enabled ? orange : Colors.grey[300],
+      onPressed: enabled ? onPressed : null,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  int _getItemsPerPage(double width) {
+    if (width > 1200) return 3; // Desktop
+    if (width > 600) return 2; // Tablet
+    return 1; // Mobile
+  }
+
   // ── STATISTICS ROW ──
-  // ── STATISTICS SECTION ──
   Widget _buildStatsRow(BuildContext ctx, PetitionProvider petitionProvider) {
     final localizations = AppLocalizations.of(ctx)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // PETITIONS SECTION
-        // Since Cases are removed, we can either keep the header or remove it.
-        // Showing "Petition Overview" is still helpful for context.
         Text(localizations.petitionOverview,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: widget.theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold, color: Colors.grey[800])),
         const SizedBox(height: 12),
         _buildPetitionStatsGrid(ctx, petitionProvider),
@@ -119,7 +181,7 @@ class DashboardBody extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Desktop Web View: Render in a single row (4 or 5 columns)
+        // Desktop Web View: Render in a single row (4 columns)
         if (kIsWeb && constraints.maxWidth > 900) {
           return Row(
             children: cards.asMap().entries.map((entry) {
@@ -229,10 +291,7 @@ class DashboardBody extends StatelessWidget {
             color: iconColor,
           );
 
-          // print('🚀 [NAVIGATION] Pushing route: $route');
-          ctx.push(route).then((_) {
-            // print('🔙 [NAVIGATION] Returned from: $route');
-          });
+          ctx.push(route).then((_) {});
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -265,14 +324,8 @@ class DashboardBody extends StatelessWidget {
     return [
       _quickActionCard(
           ctx, localizations.aiChat, Icons.chat, '/ai-legal-chat', Colors.blue),
-      // _quickActionCard(ctx, localizations.legalQueries, Icons.psychology,
-      //     '/legal-queries', Colors.purple),
-      // _quickActionCard(ctx, localizations.legalSuggestion, Icons.gavel,
-      //     '/legal-suggestion', Colors.red.shade700),
       _quickActionCard(ctx, localizations.mySavedComplaints, Icons.archive,
           '/complaints', Colors.orange.shade700),
-      // _quickActionCard(ctx, localizations.witnessPrep, Icons.people,
-      //     '/witness-preparation', Colors.brown),
       _quickActionCard(ctx, localizations.petitions, Icons.book, '/petitions',
           Colors.red.shade800),
       _quickActionCard(ctx, localizations.helpline, Icons.phone, '/helpline',
@@ -285,24 +338,60 @@ class DashboardBody extends StatelessWidget {
       BuildContext ctx, ActivityProvider provider) {
     return Consumer<ActivityProvider>(
       builder: (context, activityProvider, _) {
-        final displayItems = activityProvider.activities.take(3).toList();
+        final allActivities = activityProvider.activities;
 
-        if (displayItems.isEmpty) {
+        if (allActivities.isEmpty) {
           return _noActivityCard(ctx);
         }
 
-        return SizedBox(
-          height: 120, // Slightly more compact
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: displayItems.length,
-            itemBuilder: (context, index) {
-              final activity = displayItems[index];
-              return _userActivityCard(ctx, activity);
+        return LayoutBuilder(builder: (context, constraints) {
+          final itemsPerPage = _getItemsPerPage(constraints.maxWidth);
+          final startIndex = _currentPage * itemsPerPage;
+
+          // Ensure current page is valid if items changed
+          if (startIndex >= allActivities.length && _currentPage > 0) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() => _currentPage = 0);
+            });
+          }
+
+          final displayItems =
+              allActivities.skip(startIndex).take(itemsPerPage).toList();
+
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.05, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
             },
-          ),
-        );
+            child: Row(
+              key: ValueKey<int>(_currentPage),
+              children: displayItems.map((activity) {
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _userActivityCard(ctx, activity),
+                  ),
+                );
+              }).toList()
+                ..addAll(
+                  // Add empty spacers to maintain layout if last page has fewer items
+                  List.generate(
+                    itemsPerPage - displayItems.length,
+                    (_) => const Expanded(child: SizedBox.shrink()),
+                  ),
+                ),
+            ),
+          );
+        });
       },
     );
   }
@@ -310,62 +399,60 @@ class DashboardBody extends StatelessWidget {
   Widget _userActivityCard(BuildContext ctx, UserActivity activity) {
     final theme = Theme.of(ctx);
 
-    return Container(
-      width: MediaQuery.of(ctx).size.width * 0.7,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: InkWell(
-          onTap: () => ctx.push(activity.route),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: (activity.color ?? orange).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    activity.icon,
-                    color: activity.color ?? orange,
-                    size: 24,
-                  ),
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () => ctx.push(activity.route),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (activity.color ?? orange).withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _getLocalizedActivityTitle(ctx, activity.title),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                child: Icon(
+                  activity.icon,
+                  color: activity.color ?? orange,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _getLocalizedActivityTitle(ctx, activity.title),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatDate(activity.timestamp),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.grey,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatDate(activity.timestamp),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.grey[500],
+                        fontSize: 10,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: Colors.grey[400],
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 12,
+                color: Colors.grey[300],
+              ),
+            ],
           ),
         ),
       ),
@@ -454,20 +541,5 @@ class DashboardBody extends StatelessWidget {
     if (diff.inHours < 24) return "${diff.inHours}h ago";
     if (diff.inDays == 1) return "Yesterday";
     return "${date.day}/${date.month}/${date.year}";
-  }
-
-  Color _getFilterColor(PetitionFilter filter) {
-    switch (filter) {
-      case PetitionFilter.all:
-        return Colors.deepPurple;
-      case PetitionFilter.received:
-        return Colors.blue.shade700;
-      case PetitionFilter.inProgress:
-        return Colors.orange.shade700;
-      case PetitionFilter.closed:
-        return Colors.green.shade700;
-      case PetitionFilter.escalated:
-        return Colors.red.shade700;
-    }
   }
 }
