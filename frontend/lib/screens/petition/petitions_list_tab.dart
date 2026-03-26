@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 // import 'package:Dharma/models/petition.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:Dharma/l10n/app_localizations.dart';
 
 import 'petition_card.dart';

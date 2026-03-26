@@ -16,7 +16,7 @@
 #     raise RuntimeError("GEMINI_API_KEY_INVESTIGATION not found environment variables")
 
 # genai.configure(api_key=GEMINI_API_KEY)
-# model = genai.GenerativeModel("gemini-2.0-flash")
+# model = genai.GenerativeModel("gemini-2.5-flash")
 
 # # ───────────────── ROUTER ─────────────────
 # router = APIRouter(
@@ -109,12 +109,16 @@ load_dotenv()
 
 from loguru import logger
 
-from utils.gemini_client import gemini_rotator
+# Use the investigation key as requested/verified
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
 
-_model_ready = gemini_rotator.key_count() > 0
-
-if not _model_ready:
-    logger.warning("No Gemini API keys found. Document drafting will fail at runtime.")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY_INVESTIGATION not set. Document drafting will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # We use the same model for drafting and generic OCR here
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ───────────────── ROUTER ─────────────────
 router = APIRouter(
@@ -140,16 +144,13 @@ async def _extract_text_gemini(image_bytes: bytes, mime_type: str) -> str:
     prompt_ocr = "Extract all readable text from this document image. Return only the plain extracted text."
 
     try:
-        # We can reuse the global 'model_name' variable initialized below
-        session_id = f"draft-ocr-{int(time.time())}"
-        response = await gemini_rotator.generate_content_async(
-            "gemini-1.5-flash",
+        # We can reuse the global 'model' variable initialized above
+        response = await asyncio.to_thread(
+            model.generate_content,
             [
                 {"inline_data": {"mime_type": mime_type, "data": encoded}},
                 prompt_ocr,
             ],
-            endpoint="draft_ocr",
-            session_id=session_id
         )
         return (response.text or "").strip()
     except Exception as e:
@@ -242,13 +243,9 @@ Draft the document now:
 
         # 3. Call Gemini API
         try:
-            session_id = f"draft-{int(time.time())}"
-            response = await gemini_rotator.generate_content_async(
-                "gemini-1.5-flash", 
-                prompt,
-                endpoint="/api/document-drafting",
-                session_id=session_id
-            )
+            if model is None:
+                raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
+            response = model.generate_content(prompt)
         except Exception as gemini_error:
             print(f"Gemini API Error: {str(gemini_error)}")
             raise HTTPException(

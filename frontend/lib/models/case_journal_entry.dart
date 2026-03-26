@@ -29,21 +29,35 @@ class CaseJournalEntry {
 
   factory CaseJournalEntry.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    return CaseJournalEntry.fromMap(data, doc.id);
+  }
+
+  factory CaseJournalEntry.fromMap(Map<String, dynamic> data, [String? docId]) {
     return CaseJournalEntry(
-      id: doc.id,
+      id: docId ?? data['id'],
       caseId: data['caseId'] ?? '',
       officerUid: data['officerUid'] ?? '',
       officerName: data['officerName'] ?? 'Unknown Officer',
       officerRank: data['officerRank'] ?? 'N/A',
-      dateTime: data['dateTime'] as Timestamp? ?? Timestamp.now(),
+      dateTime: _parseTimestamp(data['dateTime']),
       entryText: data['entryText'] ?? '',
       activityType: data['activityType'] ?? '',
       relatedDocumentId: data['relatedDocumentId'],
       attachmentUrls: data['attachmentUrls'] != null
           ? List<String>.from(data['attachmentUrls'] as List)
           : null,
-      modifiedAt: data['modifiedAt'] as Timestamp?,
+      modifiedAt: data['modifiedAt'] != null ? _parseTimestamp(data['modifiedAt']) : null,
     );
+  }
+
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value == null) return Timestamp.now();
+    if (value is Timestamp) return value;
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return Timestamp.now();
   }
 
   Map<String, dynamic> toMap() {

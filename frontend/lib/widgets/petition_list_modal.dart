@@ -10,7 +10,6 @@ import 'package:Dharma/widgets/petition_update_timeline.dart';
 import 'package:Dharma/widgets/add_petition_update_dialog.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PetitionListModal extends StatefulWidget {
   final PetitionFilter filter;

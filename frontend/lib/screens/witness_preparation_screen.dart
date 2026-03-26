@@ -1,10 +1,10 @@
 // lib/screens/witness_preparation_screen.dart
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
-import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
+import 'package:Dharma/services/api/ai_gateway_api.dart';
 
 class WitnessPreparationScreen extends StatefulWidget {
   const WitnessPreparationScreen({super.key});
@@ -17,7 +17,6 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
   final _caseDetailsController = TextEditingController();
   final _witnessStatementController = TextEditingController();
   final _witnessNameController = TextEditingController();
-  final _dio = Dio();
 
   bool _isLoading = false;
   Map<String, dynamic>? _preparationResult;
@@ -49,17 +48,14 @@ class _WitnessPreparationScreenState extends State<WitnessPreparationScreen> {
     });
 
     try {
-      final response = await _dio.post(
-        '/api/witness-preparation',
-        data: {
-          'caseDetails': _caseDetailsController.text,
-          'witnessStatement': _witnessStatementController.text,
-          'witnessName': _witnessNameController.text,
-        },
+      final response = await AiGatewayApi.witnessPreparation(
+        caseDetails: _caseDetailsController.text,
+        witnessStatement: _witnessStatementController.text,
+        witnessName: _witnessNameController.text,
       );
 
       setState(() {
-        _preparationResult = response.data;
+        _preparationResult = response;
       });
 
       if (mounted) {

@@ -15,9 +15,9 @@ import google.generativeai as genai
 import re
 from loguru import logger
 import json
+import json
 import sys
 from services.legal_rag import rag_enabled, retrieve_context
-from utils.gemini_client import gemini_rotator, batch_translate_fields
 
 logger.remove()
 logger.add(
@@ -36,21 +36,27 @@ router = APIRouter(prefix="/complaint", tags=["Police Complaint"])
 
 load_dotenv(override=True)
 
-# API key management is now handled by the GeminiKeyRotator singleton.
-# gemini_rotator is imported from utils.gemini_client and loads all 11 keys.
-# This preserves backward-compatibility: GEMINI_API_KEY still works as fallback.
-GEMINI_API_KEY = gemini_rotator.key_count() > 0  # truthy if any key is available
+# DEBUG: Print loaded keys to confirm switch
+inv_key = os.getenv("GEMINI_API_KEY_INVESTIGATION")
+main_key = os.getenv("GEMINI_API_KEY")
+print(f"DEBUG: INV_KEY starts with: {inv_key[:10] if inv_key else 'None'}")
+print(f"DEBUG: MAIN_KEY starts with: {main_key[:10] if main_key else 'None'}")
+
+GEMINI_API_KEY = inv_key or main_key
 
 if not GEMINI_API_KEY:
-    logger.warning("No Gemini API keys found. LLM features will be disabled.")
+    # Allow server start; LLM features will be skipped if missing
+    logger.warning("GEMINI_API_KEY not found. LLM features will be disabled.")
+    pass
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 print("\n" + "="*50)
-print(f"!!! GEMINI KEY ROTATOR ACTIVE — {gemini_rotator.key_count()} KEYS LOADED !!!")
+print("!!! TELUGU FIX LOADED: GEMINI 1.5 FLASH ACTIVE & NUCLEAR SANITIZATION !!!")
 print("="*50 + "\n")
 
-# LLM_MODEL = "gemini-flash-latest"
+LLM_MODEL = "gemini-flash-latest"
 
-LLM_MODEL = "gemini-2.5-flash"
 
 
 
@@ -92,8 +98,6 @@ class ChatStepRequest(BaseModel):
     chat_history: list[ChatMessage] = []
 
     is_anonymous: bool = False
-    
-    district: Optional[str] = "Unknown"
 
 
 
@@ -169,7 +173,6 @@ class ComplaintResponse(BaseModel):
     selected_police_station: Optional[str] = None
     police_station_reason: Optional[str] = None
     station_confidence: Optional[str] = None
-    district: Optional[str] = None
 
     # New fields for PDF Generation (ensure they are passed to frontend)
     accused_details: Optional[str] = None
@@ -342,12 +345,10 @@ def _looks_romanized_telugu(text: str) -> bool:
 
 
 
-async def translate_text(text: str, target_lang_code: str) -> str:
+def translate_text(text: str, target_lang_code: str) -> str:
     """
-    Translate a single text field into the target language.
-    Now delegates to batch_translate_fields internally for consistency.
-    Use batch_translate_fields() directly when translating multiple fields
-    to avoid multiple Gemini round-trips.
+    Translate text into the target language using LLM.
+    Handles romanized input if consistent with the target language context.
     """
     if not GEMINI_API_KEY or not text:
         return text
@@ -356,12 +357,34 @@ async def translate_text(text: str, target_lang_code: str) -> str:
     if target_lang_name == "English":
         return text
 
-    result = await batch_translate_fields({"text": text}, target_lang_code)
-    return result.get("text", text)
+    try:
+        model = genai.GenerativeModel(LLM_MODEL)
+        
+        prompt = (
+            f"Translate the following text into {target_lang_name}.\n"
+            "Preserve personal names, places, and numbers exactly as provided.\n"
+            "Return only the final translated text without quotes or commentary.\n\n"
+            f"Input Text: {text}"
+        )
 
-# Backward compatibility (alias) — converted to async
-async def translate_to_telugu(text: str) -> str:
-    return await translate_text(text, "te")
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.2,
+                max_output_tokens=2048,
+            )
+        )
+
+        translated = (response.text or "").strip()
+        return translated if translated else text
+
+    except Exception as exc:
+        logger.warning(f"Translation failed; using original text. Reason: {exc}")
+        return text
+
+# Backward compatibility (alias)
+def translate_to_telugu(text: str) -> str:
+    return translate_text(text, "te")
 
 
 
@@ -559,13 +582,13 @@ def extract_incident_datetime(text: str) -> str:
 
 # --- IPC helper unchanged (keeps safe checks) ---
 
-async def get_official_complaint_label(complaint_type: str, details: str) -> Optional[str]:
+def get_official_complaint_label(complaint_type: str, details: str) -> Optional[str]:
 
     if not GEMINI_API_KEY:
         return None
 
     try:
-        model = genai.GenerativeModel(LLM_MODEL)  # rotator configures the key
+        model = genai.GenerativeModel(LLM_MODEL)
 
 
         context_block = ""
@@ -591,14 +614,11 @@ async def get_official_complaint_label(complaint_type: str, details: str) -> Opt
             "Be concise and do not hallucinate BNS numbers unless clearly applicable."
         )
 
-        response = await gemini_rotator.generate_content_async(
-            LLM_MODEL,
+        response = model.generate_content(
             prompt,
-            endpoint="predicted_section",
-            session_id=f"section-pred-{int(time.time())}",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.0,
-                max_output_tokens=256,
+                max_output_tokens=2048,
             )
         )
 
@@ -625,60 +645,66 @@ async def get_official_complaint_label(complaint_type: str, details: str) -> Opt
 
 
 
-async def generate_summary_text(req: ComplaintResponse, language: str) -> tuple[str, dict]:
-    """
-    Generates a structured complaint summary in the target language.
-    Uses batch translation to reduce 6 Gemini calls to 1.
-    """
-    date_display = req.date_of_complaint or "Not mentioned"
+def generate_summary_text(req: ComplaintRequest) -> Tuple[str, Dict[str, str]]:
 
-    # Attempt to get official label with BNS reference
+    """
+
+    Produce plain-text formatted summary WITHOUT Description_of_incident or Date/Time_of_incident.
+
+    Complaint Type may include (official label — IPC) only if get_official_complaint_label returns it.
+
+    """
+
+    now = datetime.utcnow()
+
+    language = resolve_language(getattr(req, "language", None))
+
+    date_display = format_date_for_language(language, now)
+
+    labels = SUMMARY_LABELS.get(language, SUMMARY_LABELS["en"])
+
+
+
+    # Attempt to get official label with IPC
+
     official_label = None
+
     if GEMINI_API_KEY:
-        official_label = await get_official_complaint_label(req.complaint_type, req.details)
+
+        official_label = get_official_complaint_label(req.complaint_type, req.details)
+
+
 
     full_name = req.full_name.strip()
     address = req.address.strip()
     phone = req.phone.strip()
-
+    
     # Mask phone if anonymous (Keep first 3 digits, mask the rest)
     if req.is_anonymous and len(phone) >= 3:
         phone = phone[:3] + "x" * (len(phone) - 3)
-
+    
     # "Incident Details" -> Short summary (1-2 lines, location/time)
-    incident_short = getattr(req, 'incident_address', None) or req.details.strip()
-
+    # Using 'short_incident_summary' from request if available, falling back to details
+    incident_short = getattr(req, 'incident_address', None) or req.details.strip() 
+    
     # "Details" -> Full detailed narrative
     narrative_full = req.incident_details.strip() if req.incident_details else incident_short
 
-    cleaned_type = req.complaint_type.strip()
-
     if language != "en":
-        # ── SINGLE BATCH TRANSLATION CALL ──────────────────────────────────────
-        # Translate all fields in ONE Gemini call instead of one call per field.
-        # Deduplication: if incident_short == narrative_full, only translated once.
-        fields_to_translate = {
-            "full_name": full_name,
-            "address": address,
-            "incident_short": incident_short,
-            "narrative_full": narrative_full,
-            "complaint_type": cleaned_type,
-        }
-        translated = await batch_translate_fields(fields_to_translate, language)
-
-        full_name      = translated.get("full_name", full_name)
-        address        = translated.get("address", address)
-        incident_short = translated.get("incident_short", incident_short)
-        narrative_full = translated.get("narrative_full", narrative_full)
-        translated_type = translated.get("complaint_type", cleaned_type)
-        # ───────────────────────────────────────────────────────────────────────
-
+        full_name = translate_text(full_name, language)
+        address = translate_text(address, language)
+        incident_short = translate_text(incident_short, language)
+        narrative_full = translate_text(narrative_full, language)
+        # Translate the base complaint type (e.g. "Theft") to Target Language
+        # But KEEP the official label (e.g. IPC 378) in English/Official format
+        cleaned_type = req.complaint_type.strip()
+        translated_type = translate_text(cleaned_type, language)
         if official_label:
             complaint_type_line = f"{translated_type} ({official_label})"
         else:
             complaint_type_line = translated_type
     else:
-        complaint_type_line = cleaned_type
+        complaint_type_line = req.complaint_type.strip()
         if official_label:
             complaint_type_line = f"{complaint_type_line} ({official_label})"
 
@@ -687,20 +713,27 @@ async def generate_summary_text(req: ComplaintResponse, language: str) -> tuple[
         "address": address,
         "phone": phone,
         "complaint_type": complaint_type_line,
-        "incident_details": narrative_full,  # Full narrative (for Grounds/Reasons in Petition)
-        "details": narrative_full,           # Backup
-        "incident_address": incident_short,  # Short summary (for Incident Address in Petition)
+        "incident_details": narrative_full, # Map FULL narrative to 'incident_details' (for Grounds/Reasons in Petition)
+        "details": narrative_full,          # Backup
+        "incident_address": incident_short, # Map SHORT summary to 'incident_address' (for Incident Details/Address in Petition)
         "date_of_complaint": date_display,
     }
 
+    # Strict Format:
+    # Full Name: ...
+    # Address: ...
+    # Phone Number: ...
+    # Incident Details: ... (1-2 lines)
+    # Details: ... (Full Clarity)
+    
     lines = [
         "FORMAL COMPLAINT SUMMARY",
         f"Full Name: {full_name}",
         f"Address: {address}",
         f"Phone Number: {phone}",
         f"Complaint Type: {complaint_type_line}",
-        f"Incident Details: {incident_short}",
-        f"Details: {narrative_full}",
+        f"Incident Details: {incident_short}", # Short info
+        f"Details: {narrative_full}",         # Full narrative
         f"Date of Complaint: {date_display}",
         "",
         "Note: Legal sections and classifications are generated by AI and should be verified by a legal professional.",
@@ -947,7 +980,19 @@ def _build_classification_context(
 
 
 
-async def classify_offence(details: str) -> Optional[str]:
+def classify_offence(
+
+    formal_summary: str,
+
+    *,
+
+    complaint_type: str = "",
+
+    details: str = "",
+
+    classification_text: Optional[str] = None,
+
+) -> str:
 
     """
 
@@ -965,10 +1010,15 @@ async def classify_offence(details: str) -> Optional[str]:
 
     """
 
-    if not GEMINI_API_KEY:
-        return None
+    if classification_text:
 
-    text = details.lower()
+        text = classification_text.lower()
+
+    else:
+
+        text = f"{complaint_type} \n {details}".lower()
+
+
 
     cognizable_keywords = {
 
@@ -1033,11 +1083,14 @@ async def classify_offence(details: str) -> Optional[str]:
 
     # 6) LLM fallback if available (keeps previous behavior)
 
+
+    # 6) LLM fallback if available (keeps previous behavior)
+
     if GEMINI_API_KEY:
 
         try:
-            # model = genai.GenerativeModel(LLM_MODEL) # Use rotator for async
-            
+            model = genai.GenerativeModel(LLM_MODEL)
+
             criteria = (
                 "You are an expert in Indian criminal procedure. Decide ONLY from the provided fields. "
                 "Do NOT assume missing facts, do NOT infer offences from examples in questions, and do NOT guess. "
@@ -1050,14 +1103,12 @@ async def classify_offence(details: str) -> Optional[str]:
             user_payload = (
                 f"{criteria}\n\n"
                 "Decide for this complaint using ONLY the following fields.\n\n"
+                f"Complaint Type: {complaint_type}\n"
                 f"Details: {details}"
             )
 
-            response = await gemini_rotator.generate_content_async( # Use await gemini_rotator.generate_content_async
-                LLM_MODEL,
+            response = model.generate_content(
                 user_payload,
-                endpoint="is_cognizable",
-                session_id=f"cog-check-{int(time.time())}",
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.0,
                     max_output_tokens=2048,
@@ -1083,32 +1134,45 @@ async def classify_offence(details: str) -> Optional[str]:
 
 
     # default fallback
+
     return "NON-COGNIZABLE – Could not determine from provided fields."
 
 
 
-@router.post("/summarize", response_model=ComplaintResponse, status_code=status.HTTP_200_OK)
-async def summarize_complaint(payload: ComplaintResponse, language: str = "en"):
-    """
-    Summarizes the gathered facts into a formal report and classifies offence.
-    All major processing steps are now async and efficient.
-    """
-    if language == "undefined" or not language:
-        language = "en"
+@router.post(
 
+    "/summarize",
+
+    response_model=ComplaintResponse,
+
+    status_code=status.HTTP_200_OK,
+
+)
+
+async def process_complaint(payload: ComplaintRequest):
     try:
-        # 1. Generate summary text and localized fields
-        formal_summary, localized_fields = await generate_summary_text(payload, language)
-        
-        # 2. Classify the offence
-        classification = await classify_offence(payload.details)
+        language = resolve_language(payload.language)
+        conversation = build_conversation(payload)
+        # produce the neat text summary requested by user (no description)
+        formal_summary, localized_fields = generate_summary_text(payload)
 
+        # logger.info(f"Complaint input → type='{payload.complaint_type}', details='{payload.details}'")
+        classification_context = _build_classification_context(
+            payload.complaint_type,
+            payload.details,
+            language,
+            localized_fields,
+        )
+        classification = classify_offence(
+            formal_summary,
+            complaint_type=payload.complaint_type,
+            details=payload.details,
+            classification_text=classification_context,
+        )
         classification_for_logs = classification
         classification_display = classification
         if language != "en" and classification:
-            # Translate classification using batch helper (single-field fallback)
-            translated_cls = await batch_translate_fields({"classification": classification}, language)
-            classification_display = translated_cls.get("classification", classification)
+            classification_display = translate_text(classification, language)
 
         logger.info(f"Classification decided → {classification_display}")
 
@@ -1137,7 +1201,6 @@ async def summarize_complaint(payload: ComplaintResponse, language: str = "en"):
         return response
 
     except Exception as e:
-        logger.exception("Failed to process complaint summary")
         raise HTTPException(status_code=500, detail=f"Failed to process complaint: {e}")
 
 def validate_imei(text: str) -> bool:
@@ -1411,9 +1474,9 @@ async def chat_step(
                  last_user_msg = payload.chat_history[-1].content
              
              # Check for User forcing DONE
-             if last_user_msg and re.search(r"^\s*(done|completed|finished|that's it|no more|stop|exit)\.*$", last_user_msg, re.IGNORECASE):
+             if last_user_msg and re.search(r"\b(done|completed|finished|that's it|no more)\b", last_user_msg, re.IGNORECASE):
                  skip_llm = True
-                 logger.info("User forced DONE (Completion keyword detected).")
+                 logger.info("User forced DONE.")
              
              # Find last assistant message
              for m in reversed(payload.chat_history):
@@ -1627,7 +1690,7 @@ async def chat_step(
                 )
 
             # Helper function to extract already-known information from conversation
-            def extract_known_info(initial_details: str, chat_history: List, payload) -> str:
+            def extract_known_info(initial_details: str, chat_history: List) -> str:
                 """Extract information already mentioned in the conversation to prevent repetition."""
                 known_info = []
                 
@@ -1641,122 +1704,113 @@ async def chat_step(
                     elif isinstance(msg, dict) and msg.get("role") == "user":
                         all_text += " " + msg.get("content", "").lower()
                 
-                # 1. Identity Extraction (Look for matches in HISTORY if payload is empty)
-                # Name
-                name_val = payload.full_name
-                name_patterns = ["my name is", "i am", "name is", "పేరు", "నా పేరు", "నన్ను"]
-                if not name_val and any(p in all_text for p in name_patterns):
-                    name_val = "[Provided in history]"
+                # Check for date/time mentions
+                date_patterns = ["january", "february", "march", "april", "may", "june", 
+                                "july", "august", "september", "october", "november", "december",
+                                "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+                                "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th",
+                                "yesterday", "today", "last night", "this morning"]
+                time_patterns = ["am", "pm", "o'clock", "morning", "afternoon", "evening", "night"]
                 
-                # Address
-                addr_val = payload.address
-                addr_patterns = ["live at", "residing", "address is", "ఇల్లు", "నివాసం", "చిరునామా"]
-                if not addr_val and any(p in all_text for p in addr_patterns):
-                    addr_val = "[Provided in history]"
-
-                # Phone
-                phone_val = payload.phone
-                if not phone_val and re.search(r"\b[6-9]\d{9}\b", all_text):
-                    phone_val = "[Provided in history]"
-
-                # District (Broad detection for PS filtering)
-                dist_val = payload.district if payload.district != "Unknown" else None
-                dist_patterns = [
-                    "district", "జిల్లా", "మండలం", "mandal", "town", 
-                    "city", "నగరం", "పట్టణం", "area", "ప్రాంతం"
-                ]
-                if not dist_val and any(p in all_text for p in dist_patterns):
-                    # Flag that something was found if it looks like a location mention
-                    dist_val = "[Provided in history]"
-
-                if name_val: known_info.append(f"- Name: {name_val}")
-                if addr_val: known_info.append(f"- Address: {addr_val}")
-                if phone_val: known_info.append(f"- Phone: {phone_val}")
-                if dist_val: known_info.append(f"- District: {dist_val}")
-
-                # 2. Check for date/time mentions
-                # English Patterns
-                date_en = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "yesterday", "today", "last night", "this morning", "evening", "afternoon", "night"]
-                time_en = ["am", "pm", "o'clock", "morning", "afternoon", "evening", "night", "hour", "minutes", "time", "when"]
+                has_date = any(pattern in all_text for pattern in date_patterns)
+                has_time = any(pattern in all_text for pattern in time_patterns) or any(str(i) in all_text for i in range(1, 13))
                 
-                # Telugu Patterns
-                date_te = ["జనవరి", "ఫిబ్రవరి", "మార్చి", "ఏప్రిల్", "మే", "జూన్", "జూలై", "ఆగస్టు", "సెప్టెంబర్", "అక్టోబర్", "నవంబర్", "డిసెంబర్", "నిన్న", "ఈరోజు", "రాత్రి", "ఉదయం", "సాయంత్రం", "మధ్యాహ్నం"]
-                time_te = ["సమయం", "గంటలు", "నిమిషాలు", "ఎప్పుడు"]
-
-                if any(p in all_text for p in date_en + date_te):
-                    known_info.append("- Date: Already mentioned")
-                if any(p in all_text for p in time_en + time_te):
-                    known_info.append("- Time: Already mentioned")
+                if has_date or has_time:
+                    known_info.append("- Date/Time: Already mentioned in conversation")
                 
-                # 3. Check for location mentions
-                loc_en = ["room", "college", "university", "hostel", "market", "street", "road", "building", "block", "floor", "house", "shop", "office", "parking", "bus stand", "station", "stop", "place", "where", "location", "area", "happened at", "occured at", "inside", "outside", " near ", " at ", " in ", " beside ", " opposite ", " across "]
-                loc_te = ["గది", "కళాశాల", "యూనివర్సిటీ", "హాస్టల్", "మార్కెట్", "వీధి", "రోడ్డు", "భవనం", "ఇల్లు", "షాపు", "ఆఫీసు", "బస్ స్టాండ్", "స్టేషన్", "చోటు", "ఎక్కడ", "జరిగింది", "ఉంది", "వద్ద", "స్థలం", "ఖచ్చితంగా", "దగ్గర", "ముందు", "వెనుక"]
-                if any(p in all_text for p in loc_en + loc_te):
-                    known_info.append("- Location/Place: KNOWN (Information provided in history)")
+                # Check for location mentions
+                location_keywords = ["room", "college", "university", "hostel", "market", "street", 
+                                    "road", "building", "block", "floor", "house", "shop", "office"]
+                if any(keyword in all_text for keyword in location_keywords):
+                    known_info.append("- Location: Already mentioned in conversation")
                 
-                # 4. Check for stolen items
-                item_en = ["purse", "wallet", "phone", "mobile", "laptop", "bag", "cash", "money", "rupees", "card", "jewelry", "watch", "bike", "vehicle", "scooter", "car", "cycle", "property", "what was"]
-                item_te = ["పర్సు", "వాలెట్", "ఫోన్", "మొబైల్", "ల్యాప్‌టాప్", "బ్యాగ్", "నగదు", "డబ్బు", "రూపాయలు", "కార్డు", "నగలు", "వాచ్", "బైక్", "బండి", "కారు", "సైకిల్", "వస్తువులు", "ఏమిటి"]
-                if any(p in all_text for p in item_en + item_te):
-                    known_info.append("- Items/Property: Already mentioned")
+                # Check for stolen items
+                item_keywords = ["purse", "wallet", "phone", "mobile", "laptop", "bag", "cash", 
+                                "money", "rupees", "card", "jewelry", "watch", "bike", "vehicle"]
+                if any(keyword in all_text for keyword in item_keywords):
+                    known_info.append("- Stolen items: Already mentioned in conversation")
                 
-                # 5. Check for suspect information
-                sus_en = ["suspect", "person", "man", "woman", "boy", "girl", "someone", "stranger", "friend", "neighbor", "description", "wearing", "height", "look like", "who was"]
-                sus_te = ["నిందితుడు", "వ్యక్తి", "మనిషి", "స్త్రీ", "అబ్బాయి", "అమ్మాయి", "ఎవరో", "తెలియని వ్యక్తి", "స్నేహితుడు", "పక్కింటి", "ఎలా ఉంటాడు", "ఎవరు"]
-                if any(p in all_text for p in sus_en + sus_te) or "no suspect" in all_text or "don't know" in all_text:
-                    known_info.append("- Suspect info: Already discussed")
+                # Check for suspect information
+                suspect_keywords = ["suspect", "person", "man", "woman", "boy", "girl", "someone", 
+                                   "stranger", "friend", "neighbor", "description"]
+                if any(keyword in all_text for keyword in suspect_keywords) or "no suspect" in all_text or "don't know" in all_text:
+                    known_info.append("- Suspect info: Already discussed in conversation")
                 
-                # 6. Check for witness information  
-                wit_en = ["witness", "saw", "seen", "noticed", "observed", "anybody else", "someone else", "anyone see"]
-                wit_te = ["సాక్షి", "చూశారు", "గమనించారు", "ఇంకెవరైనా", "ఎవరైనా చూశారా"]
-                if any(p in all_text for p in wit_en + wit_te) or "no witness" in all_text or "nobody saw" in all_text:
-                    known_info.append("- Witnesses: Already discussed")
-
-                # 7. Check for Evidence mentions (Crucial for Phase 2 -> 3 transition)
-                ev_en = ["photo", "video", "document", "record", "proof", "evidence", "cctv"]
-                ev_te = ["ఫోటో", "వీడియో", "డాక్యుమెంట్", "ఆధారం", "సాక్ష్యం", "సీసీటీవీ"]
-                if any(p in all_text for p in ev_en + ev_te):
-                    known_info.append("- Evidence/Proof: Already discussed")
+                # Check for witness information  
+                witness_keywords = ["witness", "saw", "seen", "noticed", "observed"]
+                if any(keyword in all_text for keyword in witness_keywords) or "no witness" in all_text or "nobody saw" in all_text:
+                    known_info.append("- Witnesses: Already discussed in conversation")
                 
                 if known_info:
-                    return "\n### SUMMARY OF KNOWN FACTS (DO NOT ASK ABOUT THESE):\n" + "\n".join(known_info) + "\n### END OF KNOWN FACTS\n"
+                    return "\n\nINFORMATION ALREADY KNOWN (DO NOT ASK ABOUT THESE AGAIN):\n" + "\n".join(known_info) + "\n"
                 return ""
 
             # Extract known information from conversation
-            known_facts = extract_known_info(payload.initial_details, payload.chat_history, payload)
+            known_facts = extract_known_info(payload.initial_details, payload.chat_history)
 
             # System Prompt Definition
 
             language_name = display_lang
             system_prompt = (
                 f"{anon_header}"
-                f"{known_facts}\n\n"
 
-                f"You are an expert Police Officer conducting a crime investigation in {language_name}.\n\n"
+                f"You are an expert Police Officer conducting an investigation in {language_name}.\n\n"
 
-                "YOUR ROLE:\n"
-                "- Conduct a thorough investigation by asking relevant questions (Who, What, Where, When, How).\n"
-                "- Use the 'SUMMARY OF KNOWN FACTS' above to see what is already discussed.\n"
-                "- NEVER ask about a category (like Location or Suspects) if it is listed as 'KNOWN' or 'Already discussed' above.\n\n"
+                    f"GOAL:\n"
+                    f"Ask relevant questions to understand the crime (Who, What, Where, When, How).\n\n"
 
-                "INVESTIGATION GUIDELINES:\n"
-                "1. START: Gather the core story (Incident details, suspects, witnesses).\n"
-                "2. EVIDENCE: Ask about photos, videos, or documents once the core story is clear.\n"
-                "3. IDENTITY: Verify Name, Address, and Phone ONLY after the crime details are collected.\n"
-                "   - IRREVERSIBLE: Once you start asking for Name, Address, or Phone, you have finished the investigation. NEVER go back to asking about the crime details (Where/When/Who).\n\n"
+                    f"INTERNAL REASONING (DO NOT SHOW TO USER):\n"
+                    f"- Review the FULL previous conversation carefully.\n"
+                    f"- Extract all facts already provided.\n"
+                    "- Maintain an internal checklist of collected fields:\n"
+                    "  WHO, WHAT, WHERE, WHEN, HOW, SUSPECTS, WITNESSES, EVIDENCE, NAME, ADDRESS, PHONE.\n"
+                    "- Identify ONLY ONE missing field that is still UNKNOWN.\n"
+                    "- NEVER ask about any field that already has information.\n"
+                    "- If user already answered partially, ask only for the missing part.\n"
+                    "- Ask ONE complete question for the highest-priority missing field.\n\n"
 
-                "TERMINATION RULE (CRITICAL):\n"
-                "- Once ALL fields (Name, Address, Phone) are in the 'SUMMARY OF KNOWN FACTS', you MUST output ONLY the word 'DONE'.\n\n"
+                    "OUTPUT RULE (CRITICAL): Output ONLY the question text or 'DONE'. "
+                    "Do NOT output any reasoning, internal notes, analysis, phase labels, or bullet points.\n\n"
 
-                "STRICT NO REPETITION:\n"
-                "- If a fact is listed as 'KNOWN' in the summary above, NEVER ask about it again.\n"
-                "- Focus ONLY on the single next missing piece of information.\n\n"
+                    "CRITICAL RULES:\n\n"
 
-                "CONSTRAINTS:\n"
-                "- Ask exactly ONE short question (max 20 words).\n"
-                "- Output ONLY the question text or 'DONE' if all phases are satisfied.\n"
-                "- Never show reasoning or internal notes.\n"
-                f"- Use ONLY {language_name}.\n"
+                    "1. INVESTIGATION PHASES (STRICT ORDER):\n"
+                    "PHASE 1: Gather Who, What, Where, When, How, Suspects, Witnesses.\n"
+                    "- Do NOT move to Phase 2 until ALL Phase 1 fields are known.\n"
+                    "\n"
+                    "PHASE 2: Ask about evidence (photos, videos, documents).\n"
+                    "- Do NOT move to Phase 3 until evidence status is known.\n"
+                    "\n"
+                    "PHASE 3: ONLY AFTER Phase 1 & 2, verify Name, Address, Phone.\n"
+                    "- Skip any identity field already marked KNOWN.\n"
+
+                    "2. STRICT NO REPETITION (VERY IMPORTANT):\n"
+                    "- Never ask the same question twice.\n"
+                    "- Never ask about information already provided.\n"
+                    "- If the user refuses or says 'don't know', mark it as KNOWN and move forward.\n"
+
+                    f"3. KNOWN IDENTITY (do NOT ask about these again if present):\n"
+                    f"Name = {payload.full_name or 'Unknown'}\n"
+                    f"Address = {payload.address or 'Unknown'}\n"
+                    f"Phone = {payload.phone or 'Unknown'}\n\n"
+
+                    "4. ONE QUESTION ONLY:\n"
+                    "Ask exactly ONE short question (max 20 words).\n"
+                    "Do NOT combine multiple questions.\n\n"
+
+                    f"5. LANGUAGE:\n"
+                    f"Use only {language_name}. Do not mix languages.\n\n"
+
+                    "6. COMPLETION:\n"
+                    "Output ONLY \"DONE\" when:\n"
+                    "- Phase 1 complete\n"
+                    "- Phase 2 complete\n"
+                    "- Phase 3 complete\n"
+
+                    "IMPORTANT:\n"
+                    "Never output partial sentences.\n"
+                    "Never show reasoning.\n"
+                    "Always produce a full question.\n"
             )
             
             # Convert Pydantic chat history to LLM format
@@ -1770,13 +1824,12 @@ async def chat_step(
             else:
                 try:
                     # Construct full History for Gemini
-                    # rotator configures key before each call
                     model = genai.GenerativeModel(LLM_MODEL)
-
+                    
                     # Convert history to text for prompt
                     history_text = ""
-                    # Increase History Cap to 15 turns for better memory
-                    recent_history = payload.chat_history[-15:] if len(payload.chat_history) > 15 else payload.chat_history
+                    # Limit history (Gemini Flash has ~1M context so we could send all, but 12 turns is safe for focus)
+                    recent_history = payload.chat_history[-20:] if len(payload.chat_history) > 20 else payload.chat_history
                     
                     for msg in recent_history:
                         role = "Police" if msg.role == "assistant" else "User"
@@ -1789,15 +1842,10 @@ async def chat_step(
                     # logger.info(full_prompt)
                     # logger.info("--- End Prompt ---")
 
-                    import time
-                    session_id = f"complaint-session-{payload.phone or 'anon'}"
-                    response = await gemini_rotator.generate_content_async(
-                        LLM_MODEL,
+                    response = model.generate_content(
                         full_prompt,
-                        endpoint="/api/complaint/chat-step",
-                        session_id=session_id,
                         generation_config=genai.types.GenerationConfig(
-                            temperature=0.3,
+                            temperature=0.3, # Low temp for consistency
                             max_output_tokens=1024,
                         ),
                         safety_settings=[
@@ -1809,6 +1857,7 @@ async def chat_step(
                     )
                     
                     raw_reply = response.text or ""
+                    # logger.info(f"--- LLM Raw Response ---\n{raw_reply}\n--- End Response ---")
                     
                     # PARSE STRUCTURED OUTPUT
                     if "RESPONSE:" in raw_reply:
@@ -1935,253 +1984,284 @@ async def chat_step(
                 transcript += f"{role_label}: {msg.content}\n"
 
             from routers.station_data import DISTRICT_STATIONS
-            
-            # --- Robust District & Station Detection ---
-            # Search address, initial details, and history for better detection
-            context_for_detection = (payload.address or "") + " " + (payload.initial_details or "") + " " + transcript
-            transcript_lower = context_for_detection.lower()
+            # json is already imported globally
+            stations_json = json.dumps(DISTRICT_STATIONS, indent=2)
+                
+            summary_prompt = f"""
+You are an expert police complaint writer.
 
-            reverse_station_map = {} # station_lower -> (orig_station, district)
-            for d_name, s_list in DISTRICT_STATIONS.items():
-                for s_name in s_list:
-                    reverse_station_map[s_name.lower()] = (s_name, d_name)
-                    # Create simple version: "Nuzvid Town" -> "nuzvid"
-                    base_name = s_name.lower().replace(" town", "").replace(" rural", "").replace(" ps", "").replace(" ups", "").strip()
-                    if base_name and base_name not in reverse_station_map:
-                        reverse_station_map[base_name] = (s_name, d_name)
+You are a senior police officer recording an FIR.\n\n
 
-            detected_dist = "Unknown"
-            detected_station = None
-            # First, try matching stations in the transcript
-            for s_key, (orig_s, d_name) in reverse_station_map.items():
-                if len(s_key) > 4 and s_key in transcript_lower: # Min 5 chars to avoid noise like "area"
-                    detected_dist = d_name
-                    detected_station = orig_s
-                    break
-            
-            # Second, try matching districts if station not found
-            if detected_dist == "Unknown":
-                for d_name in DISTRICT_STATIONS.keys():
-                    if d_name.lower() in transcript_lower:
-                        detected_dist = d_name
-                        break
-            
-            # (Re-inject the reverse_station_map logic here if needed, but we'll do better below)
-            
-            user_district = payload.district
-            if not user_district or user_district == "Unknown":
-                user_district = detected_dist
-            
-            user_district = user_district or "Unknown"
-            filtered_stations = DISTRICT_STATIONS.get(user_district, [])
-            if not filtered_stations:
-                stations_context = "District unknown. Full station database omitted for efficiency. AI will use general knowledge to pick a likely PS if location is mentioned."
-            else:
-                stations_context = f"Available Police Stations in {user_district} District:\n" + "\n".join(filtered_stations)
+- NEVER assume the incident occurred at the complainant's residential address.
+- Use the residential address ONLY for identification (full_name/address/phone).
+- Use an incident location ONLY if explicitly mentioned by the user (e.g. 'at the market', 'at parking').
+- If the incident place is vague (e.g., "parking area"), keep it vague. Do NOT deduce it is the home address.
+- If the incident place is not clearly mentioned, leave it empty/null.
+- Extract name, phone, and address ONLY from the conversation.
+- Do NOT ask any questions.
 
-            unified_prompt = f"""
-You are a senior police officer finalizing a formal complaint.
-Based on the transcript and facts below, perform the following tasks:
-1. Generate a formal incident narrative (summary) in FIRST PERSON.
-2. Classify the offence as "Cognizable" or "Non-Cognizable".
-3. Identify the most likely Police Station from the filtered list (or best match).
-4. Provide a brief reason for the station selection.
-5. Extract identity details (Name, Address, Phone) if they appear in the transcript and are missing from payload.
 
-STRICT JSON OUTPUT FORMAT:
+- NEVER invent or substitute locations.
+- NEVER use placeholders.
+IDENTITY RULES:\n
+- Do NOT ask name, phone, or address initially.\n
+- Assume they may already be present in the complaint.\n
+- Ask for name/phone/address ONLY IF missing after investigation.\n\n
+END RULE:\n
+- When all incident + identity details are sufficient, reply ONLY with 'DONE'.
+
+NOTE : 1.If the date or time not mentioned, in the summary donot say date not mentioned and time not mentioned. Insted of that donot say anything about them.
+       2. if the date or time donot mentioned, donot assume the date or any place. just say nothing about them.
+TASKS:
+1. Identify the complaint type automatically.
+2. Extract date, time, and place from the conversation if mentioned.
+3. Describe  ONLY the incident location :where the incident happened in 1–2 lines, include the date&time if mentioned .
+4. Write a clear narrative description of the incident in **FIRST PERSON PERSPECTIVE** (e.g., "I was walking...", "He beat me..."). 
+   - DO NOT use "You said...", "The user said...", "Complainant stated...".
+   - DO NOT summarize the chat structure ("We asked more questions..."). 
+   - Write it as a Formal Petition/Complaint to the Police Station.
+5. LEGAL CLASSIFICATION (MANDATORY): At the very end of the details field, you MUST include a line exactly like this:
+   "Classification: COGNIZABLE - Offence permits police action." 
+   OR 
+   "Classification: NON-COGNIZABLE - Offence permits magistrate order."
+   (Choose the correct one based on Indian legal standards).
+6. Do NOT invent dates, places, or items not explicitly mentioned by the user.
+6. Extract name, address, number from the conversation.
+7. Donot assume the incident location as the complainant's residential address untill they mentioned in the residential address.
+8. In details field, need the detailed description/ summarization of the entire complaint incident.
+
+
+# POLICE STATION SELECTION (CRITICAL RULE):
+# 1. Analyze the 'short_incident_summary' or incident address from the conversation.
+# 2. Identify Locality, Town/City, Mandal, and District.
+# 3. CONSULT THE AVAILABLE POLICE STATIONS DATABASE BELOW.
+# 4. SELECT ONE POLICE STATION from the list that best matches the location.
+#    - If incident is in MUNICIPAL/TOWN limits -> Select '<TownName> Town Police Station' (if available).
+#    - If multiple Town stations exist (e.g., I Town, II Town) -> Select based on landmark (e.g., Market, Bus Stand -> usually I Town). If unsure, use 'I Town'.
+#    - If incident is in VILLAGE/OUTSKIRTS -> Select '<MandalName> Rural Police Station' or the specific Village station.
+#    - MUST EXACTLY MATCH A STRING FROM THE DATABASE. Do not invent names.
+# 5. NEVER return 'Station Unknown'. YOU MUST SELECT THE BEST MATCH FROM THE DATABASE.
+
+AVAILABLE POLICE STATIONS DATABASE:
+{stations_json}
+
+OUTPUT FORMAT (STRICT JSON ONLY):
 {{
-  "narrative": "Detailed formal summary here",
-  "classification": "Cognizable/Non-Cognizable",
-  "complaint_type": "Theft/Lost/Harassment etc.",
-  "district": "Exact District Name",
-  "selected_police_station": "Station Name",
-  "police_station_reason": "Brief reason based on location",
-  "station_confidence": "High/Medium/Low",
-  "incident_date": "YYYY-MM-DD",
-  "incident_address": "Specific location of incident",
-  "full_name": "Extracted name",
-  "address": "Extracted address",
-  "phone": "Extracted phone",
-  "initial_details": "1-sentence summary of the original problem",
-  "accused_details": "Name/Description",
-  "stolen_property": "Items list",
-  "witnesses": "Names/Count",
-  "evidence_status": "Brief status"
+    "full_name": "", 
+    "address": "",
+    "phone": "",
+    "complaint_type": "",
+    "initial_details": "",
+    "details": "COMPREHENSIVE NARRATIVE in FIRST PERSON ('I...'). Must be a detailed formal complaint text suitable for an FIR. Include EVERY fact mentioned (Who, What, Where, When, How, Vehicle details, Suspects, etc). NOT a chat summary.",
+  
+    "short_incident_summary": "short 1-2 lines where it happend, Specific location and time. EXAMPLE: 'Nuzvid bus stand road on 2026-01-06 at 8 PM'. NOT 'The spot' or 'Incident location'. Extract specific place names.",
+    "incident_date": "Extract the incident date in YYYY-MM-DD format if mentioned. Examples: '2026-01-06', '2025-12-25'. If not mentioned, leave empty.",
+
+    "accused_details": "Name and description of accused if known. If unrelated or unknown, say 'Unknown'.",
+    "stolen_property": "Description of stolen items/value if applicable. If not applicable, say 'N/A'.",
+    "witnesses": "Names/Contact of witnesses if any. If none, say 'None'.",
+    "evidence_status": "Brief status of evidence (e.g. 'Photos attached', 'Voice recording available', 'None').",
+
+    "selected_police_station": "Name of the Station (e.g., 'Nuzvid Town Police Station')",
+    "police_station_reason": "Brief reason (e.g., 'Incident location is within Nuzvid municipal limits.')",
+    "station_confidence": "High/Medium/Low"
 }}
 
-FILTERED STATIONS (DISTRICT: {user_district}):
-{stations_context}
+INFORMATION:
+{transcript}
+"""         
+            # Adjust prompt for language if needed
+            # Adjust prompt for language if needed
+            if language != 'en':
+                 lang_name = get_language_name(language)
+                 # summary_prompt = summary_prompt.replace("in plain English", f"in {lang_name} (translated)")
+                 summary_prompt += (f"\n\nIMPORTANT {lang_name.upper()} RULES:\n"
+                                    f"- Write the 'details' narrative as a FORMAL PETITION to the Station House Officer in {lang_name}.\n"
+                                    f"- Use FIRST PERSON.\n"
+                                    f"- NEVER start with 'You said' or 'The user said'.\n"
+                                    f"- NEVER mention 'We asked questions'.\n"
+                                    f"- Output must be continuous {lang_name} text describing the incident formally.\n"
+                                    f"- Output the JSON values in {lang_name} where appropriate (narrative), but keep keys in English.\n"
+                                    f"- Need description like full narrative of the complaint not like just description.")
 
-NARRATIVE DATA:
-Initial Details: {payload.initial_details}
-Identity So Far: {json.dumps({"name": payload.full_name, "address": payload.address, "phone": payload.phone}, ensure_ascii=False)}
-Transcript: {transcript}
-"""
             try:
-                session_id = f"complaint-session-{payload.phone or 'anon'}"
-                # One single call replaces Summary, StatsExtraction, Label generation, and Classification
-                response = await gemini_rotator.generate_content_async(
-                    LLM_MODEL, 
-                    unified_prompt,
-                    endpoint="/api/complaint/done",
-                    session_id=session_id,
+                model = genai.GenerativeModel(LLM_MODEL)
+                
+                response = model.generate_content(
+                    summary_prompt,
                     generation_config=genai.types.GenerationConfig(
-                        temperature=0.1,
+                        temperature=0.2,
                         max_output_tokens=2048,
-                        response_mime_type="application/json",
+                        response_mime_type="application/json", # Use Gemini's native JSON mode
                     )
                 )
-                n_data = json.loads(response.text)
                 
+                final_json_str = response.text.strip()
             except Exception as e:
-                logger.error(f"Unified final processing failed: {e}")
+                logger.error(f"Gemini Summary Generation Error: {e}")
+                final_json_str = "{}"
+            final_json_str = safe_utf8(final_json_str)
+            # logger.info(f"Summary JSON: {final_json_str}")
+            logger.info("Summary JSON received (length=%d)", len(final_json_str))
+            
+            # Parse JSON
+            try:
+                n_data = json.loads(final_json_str)
+                # Handle case where LLM returns a list [ {...} ]
+                if isinstance(n_data, list):
+                    if len(n_data) > 0:
+                        n_data = n_data[0]
+                    else:
+                        n_data = {}
+            except:
+                logger.error("Failed to parse summary JSON")
                 n_data = {}
 
-            narrative = safe_utf8(n_data.get("narrative", "Summary generation failed."))
-            classification = n_data.get("classification", "Cognizable")
-            
-            # THEFT BNS SECTION INJECTION (Refined as per user request)
-            if "theft" in transcript.lower() or "దొంగతనం" in transcript.lower():
-                # Set Classification to just the category
-                if language == "te":
-                    classification = "కాగ్నిజబుల్"
-                    theft_legal_type = "దొంగతనం (BNS Section 303(2))"
-                else:
-                    classification = "Cognizable"
-                    theft_legal_type = "Theft (BNS Section 303(2))"
+            # Map to ComplaintResponse
+            # narrative = n_data.get("details", "")
+            narrative = safe_utf8(n_data.get("details", ""))
+
+            # final_complaint_type = n_data.get("complaint_type", payload.complaint_type)
+            # if not final_complaint_type or not final_complaint_type.strip():
+            #     final_complaint_type = "General Complaint"
+
+            raw_llm_type = (n_data.get("complaint_type") or "").strip()
+            if not raw_llm_type:
+                final_complaint_type = "General Complaint"
             else:
-                theft_legal_type = None
+                final_complaint_type = raw_llm_type
+            final_complaint_type = final_complaint_type.strip().title()
+
             initial_details_summary = n_data.get("initial_details", "")
-            short_incident = safe_utf8(n_data.get("incident_address", ""))
-            incident_date_str = n_data.get("incident_date", "")
-            
-            # Use extracted identity as fallback
-            final_name = payload.full_name or n_data.get("full_name")
-            final_address = payload.address or n_data.get("address")
-            final_phone = payload.phone or n_data.get("phone")
-            
-            # Prioritize extracted complaint type (e.g. "Theft") over generic fallback
-            extracted_type = n_data.get("complaint_type")
-            final_complaint_type = payload.complaint_type
-            
-            # Use our specific legal type if detected
-            if theft_legal_type:
-                final_complaint_type = theft_legal_type
-            elif not final_complaint_type or final_complaint_type in ["Unknown", "General Complaint"]:
-                final_complaint_type = extracted_type or "General Complaint"
+            # short_incident = n_data.get("short_incident_summary", "")
+            short_incident = safe_utf8(n_data.get("short_incident_summary", ""))
 
-            # --- VALIDATION GATEKEEPING ---
+            
+            # Extract collected identity if missing in payload
+            extracted_name = n_data.get("full_name")
+            extracted_address = n_data.get("address")
+            extracted_phone = n_data.get("phone")
+            
+            # --- STRICT GATEKEEPING & DEBUG LOGGING ---
+            # logger.info(f"Gatekeeper Payload Input: Name='{payload.full_name}', Addr='{payload.address}', Phone='{payload.phone}'")
+            # logger.info(f"Gatekeeper LLM Extracted: Name='{extracted_name}', Addr='{extracted_address}', Phone='{extracted_phone}'")
+
+            # 1. NAME
+            final_name = payload.full_name
+            # extracted_name_valid = extracted_name and validate_name(extracted_name)
+            
             if not final_name or not validate_name(final_name):
-                msg = SYS_MSG_NAME_EN if language != "te" else SYS_MSG_NAME_TE
+                # DISABLED FALLBACK
+                msg = SYS_MSG_NAME_EN
+                if language == "te":
+                    msg = SYS_MSG_NAME_TE
                 return ChatStepResponse(status="question", message=msg)
+                
+            # 2. ADDRESS
+            final_address = payload.address
+            # extracted_address_valid = extracted_address and validate_address(extracted_address)
+            
             if not final_address or not validate_address(final_address):
-                msg = SYS_MSG_ADDRESS_EN if language != "te" else SYS_MSG_ADDRESS_TE
+                # DISABLED FALLBACK
+                msg = SYS_MSG_ADDRESS_EN
+                if language == "te":
+                    msg = SYS_MSG_ADDRESS_TE
                 return ChatStepResponse(status="question", message=msg)
+                
+            # 3. PHONE
+            final_phone = payload.phone
+            
+            # ONLY use extracted phone if it is STRICTLY VALID.
+            # DISABLED FALLBACK: FORCE ASK
+            # if extracted_phone and validate_phone(extracted_phone):
+            #      final_phone = extracted_phone
+            #      logger.info("Using Extracted Phone")
+            
+            # FORCE CHECK: If final_phone is invalid (None or False), RETURN QUESTION
             if not final_phone or not validate_phone(final_phone):
-                msg = SYS_MSG_PHONE_EN if language != "te" else SYS_MSG_PHONE_TE
-                return ChatStepResponse(status="question", message=msg)
+                #  logger.info("Phone missing or invalid. Asking user.")
+                 msg = SYS_MSG_PHONE_EN
+                 if language == "te":
+                     msg = SYS_MSG_PHONE_TE
+                 return ChatStepResponse(status="question", message=msg)
 
-            # Create final request object
-            final_req = ComplaintRequest(
-                full_name=final_name,
-                address=final_address,
-                phone=final_phone,
-                complaint_type=final_complaint_type,
-                details=payload.initial_details, 
-                incident_details=narrative,
-                incident_address=short_incident,
-                language=payload.language
+            # --- SANITIZATION & CRITICAL FIELD CHECK ---
+            # Check for IMEI if "IMEI" keyword is mentioned
+            full_text_search = (narrative + " " + initial_details_summary).lower()
+            
+            if "imei" in full_text_search:
+                # Check if a valid 15-digit IMEI exists in the extracted/input text
+                # We check the narrative for the number
+                if not validate_imei(narrative) and not validate_imei(initial_details_summary) and not validate_imei(payload.initial_details):
+                     msg = "I noticed you mentioned an IMEI number, but it doesn't look like a valid 15-digit number. Please check and provide the correct IMEI."
+                     if language == "te":
+                         msg = "మీరు IMEI నంబర్ చెప్పినట్లున్నారు, కానీ అది 15 అంకెలు లేనట్లుంది. దయచేసి సరైన IMEI నంబర్ ఇవ్వండి."
+                     return ChatStepResponse(status="question", message=msg)
+
+            # Check for Vehicle Number if context suggests vehicle theft
+            # DISABLED: Causing false positives (e.g., purse theft). LLM handles this via prompt rules.
+            # vehicle_keywords = ["vehicle", "bike", "car", "scooter", "motorcycle", "registration number", "number plate", "license plate", "వాహనం", "బైక్", "కారు"]
+            # if any(k in full_text_search for k in vehicle_keywords) and ("theft" in full_text_search or "lost" in full_text_search or "దొంగ" in full_text_search):
+            #      # ... logic removed ...
+            #      pass
+
+            # Create final object (mapping fields)
+            try:
+                final_req = ComplaintRequest(
+                    full_name=final_name,
+                    address=final_address,
+                    phone=final_phone,
+                    complaint_type=final_complaint_type,
+                    details=payload.initial_details, 
+                    incident_details=narrative,
+                    incident_address=short_incident,
+                    language=payload.language
+                )
+            except Exception as validation_error:
+                 logger.error(f"ComplaintRequest validation failed: {validation_error}")
+                 return ChatStepResponse(status="question", message=f"Please provide missing details: {validation_error}")
+            
+            # Generate the formal summary text block
+            formal_summary_text, localized_fields = generate_summary_text(final_req)
+            
+            # --- USER FEEDBACK MAPPING FIX ---
+            # 1. 'details' -> Full Summarization (Narrative)
+            # 2. 'incident_details' -> Where/When incident happened (Short Incident)
+            
+            localized_fields["details"] = initial_details_summary
+            localized_fields['incident_details'] = narrative or "Detailed narrative not available."
+            localized_fields['incident_address'] = short_incident or "Location details not available." # Keep consistent
+            
+            # Add Police Station fields to localized_fields to ensure availability in frontend
+            # Ensure they are strings (empty if None) to satisfy Dict[str, str]
+            localized_fields['selected_police_station'] = safe_utf8(n_data.get("selected_police_station")) or ""
+            localized_fields['police_station_reason'] = safe_utf8(n_data.get("police_station_reason")) or ""
+            localized_fields['station_confidence'] = safe_utf8(n_data.get("station_confidence")) or ""
+            
+            # Extract incident_date from LLM response
+            incident_date_str = n_data.get("incident_date", "")
+            if incident_date_str:
+                # logger.info(f"Extracted incident_date from LLM: {incident_date_str}")
+                pass
+            
+            # Classification
+            classification_context = _build_classification_context(
+                final_complaint_type,
+                narrative,
+                language,
+                localized_fields,
+            )
+            classification = classify_offence(
+                 formal_summary_text,
+                 complaint_type=final_complaint_type,
+                 details=narrative,
+                 classification_text=classification_context
             )
             
-            # --- STATION NORMALIZATION ---
-            # Map LLM's selected_police_station back to our specific list names
-            llm_station = n_data.get("selected_police_station", "")
-            final_station_name = llm_station
-            
-            # Try to utilize extracted district from LLM if we are still Unknown
-            extracted_llm_dist = n_data.get("district")
-            if (not user_district or user_district == "Unknown") and extracted_llm_dist:
-                if extracted_llm_dist in DISTRICT_STATIONS:
-                    user_district = extracted_llm_dist
-
-            # Map "Nuzvid Police Station" -> "Nuzvid Town"
-            if llm_station:
-                llm_station_lower = llm_station.lower()
-                
-                # Priority 1: Search within the detected district
-                if user_district != "Unknown":
-                    stations_in_dist = DISTRICT_STATIONS.get(user_district, [])
-                    for s in stations_in_dist:
-                        s_clean = s.lower().replace(" town", "").replace(" rural", "").strip()
-                        if s_clean in llm_station_lower or llm_station_lower in s.lower():
-                            final_station_name = s
-                            break
-                
-                # Priority 2: If still not normalized, search ALL districts (Fallback)
-                if final_station_name == llm_station:
-                    for d, sList in DISTRICT_STATIONS.items():
-                        for s in sList:
-                            s_clean = s.lower().replace(" town", "").replace(" rural", "").strip()
-                            if s_clean in llm_station_lower or llm_station_lower in s.lower():
-                                final_station_name = s
-                                if user_district == "Unknown":
-                                    user_district = d # Infer district from station match!
-                                break
-                        if final_station_name != llm_station: break
-            
-            # Fallback if LLM provided generic unknown
-            if (not final_station_name or "unknown" in final_station_name.lower()) and detected_station:
-                final_station_name = detected_station
-                if user_district == "Unknown" and detected_dist != "Unknown":
-                    user_district = detected_dist
-
-            # Localized fields prep for (only one!) batch translation
-            localized_fields = {
-                # UI Display Keys (Image 2)
-                "full_name": final_name,
-                "address": final_address,
-                "phone": final_phone,
-                "complaint_type": final_complaint_type,
-                "incident_address": short_incident, # This maps to "Incident Details" line in UI
-                "selected_police_station": final_station_name,
-                "police_station_reason": n_data.get("police_station_reason", ""),
-                "station_confidence": n_data.get("station_confidence", "High"),
-                "incident_details": narrative,     # This maps to the final "Details" block
-                "classification": classification,
-                "district": user_district,
-                "date_of_complaint": today_date_str_formatted(),
-                
-                # Internal Keys (for batch translation but not necessarily UI)
-                "accused_details": n_data.get("accused_details", ""),
-                "stolen_property": n_data.get("stolen_property", ""),
-                "witnesses": n_data.get("witnesses", ""),
-                "evidence_status": n_data.get("evidence_status", "")
-            }
-            
-            # --- CONSOLIDATED BATCH TRANSLATION ---
+            # Translation of Classification Label
+            final_classification_str = classification
             if language != "en":
-                localized_fields = await batch_translate_fields(localized_fields, language)
-            
-            # The UI also likes these specific keys in localized_fields for its print/QR logic
-            # Ensure they are fresh and translated
-            final_classification_str = localized_fields.get("classification", classification)
-            
-            # Reconstruct formal_summary_text for display (Backup for PDF)
-            formal_summary_text = (
-                f"FORMAL COMPLAINT SUMMARY\n"
-                f"Full Name:\n{final_name}\n\n"
-                f"Address:\n{final_address}\n\n"
-                f"Phone Number:\n{final_phone}\n\n"
-                f"Complaint Type:\n{final_complaint_type}\n\n"
-                f"Incident Details:\n{short_incident}\n\n"
-                f"District:\n{localized_fields.get('district')}\n\n"
-                f"Selected Police Station:\n{localized_fields.get('selected_police_station')}\n\n"
-                f"Reason:\n{localized_fields.get('police_station_reason')}\n\n"
-                f"Confidence Level:\n{localized_fields.get('station_confidence')}\n\n"
-                f"Details:\n{narrative}\n\n"
-                f"Classification: {final_classification_str}\n\n"
-                f"Date of Complaint:\n{localized_fields.get('date_of_complaint')}"
-            )
+                final_classification_str = translate_text(classification, language)
             
             final_response_obj = ComplaintResponse(
                 formal_summary=safe_utf8(formal_summary_text), # Standard format
@@ -2203,10 +2283,9 @@ Transcript: {transcript}
                 initial_details=safe_utf8(initial_details_summary),
                 
                 # Populating Police Station Selection
-                selected_police_station=safe_utf8(final_station_name) or "Station Unknown",
+                selected_police_station=safe_utf8(n_data.get("selected_police_station")) or "Station Unknown",
                 police_station_reason=safe_utf8(n_data.get("police_station_reason")) or "Reason not provided",
                 station_confidence=safe_utf8(n_data.get("station_confidence")) or "Low",
-                district=safe_utf8(user_district),
                 date_of_complaint=today_date_str_formatted(),
                 # Mapped Missing Fields
                 accused_details=safe_utf8(n_data.get("accused_details")) or "Unknown",
@@ -2215,12 +2294,7 @@ Transcript: {transcript}
                 evidence_status=safe_utf8(n_data.get("evidence_status")) or "None mentioned",
             )
             
-            # --- COMPLAINT SESSION REPORT ---
-            from utils.gemini_tracker import gemini_tracker
-            session_id = f"complaint-session-{payload.phone or 'anon'}"
-            report = gemini_tracker.get_session_summary(session_id)
-            logger.info("\n" + report + "\n")
-
+            # return ChatStepResponse(status="done", final_response=final_response_obj)
             return JSONResponse(
                 content=ChatStepResponse(
                     status="done",
@@ -2228,18 +2302,25 @@ Transcript: {transcript}
                 ).model_dump(),
                 media_type="application/json; charset=utf-8"
             )
-
-        else:
-            # If not done, return the question either from LLM or intercepted
-            # reply should be the extracted LLM reply or intercepted msg
-            clean_reply = reply.encode("utf-8", "ignore").decode("utf-8")
+            # End of DONE block
+            
+            # If not done, return the question
+            reply = reply.encode("utf-8", "ignore").decode("utf-8")
             return JSONResponse(
                 content=ChatStepResponse(
                     status="question",
-                    message=safe_utf8(clean_reply)
+                    message=safe_utf8(reply)
                 ).model_dump(),
                 media_type="application/json; charset=utf-8"
             )
+
+
+        else:
+            return JSONResponse(
+                content=ChatStepResponse(status="question", message=reply).model_dump(),
+                media_type="application/json; charset=utf-8"
+            )
+            # return ChatStepResponse(status="question", message=reply)
 
     except Exception as e:
         logger.error(f"Chat step failed: {e}")

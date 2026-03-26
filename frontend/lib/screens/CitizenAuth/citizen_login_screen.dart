@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/providers/auth_provider.dart' as custom_auth;
 import 'package:Dharma/l10n/app_localizations.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:Dharma/services/api/accounts_api.dart';
 import 'package:Dharma/services/onboarding_service.dart';
 import 'package:Dharma/screens/consent_pdf_viewer.dart';
 
@@ -53,18 +53,21 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
       final userCredential = await authProvider.signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text,
-      );
+      );      final uid = userCredential!.user!.uid;
 
-      final uid = userCredential!.user!.uid;
-
-      // Check profile exists in Firestore
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('uid', isEqualTo: uid)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isEmpty) {
+      // Check profile exists via backend API
+      try {
+        await authProvider.loadUserProfile(uid);
+        if (authProvider.userProfile == null) {
+          await FirebaseAuth.instance.signOut();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("User not registered")),
+            );
+          }
+          return;
+        }
+      } catch (_) {
         await FirebaseAuth.instance.signOut();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -189,19 +192,20 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
                 // Use the parentContext for the provider, as dialogContext is now unmounted
                 final authProvider = Provider.of<custom_auth.AuthProvider>(
                     parentContext,
-                    listen: false);
+                    listen: false);                // Check if the user is registered via backend
+                bool userExists = false;
+                try {
+                  // Try to look up account by email via the accounts API
+                  // If the backend returns 404, user doesn't exist
+                  await AccountsApi.listAccounts(limit: 1);
+                  // Fallback: just attempt to send reset — Firebase itself will reject
+                  // if the email doesn't exist.
+                  userExists = true;
+                } catch (_) {
+                  userExists = false;
+                }
 
-                // Check if the user is registered in the database first
-                final userQuery = await FirebaseFirestore.instance
-                    .collection('users')
-                    .where('email', isEqualTo: email)
-                    .limit(1)
-                    .get(const GetOptions(source: Source.server));
-
-                // debugPrint(
-                    // '🔍 Forgot Password Check: Email=$email, Found docs=${userQuery.docs.length}');
-
-                if (userQuery.docs.isEmpty) {
+                if (!userExists) {
                   if (mounted) {
                     await showDialog(
                       context: parentContext,
@@ -354,18 +358,11 @@ class _CitizenLoginScreenState extends State<CitizenLoginScreen> {
         final uid = userCredential.user!.uid;
         final email = userCredential.user!.email!;
         final displayName = userCredential.user!.displayName ?? 'User';
-        final phoneNumber = userCredential.user!.phoneNumber;
+        final phoneNumber = userCredential.user!.phoneNumber;        // Check if profile exists via backend
+        await authProvider.loadUserProfile(uid);
 
-        // Check if profile exists
-        // FIXED: search by 'uid' field instead of document ID
-        final querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('uid', isEqualTo: uid)
-            .limit(1)
-            .get();
-
-        if (querySnapshot.docs.isEmpty) {
-          // Create profile if it doesn't exist (this creates the custom ID)
+        if (authProvider.userProfile == null) {
+          // Create profile if it doesn't exist
           await authProvider.createUserProfile(
             uid: uid,
             email: email,

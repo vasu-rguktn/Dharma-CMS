@@ -24,6 +24,8 @@ import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/petition_provider.dart';
+import 'package:Dharma/config/api_config.dart';
+import 'package:Dharma/services/api_service.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -70,7 +72,7 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
   final TextEditingController _controller = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  final Dio _dio = Dio();
+  Dio get _dio => ApiService.dio;
   final ImagePicker _imagePicker = ImagePicker();
   List<PlatformFile> _attachedFiles = []; // Store attached files
 
@@ -1199,32 +1201,8 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     setState(() {
       _setIsLoading(true);
       _setAllowInput(false);
-      _setErrored(false);
-    });
+      _setErrored(false);    });
 
-    // Determine base URL robustly
-    // Determine base URL robustly
-    String baseUrl;
-    if (kIsWeb) {
-      // on web you probably want to call your absolute backend URL
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else {
-      // iOS simulator / other platforms
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    }
-    // if (kIsWeb) {
-    //   baseUrl = "http://127.0.0.1:8000";
-    // } else if (Platform.isAndroid) {
-    //   // Android Emulator uses 10.0.2.2 to access host localhost
-    //   // PHYSICAL DEVICE : Use your local IP address 10.5.40.157
-    //   baseUrl = "http://10.5.40.157:8000";
-    // } else {
-    //   // iOS Simulator and others
-    //   baseUrl = "http://127.0.0.1:8000";
-    // }
     final settings = context.read<SettingsProvider>();
     final localeCode = settings.chatLanguageCode ??
         settings.locale?.languageCode ??
@@ -1308,16 +1286,13 @@ class _AiLegalChatScreenState extends State<AiLegalChatScreen>
     formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
 
     // Serialize chat history
-    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
-
-    // print('🚀 Sending to backend (FormData):');
+    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));    // print('🚀 Sending to backend (FormData):');
     // print('   History items: ${_dynamicHistory.length}');
     // print('   Files attached: ${_attachedFiles.length}');
-
     try {
       final resp = await _dio
           .post(
-            '$baseUrl/complaint/chat-step',
+            '/ai/complaint/chat-step',
             data: formData,
             // Header content-type is auto-set by FormData
           )

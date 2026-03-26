@@ -3,7 +3,6 @@ from pydantic import BaseModel
 import google.generativeai as genai
 import os
 from typing import Optional
-from utils.gemini_client import gemini_rotator
 
 from services.legal_rag import rag_enabled, retrieve_context
 
@@ -15,9 +14,15 @@ router = APIRouter(
 
 from loguru import logger
 
-_model_ready = gemini_rotator.key_count() > 0
-if not _model_ready:
-    logger.warning("[legal_suggestions] No Gemini API keys found. Legal suggestions will fail at runtime.")
+# ===================== GEMINI API KEY =====================
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_LEGAL_SUGGESTIONS") or os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY_LEGAL_SUGGESTIONS or GEMINI_API_KEY not set. Legal suggestions will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # ===================== MODEL (UNCHANGED) =====================
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
 # ===================== REQUEST SCHEMA =====================
 class LegalSuggestionRequest(BaseModel):
@@ -100,13 +105,7 @@ Incident Description:
 """
 
     try:
-        session_id = f"legal-sugg-{int(time.time())}"
-        response = gemini_rotator.generate_content(
-            "gemini-2.0-flash", 
-            prompt,
-            endpoint="/api/legal-suggestions",
-            session_id=session_id
-        )
+        response = model.generate_content(prompt)
         output = response.text.strip()
     except Exception:
         return LegalSuggestionResponse(

@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform, debugPrint;
 import 'package:http_parser/http_parser.dart';
+import 'package:Dharma/services/api_service.dart';
 
 class OcrService {
-  final Dio _dio = Dio();
+  Dio get _dio => ApiService.dio;
   String _endpoint = '';
   final List<String> _fallbackEndpoints = [];
 
@@ -13,83 +12,14 @@ class OcrService {
   Map<String, dynamic>? result;
 
   Future<void> init() async {
-    // 1. Prioritize Production URL immediately to avoid timeouts
-    const productionUrl =
-        'https://fastapi-app-335340524683.asia-south1.run.app';
-
-    if (kIsWeb) {
-      // On Web (Release), just use the production URL directly to avoid "Connection refused" logs
-      // from probing localhost.
-      if (const bool.fromEnvironment('dart.vm.product')) {
-        _endpoint = '$productionUrl/api/ocr/extract';
-        _fallbackEndpoints.clear();
-        _fallbackEndpoints.add('$productionUrl/extract-case/');
-        return;
-      }
-    }
-
-    final candidates = <String>[];
-
-    // Add production URL first
-    candidates.add(productionUrl);
-
-    if (kIsWeb) {
-      // Only check localhost in debug mode
-      if (!const bool.fromEnvironment('dart.vm.product')) {
-        final uri = Uri.base;
-        final host = uri.host.isNotEmpty ? uri.host : 'localhost';
-        candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-        // candidates.add('http://$host:8000');
-        // candidates.add('http://$host:8080');
-      }
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-      // Android Emulator
-      // candidates.add('http://10.0.2.2:8000');
-    }
-    candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    // Default localhost fallbacks
-    // candidates.add('http://localhost:8000');
-    // candidates.add('http://localhost:8080');
-
-    String? resolved;
-    for (final base in candidates) {
-      if (await _isHealthy(base)) {
-        resolved = base;
-        break;
-      }
-    }
-    resolved ??= candidates.first;
-
-    _endpoint = '$resolved/api/ocr/extract';
+    _endpoint = '/ai/ocr/extract';
     _fallbackEndpoints.clear();
     _fallbackEndpoints.addAll([
-      '$resolved/api/ocr/extract-case/',
-      '$resolved/extract-case/',
+      '/api/ocr/extract',
+      '/api/ocr/extract-case/',
+      '/extract-case/',
     ]);
   }
-
-  Future<bool> _isHealthy(String base) async {
-    final paths = [
-      '/api/ocr/health',
-      '/api/health',
-      '/ocr/health',
-      '/',
-      '/Root'
-    ];
-    for (final p in paths) {
-      try {
-        final resp = await _dio.get('$base$p',
-            options: Options(
-              receiveTimeout: const Duration(seconds: 2), // Short timeout
-              sendTimeout: const Duration(seconds: 2),
-            ));
-        if (resp.statusCode! >= 200 && resp.statusCode! < 400) return true;
-      } catch (_) {}
-    }
-    return false;
-  }
-
   Future<void> runOcr(PlatformFile file) async {
     if (isExtracting) return;
     isExtracting = true;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/settings_provider.dart';
+import 'package:Dharma/services/api/ai_gateway_api.dart';
 
 class LegalSuggestionScreen extends StatefulWidget {
   const LegalSuggestionScreen({super.key});
@@ -13,17 +13,6 @@ class LegalSuggestionScreen extends StatefulWidget {
 
 class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
   final TextEditingController _incidentController = TextEditingController();
-
-  final Dio _dio = Dio(
-    BaseOptions(
-      // Local backend (FastAPI) for development
-      // baseUrl: "http://127.0.0.1:8000",
-      baseUrl: "https://fastapi-app-335340524683.asia-south1.run.app",
-      headers: {"Content-Type": "application/json"},
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
-    ),
-  );
 
   bool _loading = false;
   String? _sectionsText;
@@ -68,17 +57,14 @@ class _LegalSuggestionScreenState extends State<LegalSuggestionScreen> {
     }
 
     try {
-      final res = await _dio.post(
-        "/api/legal-suggestions/",
-        data: {
-          "incident_description": description,
-          "language": lang,
-        },
+      final res = await AiGatewayApi.legalSuggestions(
+        incidentDescription: description,
+        language: lang,
       );
 
       setState(() {
-        _sectionsText = res.data['suggestedSections'];
-        _reasoning = res.data['reasoning'];
+        _sectionsText = res['suggestedSections'];
+        _reasoning = res['reasoning'];
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

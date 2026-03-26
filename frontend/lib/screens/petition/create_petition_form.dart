@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:Dharma/services/local_storage_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:Dharma/l10n/app_localizations.dart';
@@ -13,9 +13,10 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:dio/dio.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
+import 'package:Dharma/config/api_config.dart';
+import 'package:Dharma/services/api/ai_gateway_api.dart';
 import 'ocr_service.dart';
 
 class CreatePetitionForm extends StatefulWidget {
@@ -573,29 +574,22 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
     required Map<String, String> answers,
     required String summary,
     required String classification,
-  }) async {
-    setState(() => _isGeneratingQr = true);
+  }) async {    setState(() => _isGeneratingQr = true);
     try {
-      final payload = {
-        "answers": answers,
-        "summary": summary,
-        "classification": classification,
-      };
-      const baseUrl = 'https://fastapi-app-335340524683.asia-south1.run.app';
-      // const baseUrl = 'http://localhost:8000';
-      final dio = Dio();
-      final response = await dio.post(
-        '$baseUrl/api/generate-chatbot-summary-pdf',
-        data: payload,
+      final baseUrl = ApiConfig.baseUrl;
+      final response = await AiGatewayApi.generateSummaryPdf(
+        answers: answers,
+        summary: summary,
+        classification: classification,
       );
-      if (response.statusCode == 200) {
-        final pdfRelativeUrl = response.data['pdf_url'];
+      if (response.containsKey('pdf_url')) {
+        final pdfRelativeUrl = response['pdf_url'];
         final fullPdfUrl = '$baseUrl$pdfRelativeUrl';
         if (mounted) {
           await _showQrDialog(fullPdfUrl, answers);
         }
       } else {
-        throw Exception('Failed to generate PDF: ${response.statusCode}');
+        throw Exception('Failed to generate PDF');
       }
     } catch (e) {
       if (mounted) {

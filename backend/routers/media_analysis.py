@@ -14,10 +14,17 @@ router = APIRouter(
     tags=["Media Analysis"]
 )
 
-from utils.gemini_client import gemini_rotator
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION") or os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    print("CRITICAL: GEMINI_API_KEY_INVESTIGATION not found in env")
+    # Don't raise here to allow app to start, but endpoint will fail
+    
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # Use Flash model for speed/multimodal
-# genai is already configured in gemini_client
+model = genai.GenerativeModel('gemini-2.0-flash')
 
 class MediaAnalysisRequest(BaseModel):
     imageDataUri: str
@@ -26,8 +33,8 @@ class MediaAnalysisRequest(BaseModel):
 @router.post("")
 async def analyze_media(req: MediaAnalysisRequest):
     try:
-        if gemini_rotator.key_count() == 0:
-            raise HTTPException(status_code=500, detail="Server misconfiguration: No Gemini API Keys found")
+        if not GEMINI_API_KEY:
+            raise HTTPException(status_code=500, detail="Server misconfiguration: API Key missing")
 
         # Extract base64
         encoded = req.imageDataUri
@@ -57,16 +64,10 @@ async def analyze_media(req: MediaAnalysisRequest):
         if req.userContext:
             prompt += f"\n\nAdditional Investigator Context: {req.userContext}"
             
-        session_id = f"media-{int(time.time())}"
-        response = gemini_rotator.generate_content(
-            'gemini-2.0-flash',
-            [
-                {'mime_type': 'image/jpeg', 'data': image_bytes},
-                prompt
-            ],
-            endpoint="/api/media-analysis",
-            session_id=session_id
-        )
+        response = model.generate_content([
+            {'mime_type': 'image/jpeg', 'data': image_bytes},
+            prompt
+        ])
         
         text = response.text
         # Clean potential markdown

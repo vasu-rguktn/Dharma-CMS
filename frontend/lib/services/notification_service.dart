@@ -1,19 +1,13 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 import 'package:Dharma/router/app_router.dart';
+import 'package:Dharma/services/api_service.dart';
 
 // ============================================
 // FCM Backend API URL Configuration
 // ============================================
-// CHANGE THIS to your deployed backend URL if testing on physical device
-// Examples:
-//   - Local testing (emulator): 'http://localhost:8000'
-//   - Local testing (physical device): 'http://192.168.1.5:8000' (your PC's IP)
-//   - Production: 'https://your-backend.onrender.com' or your deployed URL
-const String FCM_API_URL = 'https://fastapi-app-335340524683.asia-south1.run.app';
-// ============================================
+// Uses the centralized ApiService so there's one source of truth.
 // 'http://10.5.47.114:8000'
 /// FCM Notification Service for Citizen Users
 /// 
@@ -166,12 +160,9 @@ class NotificationService {
     String userId,
     String token,
     String platform,
-  ) async {
-    try {
-      final dio = Dio();
-
-      final response = await dio.post(
-        '$FCM_API_URL/api/fcm/register',
+  ) async {    try {
+      final response = await ApiService.dio.post(
+        '/ai/fcm/register',
         data: {
           'userId': userId,
           'token': token,
@@ -291,14 +282,11 @@ class NotificationService {
   Future<void> unregister() async {
     if (_currentUserId == null) return;
 
-    try {
-      final token = await _firebaseMessaging.getToken();
+    try {      final token = await _firebaseMessaging.getToken();
       if (token == null) return;
 
-      final dio = Dio();
-
-      await dio.delete(
-        '$FCM_API_URL/api/fcm/unregister',
+      await ApiService.dio.delete(
+        '/ai/fcm/unregister',
         data: {
           'userId': _currentUserId,
           'token': token,

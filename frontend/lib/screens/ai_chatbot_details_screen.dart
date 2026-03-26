@@ -9,7 +9,8 @@ import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:dio/dio.dart';
+import 'package:Dharma/services/api/ai_gateway_api.dart';
+import 'package:Dharma/config/api_config.dart';
 
 import 'package:flutter/foundation.dart'; // for kIsWeb
 
@@ -83,47 +84,29 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
       if (!updatedAnswers.containsKey('date_of_complaint')) {
         updatedAnswers['date_of_complaint'] =
             DateTime.now().toString().split('.').first;
-      }
-
-      final payload = {
+      }      final payload = {
         "answers": updatedAnswers,
         "summary": widget.summary,
         "classification": widget.classification,
       };
 
-      // String baseUrl = "http://127.0.0.1:8000"; // Default for local web
-      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      //   // Use 10.0.2.2 for Emulator, but 10.5.40.156 for Physical Device
-      //   // baseUrl = "http://10.0.2.2:8000";
-      //   baseUrl = "http://10.5.40.156:8000";
-      // }
+      String baseUrl = ApiConfig.baseUrl;
 
-      // Override if we can find a better source later.
-      // But effectively, let's try to use the `dio` from `AuthProvider` if it exposes it? No.
-      String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-      // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      //   baseUrl = "http://10.0.2.2:8000";
-      // }
-      //
-      // // Default for local web
-      // String baseUrl = "http://127.0.0.1:8000";
-      // String baseUrl = "http://10.5.40.157:8000";
-
-      final dio = Dio();
-      final response = await dio.post(
-        '$baseUrl/api/generate-chatbot-summary-pdf',
-        data: payload,
+      final response = await AiGatewayApi.generateSummaryPdf(
+        answers: updatedAnswers,
+        summary: widget.summary,
+        classification: widget.classification,
       );
 
-      if (response.statusCode == 200) {
-        final pdfRelativeUrl = response.data['pdf_url'];
+      if (response.containsKey('pdf_url')) {
+        final pdfRelativeUrl = response['pdf_url'];
         final fullPdfUrl = '$baseUrl$pdfRelativeUrl';
 
         if (mounted) {
           _showQrDialog(fullPdfUrl);
         }
       } else {
-        throw Exception("Failed to generate PDF: ${response.statusCode}");
+        throw Exception("Failed to generate PDF");
       }
     } catch (e) {
       // print("Error generating QR: $e");
@@ -181,30 +164,28 @@ class _AiChatbotDetailsScreenState extends State<AiChatbotDetailsScreen> {
         "answers": updatedAnswers,
         "summary": widget.summary,
         "classification": widget.classification,
-      };
-
-      // String baseUrl = "http://localhost:8000";
+      };      // String baseUrl = "http://localhost:8000";
       // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       //   baseUrl = "http://10.0.2.2:8000";
       // }
 
-      String baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
+      String baseUrl = ApiConfig.baseUrl;
 
-      final dio = Dio();
-      final response = await dio.post(
-        '$baseUrl/api/generate-chatbot-summary-pdf',
-        data: payload,
+      final response = await AiGatewayApi.generateSummaryPdf(
+        answers: updatedAnswers,
+        summary: widget.summary,
+        classification: widget.classification,
       );
 
-      if (response.statusCode == 200) {
-        final pdfRelativeUrl = response.data['pdf_url'];
+      if (response.containsKey('pdf_url')) {
+        final pdfRelativeUrl = response['pdf_url'];
         final fullPdfUrl = '$baseUrl$pdfRelativeUrl';
 
         if (mounted) {
           await _printPdf(fullPdfUrl);
         }
       } else {
-        throw Exception("Failed to generate PDF: ${response.statusCode}");
+        throw Exception("Failed to generate PDF");
       }
     } catch (e) {
       // print("Error generating for print: $e");

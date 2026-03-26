@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:Dharma/models/user_profile.dart';
 import 'package:Dharma/utils/validators.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:Dharma/services/notification_service.dart';
+import 'package:Dharma/services/api/accounts_api.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String _sessionTimestampKey = 'auth_session_timestamp';
   static const String _lastActivityKey = 'auth_last_activity';
   static const Duration _sessionDuration = Duration(hours: 3);
@@ -221,56 +221,55 @@ class AuthProvider with ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+  /// Parse a timestamp from API response (ISO string or Firestore Timestamp).
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value == null) return Timestamp.now();
+    if (value is Timestamp) return value;
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return Timestamp.now();
+  }
 
   Future<void> _loadUserProfile(String uid) async {
     _isProfileLoading = true;
     notifyListeners();
 
     try {
-      // debugPrint('AuthProvider: checking police collection for uid=$uid');
+      // Call backend /accounts/me which resolves role from token
+      final data = await AccountsApi.getMyAccount();
 
-      // 1️⃣ CHECK POLICE COLLECTION FIRST
-      final policeQuery = await _firestore
-          .collection('police')
-          .where('uid', isEqualTo: uid)
-          .limit(1)
-          .get();
+      _userProfile = UserProfile(
+        uid: data['uid'] ?? uid,
+        email: data['email'] ?? '',
+        displayName: data['displayName'],
+        phoneNumber: data['phoneNumber'],
+        stationName: data['stationName'],
+        district: data['district'],
+        rank: data['rank'],
+        badgeNumber: data['badgeNumber'],
+        employeeId: data['employeeId'],
+        houseNo: data['houseNo'],
+        address: data['address'],
+        state: data['state'],
+        country: data['country'],
+        pincode: data['pincode'],
+        username: data['username'],
+        dob: data['dob'],
+        gender: data['gender'],
+        aadharNumber: data['aadharNumber'],
+        role: data['role'] ?? 'citizen',
+        createdAt: _parseTimestamp(data['createdAt']),
+        updatedAt: _parseTimestamp(data['updatedAt']),
+      );
 
-      if (policeQuery.docs.isNotEmpty) {
-        final doc = policeQuery.docs.first;
-        _userProfile = UserProfile.fromFirestore(doc);
-
-        // Force role
-        _userProfile = _userProfile!.copyWith(role: 'police');
-
-        // debugPrint('AuthProvider: police profile loaded for uid=$uid');
-        _isProfileLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      // debugPrint('AuthProvider: not police, checking users collection');
-
-      // 2️⃣ CHECK USERS (CITIZEN)
-      final userQuery = await _firestore
-          .collection('users')
-          .where('uid', isEqualTo: uid)
-          .limit(1)
-          .get();
-
-      if (userQuery.docs.isNotEmpty) {
-        _userProfile = UserProfile.fromFirestore(userQuery.docs.first);
-
-        // debugPrint('AuthProvider: citizen profile loaded for uid=$uid');
-
-        // Register FCM token for citizens ONLY (not for police)
+      // Register FCM token for citizens ONLY (not for police)
+      if (_userProfile!.role != 'police') {
         _registerNotificationToken(uid);
-      } else {
-        // debugPrint('AuthProvider: no profile found for uid=$uid');
-        _userProfile = null;
       }
-    } catch (e, st) {
-      // debugPrint('AuthProvider: error loading profile -> $e\n$st');
+    } catch (e) {
+      // debugPrint('AuthProvider: error loading profile -> $e');
       _userProfile = null;
     }
 
@@ -524,10 +523,8 @@ class AuthProvider with ChangeNotifier {
       if (!RegExp(r'^\d{12}$').hasMatch(aadharNumber)) {
         throw Exception('Invalid Aadhar number (must be 12 digits)');
       }
-    }
-
-    final now = Timestamp.now();
-    final data = {
+    }    final now = DateTime.now().toIso8601String();
+    final data = <String, dynamic>{
       'uid': uid,
       'email': email,
       'displayName': displayName,
@@ -549,7 +546,7 @@ class AuthProvider with ChangeNotifier {
     // Remove null values
     data.removeWhere((key, value) => value == null);
 
-    await _firestore.collection('users').doc(uid).set(data);
+    await AccountsApi.createCitizenProfile(data);
     await _loadUserProfile(uid);
   }
 
@@ -597,9 +594,7 @@ class AuthProvider with ChangeNotifier {
         if (!RegExp(r'^\d{12}$').hasMatch(aadharNumber)) {
           throw Exception('Invalid Aadhar number (must be 12 digits)');
         }
-      }
-
-      final now = Timestamp.now();
+      }      final now = DateTime.now().toIso8601String();
       final Map<String, dynamic> data = {
         'updatedAt': now,
         'uid': uid, // Ensure UID is present in the document
@@ -617,14 +612,8 @@ class AuthProvider with ChangeNotifier {
       if (stationName != null) data['stationName'] = stationName;
       if (aadharNumber != null) data['aadharNumber'] = aadharNumber;
 
-      // Determine collection based on current role
-      final collection = (_userProfile?.role == 'police') ? 'police' : 'users';
-
-      // Use set with merge to create the document if it doesn't exist (fixing "not-found" error)
-      await _firestore
-          .collection(collection)
-          .doc(uid)
-          .set(data, SetOptions(merge: true));
+      // Update via backend API
+      await AccountsApi.updateMyAccount(data);
 
       // Reload profile to get fresh data
       await _loadUserProfile(uid);

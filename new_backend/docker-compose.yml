@@ -1,0 +1,49 @@
+# Dharma CMS — Local Development Stack
+# Usage:  docker-compose up --build
+# API:    http://localhost:8000
+# Swagger: http://localhost:8000/docs
+# DB:     localhost:5432  (user: dharma, password: dharma, db: dharma_cms)
+
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dharma
+      POSTGRES_PASSWORD: dharma
+      POSTGRES_DB: dharma_cms
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dharma -d dharma_cms"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  # ── FastAPI Backend ─────────────────────────────────────────────────────
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to use the Docker PostgreSQL container
+      DATABASE_URL: postgresql+asyncpg://dharma:dharma@db:5432/dharma_cms
+      # Firebase credential path INSIDE the container
+      FIREBASE_CREDENTIALS: /app/firebase-credentials.json
+    volumes:
+      # Mount your Firebase service account JSON (update left-hand path)
+      # Download from Firebase Console > Project Settings > Service Accounts
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

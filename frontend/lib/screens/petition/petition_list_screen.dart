@@ -5,7 +5,7 @@ import 'package:Dharma/providers/complaint_provider.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/providers/auth_provider.dart';
 import 'package:Dharma/utils/petition_filter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 
 // Import existing components
 import 'package:Dharma/models/petition.dart';

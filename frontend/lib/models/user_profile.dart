@@ -50,6 +50,10 @@ class UserProfile {
 
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    return UserProfile.fromMap(data);
+  }
+
+  factory UserProfile.fromMap(Map<String, dynamic> data) {
     return UserProfile(
       uid: data['uid'] ?? '',
       email: data['email'] ?? '',
@@ -70,9 +74,19 @@ class UserProfile {
       gender: data['gender'],
       aadharNumber: data['aadharNumber'],
       role: data['role'] ?? 'citizen',
-      createdAt: data['createdAt'] ?? Timestamp.now(),
-      updatedAt: data['updatedAt'] ?? Timestamp.now(),
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
     );
+  }
+
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value == null) return Timestamp.now();
+    if (value is Timestamp) return value;
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return Timestamp.now();
   }
 
   UserProfile copyWith({

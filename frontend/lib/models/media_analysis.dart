@@ -65,7 +65,10 @@ class MediaAnalysisRecord {
 
   factory MediaAnalysisRecord.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+    return MediaAnalysisRecord.fromMap(data, doc.id);
+  }
+
+  factory MediaAnalysisRecord.fromMap(Map<String, dynamic> data, [String? docId]) {
     List<IdentifiedElement> elements = [];
     if (data['identifiedElements'] != null) {
       elements = (data['identifiedElements'] as List)
@@ -74,7 +77,7 @@ class MediaAnalysisRecord {
     }
 
     return MediaAnalysisRecord(
-      id: doc.id,
+      id: docId ?? data['id'],
       userId: data['userId'] ?? '',
       originalFileName: data['originalFileName'] ?? '',
       originalFileContentType: data['originalFileContentType'],
@@ -84,10 +87,20 @@ class MediaAnalysisRecord {
       identifiedElements: elements,
       sceneNarrative: data['sceneNarrative'] ?? '',
       caseFileSummary: data['caseFileSummary'] ?? '',
-      createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
-      updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
       caseId: data['caseId'],
     );
+  }
+
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value == null) return Timestamp.now();
+    if (value is Timestamp) return value;
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return Timestamp.now();
   }
 
   Map<String, dynamic> toMap() {

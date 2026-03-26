@@ -12,12 +12,14 @@ from io import BytesIO
 from dotenv import load_dotenv
 import google.generativeai as genai
 from loguru import logger
-from utils.gemini_client import gemini_rotator
 
-_model_ready = gemini_rotator.key_count() > 0
-
-if not _model_ready:
-    logger.warning("No Gemini API keys found. OCR will fail.")
+# === Load env & configure Gemini ===
+load_dotenv()
+API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    logger.warning("GEMINI_API_KEY not set. OCR will fail.")
+else:
+    genai.configure(api_key=API_KEY)
 
 router = APIRouter(prefix="/api/ocr", tags=["OCR"])
 
@@ -47,31 +49,32 @@ def _guess_mime_type(filename: str) -> str:
 
 
 async def _extract_text_gemini(image_bytes: bytes, mime_type: str) -> str:
-    if not _model_ready:
-        raise ValueError("Gemini API not configured")
+    if not API_KEY:
+        raise ValueError("GEMINI_API_KEY not configured")
 
     encoded = base64.b64encode(image_bytes).decode("utf-8")
-    model_name = "gemini-1.5-flash"
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
     prompt_json = (
         "Extract all readable text from the provided image. "
         "Return ONLY valid JSON exactly in the form: {\"text\": \"<EXTRACTED_TEXT>\"}."
     )
 
+    # Attempt 1: Ask for strict JSON
     try:
-        session_id = f"ocr-{int(time.time())}"
+        start_ts = time.time()
+        logger.info(f"[OCR GEMINI] JSON attempt (mime={mime_type}, bytes={len(image_bytes)})")
         response = await asyncio.wait_for(
-            gemini_rotator.generate_content_async(
-                model_name,
+            asyncio.to_thread(
+                model.generate_content,
                 [
                     {"inline_data": {"mime_type": mime_type, "data": encoded}},
                     prompt_json,
                 ],
-                endpoint="/api/ocr/json",
-                session_id=session_id
             ),
             timeout=30.0,
         )
+        logger.info(f"[OCR GEMINI] JSON attempt completed in {time.time() - start_ts:.2f}s")
     except Exception as e:
         logger.error("[OCR ERROR] Gemini call failed on JSON attempt")
         logger.error(f"{type(e).__name__}: {e}")
@@ -89,17 +92,16 @@ async def _extract_text_gemini(image_bytes: bytes, mime_type: str) -> str:
         except Exception:
             pass
 
+    # Fallback 1: Plain text
     try:
         logger.info("[OCR GEMINI] Plain-text fallback attempt")
         retry_resp = await asyncio.wait_for(
-            gemini_rotator.generate_content_async(
-                model_name,
+            asyncio.to_thread(
+                model.generate_content,
                 [
                     {"inline_data": {"mime_type": mime_type, "data": encoded}},
                     "Extract all readable text only. Respond with plain text and nothing else.",
                 ],
-                endpoint="/api/ocr/fallback",
-                session_id=session_id
             ),
             timeout=30.0,
         )
@@ -132,11 +134,11 @@ async def _extract_text_gemini(image_bytes: bytes, mime_type: str) -> str:
 async def _extract_document_text(file_bytes: bytes, content_type: str, filename: str) -> str:
     """Extract text from documents (PDF, DOC, DOCX) or images using Gemini LLM"""
     
-    if not _model_ready:
-        raise HTTPException(status_code=500, detail="Gemini API not configured")
+    if not API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
     
     encoded = base64.b64encode(file_bytes).decode("utf-8")
-    model_name = "gemini-1.5-flash"
+    model = genai.GenerativeModel("gemini-2.5-flash")
     
     # Handle PDF files - use Gemini LLM to extract text
     if content_type == "application/pdf":
@@ -159,8 +161,8 @@ async def _extract_document_text(file_bytes: bytes, content_type: str, filename:
     try:
         logger.info(f"[DOCUMENT EXTRACTION] Using Gemini LLM for {content_type}: {filename} ({len(file_bytes)} bytes)")
         response = await asyncio.wait_for(
-            gemini_rotator.generate_content_async(
-                model_name,
+            asyncio.to_thread(
+                model.generate_content,
                 [
                     {
                         "inline_data": {
@@ -192,7 +194,7 @@ async def health_check():
     return {
         "status": "ok",
         "provider": "gemini-1.5-flash",
-        "api_key_configured": _model_ready
+        "api_key_configured": bool(API_KEY)
     }
 
 

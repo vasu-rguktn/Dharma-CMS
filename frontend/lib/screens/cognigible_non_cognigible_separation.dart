@@ -132,7 +132,6 @@ class _CognigibleNonCognigibleSeparationScreenState
       'incident_date': widget.complaintData?['incident_date'] ??
           widget.complaintData?['date_of_complaint'] ??
           '',
-      'district': widget.complaintData?['district'] ?? '',
       'selected_police_station':
           widget.complaintData?['selected_police_station'] ?? '',
       'police_station_reason':

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:Dharma/models/petition.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:Dharma/providers/complaint_provider.dart';

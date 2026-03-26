@@ -17,8 +17,14 @@ router = APIRouter(
 # Global db variable removed to avoid import-time initialization error
 # db = firestore.client()
 
-from utils.gemini_client import gemini_rotator
-# genai is configured in gemini_client
+# Initialize Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('models/gemini-2.0-flash')
+else:
+    print("WARNING: GEMINI_API_KEY_INVESTIGATION not found. Transliteration will fail.")
+    model = None
 
 # Pydantic Models matching CaseDoc structure
 # We use a loose structure to avoid strict validation errors on minor mismatches, 
@@ -34,8 +40,8 @@ async def transliterate_fields(data: dict) -> dict:
     - DETAILS/STORIES -> Semantic Translation (Meaning)
     - CONTEXT AWARE -> Officer Ranks
     """
-    if gemini_rotator.key_count() == 0:
-        print("No Gemini API keys found.")
+    if not model:
+        print("Gemini model not initialized.")
         return data
 
     # Group 1: Phonetic Transliteration (Names, Places, Proper Nouns)
@@ -118,13 +124,7 @@ async def transliterate_fields(data: dict) -> dict:
     """
 
     try:
-        session_id = f"trans-fir-{data.get('title') or 'anon'}"
-        response = gemini_rotator.generate_content(
-            "gemini-2.0-flash", 
-            prompt,
-            endpoint="/api/cases/transliterate",
-            session_id=session_id
-        )
+        response = model.generate_content(prompt)
         # Use Regex to find the first JSON object (greedy match with DOTALL)
         match = re.search(r"\{.*\}", response.text, re.DOTALL)
         if match:
@@ -171,12 +171,7 @@ async def transliterate_fields(data: dict) -> dict:
                     Example Output: {{"name": "...", "deformities": "..."}}
                     """
                     try:
-                        acc_resp = gemini_rotator.generate_content(
-                            "gemini-2.0-flash", 
-                            acc_prompt,
-                            endpoint="/api/cases/transliterate-accused",
-                            session_id=session_id
-                        )
+                        acc_resp = model.generate_content(acc_prompt)
                         acc_match = re.search(r"\{.*\}", acc_resp.text, re.DOTALL)
                         if acc_match:
                             acc_clean_text = acc_match.group(0)

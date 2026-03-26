@@ -15,11 +15,17 @@ router = APIRouter(
 
 # ===================== API KEY =====================
 from loguru import logger
-from utils.gemini_client import gemini_rotator
 
-_model_ready = gemini_rotator.key_count() > 0
-if not _model_ready:
-    logger.warning("[ai_investigation] No Gemini API keys found. AI Investigation will fail at runtime.")
+# ===================== API KEY =====================
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY_INVESTIGATION not set. AI Investigation will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    
+    # ===================== MODEL =====================
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
 # ===================== REQUEST MODEL =====================
 class FIRRequest(BaseModel):
@@ -110,9 +116,9 @@ OUTPUT FORMAT (JSON ONLY):
 
 # ===================== AI CORE FUNCTION =====================
 def generate_investigation_report(fir_details: str) -> Dict[str, Any]:
-    if not _model_ready:
-        raise RuntimeError("AI model not initialized. No Gemini API keys configured.")
-
+    if model is None:
+        raise RuntimeError("AI model not initialized. Check GEMINI_API_KEY_INVESTIGATION.")
+    
     clean_details = sanitize_input(fir_details)
 
     prompt = f"""
@@ -122,13 +128,7 @@ FIR DETAILS:
 {clean_details}
 """
 
-    session_id = f"investigation-{int(time.time())}"
-    response = gemini_rotator.generate_content(
-        "gemini-2.0-flash", 
-        prompt,
-        endpoint="/api/ai-investigation",
-        session_id=session_id
-    )
+    response = model.generate_content(prompt)
 
     if not response or not response.text:
         raise RuntimeError("AI returned empty response")

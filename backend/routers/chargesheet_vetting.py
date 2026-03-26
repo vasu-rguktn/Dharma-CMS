@@ -4,16 +4,21 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 from typing import Optional
-from utils.gemini_client import gemini_rotator
 
 # ───────────────── LOAD ENV ─────────────────
 load_dotenv()
 
+# Use the vetting-specific key, fallback to investigation key, then main key
+GEMINI_API_KEY = os.getenv("GEMINI_KEY_VETTING") or os.getenv("GEMINI_API_KEY_INVESTIGATION") or os.getenv("GEMINI_API_KEY")
+
 from loguru import logger
 
-_model_ready = gemini_rotator.key_count() > 0
-if not _model_ready:
-    logger.warning("[chargesheet_vetting] No Gemini API keys found. Chargesheet vetting will fail at runtime.")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_KEY_VETTING, GEMINI_API_KEY_INVESTIGATION, or GEMINI_API_KEY not found in env. Chargesheet vetting will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ───────────────── ROUTER ─────────────────
 router = APIRouter(
@@ -91,14 +96,9 @@ Please provide your vetting suggestions now:
 
         # Call Gemini API
         try:
-            if not _model_ready:
+            if model is None:
                 raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
-            response = await gemini_rotator.generate_content_async(
-                "models/gemini-1.5-flash", 
-                prompt,
-                endpoint="/api/chargesheet/vet",
-                session_id=f"vet-{int(time.time())}"
-            )
+            response = model.generate_content(prompt)
         except Exception as gemini_error:
             error_msg = str(gemini_error)
             print(f"Gemini API Error: {error_msg}")

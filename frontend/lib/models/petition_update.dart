@@ -24,9 +24,12 @@ class PetitionUpdate {
 
   factory PetitionUpdate.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+    return PetitionUpdate.fromMap(data, doc.id);
+  }
+
+  factory PetitionUpdate.fromMap(Map<String, dynamic> data, [String? docId]) {
     return PetitionUpdate(
-      id: doc.id,
+      id: docId ?? data['id'],
       petitionId: data['petitionId'] ?? '',
       updateText: data['updateText'] ?? '',
       photoUrls: (data['photoUrls'] as List<dynamic>?)
@@ -37,8 +40,18 @@ class PetitionUpdate {
           .toList() ?? [],
       addedBy: data['addedBy'] ?? '',
       addedByUserId: data['addedByUserId'] ?? '',
-      createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
+      createdAt: _parseTimestamp(data['createdAt']),
     );
+  }
+
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value == null) return Timestamp.now();
+    if (value is Timestamp) return value;
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return Timestamp.now();
   }
 
   Map<String, dynamic> toMap() {

@@ -186,12 +186,16 @@ class CaseDoc {
 
   factory CaseDoc.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    return CaseDoc.fromMap(data, doc.id);
+  }
+
+  factory CaseDoc.fromMap(Map<String, dynamic> data, [String? docId]) {
     return CaseDoc(
-      id: doc.id,
+      id: docId ?? data['id'],
       originalComplaintId: data['originalComplaintId'],
       status: CaseStatusExtension.fromString(data['status'] ?? 'New'),
-      dateFiled: data['dateFiled'] as Timestamp,
-      lastUpdated: data['lastUpdated'] as Timestamp,
+      dateFiled: _parseTimestamp(data['dateFiled']),
+      lastUpdated: _parseTimestamp(data['lastUpdated']),
       title: data['title'] ?? '',
       userId: data['userId'],
       caseId: data['caseId'],
@@ -200,7 +204,9 @@ class CaseDoc {
       year: data['year'],
       firNumber: data['firNumber'] ?? '',
       date: data['date'],
-      firFiledTimestamp: data['firFiledTimestamp'] as Timestamp?,
+      firFiledTimestamp: data['firFiledTimestamp'] != null
+          ? _parseTimestamp(data['firFiledTimestamp'])
+          : null,
       complainantName: data['complainantName'],
       complainantFatherHusbandName: data['complainantFatherHusbandName'],
       complainantGender: data['complainantGender'],
@@ -264,9 +270,23 @@ class CaseDoc {
       complainantSignatureNote: data['complainantSignatureNote'],
       accusedPersons: data['accusedPersons'] as List<dynamic>?,
       investigationReportPdfUrl: data['investigationReportPdfUrl'],
-      investigationReportGeneratedAt:
-          data['investigationReportGeneratedAt'] as Timestamp?,
+      investigationReportGeneratedAt: data['investigationReportGeneratedAt'] != null
+          ? _parseTimestamp(data['investigationReportGeneratedAt'])
+          : null,
     );
+  }
+
+  /// Parses a value that may be a Firestore [Timestamp], an ISO-8601 string,
+  /// or epoch milliseconds (int) into a Firestore [Timestamp].
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value is Timestamp) return value;
+    if (value is String) {
+      return Timestamp.fromDate(DateTime.parse(value));
+    }
+    if (value is int) {
+      return Timestamp.fromMillisecondsSinceEpoch(value);
+    }
+    return Timestamp.now();
   }
 
   Map<String, dynamic> toMap() {

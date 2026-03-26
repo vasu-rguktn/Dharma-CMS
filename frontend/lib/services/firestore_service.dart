@@ -1,29 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:Dharma/services/api/petitions_api.dart';
 
 class FirestoreService {
-  static final _db = FirebaseFirestore.instance;
-
-  // Configure Firestore settings for better connection handling
+  /// Configure Firestore settings — kept for backward compatibility.
+  /// The Flutter Firestore SDK is still used for offline cache / App Check,
+  /// but CRUD now goes through the backend.
   static void configureFirestore() {
-    _db.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-    );
+    // No-op: Firestore settings are only needed if the SDK is still used
+    // for auth state / offline cache. Data CRUD is via backend.
   }
 
   static Future<void> createPetition(String title, String description) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      throw Exception('Not authenticated'); // or show UI error
+      throw Exception('Not authenticated');
     }
-    // print('creating petition as uid=${user.uid}'); // debug
 
-    await _db.collection('petitions').add({
+    await PetitionsApi.create(user.uid, {
       'title': title,
       'description': description,
       'ownerId': user.uid,
-      'createdAt': FieldValue.serverTimestamp(),
     });
   }
 }

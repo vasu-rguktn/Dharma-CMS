@@ -8,17 +8,19 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from pypdf import PdfReader
 from services.legal_rag import rag_enabled, retrieve_context
-from utils.gemini_client import gemini_rotator
 
 # ---------------- LOAD ENV ----------------
 load_dotenv()
 from loguru import logger
 
-# Key management is handled by gemini_rotator — no manual genai.configure() needed.
-_model_ready = gemini_rotator.key_count() > 0
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_INVESTIGATION")
 
-if not _model_ready:
-    logger.warning("[legal_chat] No Gemini API keys available. Legal Chat will fail at runtime.")
+if not GEMINI_API_KEY:
+    logger.warning("GEMINI_API_KEY_INVESTIGATION not set. Legal Chat will fail at runtime.")
+    model = None
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 # ---------------- ROUTER ----------------
 router = APIRouter(
@@ -26,18 +28,7 @@ router = APIRouter(
     tags=["Legal Chat"]
 )
 
-# ---------------- LANGUAGE MAP ----------------
-LANGUAGE_NAMES = {
-    "en": "English", "te": "Telugu", "hi": "Hindi", "ta": "Tamil",
-    "kn": "Kannada", "ml": "Malayalam", "mr": "Marathi", "gu": "Gujarati",
-    "bn": "Bengali", "pa": "Punjabi", "ur": "Urdu", "or": "Odia",
-    "as": "Assamese",
-}
-
-def get_language_name(code: str) -> str:
-    return LANGUAGE_NAMES.get(code.split('-')[0].lower(), "English")
-
-# ---------------- SYSTEM PROMPT ----------------
+# ---------------- PROMPT ----------------
 SYSTEM_PROMPT = """
 You are an expert Indian Legal Assistant specializing in the new criminal laws (BNS, BNSS, BSA).
 
@@ -52,7 +43,8 @@ Rules:
 8. Disclaimer: "This is for informational purposes only, not professional legal advice."
 """
 
-# ---------------- RESPONSE MODEL ----------------
+# ---------------- MODELS (Response Only) ----------------
+# Request model is not used because we use Form/File inputs separately
 class LegalChatResponse(BaseModel):
     reply: str
     title: str
@@ -82,7 +74,108 @@ def encode_image(file_bytes: bytes) -> str:
     return base64.b64encode(file_bytes).decode('utf-8')
 
 
-# ---------------- ENDPOINT ----------------
+def generate_chat_title(query: str) -> str:
+    """Generate a SHORT (max 6 words) chat title"""
+    try:
+        title_model = genai.GenerativeModel("models/gemini-2.5-flash")
+        prompt = f"Generate a short title (max 6 words) for this legal query. No quotes.\n\nQuery: {query[:200]}"
+        response = title_model.generate_content(prompt)
+        title = response.text.strip() if response.text else "Legal Query"
+        # Limit to 6 words
+        words = title.split()[:6]
+        return " ".join(words) or "Legal Query"
+    except Exception as e:
+        print(f"Title generation error: {e}")
+        return "Legal Query"
+
+
+# ---------------- ENDPOINT ---------------- 
+# Using "/" with redirect_slashes=False in main.py prevents redirects
+@router.post("/", response_model=LegalChatResponse)
+async def legal_chat(
+    sessionId: str = Form(...),
+    message: str = Form(...),
+    files: list[UploadFile] = File(None)
+):
+    """
+    Handles Legal Chat with optional Multiple File Uploads (PDF/Image).
+    """
+    clean_query = sanitize_input(message)
+    file_context = ""
+    # Gemini supports multiple images in content list
+    gemini_content = []
+    
+    # 1️⃣ Process Query
+    context_block = ""
+    if rag_enabled():
+        try:
+             context_text, _ = retrieve_context(clean_query, top_k=3)
+             if context_text:
+                 context_block = f"\n[RAG CONTEXT FROM BNS/BNSS]:\n{context_text}\n"
+        except Exception as e:
+            print(f"RAG Error: {e}")
+
+    final_text_prompt = f"{context_block}User Query: {clean_query}"
+    
+    # 2️⃣ Process Files
+    files_info = ""
+    if files:
+        print(f"DEBUG: Received {len(files)} files.")
+        files_info = f"[SYSTEM: User attached {len(files)} file(s). Analyze them.]"
+        
+        for file in files:
+            print(f"DEBUG: Processing file {file.filename} ({file.content_type})")
+            file_bytes = await file.read()
+            
+            if file.content_type == "application/pdf":
+                extracted_text = extract_pdf_text(file_bytes)
+                print(f"DEBUG: Extracted PDF text length: {len(extracted_text)}")
+                
+                if len(extracted_text.strip()) < 50:
+                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n[WARNING: This PDF appears to be empty or scanned. Cannot extract text. treat it as unreadable.]"
+                else:
+                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n{extracted_text[:10000]}..." 
+            
+            elif file.content_type.startswith("image/"):
+                b64 = encode_image(file_bytes)
+                print(f"DEBUG: Encoded image. Length: {len(b64)}")
+                # Determine MIME type
+                mime_type = file.content_type or "image/jpeg"
+                # Add image using Gemini's inline_data format
+                gemini_content.append({
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": b64
+                    }
+                })
+        
+        if file_context:
+            final_text_prompt += file_context
+
+    # 3️⃣ Construct Gemini Content
+    # Gemini uses a simpler format: system prompt + user content (text + images)
+# ---------------- HELPERS ----------------
+LANGUAGE_NAMES = {
+    "en": "English",
+    "te": "Telugu",
+    "hi": "Hindi",
+    "ta": "Tamil",
+    "kn": "Kannada",
+    "ml": "Malayalam",
+    "mr": "Marathi",
+    "gu": "Gujarati",
+    "bn": "Bengali",
+    "pa": "Punjabi",
+    "ur": "Urdu",
+    "or": "Odia",
+    "as": "Assamese",
+}
+
+def get_language_name(code: str) -> str:
+    return LANGUAGE_NAMES.get(code.split('-')[0].lower(), "English")
+
+# ---------------- ENDPOINT ---------------- 
+# Using "/" with redirect_slashes=False in main.py prevents redirects
 @router.post("/", response_model=LegalChatResponse)
 async def legal_chat(
     sessionId: str = Form(...),
@@ -92,99 +185,92 @@ async def legal_chat(
 ):
     """
     Handles Legal Chat with optional Multiple File Uploads (PDF/Image).
-    Title generation is merged into the main Gemini call (saves one round-trip).
     """
-    if not _model_ready:
-        raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
-
     clean_query = sanitize_input(message)
     target_lang = get_language_name(language)
-
+    
     file_context = ""
+    # Gemini supports multiple images in content list
     gemini_content = []
-
-    # 1️⃣ RAG context
+    
+    # 1️⃣ Process Query
     context_block = ""
     if rag_enabled():
         try:
-            context_text, _ = retrieve_context(clean_query, top_k=3)
-            if context_text:
-                context_block = f"\n[RAG CONTEXT FROM BNS/BNSS]:\n{context_text}\n"
+             context_text, _ = retrieve_context(clean_query, top_k=3)
+             if context_text:
+                 context_block = f"\n[RAG CONTEXT FROM BNS/BNSS]:\n{context_text}\n"
         except Exception as e:
             print(f"RAG Error: {e}")
 
     final_text_prompt = f"{context_block}User Query: {clean_query}\nAnswer in {target_lang}."
-
-    # 2️⃣ Process files
+    
+    # 2️⃣ Process Files
     files_info = ""
     if files:
         print(f"DEBUG: Received {len(files)} files.")
         files_info = f"[SYSTEM: User attached {len(files)} file(s). Analyze them.]"
-
+        
         for file in files:
             print(f"DEBUG: Processing file {file.filename} ({file.content_type})")
             file_bytes = await file.read()
-
+            
             if file.content_type == "application/pdf":
                 extracted_text = extract_pdf_text(file_bytes)
                 print(f"DEBUG: Extracted PDF text length: {len(extracted_text)}")
+                
                 if len(extracted_text.strip()) < 50:
-                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n[WARNING: This PDF appears to be empty or scanned. Cannot extract text.]"
+                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n[WARNING: This PDF appears to be empty or scanned. Cannot extract text. treat it as unreadable.]"
                 else:
-                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n{extracted_text[:10000]}..."
-
+                    file_context += f"\n\n[ATTACHED PDF ({file.filename})]:\n{extracted_text[:10000]}..." 
+            
             elif file.content_type.startswith("image/"):
                 b64 = encode_image(file_bytes)
                 print(f"DEBUG: Encoded image. Length: {len(b64)}")
+                # Determine MIME type
                 mime_type = file.content_type or "image/jpeg"
+                # Add image using Gemini's inline_data format
                 gemini_content.append({
                     "inline_data": {
                         "mime_type": mime_type,
                         "data": b64
                     }
                 })
-
+        
         if file_context:
             final_text_prompt += file_context
 
-    # 3️⃣ Construct prompt — title generation merged into main call to save one round-trip
-    full_prompt = (
-        SYSTEM_PROMPT
-        + f"\n[INSTRUCTION]: You MUST answer in {target_lang}.\n"
-        + "OUTPUT FORMAT (MANDATORY — strictly follow this):\n"
-        + "TITLE: [A short title for this query, max 6 words, in English]\n"
-        + "THOUGHTS: [Your internal reasoning]\n"
-        + "RESPONSE: [Your final message to the user]\n"
-        + f"\n{files_info}\n\n{final_text_prompt}".strip()
-    )
-
+    # 3️⃣ Construct Gemini Content
+    # Gemini uses a simpler format: system prompt + user content (text + images)
+    full_prompt = SYSTEM_PROMPT + f"\n[INSTRUCTION]: You MUST answer in {target_lang}.\n" + \
+                  "OUTPUT FORMAT (MANDATORY):\n" + \
+                  "THOUGHTS: [Your internal reasoning]\n" + \
+                  "RESPONSE: [Your final message to the user]\n" + \
+                  f"\n{files_info}\n\n{final_text_prompt}".strip()
+    
     if gemini_content:
         gemini_content.insert(0, full_prompt)
         content_to_send = gemini_content
     else:
         content_to_send = full_prompt
-
+    
     print(f"DEBUG: Sending to Gemini. Content type: {type(content_to_send).__name__}")
 
-    import time
-    start_time = time.time()
     try:
-        # 4️⃣ Single Gemini call — answer + title in one response
-        session_id = f"legal-chat-{int(time.time())}"
-        response = await gemini_rotator.generate_content_async(
-            "models/gemini-1.5-flash",
-            content_to_send,
-            endpoint="/api/legal-chat",
-            session_id=session_id
-        )
+        # 4️⃣ Generate Answer with Gemini
+        if model is None:
+            raise HTTPException(status_code=500, detail="Gemini model not initialized. Check API keys.")
 
-        raw = response.text.strip() if response.text else ""
+        answer_response = model.generate_content(content_to_send)
 
-        # Parse RESPONSE: block
-        reply = raw
-        if "RESPONSE:" in raw:
-            reply = raw.split("RESPONSE:", 1)[1].strip()
+        reply = answer_response.text.strip() if answer_response.text else "I apologize, but I couldn't generate a response. Please try again."
+
+        # PARSE STRUCTURED OUTPUT
+        if "RESPONSE:" in reply:
+            parts = reply.split("RESPONSE:", 1)
+            reply = parts[1].strip()
         else:
+            # Fallback regex just in case
             reply = re.sub(r"^\*?Word count:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
             reply = re.sub(r"^Let's check.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
             reply = re.sub(r"^Thinking Process:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
@@ -193,14 +279,8 @@ async def legal_chat(
             reply = re.sub(r"^Analysis:.*$", "", reply, flags=re.MULTILINE | re.IGNORECASE)
             reply = reply.strip()
 
-        # Extract TITLE: from the merged output
-        title = "Legal Query"
-        title_match = re.search(r"^TITLE:\s*(.+)$", raw, re.MULTILINE | re.IGNORECASE)
-        if title_match:
-            title_text = title_match.group(1).strip()
-            # Limit to 6 words
-            words = title_text.split()[:6]
-            title = " ".join(words) if words else "Legal Query"
+        # 4️⃣ Generate Title
+        title = generate_chat_title(clean_query)
 
         return {
             "reply": reply,

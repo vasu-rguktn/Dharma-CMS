@@ -6,16 +6,21 @@ import json
 import time
 from fastapi import UploadFile, HTTPException
 from firebase_admin import firestore
-from utils.gemini_client import gemini_rotator
-
 
 class ChargesheetService:
     def __init__(self):
-        self.model_ready = gemini_rotator.key_count() > 0
-        if not self.model_ready:
-            print("WARNING: No Gemini API keys found in ChargesheetService.")
+        self.api_key = os.getenv("GEMINI_API_KEY_INVESTIGATION") or os.getenv("GEMINI_API_KEY")
+        if not self.api_key:
+            print("WARNING: GEMINI_API_KEY_INVESTIGATION not found in ChargesheetService.")
+            self.model = None
         else:
-            print(f"[ChargesheetService] Ready — {gemini_rotator.key_count()} key(s) via rotator.")
+            try:
+                genai.configure(api_key=self.api_key)
+                self.model = genai.GenerativeModel("gemini-2.5-flash")  # Corrected model name
+                print("[ChargesheetService] Initialized with gemini-2.5-flash")
+            except Exception as e:
+                print(f"Error checking Gemini model: {e}")
+                self.model = None
             
     async def extract_text_from_file(self, file: UploadFile) -> str:
         start_time = time.time()
@@ -33,16 +38,11 @@ class ChargesheetService:
                 text = content.decode('utf-8')
             elif filename.endswith(('.jpg', '.jpeg', '.png', '.webp')):
                 # Use Gemini to extract text from image asynchronously
-                if not self.model_ready:
+                if not self.model:
                     return "[Error: AI Model missing, cannot perform OCR on image]"
                 prompt = "Extract all legible text from this image exactly as it appears."
                 image_parts = [{"mime_type": file.content_type or "image/jpeg", "data": content}]
-                response = await gemini_rotator.generate_content_async(
-                    "gemini-2.0-flash", 
-                    [prompt, image_parts[0]],
-                    endpoint=f"/chargesheet/ocr/{filename}",
-                    session_id=f"cs-ocr-{filename}"
-                )
+                response = await self.model.generate_content_async([prompt, image_parts[0]])
                 text = response.text if response.text else "[No text found in image]"
             else:
                 text = "[Unsupported file format. Please upload PDF, Text, or Image.]"
@@ -188,17 +188,12 @@ Now, based on ALL the information from the documents and any additional instruct
 """
         
         # 3. Generate asynchronously
-        if not self.model_ready:
-            raise HTTPException(status_code=503, detail="AI Model not initialized (no API keys configured).")
+        if not self.model:
+            raise HTTPException(status_code=503, detail="AI Model not initialized (API Key missing or invalid).")
 
         try:
-            session_id = f"cs-draft-{case_id or 'anon'}"
-            response = await gemini_rotator.generate_content_async(
-                "gemini-2.0-flash", 
-                prompt,
-                endpoint="/chargesheet/draft",
-                session_id=session_id
-            )
+            response = await self.model.generate_content_async(prompt)
+            print(f"[ChargesheetService] Generation completed in {time.time() - start_time:.2f}s")
             return response.text if response.text else "Failed to generate charge sheet (Empty response)."
         except Exception as e:
             print(f"[ChargesheetService] Generation Failed: {e}")

@@ -77,6 +77,10 @@ class CrimeDetails {
 
   factory CrimeDetails.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    return CrimeDetails.fromMap(data, doc.id);
+  }
+
+  factory CrimeDetails.fromMap(Map<String, dynamic> data, [String? docId]) {
     List<Witness>? witnessess;
     if (data['witnesses'] != null) {
       witnessess = (data['witnesses'] as List)
@@ -85,7 +89,7 @@ class CrimeDetails {
     }
 
     return CrimeDetails(
-      id: doc.id,
+      id: docId ?? data['id'],
       firNumber: data['firNumber'] ?? '',
       crimeType: data['crimeType'],
       majorHead: data['majorHead'],
@@ -102,9 +106,19 @@ class CrimeDetails {
       motiveOfCrime: data['motiveOfCrime'],
       sketchOrMapUrl: data['sketchOrMapUrl'],
       userId: data['userId'] ?? '',
-      createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
-      updatedAt: data['updatedAt'] as Timestamp? ?? Timestamp.now(),
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
     );
+  }
+
+  static Timestamp _parseTimestamp(dynamic value) {
+    if (value == null) return Timestamp.now();
+    if (value is Timestamp) return value;
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return Timestamp.now();
   }
 
   Map<String, dynamic> toMap() {

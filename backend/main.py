@@ -1,5 +1,4 @@
 from pathlib import Path
-import time
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,15 +27,22 @@ from routers.chatbot_summary_pdf import router as chatbot_summary_pdf_router
 from routers.media_analysis import router as media_analysis_router
 
 
-# Initialize Firebase Admin SDK & Gemini Key Manager
+# Initialize Firebase Admin SDK
 try:
-    from firebase_init import db
-    from gemini_key_manager import gemini_key_manager
-    # Key manager is a singleton and initializes on import, 
-    # but we can explicitly call a refresh to ensure keys are ready.
-    print(f"Firebase & Gemini Key Manager initialized. Found {gemini_key_manager.get_key_count()} keys.")
-except Exception as e:
-    print(f"Error initializing services: {e}")
+    # Check for service account key file
+    cred_filename = "dharma-cms-5cc89-b74e10595572.json"
+    cred_path = Path(__file__).parent / cred_filename
+    
+    if cred_path.exists():
+        cred = credentials.Certificate(str(cred_path))
+        firebase_admin.initialize_app(cred)
+        print(f"Firebase Admin initialized with {cred_filename}")
+    else:
+        # Fallback to default (env var) if file not found locally
+        firebase_admin.initialize_app()
+        print("Firebase Admin initialized with default credentials")
+except ValueError:
+    pass # Likely already initialized
 
 app = FastAPI(
     title="Police Complaint Chatbot API",
@@ -100,6 +106,7 @@ app.include_router(person_router)
 app.include_router(chargesheet_vetting_router)
 from routers.cases import router as cases_router
 app.include_router(cases_router)
+app.include_router(cases_router)
 app.include_router(document_relevance_router)
 app.include_router(chatbot_summary_pdf_router)
 app.include_router(media_analysis_router)
@@ -132,23 +139,6 @@ def root_alias():
 @app.get("/api/health")
 def api_health():
     return {"status": "ok"}
-
-@app.get("/api/gemini-usage")
-def gemini_usage():
-    """Returns current Gemini API key management statistics from Firestore."""
-    from gemini_key_manager import gemini_key_manager
-    return {
-        "status": "ok",
-        "active_key_count": gemini_key_manager.get_key_count(),
-        "keys": [
-            {
-                "id": k.get("id", "unknown"),
-                "source": "Master (.env)" if "env_key" in str(k.get("id")) else "Fallback (Firestore)",
-                "usage_count": k.get("usage_count", 0),
-                "active": k.get("cooldown_until", 0) < time.time()
-            } for k in gemini_key_manager.keys_pool
-        ]
-    }
 
 @app.get("/ocr/health")
 def ocr_health_alias():

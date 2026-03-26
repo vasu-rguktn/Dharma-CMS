@@ -24,6 +24,8 @@ import '../screens/geo_camera_screen.dart'; // Added for GeoCamera
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/petition_provider.dart';
+import 'package:Dharma/config/api_config.dart';
+import 'package:Dharma/services/api_service.dart';
 
 // Static state holder to preserve chat state across navigation
 class _ChatStateHolder {
@@ -70,7 +72,7 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
   final TextEditingController _controller = TextEditingController();
   final FocusNode _inputFocus = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  final Dio _dio = Dio();
+  Dio get _dio => ApiService.dio;
   final ImagePicker _imagePicker = ImagePicker();
   List<PlatformFile> _attachedFiles = []; // Store attached files
 
@@ -1243,32 +1245,8 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
     setState(() {
       _setIsLoading(true);
       _setAllowInput(false);
-      _setErrored(false);
-    });
+      _setErrored(false);    });
 
-    // Determine base URL robustly
-    // Determine base URL robustly
-    String baseUrl;
-    if (kIsWeb) {
-      // on web you probably want to call your absolute backend URL
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // Android physical device (requires adb reverse tcp:8000 tcp:8000)
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    } else {
-      // iOS simulator / other platforms
-      baseUrl = "https://fastapi-app-335340524683.asia-south1.run.app";
-    }
-    // if (kIsWeb) {
-    //   baseUrl = "http://127.0.0.1:8000";
-    // } else if (Platform.isAndroid) {
-    //   // Android Emulator uses 10.0.2.2 to access host localhost
-    //   // PHYSICAL DEVICE: Use your local IP address (now 10.5.40.157)
-    //   baseUrl = "http://10.5.40.157:8000";
-    // } else {
-    //   // iOS Simulator and others
-    //   baseUrl = "http://127.0.0.1:8000";
-    // }
     final settings = context.read<SettingsProvider>();
     final localeCode = settings.chatLanguageCode ??
         settings.locale?.languageCode ??
@@ -1352,16 +1330,13 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
     formData.fields.add(MapEntry('is_anonymous', _isAnonymous.toString()));
 
     // Serialize chat history
-    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));
-
-    // print('🚀 Sending to backend (FormData):');
+    formData.fields.add(MapEntry('chat_history', jsonEncode(payloadHistory)));    // print('🚀 Sending to backend (FormData):');
     // print('   History items: ${_dynamicHistory.length}');
     // print('   Files attached: ${_attachedFiles.length}');
-
     try {
       final resp = await _dio
           .post(
-            '$baseUrl/complaint/chat-step',
+            '/ai/complaint/chat-step',
             data: formData,
             // Header content-type is auto-set by FormData
           )
@@ -3492,147 +3467,119 @@ class _AiLegalChatTestScreenState extends State<AiLegalChatTestScreen>
   }
 
   Widget _buildAvatarView() {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
-
-    return Container(
-      color: isLandscape ? const Color(0xFFD1D1D1) : Colors.transparent,
-      child: Stack(
-        children: [
-          // --- FULL SCREEN BACKGROUND AVATAR ---
-          Positioned.fill(
-            child: ShaderMask(
-              shaderCallback: (rect) {
-                if (!isLandscape) {
-                  return const LinearGradient(
-                    colors: [Colors.white, Colors.white],
-                  ).createShader(rect);
-                }
-                return const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Colors.transparent,
-                    Colors.white,
-                    Colors.white,
-                    Colors.transparent
-                  ],
-                  stops: [0.0, 0.5, 0.5, 1.0],
-                ).createShader(rect);
-              },
-              blendMode: BlendMode.dstIn,
-              child: Image.asset(
-                // Show GIF only while TTS is actively speaking AND user is NOT recording
-                _isSpeaking && !_isRecording
-                    ? 'assets/avatar.gif'
-                    : 'assets/police_avatar.png',
-                fit: isLandscape ? BoxFit.contain : BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  child:
-                      const Icon(Icons.person, size: 100, color: Colors.grey),
-                ),
-              ),
+    return Stack(
+      children: [
+        // --- FULL SCREEN BACKGROUND AVATAR ---
+        Positioned.fill(
+          child: Image.asset(
+            // Show GIF only while TTS is actively speaking AND user is NOT recording
+            _isSpeaking && !_isRecording
+                ? 'assets/avatar.gif'
+                : 'assets/police_avatar.png',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey[300],
+              child: const Icon(Icons.person, size: 100, color: Colors.grey),
             ),
           ),
+        ),
 
-          // --- SEMI-TRANSPARENT DIM LAYER ---
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.05),
-                    Colors.black.withOpacity(0.5),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // --- CAPTIONS AREA ---
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // --- LIVE CAPTIONS ---
-                  if (_displayedCaptionText.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: orange.withOpacity(0.3)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        _displayedCaptionText,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-
-                  // Show "Thinking..." indicator if loading but not speaking yet
-                  if (_isLoading && !_isSpeaking)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              "Thinking...",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+        // --- SEMI-TRANSPARENT DIM LAYER ---
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.05),
+                  Colors.black.withOpacity(0.5),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+
+        // --- CAPTIONS AREA ---
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // --- LIVE CAPTIONS ---
+                if (_displayedCaptionText.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: orange.withOpacity(0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      _displayedCaptionText,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+
+                // Show "Thinking..." indicator if loading but not speaking yet
+                if (_isLoading && !_isSpeaking)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            "Thinking...",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

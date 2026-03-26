@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+date: Thu, 19 Mar 2026 19:59:12 GMT
+server: uvicorn
+content-length: 47
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-xss-protection: 1; mode=block
+referrer-policy: strict-origin-when-cross-origin
+permissions-policy: geolocation=(), camera=(), microphone=()
+

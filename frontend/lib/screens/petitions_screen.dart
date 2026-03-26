@@ -7,9 +7,10 @@ import 'package:Dharma/providers/auth_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:Dharma/providers/petition_provider.dart';
 import 'package:Dharma/models/petition.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:Dharma/l10n/app_localizations.dart';
 import 'package:Dharma/services/local_storage_service.dart';
+import 'package:Dharma/services/api_service.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
@@ -677,9 +678,8 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
   List<PlatformFile> _pickedFiles = []; // Handwritten documents
   List<PlatformFile> _proofFiles = []; // Related proof documents
 
-  bool _isExtracting = false;
-  Map<String, dynamic>? _ocrResult;
-  final Dio _dio = Dio();
+  bool _isExtracting = false;  Map<String, dynamic>? _ocrResult;
+  Dio get _dio => ApiService.dio;
   String _ocrEndpoint = '';
   List<String> _ocrEndpointFallbacks = <String>[];
 
@@ -788,50 +788,18 @@ class _CreatePetitionFormState extends State<CreatePetitionForm> {
         }
       }
     });
-  }
-
-  Future<void> _initBackend() async {
-    final List<String> candidates = <String>[];
-
-    if (kIsWeb) {
-      final Uri u = Uri.base;
-      final String scheme = u.scheme.isNotEmpty ? u.scheme : 'http';
-      final String host = u.host.isNotEmpty ? u.host : 'localhost';
-      candidates.add('$scheme://$host:8000');
-      candidates.add('$scheme://$host');
-    }
-
-    final bool isAndroid =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-    if (isAndroid) {
-      // candidates.add('http://10.0.2.2:8000');
-      // candidates.add('http://10.0.2.2');
-      candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    }
-
-    // candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    // candidates.add('http://localhost');
-    candidates.add('https://fastapi-app-335340524683.asia-south1.run.app');
-    candidates.add('http://localhost');
-
-    String? resolved;
-    for (final String base in candidates) {
-      if (await _isBackendHealthy(base)) {
-        resolved = base;
-        break;
-      }
-    }
-
-    resolved ??= candidates.first;
+  }  Future<void> _initBackend() async {
     setState(() {
-      _ocrEndpoint = '$resolved/api/ocr/extract';
+      _ocrEndpoint = '/ai/ocr/extract';
       _ocrEndpointFallbacks = <String>[
-        '$resolved/api/ocr/extract-case/',
-        '$resolved/extract-case/',
+        '/api/ocr/extract',
+        '/api/ocr/extract-case/',
+        '/extract-case/',
       ];
     });
   }
 
+  // Health check kept for backward compat but uses ApiConfig
   Future<bool> _isBackendHealthy(String baseUrl) async {
     try {
       final List<String> healthPaths = <String>[
