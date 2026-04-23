@@ -7,23 +7,6 @@
 version: "3.9"
 
 services:
-  # ── PostgreSQL ──────────────────────────────────────────────────────────
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: dharma
-      POSTGRES_PASSWORD: dharma
-      POSTGRES_DB: dharma_cms
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dharma -d dharma_cms"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
   # ── FastAPI Backend ─────────────────────────────────────────────────────
   api:
     build: .
@@ -33,17 +16,11 @@ services:
     env_file:
       - .env
     environment:
-      # Override DATABASE_URL to use the Docker PostgreSQL container
-      DATABASE_URL: postgresql+asyncpg://dharma:dharma@db:5432/dharma_cms
+      # Connect to remote PostgreSQL database
+      DATABASE_URL: postgresql+asyncpg://postgres:Server@098123@100.90.109.30:5432/dharmacms
       # Firebase credential path INSIDE the container
       FIREBASE_CREDENTIALS: /app/firebase-credentials.json
     volumes:
       # Mount your Firebase service account JSON (update left-hand path)
       # Download from Firebase Console > Project Settings > Service Accounts
       - ./firebase-credentials.json:/app/firebase-credentials.json:ro
-    depends_on:
-      db:
-        condition: service_healthy
-
-volumes:
-  pgdata:
